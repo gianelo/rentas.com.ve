@@ -1,0 +1,146 @@
+# Tasks: MVP Rental Listings
+
+## Review Workload Forecast
+
+| Field | Value |
+|-------|-------|
+| Estimated changed lines | ~3,800–5,400 total (greenfield, 6 capabilities) |
+| 400-line budget risk | High |
+| Chained PRs recommended | Yes |
+| Suggested split | PR0 → PR1 → PR2 → PR3 → PR4 → PR5 → PR6 → PR7 → PR8 |
+| Delivery strategy | ask-on-risk |
+| Chain strategy | pending — orchestrator must collect from user before apply |
+
+Decision needed before apply: Yes
+Chained PRs recommended: Yes
+Chain strategy: pending
+400-line budget risk: High
+
+### Per-slice estimate
+
+| Slice | Est. lines | Risk |
+|---|---|---|
+| PR0 Bootstrap/toolchain | 500–700 | Medium (mostly config) |
+| PR1 Identity + phone-verification port | 300–450 | Low |
+| PR2 City/zone schema + seed + UI | 200–350 | Low |
+| PR3 Publication core | 600–900 | High — likely needs its own split |
+| PR4 Trust: photo-hash dedup | 300–450 | Medium |
+| PR5 Search | 350–500 | Medium |
+| PR6 Contact reveal | 300–450 | Medium |
+| PR7 Lifecycle: reminder job | 700–1000 | High — likely needs its own split |
+| PR8 Trust: reporting/auto-hide | 250–400 | Low |
+
+### Suggested Work Units
+
+| Unit | Goal | Likely PR | Focused test command | Runtime harness | Rollback boundary |
+|---|---|---|---|---|---|
+| 0 | Toolchain, Drizzle/Auth.js scaffold, config.yaml F1, F2 re-verify | PR0 | `pnpm test` (empty pass) | `pnpm dev` boots, deploys to Vercel | Revert repo to pre-scaffold state |
+| 1 | Google sign-in, session guard, disabled phone-verification port | PR1 | `pnpm test:unit -- identity` | Manual Google OAuth sign-in on deployed preview | `src/modules/identity/**`, `app/(auth)/**` |
+| 2 | City/zone schema, seed, cascading select | PR2 | `pnpm test:integration -- zone` | Seed script run against Neon branch | `drizzle/*_zones.sql`, seed script |
+| 3 | Listing CRUD, publisher_type, min-content, city-FK, upload guard | PR3 | `pnpm test -- publication` | Publish flow on preview deploy | `src/modules/listing-publication/**` |
+| 4 | dHash + publisher-excluding match port wired into publish | PR4 | `pnpm test:integration -- photo-hash` | Publish two accounts, same photo | `src/modules/listing-trust/**` (hash only) |
+| 5 | Search port with required cityId, filters, city isolation | PR5 | `pnpm test:integration -- search` | Search UI on preview deploy | `src/modules/listing-search/**` |
+| 6 | Reveal event + unique-pair view | PR6 | `pnpm test:integration -- reveal` | Reveal action on preview deploy | `src/modules/contact-reveal/**`, view migration |
+| 7 | Expiry, reminder job, renewal token, cron route | PR7 | `pnpm test -- lifecycle` | `curl -X POST` job route with/without Bearer token | `src/modules/listing-lifecycle/**`, `app/api/jobs/**` |
+| 8 | Reporting, auto-hide, operator restore | PR8 | `pnpm test -- trust-reporting` | Report flow x3 accounts on preview | `src/modules/listing-trust/**` (reporting only) |
+
+## Phase 0: Bootstrap & Toolchain (PR0)
+
+- [ ] 0.1 `pnpm init`, add Next.js 15 + React 19, TS, `tsconfig.json`
+- [ ] 0.2 Configure Biome (`biome.json`), Vitest (`vitest.config.ts`), Playwright (`playwright.config.ts`)
+- [ ] 0.3 Apply follow-up F1: update `openspec/config.yaml` `testing:`/`context:`/`rules` blocks per design
+- [ ] 0.4 Follow-up F2: re-verify current Vercel/Neon/R2/Resend free-tier limits; record deltas vs design doc
+- [ ] 0.5 Drizzle config + `src/shared/db/client.ts` (Neon pooled endpoint)
+- [ ] 0.6 Auth.js v5 + Google provider + Drizzle adapter (`user`, `account`, `session` tables)
+- [ ] 0.7 Deploy skeleton to Vercel; confirm live Neon connection
+
+## Phase 1: Identity + Phone Verification Port (PR1)
+
+- [ ] 1.1 RED: unauthenticated protected action redirects to sign-in
+- [ ] 1.2 GREEN: session-guard helper, `src/modules/identity/application/`
+- [ ] 1.3 RED: Google sign-in creates one account with only email + display name
+- [ ] 1.4 GREEN: Auth.js callback restricts captured profile fields
+- [ ] 1.5 RED: expired session forces re-auth on protected action
+- [ ] 1.6 GREEN: expiry handling; sign-in UI at `app/(auth)/signin`
+- [ ] 1.7 RED: publish succeeds regardless of phone-verification status
+- [ ] 1.8 GREEN: `PhoneVerificationPort` contract + `DisabledPhoneVerificationAdapter` (`PHONE_VERIFICATION_ENABLED=false`, no domain branch)
+
+## Phase 2: City & Zone Data (PR2)
+
+- [ ] 2.1 Schema: `city`, `zone` tables; `zone` `UNIQUE(id, city_id)` (D5)
+- [ ] 2.2 RED: integration test — cross-city zone reference violates uniqueness
+- [ ] 2.3 Seed script `src/shared/db/seed.ts` with founder-supplied Distrito Capital + Maracaibo zone lists
+- [ ] 2.4 RED: zone selector offers only the selected city's zones
+- [ ] 2.5 GREEN: cascading city→zone select component (`components/`)
+
+## Phase 3: Listing Publication Core (PR3)
+
+- [ ] 3.1 Schema: `listing` table, `publisher_type` NOT NULL no default, composite FK `(zone_id, city_id) → zone(id, city_id)` (D5)
+- [ ] 3.2 RED: integration test — cross-city listing insert fails FK constraint
+- [ ] 3.3 RED: unit test — publish rejected without `publisher_type`, no default applied
+- [ ] 3.4 RED: unit test — publish rejected without photo / missing min content (title, description, price, city, zone)
+- [ ] 3.5 GREEN: `PublishListingUseCase` validation (publisher_type, USD price, city/zone, min content)
+- [ ] 3.6 RED: non-image / oversized upload rejected (MIME + magic-byte + size)
+- [ ] 3.7 GREEN: `sharp`-based upload guard before persistence; R2 presigned PUT adapter
+- [ ] 3.8 Schema: `listing_photo` table
+- [ ] 3.9 Publish form UI + listing detail/card rendering `publisher_type` visibly
+
+## Phase 4: Trust — Photo-Hash Dedup (PR4)
+
+- [ ] 4.1 Schema: `listing_photo_hash` (`bit(64)`)
+- [ ] 4.2 RED: unit test — cross-publisher perceptually-matching photo rejects listing
+- [ ] 4.3 RED: unit test — same-publisher match (active/expired/other listing) is allowed
+- [ ] 4.4 GREEN: `sharp` 9×8 grayscale dHash(64) in `PublishListingUseCase`
+- [ ] 4.5 GREEN: `PhotoHashPort` exposing only `findMatchesFromOtherPublishers(hash, excludePublisherId, maxDistance)` — no all-matches method (D4)
+- [ ] 4.6 GREEN: Drizzle/raw-SQL adapter using `bit_count` Hamming distance
+- [ ] 4.7 E2E: publish → duplicate photo rejected cross-account, accepted same publisher
+
+## Phase 5: Listing Search (PR5)
+
+- [ ] 5.1 RED: `ListingSearchPort.search(criteria)` — missing/nullable `cityId` rejected (D5)
+- [ ] 5.2 GREEN: search port signature with required non-nullable `cityId`
+- [ ] 5.3 RED: integration — Maracaibo search excludes Distrito Capital listings (no-filter, wide-price-range, colliding-zone-name scenarios)
+- [ ] 5.4 GREEN: Drizzle search query — city/zone/price/characteristics filters
+- [ ] 5.5 RED: expired and auto-hidden listings excluded from search
+- [ ] 5.6 GREEN: active-only status filter
+- [ ] 5.7 Search results UI showing `publisher_type` per result
+
+## Phase 6: Contact Reveal (PR6)
+
+- [ ] 6.1 Migration: `contact_reveal_event` table + `contact_reveal_unique_pair` VIEW (raw SQL, D6)
+- [ ] 6.2 Hand-declare TS result type for the view query (flag as drift risk in code comment)
+- [ ] 6.3 RED: anonymous visitor sees hidden/locked placeholder, no contact value
+- [ ] 6.4 RED: reveal creates exactly one event; repeat reveal by same tenant creates a second, non-deduplicated event
+- [ ] 6.5 GREEN: `RevealContactUseCase` — single insert, session-gated
+- [ ] 6.6 RED: integration — after N repeat reveals of one pair, unique-pair view returns 1 row, `reveal_count=N`, `first_revealed_at`=earliest; raw event table still holds N rows
+- [ ] 6.7 GREEN: view query wrapper
+- [ ] 6.8 Reveal UI: locked placeholder, reveal button, sign-in redirect
+
+## Phase 7: Lifecycle — Expiry & Reminder Job (PR7)
+
+- [ ] 7.1 Schema: `listing.status`/`expires_at`; `listing_reminder` UNIQUE `(listing_id, expires_at)`; `job_run`
+- [ ] 7.2 RED: listing expires 30 days after publish/last renewal, whichever later
+- [ ] 7.3 GREEN: expiry calculation in domain
+- [ ] 7.4 RED: unauthenticated `POST /api/jobs/expiry-reminders` returns 401, `reminders_sent=0`
+- [ ] 7.5 GREEN: constant-time Bearer `CRON_SECRET` check on job route
+- [ ] 7.6 RED: double-run of reminder job does not double-send (unique constraint)
+- [ ] 7.7 GREEN: `SendExpiryRemindersUseCase` — batched 5-day-window select, insert `listing_reminder`, send email, record `job_run` (counts + failures)
+- [ ] 7.8 RED: replayed renewal token rejected; GET on renewal link never mutates `expires_at`
+- [ ] 7.9 GREEN: HMAC-signed, listing-scoped, single-use, expiring token; GET renders confirmation, POST renews +30 days and burns token
+- [ ] 7.10 RED: expired listing retained (not deleted), excluded from search, still renewable
+- [ ] 7.11 Resend/React Email renewal template; `vercel.json` cron schedule
+- [ ] 7.12 E2E: reminder job → renewal link → renew flow
+
+## Phase 8: Trust — Reporting & Auto-Hide (PR8)
+
+- [ ] 8.1 Schema: `listing_report`, `moderation_action`
+- [ ] 8.2 RED: unauthenticated visitor cannot report
+- [ ] 8.3 RED: 3rd distinct authenticated account triggers auto-hide; repeat report from same account does not
+- [ ] 8.4 GREEN: `ReportListingUseCase` — distinct-account counting, `status → hidden_by_reports` at 3
+- [ ] 8.5 RED: operator restore returns listing to `active`
+- [ ] 8.6 GREEN: `RestoreListingUseCase` + `moderation_action` record; minimal operator-only restore route
+
+## Phase 9: Cleanup
+
+- [ ] 9.1 README: setup, env vars, deploy steps
+- [ ] 9.2 Confirm `pnpm test`, `test:unit`, `test:integration`, `test:e2e` all pass end to end

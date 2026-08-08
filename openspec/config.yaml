@@ -1,0 +1,55 @@
+schema: spec-driven
+
+context: |
+  Project: rentaya.com.ve — free long-stay residential rental marketplace (Venezuela).
+  Stack: UNDECIDED — no manifest/framework committed yet. Selection deferred to sdd-design.
+  Architecture: UNDECIDED — deferred to sdd-design.
+  Testing: UNKNOWN — no test runner exists yet; test_command pending stack selection.
+  Style: UNDECIDED — deferred to sdd-design.
+  Product context: see Engram topic_key `product/rentaya-definition` (discovery closed).
+
+strict_tdd: true # Enabled globally per session preflight; concrete test_command pending stack selection.
+
+testing:
+  runner: null
+  command: null
+  layers:
+    unit: false
+    integration: false
+    e2e: false
+  coverage:
+    available: false
+    command: null
+  quality:
+    linter: null
+    type_checker: null
+    formatter: null
+  status: pending-stack-selection
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Do not assume a tech stack; stack selection is an open decision for sdd-design
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Resolve the tech stack decision explicitly (framework, language, hosting, DB) with rationale
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+    - Once the stack is chosen, update this file's `testing:` block and `context:` accordingly
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+    - Respect the 400-line review budget (delivery_strategy: ask-on-risk); propose chained PRs when at risk
+  apply:
+    guidelines:
+      - Follow existing code patterns once the stack exists
+    tdd: true # Strict TDD enabled; RED-GREEN-REFACTOR required once test_command is set
+    test_command: "" # UNKNOWN — set once stack is selected in sdd-design
+  verify:
+    test_command: ""
+    build_command: ""
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
