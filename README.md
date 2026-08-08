@@ -1,4 +1,4 @@
-# rentaya.com.ve
+# rentas.com.ve
 
 Portal gratuito de alquiler residencial para Venezuela. Publicar no cuesta nada, no hay comisiones y el contacto ocurre directamente entre las partes.
 

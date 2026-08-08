@@ -154,7 +154,7 @@ ORDER BY tenant_user_id, listing_id, revealed_at, id;
 
 ### D8 — Vercel Hobby accepted as tracked debt, with a hard trigger
 
-**Resolved — this is not an open risk.** Rentaya launches and operates on Vercel Hobby while the product is entirely free and produces no revenue. That is legitimate use under the Hobby terms: no listing fee, no featured placement, no advertising, no paid tier of any kind in v1.
+**Resolved — this is not an open risk.** Rentas launches and operates on Vercel Hobby while the product is entirely free and produces no revenue. That is legitimate use under the Hobby terms: no listing fee, no featured placement, no advertising, no paid tier of any kind in v1.
 
 **Trigger condition (binding):** migrating to Vercel Pro (~$20/month) is a **required precondition of the first monetization step**, not a follow-up to it. Any of the following may not ship until the account is on Pro:
 

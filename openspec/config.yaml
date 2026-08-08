@@ -1,7 +1,7 @@
 schema: spec-driven
 
 context: |
-  Project: rentaya.com.ve — free long-stay residential rental marketplace (Venezuela).
+  Project: rentas.com.ve — free long-stay residential rental marketplace (Venezuela).
   Stack: UNDECIDED — no manifest/framework committed yet. Selection deferred to sdd-design.
   Architecture: UNDECIDED — deferred to sdd-design.
   Testing: UNKNOWN — no test runner exists yet; test_command pending stack selection.
