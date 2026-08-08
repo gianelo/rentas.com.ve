@@ -1,6 +1,6 @@
-# Rentaya — Resumen técnico del MVP
+# Rentas — Resumen técnico del MVP
 
-**rentaya.com.ve** · Agosto 2026
+**rentas.com.ve** · Agosto 2026
 
 Portal de alquiler residencial de larga estadía, sin intermediación. Monolito TypeScript, estructura hexagonal por capacidad, y tres reglas de negocio garantizadas por estructura en lugar de por disciplina.
 

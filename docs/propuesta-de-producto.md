@@ -1,6 +1,6 @@
-# Rentaya — Propuesta de producto
+# Rentas — Propuesta de producto
 
-**rentaya.com.ve** · v1 · Agosto 2026
+**rentas.com.ve** · v1 · Agosto 2026
 
 > Publicar una propiedad en alquiler debería ser gratis. Y contactar a quien la publica, directo.
 
@@ -29,7 +29,7 @@ A eso se suma un problema de confianza: sin ninguna señal que verifique quién 
 
 **Un tablón de anuncios, no una inmobiliaria.**
 
-Rentaya es a las propiedades lo que un portal de empleo es a los trabajos: un lugar donde se publica gratis, se busca con filtros reales, y el contacto ocurre directamente entre las partes.
+Rentas es a las propiedades lo que un portal de empleo es a los trabajos: un lugar donde se publica gratis, se busca con filtros reales, y el contacto ocurre directamente entre las partes.
 
 La plataforma **no intermedia la operación y no cobra comisión**. No participa en el trato, no retiene pagos, no redacta contratos. Cuando un interesado encuentra una propiedad, recibe el contacto de WhatsApp de quien la publicó y sigue por su cuenta.
 
