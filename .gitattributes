@@ -1,0 +1,10 @@
+# The repository stores LF. Without this, Windows checkouts with
+# core.autocrlf=true get CRLF working files while the committed blobs stay LF,
+# so Biome reports every line of every file as changed and `pnpm lint` fails
+# locally while passing in CI. A gate that only fails on one developer's
+# machine is a gate that gets ignored.
+* text=auto eol=lf
+
+# Generated, never hand-edited, and excluded from the authored line count.
+pnpm-lock.yaml linguist-generated=true
+drizzle/meta/** linguist-generated=true
