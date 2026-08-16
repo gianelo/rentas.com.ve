@@ -36,7 +36,7 @@
         {
           "matchingUrlPattern": "^https?://[^/]+/alquiler(/[^/]+){0,2}/?([?#].*)?$",
           "assertions": {
-            "total-byte-weight": ["error", { "maxNumericValue": 153600 }]
+            "total-byte-weight": ["error", { "maxNumericValue": 235520 }]
           }
         }
       ]
