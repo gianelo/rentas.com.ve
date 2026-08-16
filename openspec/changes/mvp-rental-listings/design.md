@@ -224,19 +224,49 @@ Auto-hide: three rows in `listing_report` for one listing sets `hidden_by_report
 | `src/modules/*/{domain,application,infrastructure}/` | Create | Six capabilities |
 | `app/`, `components/` | Create | Delivery + atomic-design UI |
 | `app/api/jobs/expiry-reminders/route.ts`, `vercel.json` | Create | Job route + cron schedule |
+| `.github/workflows/ci.yml`, `lighthouserc.json`, `scripts/budget-bundle.ts` | Create | CI gates, Lighthouse budgets, build-output budget assertion |
 | `openspec/config.yaml` | Modify | **Follow-up F1** — not edited by this phase |
 
 ## Testing Strategy
 
 | Layer | What | How | Command |
 |---|---|---|---|
-| Unit | Domain invariants, dHash + Hamming math, expiry/renewal date rules, auto-hide threshold, use cases against in-memory port fakes | Vitest, no I/O | `pnpm test:unit` |
-| Integration | Composite-FK city isolation, `bit_count` similarity SQL, reminder idempotency under double-run, `job_run` recording, **unique-pair view** (after N repeat reveals of one pair the view returns exactly one row, with `first_revealed_at` = earliest `revealed_at` and `reveal_count = N`, while `contact_reveal_event` still holds all N rows) | Vitest + Dockerised Postgres matching Neon's major version | `pnpm test:integration` |
-| E2E | Publish → search → gated reveal; anonymous cannot see WhatsApp; duplicate photo rejected across accounts but accepted for the same publisher | Playwright | `pnpm test:e2e` |
+| Unit | Domain invariants, dHash + Hamming math, expiry/renewal date rules, auto-hide threshold, use cases against in-memory port fakes. **Added:** CSV parsing (delimiter sniffing, BOM, encoding rejection), column allowlist and mass-assignment rejection, per-row validation results, CSV output escaping, image-derivative dimensions and byte budgets, suggestion widening (zone → city → none), contribution destination resolution | Vitest, no I/O | `pnpm test:unit` |
+| Integration | Composite-FK city isolation, `bit_count` similarity SQL, reminder idempotency under double-run, `job_run` recording, **unique-pair view** (after N repeat reveals of one pair the view returns exactly one row, with `first_revealed_at` = earliest `revealed_at` and `reveal_count = N`, while `contact_reveal_event` still holds all N rows). **Added:** import idempotency via the unique `(publisher_id, external_reference)` index, draft state excluded from search/reveal/expiry, reveal rate limit across requests, sitemap contents after expiry | Vitest + Dockerised Postgres matching Neon's major version | `pnpm test:integration` |
+| E2E | Publish → search → gated reveal; anonymous cannot see WhatsApp; duplicate photo rejected across accounts but accepted for the same publisher. **Added:** enabled broker imports → preview → confirm → attach photos → activate → appears in search; disabled account refused server-side; expired listing page shows same-city suggestions with no contact leaked; invitation dismisses and never precedes a reveal | Playwright | `pnpm test:e2e` |
+| Crawlability | Zone landing pages and search results contain listings **with JavaScript execution disabled**; expired pages carry `noindex` and are absent from the sitemap | Playwright with scripting off | `pnpm test:e2e` |
+| Budget | Read-path first-load JS, page transfer weight, LCP on a throttled 3G profile | Build-output assertion + Lighthouse CI | `pnpm budget:bundle`, `pnpm budget:lighthouse` |
 
 Ports as interfaces make the domain and application layers fully testable with zero infrastructure — this is what makes strict TDD viable for a part-time founder.
 
-**Integration tests must use real Postgres, not an emulator**, because `bit_count` semantics and composite-FK enforcement are precisely what is under test.
+**Integration tests must use real Postgres, not an emulator**, because `bit_count` semantics and composite-FK enforcement are precisely what is under test. The same reasoning now extends to bulk import: its idempotency guarantee is a unique index, not application code, so a fake would verify the fake.
+
+**Crawlability is tested with scripting disabled, not asserted by inspection.** D11 makes organic search the distribution channel, and "renders without JavaScript" is the kind of property that silently breaks the first time someone reaches for a client component. If it is not executed as a test, it is not a guarantee.
+
+### Coverage policy
+
+No global percentage target. A repository-wide number rewards testing whatever is cheapest to cover, which is rarely what carries risk.
+
+Instead: a **90% floor on `src/modules/*/domain/` and `src/modules/*/application/`**, and **no target** on `infrastructure/` or `app/`. Those two pure layers hold every invariant, have zero dependencies, and cost almost nothing to cover — a gap there is a real gap. Infrastructure and delivery are covered by the integration and E2E layers instead, where a percentage would measure nothing useful.
+
+## Continuous Integration
+
+No pipeline exists today. These gates run on every pull request and block merge:
+
+| Gate | Command | Needs |
+|---|---|---|
+| Lint + format | `pnpm biome ci` | — |
+| Types | `pnpm tsc --noEmit` | — |
+| Unit | `pnpm test:unit` | — |
+| Coverage floor | `pnpm test:coverage` | domain + application ≥ 90% |
+| Integration | `pnpm test:integration` | Postgres service container, Neon's major version |
+| Bundle budget | `pnpm budget:bundle` | build output |
+| E2E + crawlability | `pnpm test:e2e` | preview deployment URL |
+| Lighthouse budget | `pnpm budget:lighthouse` | preview deployment URL |
+
+**A budget nobody measures automatically is a wish.** `budget:bundle` reads the build output and fails when read-path first-load JS exceeds 30 KB — fast, needs no deployment, and catches the most common regression (someone converts a server component to a client component). `budget:lighthouse` runs against the preview deployment and fails on LCP over 2.5 s on a throttled 3G profile, search transfer over 150 KB, or detail transfer over 500 KB. Image derivative budgets are already asserted at generation time in unit tests, so they need no separate gate.
+
+**CI minutes are a metered resource here.** The repository is private, so Actions minutes come out of a monthly quota rather than being free as they would be on a public repository. Accordingly: lint, types, unit, coverage and integration run on every push; E2E, crawlability and both budget gates run **on pull requests only**, since they require a deployment and are the expensive half. This is the same free-tier discipline applied to Neon, R2 and Resend — see F2, which must now re-verify the Actions quota as well.
 
 ### D9 — Bulk import is a loader, not a second publication path
 
@@ -352,7 +382,7 @@ rules:
     build_command: pnpm build
 ```
 
-**F2** — confirm current free-tier limits (Vercel cron, Neon storage, R2, Resend daily cap) at implementation time; provider tiers change.
+**F2** — confirm current free-tier limits (Vercel cron, Neon storage, R2, Resend daily cap, **GitHub Actions monthly minutes for private repositories**) at implementation time; provider tiers change.
 
 ## Tracked Debt
 
