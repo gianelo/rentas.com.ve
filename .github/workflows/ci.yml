@@ -8,13 +8,19 @@ name: CI
 # crawlability, and both budget gates — needs a deployed preview and runs
 # on pull_request only, so it is never paid for twice per commit.
 #
-# Founder setup required before the pull_request jobs go fully green:
-#   - Repository VARIABLE `PREVIEW_BASE_URL`: the URL of the PR's Vercel
-#     preview deployment (task 0.7 connects Vercel; not set up here). Until
-#     it is set, the `e2e` job emits a warning and skips rather than
-#     hanging or failing.
-# No secret is required for the `integration` job — its Postgres container
-# is ephemeral and local to the job, not the production Neon database.
+# No repository variable or secret is required for any of this.
+#
+#   - The preview URL is resolved at run time from GitHub's Deployments API,
+#     which Vercel populates. Nothing to keep in sync by hand.
+#   - The `integration` job's Postgres container is ephemeral and local to
+#     the job, never the production Neon database.
+#   - The `build` job uses a deliberately fake, unroutable DATABASE_URL.
+#
+# Founder-side setup that DOES matter, and lives in Vercel rather than here:
+# the Preview environment must point at its own Neon branch, so an E2E run
+# writes listings and users into a throwaway database instead of the real
+# catalogue. Same variable name, different value per environment — the app
+# neither knows nor cares.
 
 on:
   push:
@@ -26,6 +32,9 @@ concurrency:
 
 permissions:
   contents: read
+  # The `preview` job reads Vercel's deployment status for the commit under
+  # test rather than constructing a URL from a project slug.
+  deployments: read
 
 env:
   NODE_VERSION: "22"
@@ -136,9 +145,9 @@ jobs:
   # a Next.js build and a real browser, but — unlike those — it needs no
   # deployed preview (its own webServer starts a local `next dev`), which is
   # exactly the distinction design.md draws between the cheap push-gated
-  # half and the expensive PR-only half of this pipeline. There is no
-  # PREVIEW_BASE_URL dependency to wait on, so gating it to pull_request
-  # would only delay the same proof for no saved cost.
+  # half and the expensive PR-only half of this pipeline. It waits on no
+  # deployment, so gating it to pull_request would only delay the same proof
+  # for no saved cost.
   measure:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -220,12 +229,53 @@ jobs:
 
   # E2E and crawlability share a job: same install, same spec files, only
   # the Playwright project differs (crawlability runs with scripting off —
-  # playwright.config.ts). Both need PREVIEW_BASE_URL; see the header above.
-  e2e:
+  # playwright.config.ts).
+  #
+  # The preview URL is READ from GitHub's Deployments API, not constructed
+  # from a project/scope slug. Vercel posts the exact `environment_url` for
+  # the commit under test, so this needs no repository variable to keep in
+  # sync, survives a project rename, and — unlike the deterministic branch
+  # alias — cannot be silently wrong when a long branch name pushes the
+  # hostname past the 63-character DNS label limit and Vercel truncates it.
+  # It also solves the race: Actions routinely starts before Vercel finishes,
+  # so the step waits for a `success` status rather than testing a 404.
+  # Resolved once and shared, rather than repeated in both consumers: two
+  # copies of a wait loop drift, and the second copy is the one nobody
+  # notices is broken.
+  preview:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    env:
-      PLAYWRIGHT_BASE_URL: ${{ vars.PREVIEW_BASE_URL }}
+    outputs:
+      url: ${{ steps.resolve.outputs.url }}
+    steps:
+      - name: Wait for the Vercel preview deployment
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          url=""
+          for attempt in $(seq 1 40); do
+            for id in $(gh api "repos/${GITHUB_REPOSITORY}/deployments?sha=${HEAD_SHA}" --jq '.[].id' 2>/dev/null); do
+              found=$(gh api "repos/${GITHUB_REPOSITORY}/deployments/${id}/statuses" \
+                --jq 'map(select(.state == "success" and .environment_url != null)) | .[0].environment_url // empty' 2>/dev/null)
+              if [ -n "$found" ]; then url="$found"; break; fi
+            done
+            [ -n "$url" ] && break
+            echo "attempt ${attempt}/40: no successful preview deployment for ${HEAD_SHA} yet"
+            sleep 15
+          done
+          if [ -z "$url" ]; then
+            echo "::warning title=No preview deployment::Vercel published no successful deployment for ${HEAD_SHA} within 10 minutes."
+          else
+            echo "resolved preview URL: ${url}"
+          fi
+          echo "url=${url}" >> "$GITHUB_OUTPUT"
+
+  e2e:
+    if: github.event_name == 'pull_request'
+    needs: preview
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -238,7 +288,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: E2E + crawlability against the PR preview
-        if: vars.PREVIEW_BASE_URL != ''
+        if: needs.preview.outputs.url != ''
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ needs.preview.outputs.url }}
         run: |
           pnpm exec playwright install --with-deps chromium
           fail=0
@@ -261,16 +313,17 @@ jobs:
           done
           exit $fail
 
-      - name: PREVIEW_BASE_URL not configured
-        if: vars.PREVIEW_BASE_URL == ''
+      - name: No preview deployment resolved
+        if: needs.preview.outputs.url == ''
         run: |
-          echo "::warning title=E2E/crawlability skipped::repository variable PREVIEW_BASE_URL is not set, so this PR was not verified against a live preview. Set it once Vercel is connected (task 0.7)."
+          echo "::warning title=E2E/crawlability skipped::no Vercel preview deployment was published for this commit, so it was not verified against a live preview."
 
   budget:
     if: github.event_name == 'pull_request'
+    needs: preview
     runs-on: ubuntu-latest
     env:
-      PREVIEW_BASE_URL: ${{ vars.PREVIEW_BASE_URL }}
+      PREVIEW_BASE_URL: ${{ needs.preview.outputs.url }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
