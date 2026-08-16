@@ -16,6 +16,8 @@ Long-stay rental supply in Venezuela lives in WhatsApp groups and Instagram: uns
 - Phone verification as a disabled port — contract only, no adapter.
 - Operator-enabled CSV portfolio import for seed brokers, producing drafts that photos are attached to afterwards.
 - Dismissible voluntary-contribution invitation linking to an external payment destination.
+- Indexable discovery surfaces: a landing page per curated (city, zone) pair, keyword-bearing URLs, sitemap, structured data.
+- Expired listings retain the visitor: a successful `noindex` page stating expiry plus active same-city suggestions, instead of a 404.
 
 ### Out of Scope
 
@@ -79,6 +81,10 @@ The reminder is the MVP's only background process; treat it as a first-class job
 | Contribution page abused for phishing under our brand | Med | Destination resolved server-side only; never accepted from a request parameter |
 | Contribution triggers Vercel Hobby commercial-use clause | High | Treated as the trigger to move to Vercel Pro before launch — see tracked debt in design |
 | Broker cannot export CSV UTF-8 from their spreadsheet | Med | Downloadable template, delimiter sniffing, BOM tolerance, actionable encoding error |
+| Organic search is the only channel and portals own the SERPs | High | Zone landing pages over the curated taxonomy; content public while contact stays gated |
+| 30-day expiry produces a stream of dead indexed URLs | High | Expired pages return 200 with `noindex` plus same-city suggestions; URL dropped from the sitemap |
+| Bulk-imported portfolios create thin, near-duplicate pages | Med | Minimum description length at publication; `noindex` below a content threshold |
+| Photo weight breaks the site on metered mobile data | High | Derivatives generated at upload by `sharp`, served from zero-egress R2; originals discarded; hard byte budget per surface |
 
 ## Rollback Plan
 

@@ -254,6 +254,53 @@ Voluntary contribution is a dismissible invitation and an external link. No paym
 
 The destination is server configuration, never request input. A contribution page that accepts a destination parameter lets an attacker phish under our own domain, and this product's entire value proposition is *you do not get scammed here*.
 
+### D11 — SEO is the distribution channel, not a polish task
+
+After the influencer launch, organic search is the only channel this product has. Tenants type "alquiler apartamento chacao" into Google, and paid portals own those results today. SEO is therefore a first-class architectural concern, not something to retrofit.
+
+**Public content, gated contact — these do not conflict.** The listing body (title, description, price, city, zone, photos) is public and indexable; only the WhatsApp number is gated behind registration, and it is already omitted server-side for anonymous requests. Google indexes everything that ranks without the contact ever leaking. This falls out of a decision already made, and it must not be undone by moving listing content behind the session gate.
+
+**Curated zones are a keyword asset.** Because zones are a finite, operator-maintained list, the set of (city, zone) pairs is known ahead of time and each pair becomes a statically generated landing page. This is the highest-leverage SEO surface in the project: long-tail queries with commercial intent and near-zero competition from portals that do not structure their catalog this way.
+
+**URLs carry the keywords and the city guarantee**: `/alquiler/<ciudad>/<zona>/<slug>-<id>`. Search filters live in query parameters so a filtered search is linkable and shareable — which matters more than usual here, because listings circulate by WhatsApp.
+
+**Expiry is an SEO liability, and the fix is also a conversion win.** A 30-day lifecycle means indexed URLs die continuously. An expired listing MUST NOT 404. It returns **200 with `noindex`**, states plainly that the listing expired, and shows active listings from the same zone. Rationale: someone arriving from Google on an expired listing typed the exact zone and the exact intent — they are the highest-value visitor the site receives. Throwing a 404 at them discards a tenant who was ready to reveal a contact. Index hygiene is handled by dropping the URL from the sitemap immediately, which is the signal that actually governs crawl budget; `410` would clean the index marginally faster while destroying the visitor.
+
+**Suggestions never cross city.** The same absolute city-isolation guarantee that governs search governs the suggestion block. Widen zone → city, never city → country.
+
+**Thin and duplicate content is now a real risk.** Bulk import lets one broker create forty near-identical listings. Minimum description length is enforced at publication, and listings below a content threshold carry `noindex` so a thin portfolio cannot drag the whole domain down.
+
+### D12 — Image derivatives generated at upload, not optimized on demand
+
+`sharp` is already in the publication pipeline to produce the dHash source buffer. It also generates the display derivatives there, which are stored in R2 alongside the listing. The platform's on-demand image optimizer is **not** used.
+
+Two reasons, and the second is a hard product ceiling:
+
+**Egress.** R2 charges zero egress; the hosting platform's image optimization is a metered resource on the free tier. Serving derivatives from R2 stays free at any traffic level, and traffic is precisely what success looks like.
+
+**Storage.** Originals are discarded after hashing and normalization. A phone photo is 3–8 MB; six per listing is roughly 30 MB, which against R2's 10 GB free tier caps the catalog at **~330 listings**. Storing only derivatives (a ~40 KB card thumbnail and a ~200 KB detail image per photo) puts the same tier at **~7,000 listings** — an order of magnitude more, for free. Nothing needs the original: the dHash is computed at upload and persisted as 64 bits, and no view renders above the detail size.
+
+### D13 — Spartan density over visual identity
+
+The reference point is a classifieds board, not a design showcase: information-dense, single column on mobile, system font stack, no carousel, no hero, no animation. Justified by the audience (mobile on metered, often expensive data), the product (people come for the catalog), and the team (one part-time founder).
+
+**But deliberately not retro.** Craigslist looks like 1996 because it never changed, not because ugliness causes speed. This product is new, unknown, and operating in a market where users already fear being scammed — a site that looks abandoned confirms that fear. The target is spartan and current, not spartan and dated.
+
+**The read path ships no JavaScript.** Browsing, searching, and filtering are server-rendered with URL parameters — no client-side filter layer. Client components are restricted to genuine interaction: photo upload, contact reveal, contribution dismissal, bulk import preview. This is what makes the classifieds feel and the mobile performance the same decision rather than two competing ones.
+
+### Performance Budget
+
+Hard numbers, verified on the preview deployment before each user-facing PR merges. A budget without a number is a wish.
+
+| Surface | Budget |
+|---|---|
+| Search results page | ≤ 150 KB total transfer |
+| Listing detail page | ≤ 500 KB total transfer including photos |
+| Card thumbnail | ≤ 40 KB |
+| Detail photo | ≤ 200 KB |
+| JavaScript on the read path | ≤ 30 KB |
+| LCP on a throttled 3G profile | ≤ 2.5 s |
+
 ## Security Boundaries
 
 Full threat matrix is **N/A** — no routing/shell/subprocess/VCS-automation/executable-classification boundary exists. The following boundaries require RED tests:
