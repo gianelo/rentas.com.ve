@@ -104,6 +104,26 @@ The system MUST apply identical validation and trust rules to a listing regardle
 - WHEN activation is attempted
 - THEN the system refuses to activate it until at least one photo is attached and passes trust checks
 
+### Requirement: Labelled, Reachable Form Controls
+
+The system MUST associate a persistent visible label with every publish-form control. The system MUST NOT use a placeholder as a control's only label. Controls MUST be at least 44px in their smallest interactive dimension.
+
+#### Scenario: Labels survive data entry
+
+- GIVEN a publisher filling the publish form
+- WHEN they enter a value into a field
+- THEN that field's label remains visible
+
+### Requirement: Rules Are Stated Where They Apply
+
+The system MUST state the cross-publisher duplicate-photo rule at the point of photo submission, rather than only on rejection or only in terms of service.
+
+#### Scenario: The photo rule is visible before submitting
+
+- GIVEN a publisher on the publish form
+- WHEN they reach the photo field
+- THEN the form states that photos already published by another account are rejected
+
 ### Requirement: Minimum Publishable Content
 
 The system MUST require, at minimum, a title, description, price, city, zone, `publisher_type`, and at least one photo before a listing can be published.
