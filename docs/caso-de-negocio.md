@@ -57,6 +57,10 @@ Cobrar desde el primer día hace ese arranque imposible, porque le pedís dinero
 
 Publicar, buscar y contactar. Ningún cobro de ningún tipo. El único objetivo es construir catálogo real en dos ciudades y demostrar que la gente efectivamente pide contactos.
 
+**Colaboración voluntaria, al estilo Wikipedia.** Hay un aviso descartable que invita a apoyar el proyecto, y un enlace a un medio de pago externo. Es importante entender qué *no* es: no es una tarifa, no es una suscripción y no habilita nada. Quien no colabora usa el producto exactamente igual que quien sí. El aviso nunca se interpone entre alguien y el contacto que vino a buscar, porque esa es la única métrica con la que se decide a los 6 meses si el producto sigue.
+
+No esperamos que esto financie el proyecto. Cubre, en el mejor caso, parte del costo de infraestructura.
+
 ### Después · si la métrica crece — tarifa baja por publicar o destacar
 
 Publicar sigue siendo barato; destacar una propiedad tiene un costo pequeño. Quien más lo va a pagar es el corredor que ya está recibiendo contactos de forma sostenida: tiene una razón medible para hacerlo, no una promesa.

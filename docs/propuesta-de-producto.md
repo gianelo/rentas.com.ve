@@ -57,6 +57,8 @@ El equipo es una sola persona a tiempo parcial. Esa es la restricción que defin
 2. **Buscar y filtrar** por ciudad, zona, precio y características.
 3. **Revelar el contacto** de WhatsApp del publicador una vez que el interesado se registra.
 4. **Vencimiento y renovación**: la publicación caduca a los 30 días, con aviso automático previo y renovación en un clic.
+5. **Carga masiva de cartera** para corredores aliados: suben un archivo con su portafolio, revisan los errores fila por fila, confirman, y después adjuntan las fotos. Se habilita cuenta por cuenta, no es de acceso libre.
+6. **Invitación a colaborar**, al estilo Wikipedia: un aviso descartable que propone apoyar el proyecto de forma voluntaria. No condiciona absolutamente nada.
 
 ### No incluye — fase 2
 
@@ -64,8 +66,9 @@ El equipo es una sola persona a tiempo parcial. Esa es la restricción que defin
 - Locales comerciales y oficinas
 - Agenda de visitas y chat interno
 - Favoritos y panel de estadísticas
-- Pagos, contratos y cualquier comisión
-- Carga masiva de carteras
+- Comisiones, tarifas por publicar, destacados, publicidad o cualquier muro de pago
+- Procesamiento de pagos dentro del producto — la colaboración se completa fuera
+- Habilitación automática de la carga masiva: la activa el operador por cuenta
 - Ciudades más allá de las dos de lanzamiento
 
 ---
@@ -147,7 +150,7 @@ El detalle completo está en el [resumen técnico](resumen-tecnico.md).
 |---|---|
 | Definición de producto | Cerrada |
 | Propuesta de cambio | Escrita |
-| Especificación funcional — 6 capacidades | Escrita |
+| Especificación funcional — 8 capacidades | Escrita |
 | Diseño técnico y elección de tecnología | Cerrado |
 | Desglose de tareas | Cerrado — 71 tareas en 9 entregas |
 | Implementación | Pendiente |

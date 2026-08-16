@@ -2,11 +2,11 @@
 
 ## Purpose
 
-A signed-in user publishes one long-stay residential listing at a time, in USD, with an explicit and always-visible publisher type. Nothing is inferred, converted, or bulk-loaded.
+A signed-in user publishes a long-stay residential listing in USD, with an explicit and always-visible publisher type. Nothing is inferred or converted. Multi-listing loading is not part of this capability: it lives in `broker-bulk-import`, which reuses this capability's use cases rather than bypassing them.
 
 ## Non-Goals
 
-Short-stay/tourist listings, commercial listings, multi-currency or bolivar conversion, bulk/CSV upload, visit scheduling.
+Short-stay/tourist listings, commercial listings, multi-currency or bolivar conversion, visit scheduling. Bulk/CSV import is specified in `broker-bulk-import`.
 
 ## Requirements
 
@@ -22,7 +22,7 @@ The system MUST require an authenticated session to create or edit a listing.
 
 ### Requirement: Mandatory, Non-Inferred Publisher Type
 
-The system MUST require an explicit `publisher_type` value of either `owner` or `broker` for every listing, with no default value. The system MUST NOT infer `publisher_type` from any other data. The system MUST display `publisher_type` on every view of the listing (search result and detail).
+The system MUST require an explicit `publisher_type` value of either `owner` or `broker` for every listing, with no default value. The system MUST NOT infer `publisher_type` from any other data. The system MUST display `publisher_type` on every view of the listing (search result and detail). For listings created by bulk import, `publisher_type` MUST be derived from the importing account and MUST NOT be readable from the uploaded file.
 
 #### Scenario: Missing publisher type is rejected
 
@@ -88,15 +88,21 @@ The system MUST scope listing creation to long-stay residential rentals. The sys
 - WHEN they look for a rental-type selector
 - THEN no short-stay, tourist, or commercial option is present in the form
 
-### Requirement: Single-Listing Manual Publication Only
+### Requirement: Uniform Validation Across Every Entry Path
 
-The system MUST support creating listings only one at a time through the standard publish flow. The system MUST NOT provide any bulk or CSV import capability.
+The system MUST apply identical validation and trust rules to a listing regardless of how it was created. A listing originating from bulk import MUST satisfy every requirement in this specification — publisher type, USD-only price, restricted city, curated zone, long-stay residential scope, and minimum publishable content — before it can become active. Bulk import MUST NOT expose an alternate write path that bypasses this capability's use cases.
 
-#### Scenario: No bulk import path exists
+#### Scenario: Bulk-imported listing is held to the same rules
 
-- GIVEN any user, including the founder loading seed broker portfolios
-- WHEN they look for a way to publish multiple listings in one submission
-- THEN no bulk or CSV upload feature exists — each listing is published individually
+- GIVEN a broker importing a row whose `zone` is not in the curated list for its `city`
+- WHEN the import is processed
+- THEN that row is rejected with the same validation rule the single-listing flow applies, and no listing is created for it
+
+#### Scenario: Bulk import cannot bypass minimum publishable content
+
+- GIVEN a listing created as a draft by bulk import with no photo attached
+- WHEN activation is attempted
+- THEN the system refuses to activate it until at least one photo is attached and passes trust checks
 
 ### Requirement: Minimum Publishable Content
 
