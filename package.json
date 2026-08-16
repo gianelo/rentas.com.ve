@@ -34,7 +34,8 @@
     "db:seed": "tsx src/shared/db/seed.ts",
     "db:test:up": "docker compose up -d --wait postgres",
     "db:test:down": "docker compose down -v",
-    "db:test:migrate": "drizzle-kit migrate --config drizzle.test.config.ts"
+    "db:test:migrate": "drizzle-kit migrate --config drizzle.test.config.ts",
+    "calibrate:photo-hash": "tsx src/modules/listing-trust/infrastructure/calibrate-photo-hash.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "1.11.3",
@@ -43,7 +44,8 @@
     "next": "15.5.23",
     "next-auth": "5.0.0-beta.32",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "sharp": "0.34.5"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.8",
