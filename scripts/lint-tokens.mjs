@@ -8,23 +8,43 @@
 // using CSS declaration syntax (`property: value;` — plain CSS, CSS
 // Modules, or a CSS-in-JS template literal). Declarations written as
 // JavaScript objects (e.g. `{ borderRadius: "12px" }`) are out of scope
-// for this iteration; the project's actual component styling approach is
-// decided in PR1b, and this script is extended then if needed.
+// for this iteration; PR1b-a's styling approach is CSS Modules (plain CSS
+// declaration syntax), which this script already reads natively.
 //
 // `src/styles/tokens.css` is exempt on purpose — it is where the token
 // values are legitimately declared. `design/reference/**` is exempt too:
 // it is a versioned prototype, explicitly never ported into production
-// component code (design.md, Phase 1b).
+// component code (design.md, Phase 1b). This script also reads
+// `src/styles/tokens.css` itself (not to lint it, but as the single
+// source of truth for two checks below).
 //
-// This script passes trivially today: `components/` and `app/` do not
-// exist yet (PR0a). It ships now, ahead of the first component (PR1b), so
-// no component is ever written without this guard already active.
+// Two checks run:
+//   1. Literal-value scan (tasks.md 1b.3) — no component style file may
+//      write a colour literal, a corner radius, a thumbnail dimension, or
+//      a type size as a value instead of a custom property.
+//   2. Theme contract (tasks.md 1b.4) — swapping data-theme on the root
+//      element must repaint every themed value, with none left behind.
+//      Verified statically: every custom property declared in the shipped
+//      light theme ([data-theme="menta"]) must also be declared in the
+//      shipped dark theme ([data-theme="oscuro"]), and vice versa, with a
+//      different value on each side. A property missing from one side, or
+//      identical on both, is exactly the kind of literal leak the
+//      inspector-flip criterion (SISTEMA.md) is meant to catch — an
+//      element carrying it would not repaint, and would retain its
+//      previous colour.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { extname, join, relative } from "node:path";
 
 const SCAN_ROOTS = ["components", "app"];
 const SCAN_EXTENSIONS = new Set([".css", ".tsx", ".ts"]);
+const TOKENS_CSS_PATH = "src/styles/tokens.css";
+const LAYOUT_SELECTOR = '[data-layout="compacto"]';
+const LIGHT_THEME_SELECTOR = '[data-theme="menta"]';
+const DARK_THEME_SELECTOR = '[data-theme="oscuro"]';
+// Thumbnail-geometry custom properties (design/reference/sistema/tokens.css):
+// mobile width/height and desktop width/height for the result-row thumbnail.
+const THUMBNAIL_TOKEN_NAMES = ["--tw", "--th", "--twd", "--thd"];
 
 const COLOUR_PROPERTIES = new Set([
   "color",
@@ -35,33 +55,78 @@ const COLOUR_PROPERTIES = new Set([
   "stroke",
 ]);
 
+// Shorthand properties that commonly embed a colour literal alongside other
+// values (e.g. `border: 1px solid #fff`), where the "value starts with
+// var(" check used for simple properties does not apply.
+const SHORTHAND_COLOUR_PROPERTIES = new Set([
+  "border",
+  "border-top",
+  "border-bottom",
+  "border-left",
+  "border-right",
+  "outline",
+  "box-shadow",
+]);
+
 const COLOUR_LITERAL_PATTERN = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\([^)]*\)/;
-const FIXED_PX_PATTERN = /^\d[\d.]*px$/;
+const ZERO_PATTERN = /^0(\.0+)?(px|%|em|rem)?$/;
 
 // Matches one CSS declaration and captures its property name and raw value.
-const DECLARATION_PATTERN =
-  /\b(color|background-color|background|border-color|fill|stroke|border-radius|font-size|width|height)\s*:\s*([^;]+);/g;
+const DECLARATION_PATTERN = new RegExp(
+  `\\b(${[...COLOUR_PROPERTIES, ...SHORTHAND_COLOUR_PROPERTIES, "border-radius", "font-size", "width", "height"].join("|")})\\s*:\\s*([^;]+);`,
+  "g",
+);
+
+/**
+ * Colour literals may appear inside a shorthand value alongside other
+ * tokens (e.g. `1px solid #fff`), and `var(...)` calls may legitimately
+ * carry a literal colour fallback (`var(--x, #fff)`), which is explicitly
+ * allowed. Stripping every well-formed `var(...)` call first means both
+ * simple and shorthand values can be tested the same way: whatever is left
+ * over must contain no colour literal.
+ */
+function containsLiteralColour(rawValue) {
+  const withoutVarCalls = rawValue.replace(/var\([^)]*\)/g, "");
+  return COLOUR_LITERAL_PATTERN.test(withoutVarCalls);
+}
+
+function isZero(value) {
+  return ZERO_PATTERN.test(value.trim());
+}
 
 /**
  * Decide whether a declaration's value is a forbidden literal.
- * A value that resolves through `var(...)` — with or without a literal
- * fallback — is always allowed; only a bare literal fails.
+ *
+ * @param {string} property
+ * @param {string} rawValue
+ * @param {Set<string>} thumbnailDimensions px values (e.g. "44px") pulled
+ *   from the shipped layout's --tw/--th/--twd/--thd tokens. Only a width or
+ *   height literal matching one of these is a "thumbnail dimension" under
+ *   D16 — every other fixed width/height is a structural layout dimension
+ *   (the 1100px container, the 240px sidebar, the 640px/420px detail
+ *   split...) that SISTEMA.md specifies as a literal on purpose and that
+ *   tokens.css does not tokenize.
  */
-function classifyViolation(property, rawValue) {
+function classifyViolation(property, rawValue, thumbnailDimensions) {
   const value = rawValue.trim();
-  if (value.startsWith("var(")) return null;
 
-  if (COLOUR_PROPERTIES.has(property) && COLOUR_LITERAL_PATTERN.test(value)) {
-    return "colour literal (hex or rgb/rgba/hsl/hsla function)";
+  if (COLOUR_PROPERTIES.has(property) || SHORTHAND_COLOUR_PROPERTIES.has(property)) {
+    return containsLiteralColour(value)
+      ? "colour literal (hex or rgb/rgba/hsl/hsla function)"
+      : null;
   }
   if (property === "border-radius") {
-    return "corner radius literal";
+    if (isZero(value)) return null;
+    return value.startsWith("var(") ? null : "corner radius literal";
   }
   if (property === "font-size") {
-    return "type size literal";
+    return value.startsWith("var(") ? null : "type size literal";
   }
-  if ((property === "width" || property === "height") && FIXED_PX_PATTERN.test(value)) {
-    return "thumbnail/dimension literal (fixed px width or height)";
+  if (property === "width" || property === "height") {
+    if (isZero(value)) return null;
+    return thumbnailDimensions.has(value)
+      ? "thumbnail dimension literal (matches src/styles/tokens.css's --tw/--th/--twd/--thd — use the custom property, not the value)"
+      : null;
   }
   return null;
 }
@@ -88,7 +153,7 @@ function collectFiles(root) {
   return files;
 }
 
-function findViolations(filePath) {
+function findViolations(filePath, thumbnailDimensions) {
   const content = readFileSync(filePath, "utf-8");
   const lines = content.split("\n");
   /** @type {{ file: string, line: number, rule: string, snippet: string }[]} */
@@ -99,7 +164,7 @@ function findViolations(filePath) {
     let match = DECLARATION_PATTERN.exec(lineText);
     while (match) {
       const [, property, rawValue] = match;
-      const rule = classifyViolation(property, rawValue);
+      const rule = classifyViolation(property, rawValue, thumbnailDimensions);
       if (rule) {
         violations.push({
           file: relative(process.cwd(), filePath),
@@ -115,7 +180,93 @@ function findViolations(filePath) {
   return violations;
 }
 
+/** Extracts the raw declaration body of a `selector { ... }` block (first match only). */
+function extractBlock(cssText, selector) {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`${escaped}\\s*\\{([^}]*)\\}`);
+  const match = cssText.match(pattern);
+  return match ? match[1] : null;
+}
+
+function parseCustomProperties(blockBody) {
+  const declarations = new Map();
+  const pattern = /(--[\w-]+)\s*:\s*([^;]+);/g;
+  let match = pattern.exec(blockBody);
+  while (match) {
+    declarations.set(match[1], match[2].trim());
+    match = pattern.exec(blockBody);
+  }
+  return declarations;
+}
+
+function readTokensCss() {
+  try {
+    return readFileSync(TOKENS_CSS_PATH, "utf-8");
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+/** tasks.md 1b.4 — the theme-contract check. */
+function checkThemeContract(cssText) {
+  if (cssText === null) {
+    return [`${TOKENS_CSS_PATH} not found — cannot verify the theme contract (1b.4).`];
+  }
+
+  const lightBlock = extractBlock(cssText, LIGHT_THEME_SELECTOR);
+  const darkBlock = extractBlock(cssText, DARK_THEME_SELECTOR);
+  const issues = [];
+
+  if (!lightBlock) issues.push(`${TOKENS_CSS_PATH}: missing ${LIGHT_THEME_SELECTOR} block.`);
+  if (!darkBlock) issues.push(`${TOKENS_CSS_PATH}: missing ${DARK_THEME_SELECTOR} block.`);
+  if (issues.length > 0) return issues;
+
+  const light = parseCustomProperties(lightBlock);
+  const dark = parseCustomProperties(darkBlock);
+  const allKeys = new Set([...light.keys(), ...dark.keys()]);
+
+  for (const key of allKeys) {
+    if (!light.has(key)) {
+      issues.push(
+        `${TOKENS_CSS_PATH}: "${key}" is declared in ${DARK_THEME_SELECTOR} but not ${LIGHT_THEME_SELECTOR} — an element using it would keep the dark value when swapped to menta.`,
+      );
+      continue;
+    }
+    if (!dark.has(key)) {
+      issues.push(
+        `${TOKENS_CSS_PATH}: "${key}" is declared in ${LIGHT_THEME_SELECTOR} but not ${DARK_THEME_SELECTOR} — an element using it would keep its previous colour when swapped to oscuro.`,
+      );
+      continue;
+    }
+    if (light.get(key) === dark.get(key)) {
+      issues.push(
+        `${TOKENS_CSS_PATH}: "${key}" resolves to the same value in ${LIGHT_THEME_SELECTOR} and ${DARK_THEME_SELECTOR} (${light.get(key)}) — swapping data-theme would not repaint it.`,
+      );
+    }
+  }
+
+  return issues;
+}
+
+function getThumbnailDimensionValues(cssText) {
+  if (cssText === null) return new Set();
+  const layoutBlock = extractBlock(cssText, LAYOUT_SELECTOR);
+  if (!layoutBlock) return new Set();
+  const declarations = parseCustomProperties(layoutBlock);
+  const values = new Set();
+  for (const name of THUMBNAIL_TOKEN_NAMES) {
+    const value = declarations.get(name);
+    if (value) values.add(value);
+  }
+  return values;
+}
+
 function main() {
+  const tokensCss = readTokensCss();
+  const thumbnailDimensions = getThumbnailDimensionValues(tokensCss);
+  const themeContractIssues = checkThemeContract(tokensCss);
+
   const files = SCAN_ROOTS.flatMap((root) => collectFiles(root));
 
   if (files.length === 0) {
@@ -123,22 +274,41 @@ function main() {
       "lint:tokens: 0 component style files scanned under components/, app/ " +
         "(directories do not exist yet) — passing trivially.",
     );
+  } else {
+    console.log(`lint:tokens: ${files.length} component style file(s) scanned.`);
+  }
+
+  const styleViolations = files.flatMap((file) => findViolations(file, thumbnailDimensions));
+
+  if (styleViolations.length === 0 && themeContractIssues.length === 0) {
+    console.log(
+      "lint:tokens: no literal values found; the theme contract holds across " +
+        `${LIGHT_THEME_SELECTOR} and ${DARK_THEME_SELECTOR} (1b.3, 1b.4).`,
+    );
     process.exit(0);
   }
 
-  const allViolations = files.flatMap((file) => findViolations(file));
-
-  if (allViolations.length === 0) {
-    console.log(`lint:tokens: ${files.length} file(s) scanned, no literal values found.`);
-    process.exit(0);
+  if (styleViolations.length > 0) {
+    console.error(
+      "\nlint:tokens: literal design values found — use a CSS custom property (D16).\n",
+    );
+    for (const violation of styleViolations) {
+      console.error(`  ${violation.file}:${violation.line}  [${violation.rule}]`);
+      console.error(`    ${violation.snippet}`);
+    }
   }
 
-  console.error("lint:tokens: literal design values found — use a CSS custom property (D16).\n");
-  for (const violation of allViolations) {
-    console.error(`  ${violation.file}:${violation.line}  [${violation.rule}]`);
-    console.error(`    ${violation.snippet}`);
+  if (themeContractIssues.length > 0) {
+    console.error(
+      "\nlint:tokens: theme contract violations — swapping data-theme would not repaint every value (D16/1b.4).\n",
+    );
+    for (const issue of themeContractIssues) {
+      console.error(`  ${issue}`);
+    }
   }
-  console.error(`\n${allViolations.length} violation(s) in ${files.length} file(s) scanned.`);
+
+  const total = styleViolations.length + themeContractIssues.length;
+  console.error(`\n${total} violation(s) found.`);
   process.exit(1);
 }
 

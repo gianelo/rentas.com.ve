@@ -1,0 +1,31 @@
+/* Listing-detail split (tasks.md 1b.13, SISTEMA.md "Ficha del aviso" —
+   "Layout escritorio: grid 640px 1fr" with a 420px sticky data column;
+   "escritorio: foto de 640×360 ... Derecha: tarjeta sticky"). Below the
+   breakpoint, media and data stack in a single column. */
+.split {
+  display: grid;
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .split {
+    grid-template-columns: 640px 420px;
+    gap: 32px;
+  }
+}
+
+.media {
+  min-width: 0;
+}
+
+.data {
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .data {
+    position: sticky;
+    top: 24px;
+    align-self: start;
+  }
+}

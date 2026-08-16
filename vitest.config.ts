@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 // Coverage policy (design.md, "Coverage policy"): no repository-wide
@@ -6,9 +7,31 @@ import { defineConfig } from "vitest/config";
 // every invariant. infrastructure/ and app/ carry no coverage target; they
 // are exercised by the integration and E2E layers instead.
 export default defineConfig({
+  // tsconfig.json sets "jsx": "preserve" for Next.js's own bundler. Vite 8's
+  // default oxc transform needs an actual JSX transform to run component
+  // tests (app/layout.test.tsx onward, PR1b-a) — this overrides it for the
+  // test run only, independent of the Next.js build's own JSX handling.
+  oxc: {
+    jsx: { runtime: "automatic" },
+  },
+  // Mirrors tsconfig.json's "@/*" -> "./src/*" path alias (Next.js resolves
+  // it through the bundler; Vite needs it declared separately).
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
   test: {
     environment: "node",
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    // Widened in PR1b-a: components/ and app/ now carry their own tests
+    // (layout primitives, root-shell landmarks). They stay outside the
+    // coverage floor below (design.md, "Coverage policy" — app/ and
+    // infrastructure/ carry no percentage target).
+    include: [
+      "src/**/*.{test,spec}.{ts,tsx}",
+      "components/**/*.{test,spec}.{ts,tsx}",
+      "app/**/*.{test,spec}.{ts,tsx}",
+    ],
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],

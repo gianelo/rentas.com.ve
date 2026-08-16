@@ -1,0 +1,23 @@
+/* Desktop container: 1100px centered, inside the 1280px viewport SISTEMA.md
+   is designed against ("Layout de escritorio" — Contenedor: 1100px
+   centrado). 1100px is a structural layout width, not one of D16's four
+   tokenized categories (colour, corner radius, thumbnail dimension, type
+   size) — SISTEMA.md itself states it as a literal, and tokens.css does not
+   declare it as a custom property.
+
+   Below the breakpoint the container is fluid full-width with a modest
+   inline safety margin. Neither SISTEMA.md nor design.md names an exact
+   breakpoint value ("un solo punto de quiebre relevante", no pixel given);
+   768px is this component's own choice, flagged as an open question in the
+   apply report for the design owner to confirm or adjust. */
+.container {
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+
+@media (min-width: 768px) {
+  .container {
+    max-width: 1100px;
+    padding-inline: 0;
+  }
+}
