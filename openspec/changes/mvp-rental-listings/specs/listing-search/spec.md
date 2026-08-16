@@ -58,6 +58,42 @@ The system MUST exclude expired listings and auto-hidden (reported) listings fro
 - WHEN a visitor searches with filters that would otherwise match it
 - THEN the hidden listing does not appear in the results
 
+### Requirement: Indexable Zone Landing Pages
+
+The system MUST expose a crawlable, server-rendered landing page for every (city, zone) pair in the curated taxonomy, listing that zone's active listings. Each landing page MUST be reachable by a search-engine crawler without JavaScript execution and MUST appear in the sitemap.
+
+#### Scenario: Zone landing page renders without client-side scripting
+
+- GIVEN a curated zone with active listings
+- WHEN a crawler requests that zone's landing page and executes no JavaScript
+- THEN the response body already contains that zone's active listings
+
+#### Scenario: Zone landing page respects city isolation
+
+- GIVEN a zone landing page for a `Maracaibo` zone
+- WHEN it is rendered
+- THEN every listing shown has `city = Maracaibo`
+
+### Requirement: Linkable, Keyword-Bearing URLs
+
+The system MUST place city and zone in the URL path for listing and zone pages, and MUST express search filters as query parameters so that a filtered search can be copied, shared, and reopened with the same results.
+
+#### Scenario: A shared filtered search reproduces its results
+
+- GIVEN a visitor who applied city, zone, and price filters
+- WHEN they copy the resulting URL and another visitor opens it
+- THEN the second visitor sees the same filter selection applied
+
+### Requirement: Search Results Are Server-Rendered
+
+The system MUST render search results on the server. The system MUST NOT require client-side JavaScript to produce, filter, or paginate the result list.
+
+#### Scenario: Results are present with scripting disabled
+
+- GIVEN a visitor whose browser does not execute JavaScript
+- WHEN they submit a search
+- THEN the results are present in the served response
+
 ### Requirement: Publisher Type Visible in Results
 
 The system MUST display each result's `publisher_type` (owner or broker) alongside its other summary information.

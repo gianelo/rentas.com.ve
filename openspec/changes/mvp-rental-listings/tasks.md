@@ -4,10 +4,10 @@
 
 | Field | Value |
 |-------|-------|
-| Estimated changed lines | ~4,600–6,600 total (greenfield, 8 capabilities) |
+| Estimated changed lines | ~5,100–7,400 total (greenfield, 8 capabilities) |
 | 400-line budget risk | High |
 | Chained PRs recommended | Yes |
-| Suggested split | PR0 → PR1 → PR2 → PR3 → PR4 → PR5 → PR6 → PR7 → PR8 → PR9 → PR10 |
+| Suggested split | PR0 → PR1 → PR2 → PR3 → PR4 → PR5 → PR6 → PR7 → PR8 → PR9 → PR10 → PR11 |
 | Delivery strategy | ask-on-risk |
 | Chain strategy | stacked-to-main |
 
@@ -31,6 +31,7 @@ Chain strategy: pending
 | PR8 Trust: reporting/auto-hide | 250–400 | Low |
 | PR9 Broker bulk import | 650–950 | High — likely needs its own split |
 | PR10 Voluntary contribution | 120–200 | Low |
+| PR11 Discovery & SEO surfaces | 450–650 | Medium |
 
 PR9 depends only on PR3 (publication) and PR4 (trust), not on PR5–PR8. It is placed last to keep the stack linear, but it can be pulled forward if seed brokers need to load portfolios while the rest is still being built. PR10 depends on nothing beyond the app shell and can ship at any point — but see the D8 licensing decision in the design before shipping it.
 
@@ -49,6 +50,7 @@ PR9 depends only on PR3 (publication) and PR4 (trust), not on PR5–PR8. It is p
 | 8 | Reporting, auto-hide, operator restore | PR8 | `pnpm test -- trust-reporting` | Report flow x3 accounts on preview | `src/modules/listing-trust/**` (reporting only) |
 | 9 | Operator-gated CSV import, whole-file validation, preview, drafts, idempotency | PR9 | `pnpm test -- bulk-import` | Import a real broker portfolio on preview deploy | `src/modules/broker-bulk-import/**`, draft-state migration |
 | 10 | Dismissible contribution invitation + external destination page | PR10 | `pnpm test -- contribution` | Invitation renders and dismisses on preview | `src/modules/voluntary-contribution/**` |
+| 11 | Zone landing pages, URL scheme, expired-listing retention page, sitemap, structured data | PR11 | `pnpm test -- discovery` | Crawl preview with JS disabled; budget check on preview | `app/(discovery)/**`, sitemap/robots routes |
 
 ## Phase 0: Bootstrap & Toolchain (PR0)
 
@@ -90,6 +92,9 @@ PR9 depends only on PR3 (publication) and PR4 (trust), not on PR5–PR8. It is p
 - [ ] 3.7 GREEN: `sharp`-based upload guard before persistence; R2 presigned PUT adapter
 - [ ] 3.8 Schema: `listing_photo` table
 - [ ] 3.9 Publish form UI + listing detail/card rendering `publisher_type` visibly
+- [ ] 3.10 RED: after upload, only derivatives are persisted — the original file is not retained (D12)
+- [ ] 3.11 GREEN: `sharp` emits a card thumbnail (≤ 40 KB) and a detail image (≤ 200 KB) at upload; both stored in R2; platform on-demand image optimization is not used
+- [ ] 3.12 RED: derivative dimensions and byte budgets hold for a portrait, a landscape, and an oversized source photo
 
 ## Phase 4: Trust — Photo-Hash Dedup (PR4)
 
@@ -193,7 +198,28 @@ Blocked on the D8 licensing decision in the design. Do not ship before it is res
 - [ ] 10.7 GREEN: contribution page — payment method and destination shown on-page, external link or code, no payment fields
 - [ ] 10.8 Confirm go/pivot reporting still returns unique tenant-listing reveal pairs, unchanged by contribution data
 
-## Phase 11: Cleanup
+## Phase 11: Discovery & SEO Surfaces (PR11)
 
-- [ ] 11.1 README: setup, env vars, deploy steps
-- [ ] 11.2 Confirm `pnpm test`, `test:unit`, `test:integration`, `test:e2e` all pass end to end
+Depends on PR5 (search) and PR7 (lifecycle). Carries D11 and the performance budget.
+
+- [ ] 11.1 GREEN: URL scheme `/alquiler/<ciudad>/<zona>/<slug>-<id>`; filters as query parameters
+- [ ] 11.2 RED: a copied filtered-search URL reopens with the same filter selection applied
+- [ ] 11.3 RED: search results are present in the served response with scripting disabled
+- [ ] 11.4 GREEN: server-rendered search — no client-side filter or pagination layer
+- [ ] 11.5 RED: a zone landing page's response body contains that zone's active listings without JavaScript execution
+- [ ] 11.6 RED: a `Maracaibo` zone landing page contains zero `Distrito Capital` listings
+- [ ] 11.7 GREEN: statically generated landing page per curated (city, zone) pair
+- [ ] 11.8 RED: an expired listing URL returns a successful response stating expiry, with same-zone active listings shown
+- [ ] 11.9 RED: the expired listing page carries `noindex` and its URL is absent from the sitemap
+- [ ] 11.10 RED: a zone with no active listings widens to the same city only; a city with none shows no suggestions at all
+- [ ] 11.11 RED: an anonymous visitor sees no WhatsApp value on any suggested listing
+- [ ] 11.12 GREEN: `SuggestActiveListingsUseCase` — zone first, then city, never beyond the city
+- [ ] 11.13 GREEN: dynamic sitemap over active listings and zone pages; `robots` route; expired URLs dropped on expiry
+- [ ] 11.14 GREEN: schema.org structured data on the listing detail page
+- [ ] 11.15 RED: a listing below the minimum content threshold carries `noindex` (thin-content guard for bulk-imported portfolios)
+- [ ] 11.16 Verify the performance budget on the preview deployment: search ≤ 150 KB, detail ≤ 500 KB, read-path JS ≤ 30 KB, LCP ≤ 2.5 s on throttled 3G
+
+## Phase 12: Cleanup
+
+- [ ] 12.1 README: setup, env vars, deploy steps
+- [ ] 12.2 Confirm `pnpm test`, `test:unit`, `test:integration`, `test:e2e` all pass end to end

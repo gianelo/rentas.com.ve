@@ -68,6 +68,48 @@ The system MUST remove an expired listing from search results while retaining it
 - WHEN a visitor searches with filters that match it
 - THEN the renewed listing appears in the results again
 
+### Requirement: Expired Listing Page Retains the Visitor
+
+The system MUST serve an expired listing's URL with a successful response that states the listing has expired, rather than returning a not-found or gone response. That page MUST show active listings from the same zone as suggestions, and MUST be excluded from search-engine indexing. The system MUST remove the expired URL from the sitemap.
+
+#### Scenario: Visitor arriving from a search engine is offered live inventory
+
+- GIVEN a listing that has expired and whose URL is indexed by a search engine
+- WHEN a visitor opens that URL
+- THEN the page loads successfully, states that the listing expired, and lists active listings from the same zone
+
+#### Scenario: Expired listing page is not indexable
+
+- GIVEN an expired listing page
+- WHEN a search engine crawler requests it
+- THEN the page instructs crawlers not to index it, and the URL is absent from the sitemap
+
+### Requirement: Suggestions Never Cross City
+
+The system MUST draw suggestions on an expired listing page only from the expired listing's own city. When the zone has no active listings, the system MAY widen the suggestions to other zones within the same city, and MUST NOT widen beyond that city.
+
+#### Scenario: Empty zone widens to the city, not beyond
+
+- GIVEN an expired `Maracaibo` listing whose zone currently has no active listings
+- WHEN its page is served
+- THEN any suggestions shown are active `Maracaibo` listings, and no `Distrito Capital` listing appears
+
+#### Scenario: No suggestions rather than a cross-city suggestion
+
+- GIVEN an expired listing whose entire city has no other active listings
+- WHEN its page is served
+- THEN the page shows no suggestions at all rather than offering a listing from the other city
+
+### Requirement: Suggestions Do Not Bypass the Contact Gate
+
+The system MUST apply the same contact-reveal gating to suggested listings that it applies everywhere else.
+
+#### Scenario: Anonymous visitor sees suggestions without contact details
+
+- GIVEN an anonymous visitor on an expired listing page showing suggestions
+- WHEN the suggestions are rendered
+- THEN no WhatsApp contact value is present for any suggested listing
+
 ### Requirement: Reminder Job Run Recording
 
 The system MUST record each execution of the scheduled reminder process, including: the run's timestamp, the number of reminder emails successfully sent, and any failures encountered during that run (with enough detail to diagnose them). The system MUST NOT allow the job to fail without leaving a record.

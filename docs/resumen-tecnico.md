@@ -130,7 +130,7 @@ El paso al plan pago, de unos 20 dólares al mes, es **condición previa obligat
 
 ## Plan de entrega
 
-108 tareas ordenadas por dependencias, entre 4.600 y 6.600 líneas estimadas, repartidas en once entregas encadenadas — cada una construida sobre la anterior y desplegable por separado.
+127 tareas ordenadas por dependencias, entre 5.100 y 7.400 líneas estimadas, repartidas en doce entregas encadenadas — cada una construida sobre la anterior y desplegable por separado.
 
 | | Entrega | Contenido |
 |---|---|---|
@@ -145,12 +145,17 @@ El paso al plan pago, de unos 20 dólares al mes, es **condición previa obligat
 | PR8 | Confianza: reportes | Ocultado automático y restitución |
 | PR9 | Carga masiva de cartera | CSV validado, vista previa, borradores, idempotencia |
 | PR10 | Colaboración voluntaria | Invitación descartable y destino externo |
+| PR11 | Descubrimiento y SEO | Páginas por zona, URLs, mapa del sitio, página de vencido |
 
 Publicación (PR3), ciclo de vida (PR7) y carga masiva (PR9) son las tres entregas más pesadas y probablemente haya que subdividirlas al implementarlas.
 
 **La carga masiva no es una segunda vía de publicación.** Lee el archivo, valida, y crea borradores; después delega en los mismos casos de uso de publicación y en la misma tubería de confianza. No tiene escritura propia sobre la tabla de publicaciones, porque una regla que quien llama puede olvidar deja de ser una garantía. El tipo de publicador se deriva de la cuenta y **no se puede leer del archivo**: un corredor que escriba «propietario» en una columna no se convierte en propietario.
 
 Las fotos nunca viajan dentro del CSV. Los borradores las reciben por la misma subida firmada a R2 que ya usa el alta individual, lo que reutiliza la verificación de duplicados sin tocarla y mantiene las imágenes fuera de la función serverless.
+
+**Las variantes de imagen se generan al subir, no al servir.** `sharp` ya está en la tubería para calcular la huella perceptual, así que produce ahí mismo la miniatura de tarjeta y la imagen de ficha, y ambas se guardan en R2. El original se descarta después de hashearlo. La razón es un techo de producto: guardar los originales de seis fotos por publicación agota los 10 GB gratuitos de R2 alrededor de las **330 publicaciones**; guardando solo variantes, el mismo plan sostiene unas **7.000**.
+
+**El camino de lectura no manda JavaScript.** Buscar y filtrar ocurre en el servidor con parámetros de URL, sin capa de filtrado en el cliente. Los componentes cliente quedan reservados para interacción real: subir fotos, revelar contacto, descartar la invitación, previsualizar una importación. Esa única decisión resuelve a la vez la sensación de tablón de clasificados, la velocidad en datos móviles caros, y que cada búsqueda sea una URL compartible por WhatsApp e indexable por Google.
 
 ---
 
