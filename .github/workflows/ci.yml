@@ -211,6 +211,17 @@ jobs:
             *) echo "::error::expected Postgres 18, got $version"; exit 1 ;;
           esac
 
+      # Applies the same generated migrations (drizzle/) the app ships, so
+      # the constraints under test — zone's UNIQUE(id, city_id), D5 — are
+      # the real shipped schema, not a hand-rolled copy that could drift.
+      # DATABASE_URL is set only for this step: drizzle-kit's own CLI reads
+      # it from dbCredentials and has no pooled-endpoint requirement (that
+      # guard lives in src/shared/db/client.ts, the app runtime, not here).
+      - name: Apply migrations to the test container
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+        run: pnpm db:migrate
+
       - name: Integration tests
         run: |
           # `if cmd` rather than `out=$(cmd); code=$?` on purpose: Actions runs
