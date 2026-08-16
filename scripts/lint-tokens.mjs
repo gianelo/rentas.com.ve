@@ -200,14 +200,14 @@ function findViolations(filePath, thumbnailDimensions) {
 }
 
 /** Extracts the raw declaration body of a `selector { ... }` block (first match only). */
-function extractBlock(cssText, selector) {
+export function extractBlock(cssText, selector) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const pattern = new RegExp(`${escaped}\\s*\\{([^}]*)\\}`);
   const match = cssText.match(pattern);
   return match ? match[1] : null;
 }
 
-function parseCustomProperties(blockBody) {
+export function parseCustomProperties(blockBody) {
   const declarations = new Map();
   const pattern = /(--[\w-]+)\s*:\s*([^;]+);/g;
   let match = pattern.exec(blockBody);
@@ -243,7 +243,7 @@ function readTokensCss() {
  * The depth bound both terminates a circular reference and keeps a
  * pathological chain from hanging the build.
  */
-function resolveValue(value, dictionary, depth = 0) {
+export function resolveValue(value, dictionary, depth = 0) {
   if (depth > 8) return value;
 
   const resolved = value.replace(/var\(\s*(--[\w-]+)\s*(?:,[^)]*)?\)/g, (whole, name) => {
@@ -255,7 +255,7 @@ function resolveValue(value, dictionary, depth = 0) {
 }
 
 /** Every custom property declared anywhere in the file, for resolution only. */
-function collectAllCustomProperties(cssText) {
+export function collectAllCustomProperties(cssText) {
   const declarations = new Map();
   const pattern = /(--[\w-]+)\s*:\s*([^;]+);/g;
   let match = pattern.exec(cssText);

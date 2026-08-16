@@ -1,0 +1,27 @@
+/* SISTEMA.md "Badge / etiqueta": 11px/700, letter-spacing .06em, uppercase,
+   pill radius. Fill vs border is the whole distinction — colour is never
+   the signal (design.md D15/D16, tasks.md 1b.7). */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--rs);
+  font-family: var(--sans);
+  font-size: var(--badge-fs);
+  font-weight: var(--badge-fw);
+  letter-spacing: var(--badge-ls);
+  text-transform: uppercase;
+}
+
+/* Owner: filled --ink, inverted text --surface. */
+.owner {
+  background: var(--ink);
+  color: var(--surface);
+  border: none;
+}
+
+/* Broker: outlined --strong, text --soft, no fill. */
+.broker {
+  background: none;
+  border: 1px solid var(--strong);
+  color: var(--soft);
+}
