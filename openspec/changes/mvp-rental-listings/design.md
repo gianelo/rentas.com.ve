@@ -262,12 +262,17 @@ No pipeline exists today. These gates run on every pull request and block merge:
 | Unit | `pnpm test:unit` | — |
 | Coverage floor | `pnpm test:coverage` | domain + application ≥ 90% |
 | Integration | `pnpm test:integration` | Postgres service container, Neon's major version |
+| Build | `pnpm build` | — |
 | Bundle budget | `pnpm budget:bundle` | build output |
 | Token contract (D16) | `pnpm lint:tokens` | — |
 | E2E + crawlability | `pnpm test:e2e` | preview deployment URL |
 | Lighthouse budget | `pnpm budget:lighthouse` | preview deployment URL |
 
 **A budget nobody measures automatically is a wish.** `budget:bundle` reads the build output and fails when read-path first-load JS exceeds 30 KB — fast, needs no deployment, and catches the most common regression (someone converts a server component to a client component). `budget:lighthouse` runs against the preview deployment and fails on LCP over 2.5 s on a throttled 3G profile, search transfer over 150 KB, or detail transfer over 500 KB. Image derivative budgets are already asserted at generation time in unit tests, so they need no separate gate.
+
+**`build` is a gate because type-checking is not building.** This was learned the expensive way: a production deploy failed on `Module not found: Can't resolve '@/modules/...'` while every gate was green, because nothing in the gate set compiled the application. `tsc --noEmit` resolved the path alias through tsconfig `paths`; the bundler resolved it through a different mechanism and did not. Module resolution, bundler configuration, and server/client boundary violations are all invisible to the other gates and all fatal at deploy. The gate costs one build and no deployment.
+
+**Toolchain constraint discovered at the same time: TypeScript stays on the 5.x line.** TypeScript 7 (the native port) was installed because it was newest, and Next.js 15.5 does not support it — it removed `baseUrl`, which is how Next derives bundler aliases from tsconfig `paths`, and it does not expose the JavaScript compiler API that Next's `next.config.ts` loader calls (`Cannot read properties of undefined (reading 'fileExists')`). This is D1's own reasoning applied to a version number: the scarcest resource is part-time hours, and a toolchain the framework does not support turns every bug into three nights. Re-check Next.js's supported TypeScript versions before raising this ceiling.
 
 **`lint:tokens` is the enforcement half of D16.** It fails when a component stylesheet contains a colour literal, a corner radius, a thumbnail dimension, or a type size written as a value rather than a custom property. It costs no deployment and runs in milliseconds. Without it, D16 is a convention — and a convention that every future component must remember is precisely what this codebase's guiding principle rejects.
 

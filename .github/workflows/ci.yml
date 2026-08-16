@@ -103,6 +103,34 @@ jobs:
       - name: Unit tests + coverage floor (90% domain/application)
         run: pnpm test:coverage
 
+  # Added after a production deploy failed on `Module not found: '@/...'`
+  # while every existing gate was green. Nothing in the gate set compiled the
+  # application, so a whole class of failure — module resolution, bundler
+  # config, server/client boundary violations — could only ever be discovered
+  # by deploying. Type-checking is not building.
+  build:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      # src/shared/db/client.ts resolves and validates DATABASE_URL at module
+      # load, so the build needs one present. This value is deliberately fake
+      # and unroutable: the build must never touch a real database, but it must
+      # still exercise assertPooledConnectionString, so a change that breaks the
+      # pooled-endpoint guard fails here rather than at deploy time.
+      DATABASE_URL: postgresql://ci:ci@ep-ci-build-0000-pooler.invalid.neon.tech/ci?sslmode=require
+      AUTH_SECRET: build-time-placeholder-not-a-real-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
   integration:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
