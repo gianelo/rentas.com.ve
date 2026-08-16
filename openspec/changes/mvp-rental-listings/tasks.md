@@ -8,13 +8,12 @@
 | 400-line budget risk | High |
 | Chained PRs recommended | Yes |
 | Suggested split | PR0a → PR0b → PR0c → PR1 → PR1b → PR2 → PR3 → PR4 → PR5 → PR6 → PR7 → PR8 → PR9 → PR10 → PR11 |
-| Delivery strategy | ask-on-risk |
+| Delivery strategy | auto-chain |
 | Chain strategy | stacked-to-main |
 
-Decision needed before apply: Yes
-Chained PRs recommended: Yes
-Chain strategy: pending
-400-line budget risk: High
+Session preflight collected 2026-08-16: execution mode `auto`, artifact store `hybrid`, delivery `auto-chain`, chain `stacked-to-main`, review budget 400 lines.
+
+**Note on the 400-line budget.** It measures *authored* lines — what a human has to read. The native attempt runtime counts generated content too, so a slice that adds dependencies will report a much larger number because of `pnpm-lock.yaml`. Lockfiles are trusted, not reviewed. Where the two disagree, the authored count governs the review decision and the discrepancy is recorded rather than papered over.
 
 ### Per-slice estimate
 
@@ -42,9 +41,11 @@ PR9 depends only on PR3 (publication) and PR4 (trust), not on PR5–PR8. It is p
 
 | Unit | Goal | Likely PR | Focused test command | Runtime harness | Rollback boundary |
 |---|---|---|---|---|---|
-| 0 | Toolchain, Drizzle/Auth.js scaffold, CI gates, config.yaml F1, F2 re-verify | PR0 | `pnpm test` (empty pass) | `pnpm dev` boots, deploys to Vercel, CI green on a throwaway PR | Revert repo to pre-scaffold state |
+| 0a | Toolchain, test harness, gate scripts, config.yaml F1, F2 re-verify | PR0a | `pnpm test` (empty pass) | `pnpm lint`, `pnpm lint:tokens`, `pnpm tsc --noEmit` all clean | Revert repo to pre-scaffold state |
+| 0b | Drizzle config, Neon client, Auth.js v5 + Google + Drizzle adapter | PR0b | `pnpm test` | Migrations apply to a Neon branch | `drizzle/**`, `src/shared/db/**`, auth config |
+| 0c | Vercel deploy, CI pipeline, Postgres service container, gate-failure proof | PR0c | `pnpm test` | CI green on a throwaway PR; every gate proven to fail when violated | `.github/**`, `vercel.json` |
 | 1 | Google sign-in, session guard, disabled phone-verification port | PR1 | `pnpm test:unit -- identity` | Manual Google OAuth sign-in on deployed preview | `src/modules/identity/**`, `app/(auth)/**` |
-| 1b | Design tokens (`compacto` + `menta`), atoms, three-level buttons, result row, a11y baseline, D16 token contract | PR1b | `pnpm test -- design-system` | Render at 360px and 1280px on preview; count ten rows above 640px; flip `data-theme` in the inspector; contrast and focus audit | `src/styles/tokens.css`, `components/atoms/**` |
+| 1b | Design tokens (`compacto` + `menta`), atoms, three-level buttons, result row, a11y baseline, D16 token contract | PR1b | `pnpm test -- design-system` | Render at 360px and 1280px on preview; measure the result row against its 96px height bound; flip `data-theme` in the inspector; contrast and focus audit | `src/styles/tokens.css`, `components/atoms/**` |
 | 2 | City/zone schema, seed, cascading select | PR2 | `pnpm test:integration -- zone` | Seed script run against Neon branch | `drizzle/*_zones.sql`, seed script |
 | 3 | Listing CRUD, publisher_type, min-content, city-FK, upload guard | PR3 | `pnpm test -- publication` | Publish flow on preview deploy | `src/modules/listing-publication/**` |
 | 4 | dHash + publisher-excluding match port wired into publish | PR4 | `pnpm test:integration -- photo-hash` | Publish two accounts, same photo | `src/modules/listing-trust/**` (hash only) |
