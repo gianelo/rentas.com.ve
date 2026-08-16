@@ -15,6 +15,19 @@ Session preflight collected 2026-08-16: execution mode `auto`, artifact store `h
 
 **Note on the 400-line budget.** It measures *authored* lines — what a human has to read. The native attempt runtime counts generated content too, so a slice that adds dependencies will report a much larger number because of `pnpm-lock.yaml`. Lockfiles are trusted, not reviewed. Where the two disagree, the authored count governs the review decision and the discrepancy is recorded rather than papered over.
 
+### The forecasts below were wrong, and here is why
+
+**Measured on 2026-08-16, after three consecutive slices overran:** these estimates forecast *implementation* and silently omitted *proof*. In a strict-TDD project that is not a rounding error — it is roughly half the diff.
+
+PR1b-b is the clean measurement. Of its 508 authored insertions, **203 were the proof itself** — a 78-line WCAG contrast helper and a 125-line design-contract spec — against ~180 lines of actual components. The remainder was tokens and task bookkeeping. Six of twelve tasks consumed the entire 400-line budget, and the four tasks needing a real layout engine had not been started.
+
+Two consequences, both applied:
+
+1. **The estimates below are revised upward** for every slice not yet built. The old numbers were not pessimistic enough to be useful, and a forecast that is always wrong in the same direction stops being a forecast and becomes a ritual.
+2. **A slice whose proof is expensive gets split on the proof boundary, not the feature boundary.** PR1b-b/PR1b-c is the worked example: the tasks provable by computation or static declaration shipped together; the four needing a real browser measurement became their own slice, because building that harness is itself ~130–155 lines before it proves anything.
+
+This is the honest alternative to a third size exception. Granting one more would have made the budget advisory; correcting the forecast keeps it real.
+
 ### Per-slice estimate
 
 | Slice | Est. lines | Risk |
@@ -23,18 +36,21 @@ Session preflight collected 2026-08-16: execution mode `auto`, artifact store `h
 | PR0b Persistence + auth scaffold | 200–280 | Medium |
 | PR0c Deploy + CI pipeline | 180–280 | Medium |
 | PR1 Identity + phone-verification port | 300–450 | Low |
-| PR1b-a Tokens, root attributes, token contract, layout primitives | 200–300 | Low — the system is already decided |
-| PR1b-b Atoms, button hierarchy, publisher badge, result row | 250–350 | Low |
-| PR2 City/zone schema + seed + UI | 200–350 | Low |
-| PR3 Publication core | 600–900 | High — likely needs its own split |
-| PR4 Trust: photo-hash dedup | 300–450 | Medium |
-| PR5 Search | 350–500 | Medium |
-| PR6 Contact reveal | 300–450 | Medium |
-| PR7 Lifecycle: reminder job | 700–1000 | High — likely needs its own split |
-| PR8 Trust: reporting/auto-hide | 250–400 | Low |
-| PR9 Broker bulk import | 650–950 | High — likely needs its own split |
-| PR10 Voluntary contribution | 120–200 | Low |
-| PR11 Discovery & SEO surfaces + budget gates | 550–800 | Medium |
+| PR1b-a Tokens, root attributes, token contract, layout primitives | ~~200–300~~ **actual 734** | Shipped, `size:exception` |
+| PR1b-b Atoms, button hierarchy, publisher badge, contrast proof | ~~250–350~~ **actual 526** | Shipped at reduced scope |
+| PR1b-c Layout-measurement harness + the four measured bounds | 250–350 | Medium — the harness is ~130–155 before it proves anything |
+| PR2 City/zone schema + seed + UI | 400–600 | Low |
+| PR3 Publication core | 1200–1800 | **High — must be split into 3–4 slices before apply** |
+| PR4 Trust: photo-hash dedup | 600–900 | Medium — split into 2 |
+| PR5 Search | 700–1000 | Medium — split into 2–3 |
+| PR6 Contact reveal | 600–900 | Medium — split into 2 |
+| PR7 Lifecycle: reminder job | 1400–2000 | **High — split into 3–4** |
+| PR8 Trust: reporting/auto-hide | 500–800 | Low — split into 2 |
+| PR9 Broker bulk import | 1300–1900 | **High — split into 3–4** |
+| PR10 Voluntary contribution | 250–400 | Low |
+| PR11 Discovery & SEO surfaces + budget gates | 1100–1600 | Medium — split into 3 |
+
+Revised figures apply a **~2× multiplier for proof** to the original implementation-only estimates, which is what the three measured slices actually cost. The total moves from ~5,600–8,250 to roughly **9,000–13,000 authored lines**, and the number of slices roughly doubles. That is not scope growth — it is the same product, forecast honestly for the first time.
 
 PR9 depends only on PR3 (publication) and PR4 (trust), not on PR5–PR8. It is placed last to keep the stack linear, but it can be pulled forward if seed brokers need to load portfolios while the rest is still being built. PR10 depends on nothing beyond the app shell and can ship at any point — but see the D8 licensing decision in the design before shipping it.
 
