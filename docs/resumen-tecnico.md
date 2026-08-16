@@ -130,7 +130,7 @@ El paso al plan pago, de unos 20 dólares al mes, es **condición previa obligat
 
 ## Plan de entrega
 
-71 tareas ordenadas por dependencias, entre 3.800 y 5.400 líneas estimadas, repartidas en nueve entregas encadenadas — cada una construida sobre la anterior y desplegable por separado.
+108 tareas ordenadas por dependencias, entre 4.600 y 6.600 líneas estimadas, repartidas en once entregas encadenadas — cada una construida sobre la anterior y desplegable por separado.
 
 | | Entrega | Contenido |
 |---|---|---|
@@ -143,8 +143,14 @@ El paso al plan pago, de unos 20 dólares al mes, es **condición previa obligat
 | PR6 | Revelado de contacto | Evento y vista de pares únicos |
 | PR7 | Ciclo de vida | Vencimiento, recordatorio automático, renovación |
 | PR8 | Confianza: reportes | Ocultado automático y restitución |
+| PR9 | Carga masiva de cartera | CSV validado, vista previa, borradores, idempotencia |
+| PR10 | Colaboración voluntaria | Invitación descartable y destino externo |
 
-Publicación (PR3) y ciclo de vida (PR7) son las dos entregas más pesadas y probablemente haya que subdividirlas al implementarlas.
+Publicación (PR3), ciclo de vida (PR7) y carga masiva (PR9) son las tres entregas más pesadas y probablemente haya que subdividirlas al implementarlas.
+
+**La carga masiva no es una segunda vía de publicación.** Lee el archivo, valida, y crea borradores; después delega en los mismos casos de uso de publicación y en la misma tubería de confianza. No tiene escritura propia sobre la tabla de publicaciones, porque una regla que quien llama puede olvidar deja de ser una garantía. El tipo de publicador se deriva de la cuenta y **no se puede leer del archivo**: un corredor que escriba «propietario» en una columna no se convierte en propietario.
+
+Las fotos nunca viajan dentro del CSV. Los borradores las reciben por la misma subida firmada a R2 que ya usa el alta individual, lo que reutiliza la verificación de duplicados sin tocarla y mantiene las imágenes fuera de la función serverless.
 
 ---
 

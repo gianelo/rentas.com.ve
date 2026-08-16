@@ -29,6 +29,7 @@ src/
   modules/
     identity/            listing-publication/   listing-search/
     contact-reveal/      listing-lifecycle/     listing-trust/
+    broker-bulk-import/  voluntary-contribution/
       domain/            entities, value objects, invariants (zero deps)
       application/       use cases + ports (interfaces only)
       infrastructure/    Drizzle repos, R2, Resend, sharp adapters
@@ -204,7 +205,9 @@ Renewal is deliberately **GET-renders / POST-mutates**. Email security scanners 
 
 ## Data Model (core tables)
 
-`user`, `account`, `session` (Auth.js) · `city` · `zone` · `listing` · `listing_photo` · `listing_photo_hash` · `contact_reveal_event` · `listing_report` · `moderation_action` · `listing_reminder` · `job_run`
+`user`, `account`, `session` (Auth.js) · `city` · `zone` · `listing` · `listing_photo` · `listing_photo_hash` · `contact_reveal_event` · `listing_report` · `moderation_action` · `listing_reminder` · `job_run` · `bulk_import_batch`
+
+Added for this revision: `user.bulk_import_enabled` (boolean, default false, operator-set) · `listing.status` gains a `draft` state excluded from search, from contact reveal, and from the expiry clock · `listing.external_reference` (nullable) with a **unique index on (`publisher_id`, `external_reference`)** — that composite is what makes re-importing the same file idempotent, so it is a database constraint rather than an application check.
 
 Views: `contact_reveal_unique_pair` (D6), created in a Drizzle migration alongside `contact_reveal_event`.
 
@@ -235,17 +238,43 @@ Ports as interfaces make the domain and application layers fully testable with z
 
 **Integration tests must use real Postgres, not an emulator**, because `bit_count` semantics and composite-FK enforcement are precisely what is under test.
 
+### D9 — Bulk import is a loader, not a second publication path
+
+The CSV import parses, validates, and creates **drafts**, then hands every listing to the existing `listing-publication` use cases. It gets no repository write path of its own into `listing`.
+
+The reason is the one that always applies here: *a rule the caller can forget is not a guarantee.* If import owned its own inserts, every publication invariant — publisher type, curated zone, USD-only price, min content — would have to be re-implemented and would silently drift the first time one of them changed. `publisher_type` in particular is derived from the importing account and is **unreadable from the file**; a broker who writes `owner` in a column must not become an owner, because that single claim is the product's core trust signal.
+
+**Two phases, because the CSV cannot carry images.** Phase A creates drafts from the file. Phase B attaches photos through the presigned PUT to R2 already designed for the single-listing flow. This reuses the existing trust pipeline unchanged, and keeps image bytes off the serverless function entirely — Vercel caps a function request body at ~4.5 MB, which a real portfolio would blow past instantly. Server-side URL fetching was rejected: it buys nothing and adds an SSRF surface.
+
+**Access is granted per account by the operator.** With 5–10 seed brokers, an operator-set `bulk_import_enabled` flag caps blast radius, removes any need for rate-limiting or anti-abuse machinery in v1, and doubles as the exact bargaining chip the broker alliance was promised.
+
+### D10 — Contribution stays outside the system
+
+Voluntary contribution is a dismissible invitation and an external link. No payment rail is integrated, no contributor state is stored, and no capability is gated. Processing payments in-app would add compliance, reconciliation, and financial-data handling — the precise capability the MVP excluded on purpose.
+
+The destination is server configuration, never request input. A contribution page that accepts a destination parameter lets an attacker phish under our own domain, and this product's entire value proposition is *you do not get scammed here*.
+
 ## Security Boundaries
 
-Full threat matrix is **N/A** — no routing/shell/subprocess/VCS-automation/executable-classification boundary exists. Three real boundaries still require RED tests:
+Full threat matrix is **N/A** — no routing/shell/subprocess/VCS-automation/executable-classification boundary exists. The following boundaries require RED tests:
 
 | Boundary | Requirement | RED test |
 |---|---|---|
 | Cron job route | Constant-time `Bearer CRON_SECRET` check; unauthenticated request must not send email | Unauthenticated POST returns 401 and `reminders_sent = 0` |
 | Renewal token | HMAC-signed, listing-scoped, single-use, expiring; GET never mutates | Replayed token rejected; GET leaves `expires_at` unchanged |
 | Photo upload | MIME + magic-byte + size validation via `sharp` before persistence | Non-image and oversized payloads rejected |
+| Contact reveal rate | Per-account limit per window; the catalog and its WhatsApp numbers must not be drainable by one registered account | Account exceeding the window is throttled and reveals stop |
+| Bulk import access | `bulk_import_enabled` checked server-side on every import endpoint; hiding the UI is not a control | Enabled-flag-less account POSTing directly returns 403 and creates no draft |
+| Presigned upload scope | Key derived server-side with a per-account prefix; short TTL; `content-length-range`; fixed content-type | Client-supplied key rejected; oversized PUT rejected |
+| Draft ownership | Photo attachment authorised against the draft's owner | Broker B attaching to broker A's draft returns 403 |
+| CSV input bounds | Max file size and max row count enforced before parsing; streaming parse, never load-all | Oversized file refused without being parsed |
+| Generated CSV output | Leading `=`, `+`, `-`, `@` neutralised in every emitted field | Formula-like value exports inert |
+| Contribution destination | Resolved from server config only; never from a query parameter, path segment, or body | Crafted destination parameter is ignored; configured destination is served |
+| CSV column mapping | Unrecognised columns ignored, never mapped; `publisher_type`, `status`, `expires_at`, ownership never sourced from the file | File carrying those columns produces drafts with system-derived values |
 
 WhatsApp numbers are never included in anonymous RSC payloads — the field is omitted server-side, not hidden with CSS.
+
+Session handling and CSRF come from Auth.js, query parameterisation from Drizzle, and output escaping from React defaults. These are inherited from the stack choice, not re-implemented — but the boundaries above are not covered by any of them.
 
 ## Migration / Rollout
 
@@ -282,9 +311,17 @@ rules:
 
 | Debt | Trigger to repay | Cost | Decision |
 |---|---|---|---|
-| Vercel Hobby non-commercial licensing (D8) | First listing fee, featured-placement fee, or advertising | ~$20/mo (Vercel Pro) | Accepted |
+| Vercel Hobby non-commercial licensing (D8) | **Fired.** Soliciting voluntary contributions is money solicited from a Hobby deployment. Previously scoped to a listing fee or advertising; the contribution invitation reaches the same clause | ~$20/mo (Vercel Pro) | **Open — founder decision required before launch** |
+
+**D8 is no longer deferred.** The original trigger was "first listing fee, featured-placement fee, or advertising". A Wikipedia-style contribution ask is not a fee, but it does solicit money from a deployment whose plan is licensed for personal, non-commercial use. Two honest exits: move to Vercel Pro before launch, or launch without the contribution invitation and add it with the Pro migration. Guessing here means discovering it at invoicing time, which is exactly what this table exists to prevent.
 
 ## Open Questions
 
 - [ ] Hamming threshold: `<= 8` is the proposed hard-block distance. Needs calibration against real Venezuelan listing photos before launch — too loose blocks honest publishers, too tight lets re-encoded scams through.
 - [ ] Retention for `contact_reveal_event` beyond the 6-month go/pivot decision (personal-data exposure). Note that pruning the log also changes the view — there is no separate copy to fall back on.
+- [ ] **Vercel Pro before launch, or contribution invitation deferred?** See tracked debt D8. Founder decision, blocking for the contribution capability.
+- [ ] **Contribution payment rail.** Stripe does not operate in Venezuela and PayPal is restricted. Candidates: Binance Pay, Zelle, Pago Móvil, a USDT address. Founder decision; it changes nothing architecturally since the destination is a server-side constant, but the page cannot ship without it.
+- [ ] **Contact-reveal rate limit threshold.** Must be loose enough that a genuine tenant comparing twenty listings is never blocked, tight enough that draining the catalog is impractical. Needs a number before implementation.
+- [ ] **CSV bounds.** Maximum row count and file size. Should be sized against the largest real seed-broker portfolio, not guessed.
+- [ ] **Optional CSV columns.** Whether `habitaciones`, `banos`, and `metros2` are accepted depends on whether those fields exist on `listing`; confirm against the schema when the publication module is written rather than inventing columns the model cannot store.
+- [ ] **Draft lifetime.** An imported draft that never receives photos lives forever today. Decide whether drafts expire, and whether the broker is reminded — otherwise the table accumulates dead rows against the Neon free-tier ceiling.

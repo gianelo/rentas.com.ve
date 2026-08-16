@@ -4,12 +4,12 @@
 
 | Field | Value |
 |-------|-------|
-| Estimated changed lines | ~3,800–5,400 total (greenfield, 6 capabilities) |
+| Estimated changed lines | ~4,600–6,600 total (greenfield, 8 capabilities) |
 | 400-line budget risk | High |
 | Chained PRs recommended | Yes |
-| Suggested split | PR0 → PR1 → PR2 → PR3 → PR4 → PR5 → PR6 → PR7 → PR8 |
+| Suggested split | PR0 → PR1 → PR2 → PR3 → PR4 → PR5 → PR6 → PR7 → PR8 → PR9 → PR10 |
 | Delivery strategy | ask-on-risk |
-| Chain strategy | pending — orchestrator must collect from user before apply |
+| Chain strategy | stacked-to-main |
 
 Decision needed before apply: Yes
 Chained PRs recommended: Yes
@@ -29,6 +29,10 @@ Chain strategy: pending
 | PR6 Contact reveal | 300–450 | Medium |
 | PR7 Lifecycle: reminder job | 700–1000 | High — likely needs its own split |
 | PR8 Trust: reporting/auto-hide | 250–400 | Low |
+| PR9 Broker bulk import | 650–950 | High — likely needs its own split |
+| PR10 Voluntary contribution | 120–200 | Low |
+
+PR9 depends only on PR3 (publication) and PR4 (trust), not on PR5–PR8. It is placed last to keep the stack linear, but it can be pulled forward if seed brokers need to load portfolios while the rest is still being built. PR10 depends on nothing beyond the app shell and can ship at any point — but see the D8 licensing decision in the design before shipping it.
 
 ### Suggested Work Units
 
@@ -43,6 +47,8 @@ Chain strategy: pending
 | 6 | Reveal event + unique-pair view | PR6 | `pnpm test:integration -- reveal` | Reveal action on preview deploy | `src/modules/contact-reveal/**`, view migration |
 | 7 | Expiry, reminder job, renewal token, cron route | PR7 | `pnpm test -- lifecycle` | `curl -X POST` job route with/without Bearer token | `src/modules/listing-lifecycle/**`, `app/api/jobs/**` |
 | 8 | Reporting, auto-hide, operator restore | PR8 | `pnpm test -- trust-reporting` | Report flow x3 accounts on preview | `src/modules/listing-trust/**` (reporting only) |
+| 9 | Operator-gated CSV import, whole-file validation, preview, drafts, idempotency | PR9 | `pnpm test -- bulk-import` | Import a real broker portfolio on preview deploy | `src/modules/broker-bulk-import/**`, draft-state migration |
+| 10 | Dismissible contribution invitation + external destination page | PR10 | `pnpm test -- contribution` | Invitation renders and dismisses on preview | `src/modules/voluntary-contribution/**` |
 
 ## Phase 0: Bootstrap & Toolchain (PR0)
 
@@ -115,6 +121,8 @@ Chain strategy: pending
 - [ ] 6.6 RED: integration — after N repeat reveals of one pair, unique-pair view returns 1 row, `reveal_count=N`, `first_revealed_at`=earliest; raw event table still holds N rows
 - [ ] 6.7 GREEN: view query wrapper
 - [ ] 6.8 Reveal UI: locked placeholder, reveal button, sign-in redirect
+- [ ] 6.9 RED: an account exceeding the reveal window is throttled and further reveals stop — the catalog must not be drainable by one registered account
+- [ ] 6.10 GREEN: per-account reveal rate limit (threshold from the design's open question; loose enough for a genuine tenant comparing listings)
 
 ## Phase 7: Lifecycle — Expiry & Reminder Job (PR7)
 
@@ -140,7 +148,52 @@ Chain strategy: pending
 - [ ] 8.5 RED: operator restore returns listing to `active`
 - [ ] 8.6 GREEN: `RestoreListingUseCase` + `moderation_action` record; minimal operator-only restore route
 
-## Phase 9: Cleanup
+## Phase 9: Broker Bulk Import (PR9)
 
-- [ ] 9.1 README: setup, env vars, deploy steps
-- [ ] 9.2 Confirm `pnpm test`, `test:unit`, `test:integration`, `test:e2e` all pass end to end
+Depends on PR3 (publication use cases) and PR4 (trust pipeline). Creates no write path of its own into `listing`.
+
+- [ ] 9.1 Schema: `user.bulk_import_enabled` (bool, default false); `listing.external_reference` (nullable); UNIQUE `(publisher_id, external_reference)`; `listing.status` gains `draft`; `bulk_import_batch` table
+- [ ] 9.2 RED: account with `bulk_import_enabled = false` POSTing the import endpoint directly returns 403 and creates no draft
+- [ ] 9.3 GREEN: server-side flag guard on every import endpoint — UI visibility is not the control
+- [ ] 9.4 RED: file whose header omits a required column is rejected whole, naming the column, with no draft created
+- [ ] 9.5 RED: semicolon-delimited file carrying a UTF-8 BOM parses into correct columns, not one column
+- [ ] 9.6 RED: non-UTF-8 file rejected with a message telling the broker to re-export as CSV UTF-8
+- [ ] 9.7 GREEN: CSV parser — delimiter sniffing (`,` / `;`), BOM strip, UTF-8 enforcement, streaming read
+- [ ] 9.8 RED: file exceeding the row or size limit is refused before its contents are parsed
+- [ ] 9.9 GREEN: size and row bounds enforced pre-parse
+- [ ] 9.10 RED: extra columns (`publisher_type`, `status`, `expires_at`, `user_id`) are ignored; resulting drafts take publisher type from the account
+- [ ] 9.11 GREEN: strict column allowlist — unrecognised columns dropped, never mapped
+- [ ] 9.12 RED: a row whose `zone` is not curated for its `city` is rejected by the same rule the single-listing flow applies
+- [ ] 9.13 RED: 38 valid + 2 invalid rows → preview reports both sets with row numbers and reasons; confirming creates exactly 38 drafts
+- [ ] 9.14 RED: previewing without confirming creates nothing
+- [ ] 9.15 GREEN: `ValidateImportUseCase` (whole file, zero writes) + `ConfirmImportUseCase` delegating to `PublishListingUseCase` validation
+- [ ] 9.16 RED: re-uploading an identical file creates no duplicates; a duplicate `referencia_externa` within one file rejects both rows
+- [ ] 9.17 GREEN: idempotency enforced by the unique `(publisher_id, external_reference)` index, not by an application check
+- [ ] 9.18 RED: a draft is excluded from search, has no revealable contact, and has no expiry clock; its 30 days start at activation
+- [ ] 9.19 GREEN: draft status handling across search, reveal, and lifecycle
+- [ ] 9.20 RED: broker B cannot attach a photo to broker A's draft
+- [ ] 9.21 GREEN: draft-ownership authorisation on photo attachment
+- [ ] 9.22 RED: presigned PUT rejects a client-supplied key and an oversized body
+- [ ] 9.23 GREEN: server-derived key with per-account prefix, short TTL, `content-length-range`, fixed content-type
+- [ ] 9.24 RED: a stored value beginning with `=` exports inert in a generated CSV
+- [ ] 9.25 GREEN: CSV writer neutralising leading `=`, `+`, `-`, `@`; template generator sharing the parser's column definition so the two cannot drift
+- [ ] 9.26 Import UI: upload, preview with per-row errors, confirm, draft list with photo attachment
+- [ ] 9.27 E2E: enabled broker imports → attaches photos → drafts activate → appear in city-scoped search
+
+## Phase 10: Voluntary Contribution (PR10)
+
+Blocked on the D8 licensing decision in the design. Do not ship before it is resolved.
+
+- [ ] 10.1 RED: a crafted destination parameter is ignored; only the configured destination is served
+- [ ] 10.2 GREEN: destination resolved from server configuration only — never from query, path, or body
+- [ ] 10.3 RED: contact reveal completes with no contribution prompt appearing in between
+- [ ] 10.4 RED: dismissing the invitation keeps it hidden for the rest of the session
+- [ ] 10.5 GREEN: dismissible, non-modal invitation component
+- [ ] 10.6 RED: no capability is gated on contribution, and no contributor state is stored against a user
+- [ ] 10.7 GREEN: contribution page — payment method and destination shown on-page, external link or code, no payment fields
+- [ ] 10.8 Confirm go/pivot reporting still returns unique tenant-listing reveal pairs, unchanged by contribution data
+
+## Phase 11: Cleanup
+
+- [ ] 11.1 README: setup, env vars, deploy steps
+- [ ] 11.2 Confirm `pnpm test`, `test:unit`, `test:integration`, `test:e2e` all pass end to end
