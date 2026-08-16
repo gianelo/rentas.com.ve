@@ -4,6 +4,8 @@ Documento portable. Pegalo en la herramienta que quieras probar (claude.ai, v0, 
 
 **Cómo usarlo:** copiá desde "Prompt corto" si querés algo rápido, o pegá el documento completo si la herramienta acepta contexto largo. El documento completo da mejores resultados.
 
+> **Este documento define el producto y las restricciones. Para generar pantallas concretas usá [`BRIEF-PANTALLAS.md`](./BRIEF-PANTALLAS.md)**, que especifica cada pantalla elemento por elemento, con medidas exactas y los textos literales. Ese segundo documento asume el contexto de este: si el modelo ya recibió este brief, pegale el otro directamente.
+
 ---
 
 ## Prompt corto
