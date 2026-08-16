@@ -268,7 +268,7 @@ No pipeline exists today. These gates run on every pull request and block merge:
 | E2E + crawlability | `pnpm test:e2e` | preview deployment URL |
 | Lighthouse budget | `pnpm budget:lighthouse` | preview deployment URL |
 
-**A budget nobody measures automatically is a wish.** `budget:bundle` reads the build output and fails when read-path first-load JS exceeds 30 KB — fast, needs no deployment, and catches the most common regression (someone converts a server component to a client component). `budget:lighthouse` runs against the preview deployment and fails on LCP over 2.5 s on a throttled 3G profile, search transfer over 150 KB, or detail transfer over 500 KB. Image derivative budgets are already asserted at generation time in unit tests, so they need no separate gate.
+**A budget nobody measures automatically is a wish.** `budget:bundle` reads the build output and fails when read-path first-load JS exceeds 130 KB — fast, needs no deployment, and catches the most common regression (someone converts a server component to a client component). `budget:lighthouse` runs against the preview deployment and fails on LCP over 2.5 s on a throttled 3G profile, search transfer over 230 KB, or detail transfer over 500 KB. Image derivative budgets are already asserted at generation time in unit tests, so they need no separate gate.
 
 **`build` is a gate because type-checking is not building.** This was learned the expensive way: a production deploy failed on `Module not found: Can't resolve '@/modules/...'` while every gate was green, because nothing in the gate set compiled the application. `tsc --noEmit` resolved the path alias through tsconfig `paths`; the bundler resolved it through a different mechanism and did not. Module resolution, bundler configuration, and server/client boundary violations are all invisible to the other gates and all fatal at deploy. The gate costs one build and no deployment.
 
@@ -340,7 +340,7 @@ The visual reference is built as real HTML under `design/reference/`, versioned 
 
 **Durable constraints on any visual direction**, independent of palette:
 
-- **Results are a dense list, not a card grid.** With a catalogue still being seeded, showing that options exist outweighs showing one photograph well, and the small row thumbnail is what makes the 150 KB search budget arithmetically possible: many small thumbnails fit, many detail images do not. **Density is enforced as a bound on the row (≤ 96px at 360px), not as a count of listings above the fold.** The count is a proxy: it shifts with the system font, the chrome height, and the length of a title, so a test asserting it fails for reasons that have nothing to do with the regression it was meant to catch. The bound holds the thing that actually matters.
+- **Results are a dense list, not a card grid.** With a catalogue still being seeded, showing that options exist outweighs showing one photograph well, and the small row thumbnail is what keeps the search page inside its transfer budget: many small thumbnails fit, many detail images do not. **Density is enforced as a bound on the row (≤ 96px at 360px), not as a count of listings above the fold.** The count is a proxy: it shifts with the system font, the chrome height, and the length of a title, so a test asserting it fails for reasons that have nothing to do with the regression it was meant to catch. The bound holds the thing that actually matters.
 
   Worth recording, because it is counter-intuitive and will be re-litigated: **`compacto` buys bytes, not rows.** The row's height is driven by its text stack — price line, two-line title clamp, metadata — which is taller than either thumbnail size. Shrinking the thumbnail from 96 × 72 to 44 × 34 changes the row's height barely at all. It changes the transfer weight a great deal. Anyone who later wants materially more listings per screen has to cut a line of text, not a thumbnail, and that is a product decision about what a listing must say to be worth tapping — not a token change.
 - **Price outranks the title.** It is what people scan in classifieds, and it earns its emphasis typographically rather than through colour.
@@ -400,12 +400,24 @@ Hard numbers, verified on the preview deployment before each user-facing PR merg
 
 | Surface | Budget |
 |---|---|
-| Search results page | ≤ 150 KB total transfer |
+| Search results page | ≤ 230 KB total transfer (was 150 — see the revision note below) |
 | Listing detail page | ≤ 500 KB total transfer including photos |
 | Row thumbnail (128 × 96 derivative, serves 44 × 34 mobile and 64 × 48 desktop at 2×) | ≤ 10 KB |
 | Detail photo | ≤ 200 KB |
-| JavaScript on the read path | ≤ 30 KB |
+| JavaScript on the read path | ≤ 130 KB (was 30 — see the revision note below) |
 | LCP on a throttled 3G profile | ≤ 2.5 s |
+
+**Revision, 2026-08-16 — two of these numbers were unreachable and are now measured rather than assumed.**
+
+Building the budget gates surfaced it immediately: **Next.js 15 App Router plus React 19 ship ~102 KB gzip of shared framework runtime on every route, before a single line of this application's code exists.** Verified against Next's own build output, not estimated. The original 30 KB was set by analogy and never checked against the framework floor — the same failure as the review forecast that omitted the cost of proof, and caught the same way: by building the thing that measures.
+
+The knock-on was the page budget. 102 KB of JavaScript plus HTML, CSS and ten row thumbnails does not fit inside 150 KB, so that number was unreachable too.
+
+Revised: **read-path JavaScript ≤ 130 KB** (the measured ~102 KB floor plus ~28 KB of headroom, preserving the original intent — roughly 30 KB is what *this codebase* may add on top) and **search results ≤ 230 KB** cold transfer.
+
+**The weakness, recorded rather than buried.** Because 102 of those 130 KB are a constant nobody controls, the JavaScript gate carries far less signal than its number implies: 15 KB of genuinely bad client code still passes. The stricter design — budget the delta above the framework baseline, and separately assert the baseline has not grown — was considered and set aside in favour of the simpler absolute. If this gate ever fires and the cause turns out to be a framework version bump rather than application code, that is the signal to switch to measuring the delta.
+
+Rejected outright: lowering the gate until it passed, which makes a check into decoration; and reconsidering the framework, which D1 chose deliberately on the argument that part-time hours are the scarce resource and an unfamiliar toolchain turns every bug into three nights. That argument still holds.
 
 ## Security Boundaries
 

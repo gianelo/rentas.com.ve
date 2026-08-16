@@ -38,4 +38,7 @@
 /playwright-report
 /test-results
 
+# Lighthouse CI's local report output (lighthouserc.json upload.outputDir)
+/.lighthouseci
+
 # Local Postgres container data is disposable by design (docker-compose.yml)

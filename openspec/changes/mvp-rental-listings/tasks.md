@@ -300,6 +300,8 @@ Depends on PR3 (publication use cases) and PR4 (trust pipeline). Creates no writ
 
 Depends on PR5 (search) and PR7 (lifecycle). Carries D11 and the performance budget.
 
+**11.17–11.20 pulled forward, shipped as their own slice (`perf/budget-gates`, off `main`).** CI's `budget` job has carried two gates that could not fail since PR0c — each emits a GitHub warning saying so out loud (`.github/workflows/ci.yml`, `budget` job). Real read-path pages are about to land (PR2b's city/zone select, then PR3's publish flow); a budget that starts measuring after the app has gained weight cannot tell you what added it. Landing the gates now, ahead of Phase 3/5/11's own pages, is what makes them able to catch the first regression rather than the fifth.
+
 - [ ] 11.1 GREEN: URL scheme `/alquiler/<ciudad>/<zona>/<slug>-<id>`; filters as query parameters
 - [ ] 11.2 RED: a copied filtered-search URL reopens with the same filter selection applied
 - [ ] 11.3 RED: search results are present in the served response with scripting disabled
@@ -316,10 +318,10 @@ Depends on PR5 (search) and PR7 (lifecycle). Carries D11 and the performance bud
 - [ ] 11.14 GREEN: schema.org structured data on the listing detail page
 - [ ] 11.15 RED: a listing below the minimum content threshold carries `noindex` (thin-content guard for bulk-imported portfolios)
 - [ ] 11.16 RED: a zone landing page and the search results contain listings with JavaScript execution disabled (Playwright, scripting off)
-- [ ] 11.17 GREEN: `scripts/budget-bundle.ts` reads the build output and exits non-zero when read-path first-load JS exceeds 30 KB
-- [ ] 11.18 RED: converting a read-path server component to a client component fails `pnpm budget:bundle`
-- [ ] 11.19 GREEN: `lighthouserc.json` asserting LCP ≤ 2.5 s on a throttled 3G profile, search transfer ≤ 150 KB, detail transfer ≤ 500 KB
-- [ ] 11.20 Wire `budget:bundle` and `budget:lighthouse` into the pull-request workflow as merge-blocking gates
+- [x] 11.17 GREEN: `scripts/budget-bundle.ts` reads `.next/app-build-manifest.json`, gzips every JS file for each read-path route (a manifest key ending `/page`, excluding `(auth)`/`/measure`/`_not-found`), and exits non-zero when the worst one exceeds 30 KB. No read-path route exists yet, so it falls back to the shared framework/runtime baseline (the floor every future one inherits) — measured **99.91 KB gzip against the 30 KB budget: FAIL today**, before a single line of application code exists. This is not "passes because the app is empty" — it is the opposite finding: Next.js 15 + React 19's own App Router client shell (`chunks/424-*.js` 45.8 kB + `chunks/b5b3cec6-*.js` 54.2 kB, gzip, present on literally every route including a bare route handler) already costs more than 3× the budget by itself. Flagged as a risk for the founder/design owner — see apply-progress
+- [x] 11.18 RED: real conversion captured live. A temporary route (`app/budget-proof-temp/page.tsx`, never committed) measured **100.04 KB gzip** as a pure server component; adding one `"use client"` child (`useState` counter) measured **100.18 KB gzip** — a real, reproducible increase attributable to exactly that route, proving the script's differential detection (not just the absolute-threshold check). Reverted; `app/` carries zero net diff (`git status --porcelain -- app/` empty)
+- [x] 11.19 GREEN: `lighthouserc.json` — mobile, simulated throttling matching Lighthouse's documented `mobileSlow4G` profile (RTT 150 ms, ~1.6 Mbps down — the profile historically named "3G" before Lighthouse 6's terminology update). `largest-contentful-paint` asserted globally at ≤2500 ms; `total-byte-weight` asserted via `assertMatrix` at ≤512000 B (500 KB) for detail-shaped URLs (`/alquiler/<ciudad>/<zona>/<slug>-<id>`) and ≤153600 B (150 KB) for search/zone-landing-shaped URLs (`/alquiler/<ciudad>[/<zona>]`) — both patterns are forward-looking assumptions about Phase 5/11's URL scheme (design.md D11, tasks.md 11.1) and match no URL today, since neither page exists. Cannot be verified locally (needs a deployment) — this config's first real execution is CI, exactly as the D5 integration test was handled
+- [x] 11.20 GREEN: `.github/workflows/ci.yml`'s `budget` job now runs `pnpm build && pnpm run budget:bundle` and `pnpm run budget:lighthouse` unconditionally — the two "cannot fail yet" warning branches are removed. Both DATABASE_URL/AUTH_SECRET placeholders (matching the `build` job) were added to the `budget` job, which previously never actually ran `pnpm build` (the warning branch always fired, since neither script existed) and so never needed them
 
 ## Phase 12: Cleanup
 
