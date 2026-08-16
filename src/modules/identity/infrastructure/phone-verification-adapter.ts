@@ -5,12 +5,10 @@ import type {
 
 /**
  * design.md D7 — the only shipped `PhoneVerificationPort` implementation.
- * Registration never awaits verification in the MVP; there is no
- * `if (enabled)` branch anywhere upstream of this file, in application or
- * domain code, because the port's contract (`getStatus()`) is purely
- * informational and nothing consumes it to gate an action (see
- * phone-verification-adapter.test.ts, "phone verification never gates a
- * protected action").
+ * Registration never awaits verification in the MVP, and no `if (enabled)`
+ * branch exists in application or domain code today. That last part is a
+ * checked fact about the current tree, not a property the type system
+ * enforces — see the port's own comment for where the real guarantee lives.
  */
 export class DisabledPhoneVerificationAdapter implements PhoneVerificationPort {
   async getStatus(): Promise<PhoneVerificationStatus> {
