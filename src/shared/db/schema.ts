@@ -17,6 +17,12 @@ export const users = pgTable("user", {
   name: text("name"),
   email: text("email").unique(),
   emailVerified: timestamp("emailVerified", { mode: "date" }),
+  // Present only because the adapter's default schema defines it. It stays
+  // NULL by construction: `toMinimalGoogleProfile` drops Google's `picture`
+  // before the adapter ever sees the profile, per the account-identity spec's
+  // Minimal Identity Data requirement. Do NOT start populating it because the
+  // column happens to exist — capturing an avatar is a product decision about
+  // holding third-party personal data, not a schema convenience.
   image: text("image"),
 });
 
