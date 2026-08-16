@@ -1,0 +1,10 @@
+/* SISTEMA.md "Precio en lista": 15px/700/1.15, --mono via --disp,
+   tabular-nums so digits align as a column across rows (tasks.md 1b.9). */
+.price {
+  font-family: var(--disp);
+  font-size: var(--fp);
+  font-weight: var(--fpw);
+  line-height: 1.15;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}

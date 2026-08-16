@@ -36,6 +36,26 @@
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
+  /* Minimum interactive-target size (SISTEMA.md "Altura mínima de
+     control: 36px en escritorio, 44px en móvil"). Not part of the
+     shipped reference tokens.css — added here because PR1b-b's buttons
+     need it and D16 forbids inlining a size the token set doesn't name. */
+  --target-min: 44px;
+  --target-min-desktop: 36px;
+
+  /* Badge and metadata typography (SISTEMA.md "Badge / etiqueta",
+     "Metadato"). Fixed across all layout/theme sets in the design
+     reference — unlike price/title/thumbnail, the source tokens.css does
+     not vary these per data-layout, so they live in :root rather than a
+     [data-layout] block. Added for the same reason as --target-min: D16
+     forbids a type-size literal, and the shipped subset did not carry
+     these values yet. */
+  --badge-fs: 11px;
+  --badge-fw: 700;
+  --badge-ls: 0.06em;
+  --meta-fs: 12px;
+  --meta-fw: 600;
+
   --dark-r: 10px;
   --dark-rs: 6px;
   --dark-ctl: #22262e;
