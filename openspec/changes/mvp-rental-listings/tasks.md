@@ -193,13 +193,15 @@ The order is not cosmetic. **The token contract has to land before the first com
 
 ## Phase 4: Trust — Photo-Hash Dedup (PR4)
 
-- [ ] 4.1 Schema: `listing_photo_hash` (`bit(64)`)
-- [ ] 4.2 RED: unit test — cross-publisher perceptually-matching photo rejects listing
-- [ ] 4.3 RED: unit test — same-publisher match (active/expired/other listing) is allowed
-- [ ] 4.4 GREEN: `sharp` 9×8 grayscale dHash(64) in `PublishListingUseCase`
-- [ ] 4.5 GREEN: `PhotoHashPort` exposing only `findMatchesFromOtherPublishers(hash, excludePublisherId, maxDistance)` — no all-matches method (D4)
-- [ ] 4.6 GREEN: Drizzle/raw-SQL adapter using `bit_count` Hamming distance
-- [ ] 4.7 E2E: publish → duplicate photo rejected cross-account, accepted same publisher
+**Domain half pulled forward as `trust/perceptual-hash-domain`, off `main`**, to get calibration data for the uncalibrated `<= 8` threshold (Open Questions) before the rest of the trust capability is built. Scope: `domain/` (dHash + Hamming distance) and `application/ports/photo-hash.port.ts` + in-memory fake. 4.1, 4.6, 4.7, and use-case wiring need `listing` (PR3).
+
+- [ ] 4.1 Schema: `listing_photo_hash` (`bit(64)`) — needs `listing` (PR3)
+- [x] 4.2 RED: cross-publisher match rejects (proved against `PhotoHashPort` with an in-memory fake, not the real adapter — `application/ports/photo-hash.port.test.ts`)
+- [x] 4.3 RED: same-publisher match allowed (same fake)
+- [x] 4.4 GREEN (hash computation only): `sharp` 9×8 grayscale dHash(64) — pure algorithm `domain/dhash.ts`, sharp boundary `infrastructure/sharp-dhash.ts`. Wiring into `PublishListingUseCase` needs `listing` (PR3)
+- [x] 4.5 GREEN: `PhotoHashPort` — `findMatchesFromOtherPublishers(hash, excludePublisherId, maxDistance)` only (D4)
+- [ ] 4.6 GREEN: Drizzle/raw-SQL `bit_count` adapter — needs `listing` (PR3) and 4.1
+- [ ] 4.7 E2E: publish → duplicate rejected cross-account, accepted same publisher — needs PR3
 
 ## Phase 5: Listing Search (PR5)
 
