@@ -7,7 +7,7 @@
 | Estimated changed lines | ~5,600–8,250 total (greenfield, 8 capabilities) |
 | 400-line budget risk | High |
 | Chained PRs recommended | Yes |
-| Suggested split | PR0 → PR1 → PR1b → PR2 → PR3 → PR4 → PR5 → PR6 → PR7 → PR8 → PR9 → PR10 → PR11 |
+| Suggested split | PR0a → PR0b → PR0c → PR1 → PR1b → PR2 → PR3 → PR4 → PR5 → PR6 → PR7 → PR8 → PR9 → PR10 → PR11 |
 | Delivery strategy | ask-on-risk |
 | Chain strategy | stacked-to-main |
 
@@ -20,7 +20,9 @@ Chain strategy: pending
 
 | Slice | Est. lines | Risk |
 |---|---|---|
-| PR0 Bootstrap/toolchain + CI pipeline | 650–900 | Medium (mostly config) |
+| PR0a Toolchain + test harness + gate scripts | 250–320 | Low (config) |
+| PR0b Persistence + auth scaffold | 200–280 | Medium |
+| PR0c Deploy + CI pipeline | 180–280 | Medium |
 | PR1 Identity + phone-verification port | 300–450 | Low |
 | PR1b Design foundation (tokens, atoms, result row, a11y baseline, token contract) | 400–600 | Low — the system is already decided; this is transcription plus its guard rails |
 | PR2 City/zone schema + seed + UI | 200–350 | Low |
@@ -54,7 +56,17 @@ PR9 depends only on PR3 (publication) and PR4 (trust), not on PR5–PR8. It is p
 | 10 | Dismissible contribution invitation + external destination page | PR10 | `pnpm test -- contribution` | Invitation renders and dismisses on preview | `src/modules/voluntary-contribution/**` |
 | 11 | Zone landing pages, URL scheme, expired-listing retention page, sitemap, structured data | PR11 | `pnpm test -- discovery` | Crawl preview with JS disabled; budget check on preview | `app/(discovery)/**`, sitemap/robots routes |
 
-## Phase 0: Bootstrap & Toolchain (PR0)
+## Phase 0: Bootstrap & Toolchain (PR0a → PR0b → PR0c)
+
+**Split, per the 400-line review budget.** PR0 was forecast at 650–900 lines, so it ships as three stacked slices. The seam is not arbitrary — each slice is independently revertible and each ends with something that demonstrably runs:
+
+| Slice | Tasks | Ends when |
+|---|---|---|
+| **PR0a** Toolchain & gate scripts | 0.1–0.4, 0.8b, 0.10 | `pnpm test`, `pnpm lint`, `pnpm lint:tokens`, `pnpm tsc --noEmit` all run and pass on an empty project |
+| **PR0b** Persistence & auth scaffold | 0.5, 0.6 | Drizzle migrations apply to a Neon branch; the Auth.js tables exist |
+| **PR0c** Deploy & CI pipeline | 0.7, 0.8, 0.9, 0.11 | A throwaway PR turns CI green, and every gate is proven to fail the build when violated |
+
+PR0c is deliberately last: a pipeline that runs nothing is not worth reviewing, and the gates can only be proven to *fail* correctly once there is something for them to fail against.
 
 - [ ] 0.1 `pnpm init`, add Next.js 15 + React 19, TS, `tsconfig.json`
 - [ ] 0.2 Configure Biome (`biome.json`), Vitest (`vitest.config.ts`), Playwright (`playwright.config.ts`)
@@ -219,8 +231,10 @@ Depends on PR3 (publication use cases) and PR4 (trust pipeline). Creates no writ
 
 ## Phase 10: Voluntary Contribution (PR10)
 
-Blocked on the D8 licensing decision in the design. Do not ship before it is resolved.
+**D8 is decided: the Vercel Pro migration happens last, and the product launches on Hobby without the contribution invitation.** This phase may therefore be built and merged, but the invitation must not be live before that migration. It ships behind `CONTRIBUTION_INVITATION_ENABLED`, default off — a switch, not a memo, because "remember not to deploy this" is not a guarantee.
 
+- [ ] 10.0 GREEN: `CONTRIBUTION_INVITATION_ENABLED` flag, default off; the invitation renders nowhere when it is unset
+- [ ] 10.0b RED: with the flag unset, no contribution invitation appears on any surface, and no contribution route is reachable
 - [ ] 10.1 RED: a crafted destination parameter is ignored; only the configured destination is served
 - [ ] 10.2 GREEN: destination resolved from server configuration only — never from query, path, or body
 - [ ] 10.3 RED: contact reveal completes with no contribution prompt appearing in between
