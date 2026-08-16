@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!design/reference", "!.engram"]
+    "includes": ["**", "!design/reference", "!.engram", "!drizzle/meta"]
   },
   "formatter": {
     "enabled": true,
