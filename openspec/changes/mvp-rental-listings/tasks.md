@@ -23,7 +23,8 @@ Session preflight collected 2026-08-16: execution mode `auto`, artifact store `h
 | PR0b Persistence + auth scaffold | 200–280 | Medium |
 | PR0c Deploy + CI pipeline | 180–280 | Medium |
 | PR1 Identity + phone-verification port | 300–450 | Low |
-| PR1b Design foundation (tokens, atoms, result row, a11y baseline, token contract) | 400–600 | Low — the system is already decided; this is transcription plus its guard rails |
+| PR1b-a Tokens, root attributes, token contract, layout primitives | 200–300 | Low — the system is already decided |
+| PR1b-b Atoms, button hierarchy, publisher badge, result row | 250–350 | Low |
 | PR2 City/zone schema + seed + UI | 200–350 | Low |
 | PR3 Publication core | 600–900 | High — likely needs its own split |
 | PR4 Trust: photo-hash dedup | 300–450 | Medium |
@@ -109,9 +110,18 @@ The coverage failure names the scoped glob explicitly — `Coverage for lines (0
 - [x] 1.7 RED: publish succeeds regardless of phone-verification status
 - [x] 1.8 GREEN: `PhoneVerificationPort` contract + `DisabledPhoneVerificationAdapter` (`PHONE_VERIFICATION_ENABLED=false`, no domain branch)
 
-## Phase 1b: Design Foundation (PR1b)
+## Phase 1b: Design Foundation (PR1b-a → PR1b-b)
 
 Inserted between PR1 and PR2 because PR2 builds the first UI (the cascading city/zone select) and cannot be written before the visual language is settled. Carries D14, D15, and D16.
+
+**Split, per the 400-line review budget.** Forecast at 400–600 lines across 18 tasks, so it ships as two stacked slices:
+
+| Slice | Tasks | Ends when |
+|---|---|---|
+| **PR1b-a** The system and its guard | 1b.1–1b.4, 1b.13, 1b.17 | Tokens ship, the root carries `data-theme`/`data-layout`, `lint:tokens` rejects literals in real component styles, and a theme swap repaints everything |
+| **PR1b-b** The components | 1b.5–1b.12, 1b.14–1b.16, 1b.18 | Atoms, the three-level button hierarchy, the publisher badge and the result row exist and meet their measured bounds |
+
+The order is not cosmetic. **The token contract has to land before the first component**, or components get written against literal values and the guard arrives to a codebase it must retroactively clean. A rule that arrives after the code it governs is a migration, not a guarantee.
 
 **Source of truth:** `design/reference/sistema/SISTEMA.md` (system), `design/reference/sistema/tokens.css` (token sets), `design/reference/sistema/pantallas-compacto-menta.html` (six worked surfaces at 360px and 1280px). Combination: `data-theme="menta"` + `data-layout="compacto"`. The reference HTML is a prototype, not production code — its inline styles and `support.js` runtime are never ported.
 
