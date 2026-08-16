@@ -368,5 +368,20 @@ jobs:
       # tasks.md 11.19/11.20. Runs against the real preview deployment
       # resolved by the `preview` job above — this is the one gate in this
       # job that genuinely needs it.
+      #
+      # The status check in front of it is not ceremony. Until a read-path
+      # page exists, the preview's root is a 404 — and a 404 is tiny, so it
+      # would sail through every byte budget and report green having verified
+      # nothing. This repository has already shipped three checks that could
+      # not fail; refusing to measure a page that is not there is how this one
+      # avoids becoming the fourth. It warns and skips rather than failing,
+      # because "the home page does not exist yet" is a schedule fact, not a
+      # performance regression.
       - name: Lighthouse budget
-        run: pnpm run budget:lighthouse
+        run: |
+          status=$(curl -s -o /dev/null -w '%{http_code}' "$PREVIEW_BASE_URL/")
+          if [ "$status" != "200" ]; then
+            echo "::warning title=Lighthouse budget not measured::${PREVIEW_BASE_URL}/ returned HTTP ${status}. No page weight or LCP was checked. A 404 passes every byte budget trivially, so this step refuses to report a pass it did not earn. It starts measuring for real once a read-path page exists."
+            exit 0
+          fi
+          pnpm run budget:lighthouse

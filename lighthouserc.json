@@ -23,19 +23,25 @@
       }
     },
     "assert": {
-      "assertions": {
-        "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }]
-      },
       "assertMatrix": [
         {
           "matchingUrlPattern": "^https?://[^/]+/alquiler/[^/]+/[^/]+/[^/?#]*-[0-9]+/?([?#].*)?$",
           "assertions": {
+            "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
             "total-byte-weight": ["error", { "maxNumericValue": 512000 }]
           }
         },
         {
           "matchingUrlPattern": "^https?://[^/]+/alquiler(/[^/]+){0,2}/?([?#].*)?$",
           "assertions": {
+            "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
+            "total-byte-weight": ["error", { "maxNumericValue": 235520 }]
+          }
+        },
+        {
+          "matchingUrlPattern": ".*",
+          "assertions": {
+            "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
             "total-byte-weight": ["error", { "maxNumericValue": 235520 }]
           }
         }
