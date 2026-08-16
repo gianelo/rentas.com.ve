@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!design/reference", "!.engram", "!drizzle/meta"]
+    "includes": ["**", "!design/reference", "!.engram", "!drizzle/meta", "!.claude"]
   },
   "formatter": {
     "enabled": true,

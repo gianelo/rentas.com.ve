@@ -203,6 +203,7 @@ The order is not cosmetic. **The token contract has to land before the first com
 
 ## Phase 5: Listing Search (PR5)
 
+- [ ] 5.0 RED: a submitted `zone` that does not belong to the submitted `city` is ignored, not treated as a meaningful filter. **Found while building the cascading select in PR2b:** a GET form submits whatever its controls currently hold, so picking a new city without touching the zone sends the previous city's zone. Nothing is written, so D5's database constraint is not involved and cannot help — this one has to be handled where the query parameters are read, and the component cannot prevent it because it does not control what the browser posts
 - [ ] 5.1 RED: `ListingSearchPort.search(criteria)` — missing/nullable `cityId` rejected (D5)
 - [ ] 5.2 GREEN: search port signature with required non-nullable `cityId`
 - [ ] 5.3 RED: integration — Maracaibo search excludes Distrito Capital listings (no-filter, wide-price-range, colliding-zone-name scenarios)

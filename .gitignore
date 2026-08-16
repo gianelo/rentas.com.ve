@@ -1,6 +1,12 @@
 # Local AI runtime state
 .atl/
 .codegraph/
+# Agent worktrees live here. Each is a full checkout carrying its own
+# biome.json, and Biome follows nested configs -- so without excluding this
+# path (here and in biome.json's files.includes) a repo-wide `pnpm lint`
+# fails with a configuration error the moment a parallel agent is running,
+# for reasons that have nothing to do with the code being linted.
+.claude/
 
 # Secrets — never commit these. The repository is private, which means
 # GitHub secret scanning is off: nothing catches a leaked key but this file.
