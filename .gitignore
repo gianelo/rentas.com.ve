@@ -10,3 +10,24 @@
 
 # Design tool exports — the extracted contents are versioned under design/reference/sistema/
 *.zip
+
+# Dependencies
+/node_modules
+
+# Next.js build output
+/.next/
+/out/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Note: next-env.d.ts is deliberately NOT ignored here, unlike the Next.js
+# default template. `pnpm tsc --noEmit` is a CI gate with no dependency on
+# `next dev`/`next build` running first (design.md, Continuous Integration
+# table), so the file that satisfies its tsconfig.json `include` entry must
+# exist on a fresh clone.
+
+# Test and coverage artifacts
+/coverage
+/playwright-report
+/test-results

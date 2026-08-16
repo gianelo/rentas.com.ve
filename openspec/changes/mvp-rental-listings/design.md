@@ -453,13 +453,32 @@ rules:
 
 **F2** — confirm current free-tier limits (Vercel cron, Neon storage, R2, Resend daily cap, **GitHub Actions monthly minutes for private repositories**) at implementation time; provider tiers change.
 
+**F2 — re-verified 2026-08-16 (PR0a), against each provider's live pricing/docs pages:**
+
+| Provider | Limit | Confirmed value | Delta vs. this design |
+|---|---|---|---|
+| Vercel Hobby | Cron schedule | Once per day only; execution window ±59 min; 100 cron jobs/project | Matches D3's "best-effort timing, drift up to ~1 hour" — no delta |
+| Vercel Hobby | Data transfer | 100 GB/mo Fast Data Transfer, up to 10 GB Fast Origin Transfer | Not previously stated numerically — recorded for reference, no delta |
+| Neon Free | Storage | **0.5 GB per project** | **Delta.** This design never states a Neon storage number, but 0.5 GB is a materially tight ceiling for *all* relational data combined — not only `contact_reveal_event`. At realistic MVP row sizes this still comfortably covers thousands of listings/users/reveals, but it sharpens the existing open question on `contact_reveal_event` retention and unbounded draft rows (see Open Questions) into a near-term concern rather than a distant one |
+| Neon Free | Compute | 100 CU-hours/project/month (≈400 hrs at 0.25 CU); 5-minute autosuspend, cannot be disabled on Free | New information — no prior claim to compare against |
+| Neon Free | Egress | 5 GB/month | New information — no prior claim to compare against |
+| Cloudflare R2 Free | Storage | 10 GB-month/month | Matches D2/D12's "10 GB" — no delta |
+| Cloudflare R2 Free | Egress | Free for all storage classes, always | Matches D2/D12's "$0 egress" — no delta |
+| Cloudflare R2 Free | Requests | 1M Class A ops/month, 10M Class B ops/month | New information — no prior claim to compare against |
+| Resend Free | Send caps | 3,000 emails/month, 100 emails/day | Matches design table's "3k/mo, 100/day" — no delta |
+| GitHub Actions (Free plan, private repo) | Minutes | 2,000 minutes/month (Linux-minute equivalent; Windows runners bill 2x, macOS 10x) | New confirmation of the number the CI push/PR-only split (design.md, Continuous Integration) was already designed against — validates that split as necessary, not merely cautious |
+
+No provider tier is tighter than this design assumed, with the exception of Neon storage, which the design never quantified in the first place. The most actionable consequence: the existing open question "Retention for `contact_reveal_event`" and "Draft lifetime" should be revisited before the 0.5 GB ceiling, not the 10 GB R2 ceiling, becomes the operative constraint on how long the MVP can run unattended.
+
 ## Tracked Debt
 
 | Debt | Trigger to repay | Cost | Decision |
 |---|---|---|---|
-| Vercel Hobby non-commercial licensing (D8) | **Fired.** Soliciting voluntary contributions is money solicited from a Hobby deployment. Previously scoped to a listing fee or advertising; the contribution invitation reaches the same clause | ~$20/mo (Vercel Pro) | **Open — founder decision required before launch** |
+| Vercel Hobby non-commercial licensing (D8) | **Fired**, and **resolved by deferral.** Soliciting voluntary contributions is money solicited from a Hobby deployment | ~$20/mo (Vercel Pro) | **Decided: the Pro migration happens last.** Launch on Hobby without the contribution invitation |
 
-**D8 is no longer deferred.** The original trigger was "first listing fee, featured-placement fee, or advertising". A Wikipedia-style contribution ask is not a fee, but it does solicit money from a deployment whose plan is licensed for personal, non-commercial use. Two honest exits: move to Vercel Pro before launch, or launch without the contribution invitation and add it with the Pro migration. Guessing here means discovering it at invoicing time, which is exactly what this table exists to prevent.
+**D8 — decided.** The original trigger was "first listing fee, featured-placement fee, or advertising". A Wikipedia-style contribution ask is not a fee, but it does solicit money from a deployment whose plan is licensed for personal, non-commercial use. Of the two honest exits, the founder chose the second: **launch on Hobby without the contribution invitation, and migrate to Pro at the end.**
+
+**The binding consequence: PR10 may be built, but its invitation MUST NOT be enabled in production before the Pro migration.** This is the one place where a completed, merged, passing work unit is still not allowed to be live. It therefore needs a switch rather than a memo — the invitation ships behind an environment flag that is off by default, so shipping the code and soliciting the money are two separate acts. A guarantee that depends on remembering not to deploy something is not a guarantee.
 
 ## Open Questions
 
