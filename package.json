@@ -25,10 +25,16 @@
     "test": "vitest run --passWithNoTests",
     "test:unit": "vitest run --passWithNoTests",
     "test:coverage": "vitest run --coverage --passWithNoTests",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
+    "@auth/drizzle-adapter": "1.11.3",
+    "@neondatabase/serverless": "1.1.0",
+    "drizzle-orm": "0.45.2",
     "next": "15.5.23",
+    "next-auth": "5.0.0-beta.32",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
@@ -39,6 +45,7 @@
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
     "@vitest/coverage-v8": "4.1.10",
+    "drizzle-kit": "0.31.10",
     "typescript": "7.0.2",
     "vitest": "4.1.10"
   }
