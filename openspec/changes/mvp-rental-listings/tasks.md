@@ -68,17 +68,17 @@ PR9 depends only on PR3 (publication) and PR4 (trust), not on PR5–PR8. It is p
 
 PR0c is deliberately last: a pipeline that runs nothing is not worth reviewing, and the gates can only be proven to *fail* correctly once there is something for them to fail against.
 
-- [ ] 0.1 `pnpm init`, add Next.js 15 + React 19, TS, `tsconfig.json`
-- [ ] 0.2 Configure Biome (`biome.json`), Vitest (`vitest.config.ts`), Playwright (`playwright.config.ts`)
-- [ ] 0.3 Apply follow-up F1: update `openspec/config.yaml` `testing:`/`context:`/`rules` blocks per design
-- [ ] 0.4 Follow-up F2: re-verify current Vercel/Neon/R2/Resend free-tier limits; record deltas vs design doc
+- [x] 0.1 `pnpm init`, add Next.js 15 + React 19, TS, `tsconfig.json`
+- [x] 0.2 Configure Biome (`biome.json`), Vitest (`vitest.config.ts`), Playwright (`playwright.config.ts`)
+- [x] 0.3 Apply follow-up F1: update `openspec/config.yaml` `testing:`/`context:`/`rules` blocks per design
+- [x] 0.4 Follow-up F2: re-verify current Vercel/Neon/R2/Resend free-tier limits; record deltas vs design doc
 - [ ] 0.5 Drizzle config + `src/shared/db/client.ts` (Neon pooled endpoint)
 - [ ] 0.6 Auth.js v5 + Google provider + Drizzle adapter (`user`, `account`, `session` tables)
 - [ ] 0.7 Deploy skeleton to Vercel; confirm live Neon connection
 - [ ] 0.8 `.github/workflows/ci.yml`: lint, types, unit, coverage, `lint:tokens` and integration on every push; E2E, crawlability and both budget gates on pull requests only (Actions minutes are metered on a private repository)
-- [ ] 0.8b `pnpm lint:tokens` — fails on a colour literal, corner radius, thumbnail dimension or type size written as a value instead of a custom property in component styles (D16). Passes trivially until PR1b lands components; it exists from PR0 so no component is ever written without it
+- [x] 0.8b `pnpm lint:tokens` — fails on a colour literal, corner radius, thumbnail dimension or type size written as a value instead of a custom property in component styles (D16). Passes trivially until PR1b lands components; it exists from PR0 so no component is ever written without it
 - [ ] 0.9 Postgres service container in CI pinned to Neon's major version — the integration layer must not run against an emulator
-- [ ] 0.10 Coverage gate: 90% floor on `src/modules/*/domain/` and `src/modules/*/application/`; no target on `infrastructure/` or `app/`
+- [x] 0.10 Coverage gate: 90% floor on `src/modules/*/domain/` and `src/modules/*/application/`; no target on `infrastructure/` or `app/`
 - [ ] 0.11 Confirm every gate fails the build when violated — a gate that only warns is not a gate
 
 ## Phase 1: Identity + Phone Verification Port (PR1)
