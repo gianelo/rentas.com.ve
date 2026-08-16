@@ -1,5 +1,15 @@
 # Especificación de pantallas — Rentas
 
+> ## ⚠️ HISTÓRICO — superado por el sistema de diseño
+>
+> Este documento fue el insumo que produjo las pantallas. La fuente de verdad ahora es [`sistema/SISTEMA.md`](./sistema/SISTEMA.md), con la combinación **`compacto` + `menta`**.
+>
+> **Discrepa en medidas concretas** y por lo tanto no debe usarse para implementar: acá la miniatura es 96 × 72 y entran cinco avisos sobre el pliegue; en el sistema adoptado la miniatura es 44 × 34 y entran **diez**. La escala tipográfica y la de espaciado también fueron reemplazadas por los tokens.
+>
+> Lo que sigue sirviendo: el registro de contenido real (zonas, títulos, precios, textos literales de interfaz) y el inventario de pantallas.
+
+---
+
 **Continúa el brief anterior.** Ese documento define el producto, las restricciones y las referencias. Este define **exactamente qué construir**: cada elemento, en qué orden, con qué medida y con qué texto.
 
 Lo único que queda a tu criterio es la **estética**: paleta, personalidad tipográfica, forma de los componentes, tono. La estructura, las medidas, el contenido y la jerarquía están fijados acá y no se cambian.

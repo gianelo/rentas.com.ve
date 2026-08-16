@@ -1,0 +1,29 @@
+/* Rentas — tokens del sistema
+   Dos ejes independientes, ambos declarativos:
+     data-theme  → color, radio de esquina, relleno de control
+     data-layout → densidad, tamaño de miniatura, escala de precio, tipografía de títulos
+   Cambiar de combinación es cambiar dos atributos en el <html>. Nada más.
+   Ninguna de las 36 combinaciones descarga tipografías: todas usan el stack del sistema. */
+
+:root{
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --serif:Georgia,"Times New Roman",serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+
+/* ---------- Eje 1 · estructura ---------- */
+[data-layout="estandar"]{--tw:96px;--th:72px;--twd:120px;--thd:90px;--gap:12px;--rowpad:8px 16px;--fp:17px;--fpb:28px;--fpw:800;--ft:13px;--ftw:400;--tclamp:36px;--disp:var(--sans)}
+[data-layout="compacto"]{--tw:44px;--th:34px;--twd:64px;--thd:48px;--gap:8px;--rowpad:7px 12px;--fp:15px;--fpb:26px;--fpw:700;--ft:13px;--ftw:400;--tclamp:36px;--disp:var(--mono)}
+[data-layout="barrio"]{--tw:80px;--th:80px;--twd:120px;--thd:90px;--gap:12px;--rowpad:12px 16px;--fp:19px;--fpb:32px;--fpw:700;--ft:14px;--ftw:400;--tclamp:39px;--disp:var(--serif)}
+[data-layout="editorial"]{--tw:64px;--th:64px;--twd:96px;--thd:96px;--gap:16px;--rowpad:16px 20px;--fp:18px;--fpb:26px;--fpw:700;--ft:16px;--ftw:600;--tclamp:44px;--disp:var(--sans)}
+
+/* ---------- Eje 2 · estilo ---------- */
+[data-theme="bronce"],:root{--sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--serif:Georgia,"Times New Roman",serif;--mono:ui-monospace,SFMono-Regular,Menlo,monospace;--r:6px;--rs:4px;--ctl:var(--surface);--bg:#f4f4f2;--surface:#fff;--line:#e2e3e1;--strong:#b7b9b6;--ink:#191a18;--soft:#6a6d69;--accent:#6b5518;--accent-ink:#fff;--tint:#f6f1e2;--warn:#8a5a00;--warn-bg:#fbf3e2;--err:#9c2b20;--err-bg:#fbecea;--thumb:repeating-linear-gradient(135deg,#e6e7e5 0 7px,#f0f1ef 7px 14px)}
+[data-theme="tinta"]{--r:8px;--rs:6px;--bg:#eef1f4;--surface:#fff;--line:#dde2e7;--strong:#aeb6bf;--ink:#12161b;--soft:#5b6672;--accent:#1f4b7a;--accent-ink:#fff;--tint:#e9f0f7;--warn:#8a5a00;--warn-bg:#fbf3e2;--err:#9c2b20;--err-bg:#fbecea;--thumb:repeating-linear-gradient(135deg,#e3e8ec 0 7px,#eef2f5 7px 14px)}
+[data-theme="papel"]{--r:8px;--rs:6px;--bg:#f2f1ea;--surface:#fdfcf7;--line:#e3e1d6;--strong:#b5b2a3;--ink:#1b201c;--soft:#63695f;--accent:#245a42;--accent-ink:#fff;--tint:#e7efe9;--warn:#8a5a00;--warn-bg:#f8f2e0;--err:#9c2b20;--err-bg:#f9eae8;--thumb:repeating-linear-gradient(135deg,#e6e4da 0 7px,#f1efe7 7px 14px)}
+[data-theme="senal"]{--r:10px;--rs:999px;--bg:#f1f1f1;--surface:#fff;--line:#e0e0e0;--strong:#adadad;--ink:#0f0f0f;--soft:#666;--accent:#b3261e;--accent-ink:#fff;--tint:#fdeceb;--warn:#8a5a00;--warn-bg:#faf2e1;--err:#b3261e;--err-bg:#fdeceb;--thumb:repeating-linear-gradient(135deg,#e6e6e6 0 7px,#f0f0f0 7px 14px)}
+[data-theme="suave"]{--r:16px;--rs:999px;--ctl:#f3f3f7;--bg:#f5f4f8;--surface:#fff;--line:#eceaf1;--strong:#c6c3d0;--ink:#191825;--soft:#66647a;--accent:#4a4f7a;--accent-ink:#fff;--tint:#eeeef6;--warn:#8a5a00;--warn-bg:#f9f2e3;--err:#9c2b20;--err-bg:#fbeceb;--thumb:repeating-linear-gradient(135deg,#eceaf1 0 7px,#f5f4f8 7px 14px)}
+[data-theme="menta"]{--r:12px;--rs:999px;--ctl:#F0F5F9;--bg:#F0F5F9;--surface:#FFFFFF;--line:#e1e4e6;--strong:#788189;--ink:#1E2022;--soft:#52616B;--accent:#272343;--accent-ink:#FFFFFF;--tint:#E3F6F5;--warn:#8a5a00;--warn-bg:#faf2e1;--err:#9c2b20;--err-bg:#fbecea;--thumb:repeating-linear-gradient(135deg,#BAE8E8 0 7px,#E3F6F5 7px 14px)}
+[data-theme="coral"]{--r:12px;--rs:999px;--ctl:#eaf3f3;--bg:#eaf3f3;--surface:#f4fdfd;--line:#c1caca;--strong:#927156;--ink:#333333;--soft:#5c5c5c;--accent:#cc4f34;--accent-ink:#FFFFFF;--tint:#F7D1B3;--warn:#927156;--warn-bg:#F7D1B3;--err:#7f0000;--err-bg:#fbeae7;--thumb:repeating-linear-gradient(135deg,#c1caca 0 7px,#eaf3f3 7px 14px)}
+[data-theme="violeta"]{--r:12px;--rs:999px;--ctl:#4D3B64;--bg:#382B49;--surface:#3B2D4D;--line:#4D3B64;--strong:#895896;--ink:#FFFFFF;--soft:#b9a8c4;--accent:#D7C5DF;--accent-ink:#3B2D4D;--tint:#4D3B64;--warn:#e8c07a;--warn-bg:#4a3c2c;--err:#f0a8a0;--err-bg:#4d2f34;--thumb:repeating-linear-gradient(135deg,#4D3B64 0 7px,#443657 7px 14px)}
+[data-theme="oscuro"]{--r:10px;--rs:6px;--ctl:#22262e;--bg:#14161a;--surface:#1b1e24;--line:#2c313a;--strong:#4a515c;--ink:#eef1f4;--soft:#9aa3ad;--accent:#d8a13a;--accent-ink:#14161a;--tint:#2a2415;--warn:#e0b464;--warn-bg:#2c2517;--err:#e98a80;--err-bg:#2e1c1a;--thumb:repeating-linear-gradient(135deg,#23272f 0 7px,#1d2027 7px 14px)}
