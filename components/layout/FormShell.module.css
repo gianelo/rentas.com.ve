@@ -1,0 +1,9 @@
+/* Single-column form shell (tasks.md 1b.13, SISTEMA.md "Layout de
+   escritorio" — "Formularios: una sola columna de 600px"). A wide form
+   loses the relationship between label and field (design.md D14), so this
+   stays 600px at every viewport wider than the form itself, not only above
+   the shared breakpoint. */
+.formShell {
+  max-width: 600px;
+  margin-inline: auto;
+}

@@ -23,7 +23,8 @@ Session preflight collected 2026-08-16: execution mode `auto`, artifact store `h
 | PR0b Persistence + auth scaffold | 200–280 | Medium |
 | PR0c Deploy + CI pipeline | 180–280 | Medium |
 | PR1 Identity + phone-verification port | 300–450 | Low |
-| PR1b Design foundation (tokens, atoms, result row, a11y baseline, token contract) | 400–600 | Low — the system is already decided; this is transcription plus its guard rails |
+| PR1b-a Tokens, root attributes, token contract, layout primitives | 200–300 | Low — the system is already decided |
+| PR1b-b Atoms, button hierarchy, publisher badge, result row | 250–350 | Low |
 | PR2 City/zone schema + seed + UI | 200–350 | Low |
 | PR3 Publication core | 600–900 | High — likely needs its own split |
 | PR4 Trust: photo-hash dedup | 300–450 | Medium |
@@ -109,16 +110,27 @@ The coverage failure names the scoped glob explicitly — `Coverage for lines (0
 - [x] 1.7 RED: publish succeeds regardless of phone-verification status
 - [x] 1.8 GREEN: `PhoneVerificationPort` contract + `DisabledPhoneVerificationAdapter` (`PHONE_VERIFICATION_ENABLED=false`, no domain branch)
 
-## Phase 1b: Design Foundation (PR1b)
+## Phase 1b: Design Foundation (PR1b-a → PR1b-b)
 
 Inserted between PR1 and PR2 because PR2 builds the first UI (the cascading city/zone select) and cannot be written before the visual language is settled. Carries D14, D15, and D16.
 
+**Split, per the 400-line review budget.** Forecast at 400–600 lines across 18 tasks, so it ships as two stacked slices:
+
+| Slice | Tasks | Ends when |
+|---|---|---|
+| **PR1b-a** The system and its guard | 1b.1–1b.4, 1b.13, 1b.17 | Tokens ship, the root carries `data-theme`/`data-layout`, `lint:tokens` rejects literals in real component styles, and a theme swap repaints everything |
+| **PR1b-b** The components | 1b.5–1b.12, 1b.14–1b.16, 1b.18 | Atoms, the three-level button hierarchy, the publisher badge and the result row exist and meet their measured bounds |
+
+The order is not cosmetic. **The token contract has to land before the first component**, or components get written against literal values and the guard arrives to a codebase it must retroactively clean. A rule that arrives after the code it governs is a migration, not a guarantee.
+
+**PR1b-a shipped at 734 authored lines against the 400 budget — `size:exception`, accepted by the founder on 2026-08-16.** The overage is recorded rather than absorbed silently. Its shape: `scripts/lint-tokens.mjs` 230 lines (real logic — the D16 guard, and where review effort actually belongs), `src/styles/tokens.css` 140 lines (transcription of three token sets from the design reference), five layout primitives ~290 lines across 15 near-identical small files, and ~90 lines of config and docs. The argument accepted was that review burden here is not proportional to line count. **This is the second consecutive exception** (PR0a was the first, 10 lines over on a generated lockfile). A third would mean the budget has become advisory, and the honest response then is to lower the forecast or split earlier — not to keep granting exceptions.
+
 **Source of truth:** `design/reference/sistema/SISTEMA.md` (system), `design/reference/sistema/tokens.css` (token sets), `design/reference/sistema/pantallas-compacto-menta.html` (six worked surfaces at 360px and 1280px). Combination: `data-theme="menta"` + `data-layout="compacto"`. The reference HTML is a prototype, not production code — its inline styles and `support.js` runtime are never ported.
 
-- [ ] 1b.1 Port the shipped token subset to `src/styles/tokens.css` — `[data-layout="compacto"]`, `[data-theme="menta"]`, plus one dark set behind `prefers-color-scheme` (D16). The remaining ten sets stay in the reference only
-- [ ] 1b.2 Set `data-theme` / `data-layout` on the root element in the app shell; no component reads either attribute directly
-- [ ] 1b.3 RED: **no component style contains a hex literal, a raw corner radius, a thumbnail dimension, or a literal type size** — every one resolves through a custom property (D16). Wire it as a lint rule, not a review habit
-- [ ] 1b.4 RED: swapping `data-theme` on the root element repaints every rendered atom and molecule, with no element retaining its previous colour (the inspector-flip criterion, automated)
+- [x] 1b.1 Port the shipped token subset to `src/styles/tokens.css` — `[data-layout="compacto"]`, `[data-theme="menta"]`, plus one dark set behind `prefers-color-scheme` (D16). The remaining ten sets stay in the reference only
+- [x] 1b.2 Set `data-theme` / `data-layout` on the root element in the app shell; no component reads either attribute directly
+- [x] 1b.3 RED: **no component style contains a hex literal, a raw corner radius, a thumbnail dimension, or a literal type size** — every one resolves through a custom property (D16). Wire it as a lint rule, not a review habit
+- [x] 1b.4 RED: swapping `data-theme` on the root element repaints every rendered atom and molecule, with no element retaining its previous colour (the inspector-flip criterion, automated)
 - [ ] 1b.5 Atoms per atomic design, from the system's component anatomy: price, title, metadata, badge, thumbnail, chip, button, input, label, breadcrumb
 - [ ] 1b.6 GREEN: the three-level button hierarchy as distinct components — action (filled `--accent`), selection/state (`--tint` fill, `--accent` border and text), neutral (`--strong` border, no fill). They are not variants of one component with a free-form prop, because the levels must not be mixed
 - [ ] 1b.7 RED: the `publisher_type` badge is distinguishable with colour removed — owner is filled (`--ink` on `--surface`), broker is outlined (`--strong` border, `--soft` text). Asserted against a greyscale render, not by reading the CSS
@@ -127,11 +139,11 @@ Inserted between PR1 and PR2 because PR2 builds the first UI (the cascading city
 - [ ] 1b.10 RED: a result row's rendered height stays within 96px at 360px, including a title long enough to wrap to its two-line clamp. Density is enforced as a bound on the row, not as a count of rows above the fold — a count is a proxy that breaks on a font-metric difference and tells you nothing about what regressed
 - [ ] 1b.11 RED: the result row renders with no horizontal overflow at a 360px viewport
 - [ ] 1b.12 RED: at 1280px, result rows and running text stay within the 1100px container rather than spanning the window; body copy is capped at a 520px reading width
-- [ ] 1b.13 GREEN: two-viewport layout primitives — 1100px container, 240px sticky filter sidebar (`grid: 240px 1fr`, gap 32), 600px single-column form shell, and the detail split (640px media + 420px sticky data column)
+- [x] 1b.13 GREEN: two-viewport layout primitives — 1100px container, 240px sticky filter sidebar (`grid: 240px 1fr`, gap 32), 600px single-column form shell, and the detail split (640px media + 420px sticky data column)
 - [ ] 1b.14 RED: every interactive target is at least 44px in its smallest dimension on mobile and 36px on desktop
 - [ ] 1b.15 RED: text contrast meets WCAG AA across every token pair in use, in both the shipped light and dark sets
 - [ ] 1b.16 RED: keyboard focus is visibly indicated on every interactive atom
-- [ ] 1b.17 GREEN: base layout, landmarks, and heading structure
+- [x] 1b.17 GREEN: base layout, landmarks, and heading structure
 - [ ] 1b.18 Confirm the shipped read-path CSS carries no webfont request and no runtime JavaScript
 
 ## Phase 2: City & Zone Data (PR2)
