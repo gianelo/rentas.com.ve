@@ -131,6 +131,30 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
+  # Layout-measurement harness (tasks.md 1b.10-1b.12, 1b.14). Runs on every
+  # push, not pull_request only, unlike the e2e/budget jobs below: it needs
+  # a Next.js build and a real browser, but — unlike those — it needs no
+  # deployed preview (its own webServer starts a local `next dev`), which is
+  # exactly the distinction design.md draws between the cheap push-gated
+  # half and the expensive PR-only half of this pipeline. There is no
+  # PREVIEW_BASE_URL dependency to wait on, so gating it to pull_request
+  # would only delay the same proof for no saved cost.
+  measure:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:measure
+
   integration:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
