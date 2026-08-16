@@ -1,0 +1,49 @@
+{
+  "ci": {
+    "collect": {
+      "numberOfRuns": 1,
+      "settings": {
+        "formFactor": "mobile",
+        "screenEmulation": {
+          "mobile": true,
+          "width": 360,
+          "height": 640,
+          "deviceScaleFactor": 2,
+          "disabled": false
+        },
+        "throttlingMethod": "simulate",
+        "throttling": {
+          "rttMs": 150,
+          "throughputKbps": 1638.4,
+          "requestLatencyMs": 562.5,
+          "downloadThroughputKbps": 1474.56,
+          "uploadThroughputKbps": 675,
+          "cpuSlowdownMultiplier": 4
+        }
+      }
+    },
+    "assert": {
+      "assertions": {
+        "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }]
+      },
+      "assertMatrix": [
+        {
+          "matchingUrlPattern": "^https?://[^/]+/alquiler/[^/]+/[^/]+/[^/?#]*-[0-9]+/?([?#].*)?$",
+          "assertions": {
+            "total-byte-weight": ["error", { "maxNumericValue": 512000 }]
+          }
+        },
+        {
+          "matchingUrlPattern": "^https?://[^/]+/alquiler(/[^/]+){0,2}/?([?#].*)?$",
+          "assertions": {
+            "total-byte-weight": ["error", { "maxNumericValue": 153600 }]
+          }
+        }
+      ]
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": "./.lighthouseci"
+    }
+  }
+}
