@@ -30,7 +30,10 @@
     "test:e2e": "playwright test",
     "test:measure": "playwright test --config=playwright.measure.config.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:test:up": "docker compose up -d --wait postgres",
+    "db:test:down": "docker compose down -v",
+    "db:test:migrate": "drizzle-kit migrate --config drizzle.test.config.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "1.11.3",

@@ -1,0 +1,33 @@
+# Local Postgres for the integration test layer.
+#
+# The integration tests prove guarantees that live in the database itself —
+# D5's composite foreign key, D4's bit_count Hamming distance, D6's
+# unique-pair view — so they must run against real Postgres, never a fake
+# repository or an emulator (design.md, Testing Strategy). Before this file
+# existed the only place they could run was CI, which meant a two-to-three
+# minute round trip to learn why a query was wrong. Locally the same suite
+# finishes in under a second.
+#
+# Pinned to the same major version as the Neon instance and the CI service
+# container. Testing against a different major version tests a different
+# database.
+services:
+  postgres:
+    image: postgres:18
+    container_name: rentas-pg
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rentas_test
+    # 5433 on the host, not 5432: leaves any natively installed Postgres
+    # alone rather than silently shadowing it.
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    # No volume on purpose. This database is disposable: `db:test:down`
+    # destroys it, and a test suite that depends on accumulated state is a
+    # test suite that passes for reasons nobody can reproduce.

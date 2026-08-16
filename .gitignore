@@ -31,3 +31,5 @@
 /coverage
 /playwright-report
 /test-results
+
+# Local Postgres container data is disposable by design (docker-compose.yml)
