@@ -130,12 +130,13 @@ El paso al plan pago, de unos 20 dólares al mes, es **condición previa obligat
 
 ## Plan de entrega
 
-135 tareas ordenadas por dependencias, entre 5.350 y 7.850 líneas estimadas, repartidas en doce entregas encadenadas — cada una construida sobre la anterior y desplegable por separado.
+145 tareas ordenadas por dependencias, entre 5.600 y 8.250 líneas estimadas, repartidas en trece entregas encadenadas — cada una construida sobre la anterior y desplegable por separado.
 
 | | Entrega | Contenido |
 |---|---|---|
 | PR0 | Arranque | Herramientas, esquema base, configuración |
 | PR1 | Identidad | Google, sesión, puerto de verificación apagado |
+| PR1b | Fundación de diseño | Tokens, átomos, fila de resultado, base de accesibilidad |
 | PR2 | Ciudades y zonas | Esquema, carga inicial, selector |
 | PR3 | Publicación | Alta, edición, fotos, tipo de publicador |
 | PR4 | Confianza: fotos | Huella perceptual y rechazo de duplicados |

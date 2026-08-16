@@ -4,10 +4,10 @@
 
 | Field | Value |
 |-------|-------|
-| Estimated changed lines | ~5,350–7,850 total (greenfield, 8 capabilities) |
+| Estimated changed lines | ~5,600–8,250 total (greenfield, 8 capabilities) |
 | 400-line budget risk | High |
 | Chained PRs recommended | Yes |
-| Suggested split | PR0 → PR1 → PR2 → PR3 → PR4 → PR5 → PR6 → PR7 → PR8 → PR9 → PR10 → PR11 |
+| Suggested split | PR0 → PR1 → PR1b → PR2 → PR3 → PR4 → PR5 → PR6 → PR7 → PR8 → PR9 → PR10 → PR11 |
 | Delivery strategy | ask-on-risk |
 | Chain strategy | stacked-to-main |
 
@@ -22,6 +22,7 @@ Chain strategy: pending
 |---|---|---|
 | PR0 Bootstrap/toolchain + CI pipeline | 650–900 | Medium (mostly config) |
 | PR1 Identity + phone-verification port | 300–450 | Low |
+| PR1b Design foundation (tokens, atoms, a11y baseline) | 250–400 | Low |
 | PR2 City/zone schema + seed + UI | 200–350 | Low |
 | PR3 Publication core | 600–900 | High — likely needs its own split |
 | PR4 Trust: photo-hash dedup | 300–450 | Medium |
@@ -41,6 +42,7 @@ PR9 depends only on PR3 (publication) and PR4 (trust), not on PR5–PR8. It is p
 |---|---|---|---|---|---|
 | 0 | Toolchain, Drizzle/Auth.js scaffold, CI gates, config.yaml F1, F2 re-verify | PR0 | `pnpm test` (empty pass) | `pnpm dev` boots, deploys to Vercel, CI green on a throwaway PR | Revert repo to pre-scaffold state |
 | 1 | Google sign-in, session guard, disabled phone-verification port | PR1 | `pnpm test:unit -- identity` | Manual Google OAuth sign-in on deployed preview | `src/modules/identity/**`, `app/(auth)/**` |
+| 1b | Design tokens, atoms, result row, accessibility baseline | PR1b | `pnpm test -- design-system` | Render atoms at 360px on preview; contrast and focus audit | `src/styles/tokens.css`, `components/atoms/**` |
 | 2 | City/zone schema, seed, cascading select | PR2 | `pnpm test:integration -- zone` | Seed script run against Neon branch | `drizzle/*_zones.sql`, seed script |
 | 3 | Listing CRUD, publisher_type, min-content, city-FK, upload guard | PR3 | `pnpm test -- publication` | Publish flow on preview deploy | `src/modules/listing-publication/**` |
 | 4 | dHash + publisher-excluding match port wired into publish | PR4 | `pnpm test:integration -- photo-hash` | Publish two accounts, same photo | `src/modules/listing-trust/**` (hash only) |
@@ -76,6 +78,21 @@ PR9 depends only on PR3 (publication) and PR4 (trust), not on PR5–PR8. It is p
 - [ ] 1.6 GREEN: expiry handling; sign-in UI at `app/(auth)/signin`
 - [ ] 1.7 RED: publish succeeds regardless of phone-verification status
 - [ ] 1.8 GREEN: `PhoneVerificationPort` contract + `DisabledPhoneVerificationAdapter` (`PHONE_VERIFICATION_ENABLED=false`, no domain branch)
+
+## Phase 1b: Design Foundation (PR1b)
+
+Inserted between PR1 and PR2 because PR2 builds the first UI (the cascading city/zone select) and cannot be written before the visual language is settled. Carries D14 and D15. Reference: `design/reference/pantallas.html`.
+
+- [ ] 1b.1 CSS tokens from D14 — colour roles, five-step type scale, spacing scale; dark values defined but not shipped
+- [ ] 1b.2 Atoms per atomic design: price, title, badge, thumbnail, pill, button, input, label
+- [ ] 1b.3 RED: the `publisher_type` badge is distinguishable without colour (filled vs outlined)
+- [ ] 1b.4 Molecule: the result row — 96px thumbnail, price, title, zone, badge
+- [ ] 1b.5 RED: the result row renders with no horizontal overflow at a 360px viewport
+- [ ] 1b.6 RED: every interactive target is at least 44px in its smallest dimension
+- [ ] 1b.7 RED: text contrast meets WCAG AA across every token pair in use
+- [ ] 1b.8 RED: keyboard focus is visibly indicated on every interactive atom
+- [ ] 1b.9 GREEN: base layout, landmarks, and heading structure
+- [ ] 1b.10 Confirm the shipped read-path CSS carries no webfont request and no runtime JavaScript
 
 ## Phase 2: City & Zone Data (PR2)
 

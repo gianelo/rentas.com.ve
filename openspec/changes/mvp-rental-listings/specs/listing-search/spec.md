@@ -94,6 +94,42 @@ The system MUST render search results on the server. The system MUST NOT require
 - WHEN they submit a search
 - THEN the results are present in the served response
 
+### Requirement: Usable at Small Mobile Widths
+
+The system MUST render search results and zone landing pages usably at a 360px viewport width with no horizontal page scrolling. Interactive targets MUST be at least 44px in their smallest dimension.
+
+#### Scenario: No horizontal scroll at 360px
+
+- GIVEN a viewport 360px wide
+- WHEN a visitor opens the search results
+- THEN the page body does not scroll horizontally
+
+### Requirement: Result Summary Content
+
+The system MUST show, for every result, at minimum: price, title, zone, and `publisher_type`.
+
+#### Scenario: A result row carries the scannable essentials
+
+- GIVEN a search returning at least one listing
+- WHEN a result row is rendered
+- THEN its price, title, zone, and publisher type are all present
+
+### Requirement: Accessible Markup
+
+The system MUST meet WCAG AA text contrast, expose page structure through real headings and landmarks, provide alternative text for every listing photo, and render a visible keyboard focus state on every interactive element.
+
+#### Scenario: Listing photos are not announced as unlabelled images
+
+- GIVEN a results page containing listing photos
+- WHEN it is inspected for accessibility
+- THEN every photo carries alternative text
+
+#### Scenario: Keyboard focus is visible
+
+- GIVEN a visitor navigating with a keyboard
+- WHEN focus moves to a filter or a result link
+- THEN the focused element is visibly indicated
+
 ### Requirement: Publisher Type Visible in Results
 
 The system MUST display each result's `publisher_type` (owner or broker) alongside its other summary information.

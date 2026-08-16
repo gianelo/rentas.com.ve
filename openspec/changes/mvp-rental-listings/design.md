@@ -225,6 +225,7 @@ Auto-hide: three rows in `listing_report` for one listing sets `hidden_by_report
 | `app/`, `components/` | Create | Delivery + atomic-design UI |
 | `app/api/jobs/expiry-reminders/route.ts`, `vercel.json` | Create | Job route + cron schedule |
 | `.github/workflows/ci.yml`, `lighthouserc.json`, `scripts/budget-bundle.ts` | Create | CI gates, Lighthouse budgets, build-output budget assertion |
+| `design/reference/BRIEF.md`, `design/reference/`, `src/styles/tokens.css` | Create | Portable design brief, visual reference (D14), and the tokens the components are built from |
 | `openspec/config.yaml` | Modify | **Follow-up F1** — not edited by this phase |
 
 ## Testing Strategy
@@ -318,6 +319,31 @@ The reference point is a classifieds board, not a design showcase: information-d
 
 **The read path ships no JavaScript.** Browsing, searching, and filtering are server-rendered with URL parameters — no client-side filter layer. Client components are restricted to genuine interaction: photo upload, contact reveal, contribution dismissal, bulk import preview. This is what makes the classifieds feel and the mobile performance the same decision rather than two competing ones.
 
+### D14 — Visual language, decided in HTML rather than a design tool
+
+The visual reference is built as real HTML under `design/reference/`, versioned with the repository, not as mockups in a design tool. The reason is D12/D13: this product's binding design constraint is transfer weight, and a mockup cannot be weighed. Designing in a medium that cannot measure the budget is designing blind. Building the reference in HTML is also the honest test of the "no webfonts" decision, since it ships the same system stack the product does.
+
+**The reference is not a specification.** Verifiable requirements live in the capability specs; the reference is the visual source of truth that the components in PR1b, PR2, PR3, and PR5 are built against. It exists so the type scale, spacing rhythm, and component inventory are settled *before* the first UI is written, rather than being invented three times and reconciled later.
+
+**The surface inventory is settled: 22 screens** across five flows — discovery (8), publishing (5), publisher management (2), bulk import (4), and trust/contribution/email (3). This matters more than it sounds: the bulk-import preview with per-row errors is the most complex screen in the product, and the empty, rejected, and expired states are the ones that get improvised at midnight when nobody drew them.
+
+**Durable constraints on any visual direction**, independent of palette:
+
+- **Results are a dense list, not a card grid.** Roughly five listings fit above the fold at 360px against one and a half for cards. With a catalogue still being seeded, showing that options exist outweighs showing one photograph well. A single ~96px thumbnail per row is also what makes the 150 KB search budget arithmetically possible: five thumbnails at 40 KB fit, five detail images do not.
+- **Price outranks the title.** It is what people scan in classifieds, and it earns its emphasis typographically rather than through colour.
+- **`publisher_type` is distinguished by form, not colour alone** — filled versus outlined. It survives colour blindness and a cheap screen in daylight, and it is the product's central trust claim rather than a decorative tag.
+- **Semantic colour is reserved for meaning** — error and expiry — and is never spent on decoration.
+- Type is the system stack at five sizes. Separation comes from borders and whitespace.
+- Dark tokens are defined so a later dark mode is a swap rather than a rewrite; **v1 ships light only**.
+
+**The palette and overall visual tone remain open.** A graphite, accent-free direction was built out across all 22 surfaces and rejected by the founder; it is retained at `design/reference/exploraciones/grafito.html` as a comparison point, not as the approved reference. `design/reference/BRIEF.md` is the portable brief that separates the non-negotiable constraints above from the aesthetic choices still being explored, and it carries the Craigslist reading this product is built on: take the information hierarchy, the density, and the speed; leave the 1996 visuals and the absent mobile design. An austere monochrome direction is *a* valid answer to "fast and simple", not the only one — a new product with no brand, in a market where photo-theft scams are routine, also cannot afford to look abandoned.
+
+### D15 — Accessibility baseline
+
+Not previously specified anywhere. Three reasons it is cheap here and expensive to retrofit: semantic HTML is exactly what D11's crawlability requires, the no-JavaScript read path removes most of the usual failure modes for free, and the audience is on constrained devices and connections where these properties are not an edge case.
+
+Baseline, enforced as testable requirements in the capability specs rather than as aspiration: text contrast meets WCAG AA, every form control has an associated label (never a placeholder standing in for one), interactive targets are at least 44px, keyboard focus is always visible, every listing photo carries alternative text, and page structure uses real headings and landmarks.
+
 ### Performance Budget
 
 Hard numbers, verified on the preview deployment before each user-facing PR merges. A budget without a number is a wish.
@@ -402,3 +428,4 @@ rules:
 - [ ] **CSV bounds.** Maximum row count and file size. Should be sized against the largest real seed-broker portfolio, not guessed.
 - [ ] **Optional CSV columns.** Whether `habitaciones`, `banos`, and `metros2` are accepted depends on whether those fields exist on `listing`; confirm against the schema when the publication module is written rather than inventing columns the model cannot store.
 - [ ] **Draft lifetime.** An imported draft that never receives photos lives forever today. Decide whether drafts expire, and whether the broker is reminded — otherwise the table accumulates dead rows against the Neon free-tier ceiling.
+- [ ] **Palette and visual tone (D14).** The graphite exploration was rejected; the constraints in D14 hold but the palette is unresolved. Blocking for PR1b, since the tokens are its first task. `design/reference/BRIEF.md` is the input for exploring alternatives.
