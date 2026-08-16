@@ -1,0 +1,7 @@
+/* Reading-width cap (tasks.md 1b.12, SISTEMA.md "Cuerpo" — ancho de lectura
+   máx. 520px). Structural layout width, not one of D16's four tokenized
+   categories, matching Container's 1100px and FormShell's 600px precedent:
+   SISTEMA.md states it as a literal and tokens.css does not declare it. */
+.reading {
+  max-width: 520px;
+}
