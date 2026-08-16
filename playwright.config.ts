@@ -20,5 +20,12 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
+    // Crawlability layer (design.md, "Testing Strategy" + D11): the same
+    // spec files run with scripting disabled, proving the read path renders
+    // without JavaScript rather than merely asserting it by inspection.
+    {
+      name: "crawlability",
+      use: { ...devices["Desktop Chrome"], javaScriptEnabled: false },
+    },
   ],
 });

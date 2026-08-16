@@ -1,0 +1,248 @@
+name: CI
+
+# CI minutes are metered on this private repository (design.md, "Continuous
+# Integration") — Actions minutes come from a monthly quota, not the free
+# unlimited tier public repos get. Cheap gates that need no deployment run
+# on every push (which already covers commits pushed to an open PR branch,
+# so they still surface as PR status checks). The expensive half — E2E,
+# crawlability, and both budget gates — needs a deployed preview and runs
+# on pull_request only, so it is never paid for twice per commit.
+#
+# Founder setup required before the pull_request jobs go fully green:
+#   - Repository VARIABLE `PREVIEW_BASE_URL`: the URL of the PR's Vercel
+#     preview deployment (task 0.7 connects Vercel; not set up here). Until
+#     it is set, the `e2e` job emits a warning and skips rather than
+#     hanging or failing.
+# No secret is required for the `integration` job — its Postgres container
+# is ephemeral and local to the job, not the production Neon database.
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "22"
+  # Kept in lockstep with package.json's "packageManager" field. Pinned to
+  # the pnpm 10 line on purpose: Vercel's build image does not recognize
+  # pnpm 11 (see package.json's devEngines comment), and local, CI, and
+  # Vercel must all resolve the same pnpm major or lockfile parsing drifts
+  # silently between environments.
+  PNPM_VERSION: "10.34.5"
+
+jobs:
+  lint:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec biome ci .
+
+  types:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+
+  lint-tokens:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint:tokens
+
+  # Unit tests and the 90% domain/application coverage floor share one run:
+  # `test:coverage` already executes every unit test, so a second bare
+  # `test:unit` pass would just burn minutes re-running the same specs.
+  # A failing test and a threshold violation are still distinguishable from
+  # this job's own output.
+  test:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Unit tests + coverage floor (90% domain/application)
+        run: pnpm test:coverage
+
+  integration:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        # Pinned to 18: the live Neon instance was verified at
+        # server_version 18.4 on 2026-08-16. An emulator or a different
+        # major version would not exercise the bit_count/composite-FK
+        # behaviour this layer exists to test (design.md, "Testing
+        # Strategy": "Integration tests must use real Postgres").
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: rentas_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s
+          --health-retries 5
+    env:
+      # Deliberately not DATABASE_URL: src/shared/db/client.ts only accepts
+      # Neon's pooled HTTP endpoint (assertPooledConnectionString requires
+      # a "-pooler." hostname), which this bare container can never satisfy.
+      # Future integration specs connect with a direct Postgres driver
+      # against TEST_DATABASE_URL instead of the app's Neon-only client.
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentas_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Confirm the service container is really Postgres 18
+        run: |
+          version=$(psql "$TEST_DATABASE_URL" -tAc "SHOW server_version;")
+          echo "server_version: $version"
+          case "$version" in
+            18*) ;;
+            *) echo "::error::expected Postgres 18, got $version"; exit 1 ;;
+          esac
+
+      - name: Integration tests
+        run: |
+          # `if cmd` rather than `out=$(cmd); code=$?` on purpose: Actions runs
+          # these steps under `bash -e`, where a failing command substitution
+          # in an assignment aborts the step before the next line executes —
+          # which would make the branch below unreachable dead code.
+          if output=$(pnpm test:integration 2>&1); then
+            echo "$output"
+            if echo "$output" | grep -qi "no test files found"; then
+              echo "::warning title=Integration gate has no specs yet::tests/integration/ is empty (tasks.md Phase 2+). This step currently cannot fail — it only proves the pipeline and the Postgres 18 container wiring, not any integration behaviour."
+            fi
+          else
+            echo "$output"
+            exit 1
+          fi
+
+  # E2E and crawlability share a job: same install, same spec files, only
+  # the Playwright project differs (crawlability runs with scripting off —
+  # playwright.config.ts). Both need PREVIEW_BASE_URL; see the header above.
+  e2e:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      PLAYWRIGHT_BASE_URL: ${{ vars.PREVIEW_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: E2E + crawlability against the PR preview
+        if: vars.PREVIEW_BASE_URL != ''
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          fail=0
+          # `if cmd` rather than capturing $? after an assignment: Actions runs
+          # these steps under `bash -e`, where a failing command substitution
+          # aborts the step immediately. Capturing the status afterwards never
+          # runs, so both the loop and the "no tests yet" tolerance below would
+          # be dead code and one real failure would skip the remaining project.
+          for project in chromium crawlability; do
+            if output=$(pnpm exec playwright test --project="$project" 2>&1); then
+              echo "$output"
+            else
+              echo "$output"
+              if echo "$output" | grep -qi "no tests found"; then
+                echo "::warning title=$project gate has no specs yet::tests/e2e/ is empty (tasks.md Phase 4+/11). This step currently cannot fail."
+              else
+                fail=1
+              fi
+            fi
+          done
+          exit $fail
+
+      - name: PREVIEW_BASE_URL not configured
+        if: vars.PREVIEW_BASE_URL == ''
+        run: |
+          echo "::warning title=E2E/crawlability skipped::repository variable PREVIEW_BASE_URL is not set, so this PR was not verified against a live preview. Set it once Vercel is connected (task 0.7)."
+
+  budget:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      PREVIEW_BASE_URL: ${{ vars.PREVIEW_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Bundle budget (build-output size assertion)
+        run: |
+          if node -e "process.exit(require('./package.json').scripts['budget:bundle'] ? 0 : 1)"; then
+            pnpm build
+            pnpm run budget:bundle
+          else
+            echo "::warning title=budget:bundle not implemented yet::scripts/budget-bundle.ts does not exist (tasks.md 11.17-11.20). This gate currently cannot fail and must not be read as a passing budget check."
+          fi
+
+      - name: Lighthouse budget
+        run: |
+          if node -e "process.exit(require('./package.json').scripts['budget:lighthouse'] ? 0 : 1)"; then
+            pnpm run budget:lighthouse
+          else
+            echo "::warning title=budget:lighthouse not implemented yet::lighthouserc.json does not exist (tasks.md 11.19-11.20). This gate currently cannot fail and must not be read as a passing budget check."
+          fi
