@@ -104,6 +104,16 @@ The system MUST render search results and zone landing pages usably at a 360px v
 - WHEN a visitor opens the search results
 - THEN the page body does not scroll horizontally
 
+### Requirement: Desktop Uses Width Without Stretching Content
+
+The system MUST constrain running text and result rows to a maximum readable width at large viewports rather than expanding them to fill the window.
+
+#### Scenario: Results stay readable at a wide viewport
+
+- GIVEN a viewport 1280px wide or wider
+- WHEN a visitor opens the search results
+- THEN result rows and running text are held to a bounded width rather than spanning the full window
+
 ### Requirement: Result Summary Content
 
 The system MUST show, for every result, at minimum: price, title, zone, and `publisher_type`.

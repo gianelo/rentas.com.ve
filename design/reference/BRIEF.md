@@ -10,13 +10,26 @@ Documento portable. Pegalo en la herramienta que quieras probar (claude.ai, v0, 
 
 > Diseñá la interfaz de **Rentas**, un portal de alquiler residencial para Venezuela. Es gratis, sin comisión y sin intermediación: el inquilino busca, encuentra, y recibe el WhatsApp de quien publica para seguir por su cuenta.
 >
+> **El modelo mental es Craigslist**: el aviso es la interfaz, densidad alta, sin cromo que compita con el contenido, y velocidad como decisión de diseño. Pero con la tipografía, el espaciado y el diseño móvil de un producto actual — sobrio, no anticuado. Referencia de qué tan moderno: **GOV.UK o Linear, no Airbnb**.
+>
 > El usuario está en un celular de gama media, con datos móviles caros, en Caracas o Maracaibo. Cada kilobyte que mandás lo paga él. La página de resultados no puede pasar de 150 KB ni la ficha de 500 KB, y el camino de lectura no manda JavaScript.
 >
-> Diseñá para móvil primero, a 360px de ancho. El precio es lo que la gente escanea, no el título. Cada aviso debe mostrar siempre si lo publica un dueño o una inmobiliaria — es el reclamo de confianza central del producto, en un mercado donde la estafa con fotos robadas es rutina.
+> El precio es lo que la gente escanea, no el título: va más grande y más pesado. Cada aviso debe mostrar siempre si lo publica un dueño o una inmobiliaria, y esa distinción tiene que leerse **en blanco y negro** — es el reclamo de confianza central en un mercado donde la estafa con fotos robadas es rutina.
 >
 > Toda la interfaz en español de Venezuela, neutro y directo. Usá datos reales: zonas como Chacao, Altamira, Los Palos Grandes, El Rosal, Tierra Negra, Bella Vista. Precios de $250 a $900 mensuales. Nada de lorem ipsum.
 >
-> Empezá por tres pantallas: resultados de búsqueda, ficha del aviso, y formulario de publicación.
+> **Generá exactamente seis pantallas, y cada una en dos anchos: móvil 360px y escritorio 1280px.**
+>
+> 1. Resultados de búsqueda
+> 2. Ficha del aviso
+> 3. Formulario de publicación
+> 4. Página de zona (aterrizaje de Google)
+> 5. Mis publicaciones, con estados: activa, vence pronto, vencida, oculta
+> 6. Importar cartera: tabla de vista previa con errores fila por fila
+>
+> Entregá HTML que se pueda abrir en el navegador, no descripciones ni imágenes. No pares antes de las seis.
+
+**Si querés comparar direcciones:** pedí explícitamente *"dame tres direcciones visuales distintas entre sí para la pantalla de resultados, en móvil y escritorio, antes de desarrollar el resto"*. Pedir una sola te devuelve el default de la herramienta, que casi siempre es un Airbnb con fotos gigantes que no entra en el presupuesto.
 
 ---
 
@@ -65,19 +78,43 @@ Todo lo demás es tuyo:
 
 Una dirección austera y monocroma **es una salida válida, no la única**. Un producto nuevo, sin marca, en un mercado con miedo a la estafa, también necesita no verse abandonado.
 
+## Qué tan moderno
+
+"Como Craigslist pero moderno" se malinterpreta fácil en las dos direcciones. Concretamente:
+
+**Sí es moderno:** ritmo de espaciado actual, escala tipográfica real con contraste de pesos, interlineado que respira, contraste que pasa AA, jerarquía clara, diseño responsivo de verdad, estados de foco y hover cuidados, profundidad sutil solo donde ayuda a jerarquizar.
+
+**No es moderno, es caro:** animaciones de entrada, degradados, vidrio esmerilado, sombras difusas por todos lados, encabezado gigante, fotos enormes, carruseles, todo redondeado a 16px.
+
+**El dial:** tan moderno como **GOV.UK** o **Linear**. No tan moderno como **Airbnb**. Un producto que se ve cuidado y liviano, no uno que se ve caro.
+
+## Escritorio
+
+El producto es móvil primero **para descubrir**, pero no es solo móvil. Y hay un flujo que es de escritorio por naturaleza.
+
+| Pantalla | Móvil 360px | Escritorio 1280px |
+|---|---|---|
+| **Resultados** | Lista de una columna, filtros en panel que se abre | Contenedor centrado de ~1100px. Filtros como barra lateral fija a la izquierda, resultados a la derecha. **Sigue siendo lista, no grilla** — con más aire y más metadatos por fila |
+| **Ficha** | Una columna, foto arriba | Dos columnas: fotos a la izquierda, precio + datos + contacto a la derecha, fijo al hacer scroll |
+| **Publicar** | Una columna | **Una columna centrada de ~600px.** Un formulario ancho es peor, no mejor: el ojo pierde la relación entre etiqueta y campo |
+| **Página de zona** | Igual que resultados | Igual que resultados, con el texto de la zona arriba a ancho de lectura |
+| **Mis publicaciones** | Lista con la acción en cada fila | Misma lista, con las acciones alineadas a la derecha |
+| **Importar cartera** | Funciona, pero apretado | **Acá el escritorio se gana el sueldo.** Tabla completa, todas las columnas visibles, sin scroll horizontal. Nadie sube un CSV de 40 filas desde el celular |
+
+Regla general: **el escritorio no es la versión móvil estirada.** Un texto a 1200px de ancho no se lee. Contenedor máximo, y el espacio que sobra se usa para poner cosas al costado — filtros, datos, acciones — no para agrandar todo.
+
 ## Pantallas
 
-Empezá por las tres primeras. Si la herramienta da para más, seguí en orden.
+**Generá las seis, cada una en móvil (360px) y escritorio (1280px).** No pares antes de las seis.
 
 1. **Resultados de búsqueda** — la pantalla del producto. Define densidad y la unidad de resultado
 2. **Ficha del aviso** — define el peso, que es la restricción real
 3. **Publicar** — la única pantalla compleja del lado de quien ofrece
-4. Filtros
-5. Sin resultados
-6. Página de zona — el aterrizaje de Google, una por cada zona
-7. Aviso vencido, con sugerencias activas de la misma zona
-8. Mis publicaciones — con estados: activa, vence pronto, vencida, oculta
-9. Importar cartera — vista previa con errores fila por fila
+4. **Página de zona** — el aterrizaje de Google, una por cada zona
+5. **Mis publicaciones** — con estados: activa, vence pronto, vencida, oculta
+6. **Importar cartera** — vista previa con errores fila por fila
+
+Si hay margen para más, en este orden: filtros, sin resultados, aviso vencido con sugerencias de la misma zona, contacto revelado, correo de recordatorio.
 10. Correo de recordatorio de vencimiento
 
 ## Contenido real
@@ -155,6 +192,8 @@ Cuando vuelvas con una propuesta, se mide contra esto:
 4. ¿Entra en el presupuesto de bytes, o hay que recortar fotos?
 5. ¿Funciona sin JavaScript?
 6. ¿Se ve cuidado sin verse caro?
+7. ¿El escritorio usa el ancho para poner cosas al costado, o solo agrandó todo?
+8. ¿La tabla de importación se ve completa en escritorio, sin scroll horizontal?
 
 ---
 

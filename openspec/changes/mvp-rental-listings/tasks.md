@@ -88,6 +88,8 @@ Inserted between PR1 and PR2 because PR2 builds the first UI (the cascading city
 - [ ] 1b.3 RED: the `publisher_type` badge is distinguishable without colour (filled vs outlined)
 - [ ] 1b.4 Molecule: the result row — 96px thumbnail, price, title, zone, badge
 - [ ] 1b.5 RED: the result row renders with no horizontal overflow at a 360px viewport
+- [ ] 1b.5b RED: at 1280px, result rows and running text stay within a bounded container rather than spanning the window
+- [ ] 1b.5c GREEN: two-viewport layout primitives — max-width container, sidebar shell for filters, narrow form column
 - [ ] 1b.6 RED: every interactive target is at least 44px in its smallest dimension
 - [ ] 1b.7 RED: text contrast meets WCAG AA across every token pair in use
 - [ ] 1b.8 RED: keyboard focus is visibly indicated on every interactive atom
