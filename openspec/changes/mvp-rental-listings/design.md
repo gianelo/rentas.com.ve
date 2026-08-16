@@ -457,9 +457,11 @@ rules:
 
 | Debt | Trigger to repay | Cost | Decision |
 |---|---|---|---|
-| Vercel Hobby non-commercial licensing (D8) | **Fired.** Soliciting voluntary contributions is money solicited from a Hobby deployment. Previously scoped to a listing fee or advertising; the contribution invitation reaches the same clause | ~$20/mo (Vercel Pro) | **Open — founder decision required before launch** |
+| Vercel Hobby non-commercial licensing (D8) | **Fired**, and **resolved by deferral.** Soliciting voluntary contributions is money solicited from a Hobby deployment | ~$20/mo (Vercel Pro) | **Decided: the Pro migration happens last.** Launch on Hobby without the contribution invitation |
 
-**D8 is no longer deferred.** The original trigger was "first listing fee, featured-placement fee, or advertising". A Wikipedia-style contribution ask is not a fee, but it does solicit money from a deployment whose plan is licensed for personal, non-commercial use. Two honest exits: move to Vercel Pro before launch, or launch without the contribution invitation and add it with the Pro migration. Guessing here means discovering it at invoicing time, which is exactly what this table exists to prevent.
+**D8 — decided.** The original trigger was "first listing fee, featured-placement fee, or advertising". A Wikipedia-style contribution ask is not a fee, but it does solicit money from a deployment whose plan is licensed for personal, non-commercial use. Of the two honest exits, the founder chose the second: **launch on Hobby without the contribution invitation, and migrate to Pro at the end.**
+
+**The binding consequence: PR10 may be built, but its invitation MUST NOT be enabled in production before the Pro migration.** This is the one place where a completed, merged, passing work unit is still not allowed to be live. It therefore needs a switch rather than a memo — the invitation ships behind an environment flag that is off by default, so shipping the code and soliciting the money are two separate acts. A guarantee that depends on remembering not to deploy something is not a guarantee.
 
 ## Open Questions
 
