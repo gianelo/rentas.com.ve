@@ -130,7 +130,7 @@ El paso al plan pago, de unos 20 dólares al mes, es **condición previa obligat
 
 ## Plan de entrega
 
-127 tareas ordenadas por dependencias, entre 5.100 y 7.400 líneas estimadas, repartidas en doce entregas encadenadas — cada una construida sobre la anterior y desplegable por separado.
+135 tareas ordenadas por dependencias, entre 5.350 y 7.850 líneas estimadas, repartidas en doce entregas encadenadas — cada una construida sobre la anterior y desplegable por separado.
 
 | | Entrega | Contenido |
 |---|---|---|

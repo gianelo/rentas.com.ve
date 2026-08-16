@@ -4,7 +4,7 @@
 
 | Field | Value |
 |-------|-------|
-| Estimated changed lines | ~5,100–7,400 total (greenfield, 8 capabilities) |
+| Estimated changed lines | ~5,350–7,850 total (greenfield, 8 capabilities) |
 | 400-line budget risk | High |
 | Chained PRs recommended | Yes |
 | Suggested split | PR0 → PR1 → PR2 → PR3 → PR4 → PR5 → PR6 → PR7 → PR8 → PR9 → PR10 → PR11 |
@@ -20,7 +20,7 @@ Chain strategy: pending
 
 | Slice | Est. lines | Risk |
 |---|---|---|
-| PR0 Bootstrap/toolchain | 500–700 | Medium (mostly config) |
+| PR0 Bootstrap/toolchain + CI pipeline | 650–900 | Medium (mostly config) |
 | PR1 Identity + phone-verification port | 300–450 | Low |
 | PR2 City/zone schema + seed + UI | 200–350 | Low |
 | PR3 Publication core | 600–900 | High — likely needs its own split |
@@ -31,7 +31,7 @@ Chain strategy: pending
 | PR8 Trust: reporting/auto-hide | 250–400 | Low |
 | PR9 Broker bulk import | 650–950 | High — likely needs its own split |
 | PR10 Voluntary contribution | 120–200 | Low |
-| PR11 Discovery & SEO surfaces | 450–650 | Medium |
+| PR11 Discovery & SEO surfaces + budget gates | 550–800 | Medium |
 
 PR9 depends only on PR3 (publication) and PR4 (trust), not on PR5–PR8. It is placed last to keep the stack linear, but it can be pulled forward if seed brokers need to load portfolios while the rest is still being built. PR10 depends on nothing beyond the app shell and can ship at any point — but see the D8 licensing decision in the design before shipping it.
 
@@ -39,7 +39,7 @@ PR9 depends only on PR3 (publication) and PR4 (trust), not on PR5–PR8. It is p
 
 | Unit | Goal | Likely PR | Focused test command | Runtime harness | Rollback boundary |
 |---|---|---|---|---|---|
-| 0 | Toolchain, Drizzle/Auth.js scaffold, config.yaml F1, F2 re-verify | PR0 | `pnpm test` (empty pass) | `pnpm dev` boots, deploys to Vercel | Revert repo to pre-scaffold state |
+| 0 | Toolchain, Drizzle/Auth.js scaffold, CI gates, config.yaml F1, F2 re-verify | PR0 | `pnpm test` (empty pass) | `pnpm dev` boots, deploys to Vercel, CI green on a throwaway PR | Revert repo to pre-scaffold state |
 | 1 | Google sign-in, session guard, disabled phone-verification port | PR1 | `pnpm test:unit -- identity` | Manual Google OAuth sign-in on deployed preview | `src/modules/identity/**`, `app/(auth)/**` |
 | 2 | City/zone schema, seed, cascading select | PR2 | `pnpm test:integration -- zone` | Seed script run against Neon branch | `drizzle/*_zones.sql`, seed script |
 | 3 | Listing CRUD, publisher_type, min-content, city-FK, upload guard | PR3 | `pnpm test -- publication` | Publish flow on preview deploy | `src/modules/listing-publication/**` |
@@ -61,6 +61,10 @@ PR9 depends only on PR3 (publication) and PR4 (trust), not on PR5–PR8. It is p
 - [ ] 0.5 Drizzle config + `src/shared/db/client.ts` (Neon pooled endpoint)
 - [ ] 0.6 Auth.js v5 + Google provider + Drizzle adapter (`user`, `account`, `session` tables)
 - [ ] 0.7 Deploy skeleton to Vercel; confirm live Neon connection
+- [ ] 0.8 `.github/workflows/ci.yml`: lint, types, unit, coverage and integration on every push; E2E, crawlability and both budget gates on pull requests only (Actions minutes are metered on a private repository)
+- [ ] 0.9 Postgres service container in CI pinned to Neon's major version — the integration layer must not run against an emulator
+- [ ] 0.10 Coverage gate: 90% floor on `src/modules/*/domain/` and `src/modules/*/application/`; no target on `infrastructure/` or `app/`
+- [ ] 0.11 Confirm every gate fails the build when violated — a gate that only warns is not a gate
 
 ## Phase 1: Identity + Phone Verification Port (PR1)
 
@@ -217,7 +221,11 @@ Depends on PR5 (search) and PR7 (lifecycle). Carries D11 and the performance bud
 - [ ] 11.13 GREEN: dynamic sitemap over active listings and zone pages; `robots` route; expired URLs dropped on expiry
 - [ ] 11.14 GREEN: schema.org structured data on the listing detail page
 - [ ] 11.15 RED: a listing below the minimum content threshold carries `noindex` (thin-content guard for bulk-imported portfolios)
-- [ ] 11.16 Verify the performance budget on the preview deployment: search ≤ 150 KB, detail ≤ 500 KB, read-path JS ≤ 30 KB, LCP ≤ 2.5 s on throttled 3G
+- [ ] 11.16 RED: a zone landing page and the search results contain listings with JavaScript execution disabled (Playwright, scripting off)
+- [ ] 11.17 GREEN: `scripts/budget-bundle.ts` reads the build output and exits non-zero when read-path first-load JS exceeds 30 KB
+- [ ] 11.18 RED: converting a read-path server component to a client component fails `pnpm budget:bundle`
+- [ ] 11.19 GREEN: `lighthouserc.json` asserting LCP ≤ 2.5 s on a throttled 3G profile, search transfer ≤ 150 KB, detail transfer ≤ 500 KB
+- [ ] 11.20 Wire `budget:bundle` and `budget:lighthouse` into the pull-request workflow as merge-blocking gates
 
 ## Phase 12: Cleanup
 
