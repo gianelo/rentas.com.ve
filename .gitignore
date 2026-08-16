@@ -2,7 +2,11 @@
 .atl/
 .codegraph/
 
-# Secrets — never commit these. The repository is public.
+# Secrets — never commit these. The repository is private, which means
+# GitHub secret scanning is off: nothing catches a leaked key but this file.
 .env
 .env.*
 !.env.example
+
+# Design tool exports — the extracted contents are versioned under design/reference/sistema/
+*.zip

@@ -22,7 +22,7 @@ Chain strategy: pending
 |---|---|---|
 | PR0 Bootstrap/toolchain + CI pipeline | 650–900 | Medium (mostly config) |
 | PR1 Identity + phone-verification port | 300–450 | Low |
-| PR1b Design foundation (tokens, atoms, a11y baseline) | 250–400 | Low |
+| PR1b Design foundation (tokens, atoms, result row, a11y baseline, token contract) | 400–600 | Low — the system is already decided; this is transcription plus its guard rails |
 | PR2 City/zone schema + seed + UI | 200–350 | Low |
 | PR3 Publication core | 600–900 | High — likely needs its own split |
 | PR4 Trust: photo-hash dedup | 300–450 | Medium |
@@ -42,7 +42,7 @@ PR9 depends only on PR3 (publication) and PR4 (trust), not on PR5–PR8. It is p
 |---|---|---|---|---|---|
 | 0 | Toolchain, Drizzle/Auth.js scaffold, CI gates, config.yaml F1, F2 re-verify | PR0 | `pnpm test` (empty pass) | `pnpm dev` boots, deploys to Vercel, CI green on a throwaway PR | Revert repo to pre-scaffold state |
 | 1 | Google sign-in, session guard, disabled phone-verification port | PR1 | `pnpm test:unit -- identity` | Manual Google OAuth sign-in on deployed preview | `src/modules/identity/**`, `app/(auth)/**` |
-| 1b | Design tokens, atoms, result row, accessibility baseline | PR1b | `pnpm test -- design-system` | Render atoms at 360px on preview; contrast and focus audit | `src/styles/tokens.css`, `components/atoms/**` |
+| 1b | Design tokens (`compacto` + `menta`), atoms, three-level buttons, result row, a11y baseline, D16 token contract | PR1b | `pnpm test -- design-system` | Render at 360px and 1280px on preview; count ten rows above 640px; flip `data-theme` in the inspector; contrast and focus audit | `src/styles/tokens.css`, `components/atoms/**` |
 | 2 | City/zone schema, seed, cascading select | PR2 | `pnpm test:integration -- zone` | Seed script run against Neon branch | `drizzle/*_zones.sql`, seed script |
 | 3 | Listing CRUD, publisher_type, min-content, city-FK, upload guard | PR3 | `pnpm test -- publication` | Publish flow on preview deploy | `src/modules/listing-publication/**` |
 | 4 | dHash + publisher-excluding match port wired into publish | PR4 | `pnpm test:integration -- photo-hash` | Publish two accounts, same photo | `src/modules/listing-trust/**` (hash only) |
@@ -63,7 +63,8 @@ PR9 depends only on PR3 (publication) and PR4 (trust), not on PR5–PR8. It is p
 - [ ] 0.5 Drizzle config + `src/shared/db/client.ts` (Neon pooled endpoint)
 - [ ] 0.6 Auth.js v5 + Google provider + Drizzle adapter (`user`, `account`, `session` tables)
 - [ ] 0.7 Deploy skeleton to Vercel; confirm live Neon connection
-- [ ] 0.8 `.github/workflows/ci.yml`: lint, types, unit, coverage and integration on every push; E2E, crawlability and both budget gates on pull requests only (Actions minutes are metered on a private repository)
+- [ ] 0.8 `.github/workflows/ci.yml`: lint, types, unit, coverage, `lint:tokens` and integration on every push; E2E, crawlability and both budget gates on pull requests only (Actions minutes are metered on a private repository)
+- [ ] 0.8b `pnpm lint:tokens` — fails on a colour literal, corner radius, thumbnail dimension or type size written as a value instead of a custom property in component styles (D16). Passes trivially until PR1b lands components; it exists from PR0 so no component is ever written without it
 - [ ] 0.9 Postgres service container in CI pinned to Neon's major version — the integration layer must not run against an emulator
 - [ ] 0.10 Coverage gate: 90% floor on `src/modules/*/domain/` and `src/modules/*/application/`; no target on `infrastructure/` or `app/`
 - [ ] 0.11 Confirm every gate fails the build when violated — a gate that only warns is not a gate
@@ -81,20 +82,28 @@ PR9 depends only on PR3 (publication) and PR4 (trust), not on PR5–PR8. It is p
 
 ## Phase 1b: Design Foundation (PR1b)
 
-Inserted between PR1 and PR2 because PR2 builds the first UI (the cascading city/zone select) and cannot be written before the visual language is settled. Carries D14 and D15. Reference: `design/reference/pantallas.html`.
+Inserted between PR1 and PR2 because PR2 builds the first UI (the cascading city/zone select) and cannot be written before the visual language is settled. Carries D14, D15, and D16.
 
-- [ ] 1b.1 CSS tokens from D14 — colour roles, five-step type scale, spacing scale; dark values defined but not shipped
-- [ ] 1b.2 Atoms per atomic design: price, title, badge, thumbnail, pill, button, input, label
-- [ ] 1b.3 RED: the `publisher_type` badge is distinguishable without colour (filled vs outlined)
-- [ ] 1b.4 Molecule: the result row — 96px thumbnail, price, title, zone, badge
-- [ ] 1b.5 RED: the result row renders with no horizontal overflow at a 360px viewport
-- [ ] 1b.5b RED: at 1280px, result rows and running text stay within a bounded container rather than spanning the window
-- [ ] 1b.5c GREEN: two-viewport layout primitives — max-width container, sidebar shell for filters, narrow form column
-- [ ] 1b.6 RED: every interactive target is at least 44px in its smallest dimension
-- [ ] 1b.7 RED: text contrast meets WCAG AA across every token pair in use
-- [ ] 1b.8 RED: keyboard focus is visibly indicated on every interactive atom
-- [ ] 1b.9 GREEN: base layout, landmarks, and heading structure
-- [ ] 1b.10 Confirm the shipped read-path CSS carries no webfont request and no runtime JavaScript
+**Source of truth:** `design/reference/sistema/SISTEMA.md` (system), `design/reference/sistema/tokens.css` (token sets), `design/reference/sistema/pantallas-compacto-menta.html` (six worked surfaces at 360px and 1280px). Combination: `data-theme="menta"` + `data-layout="compacto"`. The reference HTML is a prototype, not production code — its inline styles and `support.js` runtime are never ported.
+
+- [ ] 1b.1 Port the shipped token subset to `src/styles/tokens.css` — `[data-layout="compacto"]`, `[data-theme="menta"]`, plus one dark set behind `prefers-color-scheme` (D16). The remaining ten sets stay in the reference only
+- [ ] 1b.2 Set `data-theme` / `data-layout` on the root element in the app shell; no component reads either attribute directly
+- [ ] 1b.3 RED: **no component style contains a hex literal, a raw corner radius, a thumbnail dimension, or a literal type size** — every one resolves through a custom property (D16). Wire it as a lint rule, not a review habit
+- [ ] 1b.4 RED: swapping `data-theme` on the root element repaints every rendered atom and molecule, with no element retaining its previous colour (the inspector-flip criterion, automated)
+- [ ] 1b.5 Atoms per atomic design, from the system's component anatomy: price, title, metadata, badge, thumbnail, chip, button, input, label, breadcrumb
+- [ ] 1b.6 GREEN: the three-level button hierarchy as distinct components — action (filled `--accent`), selection/state (`--tint` fill, `--accent` border and text), neutral (`--strong` border, no fill). They are not variants of one component with a free-form prop, because the levels must not be mixed
+- [ ] 1b.7 RED: the `publisher_type` badge is distinguishable with colour removed — owner is filled (`--ink` on `--surface`), broker is outlined (`--strong` border, `--soft` text). Asserted against a greyscale render, not by reading the CSS
+- [ ] 1b.8 Molecule: the result row — grid `[thumbnail] 1fr`; price and publisher badge share the first line via `space-between`; title clamped to two lines below; metadata (`zona · N hab · N m²`) below that. Price precedes title in DOM order
+- [ ] 1b.9 RED: the price renders in the monospace system stack with `tabular-nums`, so prices align as a column across rows
+- [ ] 1b.10 RED: a result row's rendered height stays within 96px at 360px, including a title long enough to wrap to its two-line clamp. Density is enforced as a bound on the row, not as a count of rows above the fold — a count is a proxy that breaks on a font-metric difference and tells you nothing about what regressed
+- [ ] 1b.11 RED: the result row renders with no horizontal overflow at a 360px viewport
+- [ ] 1b.12 RED: at 1280px, result rows and running text stay within the 1100px container rather than spanning the window; body copy is capped at a 520px reading width
+- [ ] 1b.13 GREEN: two-viewport layout primitives — 1100px container, 240px sticky filter sidebar (`grid: 240px 1fr`, gap 32), 600px single-column form shell, and the detail split (640px media + 420px sticky data column)
+- [ ] 1b.14 RED: every interactive target is at least 44px in its smallest dimension on mobile and 36px on desktop
+- [ ] 1b.15 RED: text contrast meets WCAG AA across every token pair in use, in both the shipped light and dark sets
+- [ ] 1b.16 RED: keyboard focus is visibly indicated on every interactive atom
+- [ ] 1b.17 GREEN: base layout, landmarks, and heading structure
+- [ ] 1b.18 Confirm the shipped read-path CSS carries no webfont request and no runtime JavaScript
 
 ## Phase 2: City & Zone Data (PR2)
 
@@ -116,7 +125,7 @@ Inserted between PR1 and PR2 because PR2 builds the first UI (the cascading city
 - [ ] 3.8 Schema: `listing_photo` table
 - [ ] 3.9 Publish form UI + listing detail/card rendering `publisher_type` visibly
 - [ ] 3.10 RED: after upload, only derivatives are persisted — the original file is not retained (D12)
-- [ ] 3.11 GREEN: `sharp` emits a card thumbnail (≤ 40 KB) and a detail image (≤ 200 KB) at upload; both stored in R2; platform on-demand image optimization is not used
+- [ ] 3.11 GREEN: `sharp` emits a row thumbnail at 128 × 96 (≤ 10 KB — covers the 44 × 34 mobile and 64 × 48 desktop row at 2× under `compacto`, D12/D14) and a detail image (≤ 200 KB) at upload; both stored in R2; platform on-demand image optimization is not used
 - [ ] 3.12 RED: derivative dimensions and byte budgets hold for a portrait, a landscape, and an oversized source photo
 
 ## Phase 4: Trust — Photo-Hash Dedup (PR4)

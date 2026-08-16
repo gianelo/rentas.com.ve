@@ -104,6 +104,34 @@ The system MUST render search results and zone landing pages usably at a 360px v
 - WHEN a visitor opens the search results
 - THEN the page body does not scroll horizontally
 
+### Requirement: Results Are a Dense List, Not a Card Grid
+
+The system MUST render search results as a single-column list of rows, where each row carries one small thumbnail alongside its text. The system MUST NOT render results as a card grid at any viewport width.
+
+At a 360px viewport, a result row's rendered height MUST NOT exceed 96px, so that density cannot regress silently as rows accumulate content.
+
+#### Scenario: A result row stays within its height bound
+
+- GIVEN a search returning listings whose titles are long enough to wrap
+- WHEN a result row is rendered at a 360px-wide viewport
+- THEN its rendered height does not exceed 96px
+
+#### Scenario: Desktop keeps the list form
+
+- GIVEN a viewport 1280px wide
+- WHEN search results are rendered
+- THEN results remain a single-column list of rows rather than a multi-column grid of cards
+
+### Requirement: Price Precedes Title in Reading Order
+
+The system MUST place each result's price before its title in document order, and MUST render the price with greater visual weight than the title.
+
+#### Scenario: Price comes first in the accessibility tree
+
+- GIVEN a rendered result row
+- WHEN its content is read in document order
+- THEN the price is encountered before the title
+
 ### Requirement: Desktop Uses Width Without Stretching Content
 
 The system MUST constrain running text and result rows to a maximum readable width at large viewports rather than expanding them to fill the window.
@@ -144,8 +172,16 @@ The system MUST meet WCAG AA text contrast, expose page structure through real h
 
 The system MUST display each result's `publisher_type` (owner or broker) alongside its other summary information.
 
+The system MUST distinguish the two values by form rather than by colour alone: one is filled, the other is outlined. The distinction MUST remain legible when the rendering carries no colour information.
+
 #### Scenario: Search result shows publisher type
 
 - GIVEN a search returning at least one listing
 - WHEN the results are displayed
 - THEN each result visibly shows whether its publisher is an `owner` or a `broker`
+
+#### Scenario: Publisher type survives the removal of colour
+
+- GIVEN a results page containing both an `owner` listing and a `broker` listing
+- WHEN it is rendered with all colour information removed
+- THEN the two publisher-type indicators remain visually distinguishable from each other

@@ -1,10 +1,20 @@
 # Brief de diseño — Rentas
 
+> ## ⚠️ HISTÓRICO — este documento ya cumplió su función
+>
+> Este brief fue el **insumo** que produjo el sistema de diseño. La dirección visual ya está decidida: **estructura `compacto` + paleta `menta`**.
+>
+> **La fuente de verdad es [`sistema/SISTEMA.md`](./sistema/SISTEMA.md).** Donde este documento y aquel discrepen, manda `SISTEMA.md` — y discrepan: este brief fue escrito contra la estructura `estandar` (miniatura de 96 × 72, cinco avisos sobre el pliegue). El sistema adoptado usa 44 × 34 y **diez avisos**.
+>
+> Se conserva porque explica **por qué** el producto es como es: las restricciones no negociables, la lectura de Craigslist, el razonamiento de densidad. Eso sigue vigente. Las medidas, no.
+
+---
+
 Documento portable. Pegalo en la herramienta que quieras probar (claude.ai, v0, Lovable, Figma AI) para explorar direcciones visuales.
 
 **Cómo usarlo:** copiá desde "Prompt corto" si querés algo rápido, o pegá el documento completo si la herramienta acepta contexto largo. El documento completo da mejores resultados.
 
-> **Este documento define el producto y las restricciones. Para generar pantallas concretas usá [`BRIEF-PANTALLAS.md`](./BRIEF-PANTALLAS.md)**, que especifica cada pantalla elemento por elemento, con medidas exactas y los textos literales. Ese segundo documento asume el contexto de este: si el modelo ya recibió este brief, pegale el otro directamente.
+> Este documento define el producto y las restricciones. Su continuación es [`BRIEF-PANTALLAS.md`](./BRIEF-PANTALLAS.md), que especifica cada pantalla elemento por elemento. Ambos son históricos.
 
 ---
 

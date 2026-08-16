@@ -225,7 +225,8 @@ Auto-hide: three rows in `listing_report` for one listing sets `hidden_by_report
 | `app/`, `components/` | Create | Delivery + atomic-design UI |
 | `app/api/jobs/expiry-reminders/route.ts`, `vercel.json` | Create | Job route + cron schedule |
 | `.github/workflows/ci.yml`, `lighthouserc.json`, `scripts/budget-bundle.ts` | Create | CI gates, Lighthouse budgets, build-output budget assertion |
-| `design/reference/BRIEF.md`, `design/reference/`, `src/styles/tokens.css` | Create | Portable design brief, visual reference (D14), and the tokens the components are built from |
+| `design/reference/sistema/` | Create | Design system of record (D14) — `SISTEMA.md`, `tokens.css`, `pantallas-compacto-menta.html` |
+| `src/styles/tokens.css` | Create | The shipped subset of the token sets (D16) — `compacto`, `menta`, one dark theme |
 | `openspec/config.yaml` | Modify | **Follow-up F1** — not edited by this phase |
 
 ## Testing Strategy
@@ -262,12 +263,15 @@ No pipeline exists today. These gates run on every pull request and block merge:
 | Coverage floor | `pnpm test:coverage` | domain + application ≥ 90% |
 | Integration | `pnpm test:integration` | Postgres service container, Neon's major version |
 | Bundle budget | `pnpm budget:bundle` | build output |
+| Token contract (D16) | `pnpm lint:tokens` | — |
 | E2E + crawlability | `pnpm test:e2e` | preview deployment URL |
 | Lighthouse budget | `pnpm budget:lighthouse` | preview deployment URL |
 
 **A budget nobody measures automatically is a wish.** `budget:bundle` reads the build output and fails when read-path first-load JS exceeds 30 KB — fast, needs no deployment, and catches the most common regression (someone converts a server component to a client component). `budget:lighthouse` runs against the preview deployment and fails on LCP over 2.5 s on a throttled 3G profile, search transfer over 150 KB, or detail transfer over 500 KB. Image derivative budgets are already asserted at generation time in unit tests, so they need no separate gate.
 
-**CI minutes are a metered resource here.** The repository is private, so Actions minutes come out of a monthly quota rather than being free as they would be on a public repository. Accordingly: lint, types, unit, coverage and integration run on every push; E2E, crawlability and both budget gates run **on pull requests only**, since they require a deployment and are the expensive half. This is the same free-tier discipline applied to Neon, R2 and Resend — see F2, which must now re-verify the Actions quota as well.
+**`lint:tokens` is the enforcement half of D16.** It fails when a component stylesheet contains a colour literal, a corner radius, a thumbnail dimension, or a type size written as a value rather than a custom property. It costs no deployment and runs in milliseconds. Without it, D16 is a convention — and a convention that every future component must remember is precisely what this codebase's guiding principle rejects.
+
+**CI minutes are a metered resource here.** The repository is private, so Actions minutes come out of a monthly quota rather than being free as they would be on a public repository. Accordingly: lint, types, unit, coverage, the token contract and integration run on every push; E2E, crawlability and both budget gates run **on pull requests only**, since they require a deployment and are the expensive half. This is the same free-tier discipline applied to Neon, R2 and Resend — see F2, which must now re-verify the Actions quota as well.
 
 ### D9 — Bulk import is a loader, not a second publication path
 
@@ -309,7 +313,9 @@ Two reasons, and the second is a hard product ceiling:
 
 **Egress.** R2 charges zero egress; the hosting platform's image optimization is a metered resource on the free tier. Serving derivatives from R2 stays free at any traffic level, and traffic is precisely what success looks like.
 
-**Storage.** Originals are discarded after hashing and normalization. A phone photo is 3–8 MB; six per listing is roughly 30 MB, which against R2's 10 GB free tier caps the catalog at **~330 listings**. Storing only derivatives (a ~40 KB card thumbnail and a ~200 KB detail image per photo) puts the same tier at **~7,000 listings** — an order of magnitude more, for free. Nothing needs the original: the dHash is computed at upload and persisted as 64 bits, and no view renders above the detail size.
+**Storage.** Originals are discarded after hashing and normalization. A phone photo is 3–8 MB; six per listing is roughly 30 MB, which against R2's 10 GB free tier caps the catalog at **~330 listings**. Storing only derivatives (a card thumbnail and a ~200 KB detail image per photo) puts the same tier at **~7,000 listings** — an order of magnitude more, for free. Nothing needs the original: the dHash is computed at upload and persisted as 64 bits, and no view renders above the detail size.
+
+**The `compacto` structure (D14) shrinks the thumbnail derivative.** The row thumbnail is 44 × 34 CSS px on mobile and 64 × 48 on desktop, so one derivative at **128 × 96** covers both at 2× device pixel ratio. The earlier figure was sized for a 96 × 72 row (192 × 144 at 2×) — 2.25× the pixels. The consequence is that the search-results byte budget stops being tight and the storage ceiling moves further out. This is the clearest case of a visual choice paying for itself in the performance budget rather than costing against it, and it is the real return on `compacto` — see the density note in D14, which explains why the return does *not* show up as more listings per screen.
 
 ### D13 — Spartan density over visual identity
 
@@ -329,22 +335,57 @@ The visual reference is built as real HTML under `design/reference/`, versioned 
 
 **Durable constraints on any visual direction**, independent of palette:
 
-- **Results are a dense list, not a card grid.** Roughly five listings fit above the fold at 360px against one and a half for cards. With a catalogue still being seeded, showing that options exist outweighs showing one photograph well. A single ~96px thumbnail per row is also what makes the 150 KB search budget arithmetically possible: five thumbnails at 40 KB fit, five detail images do not.
+- **Results are a dense list, not a card grid.** With a catalogue still being seeded, showing that options exist outweighs showing one photograph well, and the small row thumbnail is what makes the 150 KB search budget arithmetically possible: many small thumbnails fit, many detail images do not. **Density is enforced as a bound on the row (≤ 96px at 360px), not as a count of listings above the fold.** The count is a proxy: it shifts with the system font, the chrome height, and the length of a title, so a test asserting it fails for reasons that have nothing to do with the regression it was meant to catch. The bound holds the thing that actually matters.
+
+  Worth recording, because it is counter-intuitive and will be re-litigated: **`compacto` buys bytes, not rows.** The row's height is driven by its text stack — price line, two-line title clamp, metadata — which is taller than either thumbnail size. Shrinking the thumbnail from 96 × 72 to 44 × 34 changes the row's height barely at all. It changes the transfer weight a great deal. Anyone who later wants materially more listings per screen has to cut a line of text, not a thumbnail, and that is a product decision about what a listing must say to be worth tapping — not a token change.
 - **Price outranks the title.** It is what people scan in classifieds, and it earns its emphasis typographically rather than through colour.
 - **`publisher_type` is distinguished by form, not colour alone** — filled versus outlined. It survives colour blindness and a cheap screen in daylight, and it is the product's central trust claim rather than a decorative tag.
 - **Semantic colour is reserved for meaning** — error and expiry — and is never spent on decoration.
-- Type is the system stack at five sizes. Separation comes from borders and whitespace.
+- Type is the system stack across eight named roles (list price, detail price, page title, listing title in detail, listing title in list, body, metadata, badge). Separation comes from borders and whitespace. Under `compacto` the price role resolves to the monospace member of the system stack with `tabular-nums`, so prices align as a column down the list — a scanning aid, not a stylistic flourish.
 - Dark tokens are defined so a later dark mode is a swap rather than a rewrite; **v1 ships light only**.
 
 **Two viewports, and desktop is not the mobile layout stretched.** Discovery is designed mobile-first at 360px, but the product is not mobile-only, and one flow is desktop-first by nature: **nobody uploads a 40-row CSV from a phone**. At 1280px the surplus width goes to placing things alongside — filters as a persistent sidebar, listing detail as photos plus a sticky data column, import preview as a full table with every column visible and no horizontal scroll. It does not go to enlarging everything: the publish form stays a single ~600px column, because a wide form loses the relationship between label and field, and results stay a list rather than becoming a grid. Requirements stated at 360px are floors, not a declaration that desktop is out of scope.
 
-**The palette and overall visual tone remain open.** A graphite, accent-free direction was built out across all 22 surfaces and rejected by the founder; it is retained at `design/reference/exploraciones/grafito.html` as a comparison point, not as the approved reference. `design/reference/BRIEF.md` is the portable brief that separates the non-negotiable constraints above from the aesthetic choices still being explored, and it carries the Craigslist reading this product is built on: take the information hierarchy, the density, and the speed; leave the 1996 visuals and the absent mobile design. An austere monochrome direction is *a* valid answer to "fast and simple", not the only one — a new product with no brand, in a market where photo-theft scams are routine, also cannot afford to look abandoned.
+**The palette and visual tone are RESOLVED: `menta` + `compacto`.** After a pine/teal direction and a graphite, accent-free direction were both built and rejected, the founder explored the space as two independent axes and selected the combination **structure `compacto` + theme `menta`**: deep blue `#272343` on a cool grey field `#F0F5F9`, white surfaces, 12px corner radius, pill badges, and a 44 × 34 row thumbnail on mobile.
+
+The approved reference lives at `design/reference/sistema/`:
+
+| File | Role |
+|---|---|
+| `SISTEMA.md` | The design system of record — tokens, button hierarchy, component anatomy, per-screen layout, content register |
+| `tokens.css` | All 13 token sets (9 themes × 4 structures) as CSS custom properties |
+| `pantallas-compacto-menta.html` | Six of the 22 surfaces rendered at 360px and 1280px in the chosen combination |
+
+**Six screens are drawn; the other sixteen are derived, not improvised.** The reference covers search results, listing detail, publish step 1, zone landing, my listings, and bulk import preview — the load-bearing ones. The remaining surfaces (empty, rejected, expired, auth, contribution, email) are built from the same tokens, the same three-level button hierarchy, and the same row anatomy. What was adopted is the *system*; the six screens are its worked examples. A surface that needs a value the system does not define is a signal to extend the system, not to invent a local one.
+
+The rejected graphite exploration stays at `design/reference/exploraciones/grafito.html` as a comparison point. `design/reference/BRIEF.md` and `BRIEF-PANTALLAS.md` were the inputs that produced this system and are now **historical** — superseded by `SISTEMA.md` wherever they disagree, and they do disagree: both were written against the `estandar` structure (96 × 72 thumbnail, five listings above the fold).
 
 ### D15 — Accessibility baseline
 
 Not previously specified anywhere. Three reasons it is cheap here and expensive to retrofit: semantic HTML is exactly what D11's crawlability requires, the no-JavaScript read path removes most of the usual failure modes for free, and the audience is on constrained devices and connections where these properties are not an edge case.
 
 Baseline, enforced as testable requirements in the capability specs rather than as aspiration: text contrast meets WCAG AA, every form control has an associated label (never a placeholder standing in for one), interactive targets are at least 44px, keyboard focus is always visible, every listing photo carries alternative text, and page structure uses real headings and landmarks.
+
+### D16 — Two-axis token contract: no component writes a literal visual value
+
+The design system separates two independent axes, both declared on the `<html>` element:
+
+- **`data-theme`** — colour roles, corner radius, control fill. Nine values; `menta` is shipped.
+- **`data-layout`** — row density, thumbnail geometry, price scale, title typography. Four values; `compacto` is shipped.
+
+**The rule, which is the whole point: no component writes a hex, a corner radius, a thumbnail dimension, or a type size as a literal.** Every one reads a CSS custom property. This is the same principle the rest of this design runs on — *guarantees live in the narrowest API*. A convention that every component author must remember to follow is not a guarantee; a value that only exists in one place cannot be contradicted in another.
+
+**The acceptance criterion is falsifiable and takes ten seconds.** Change the two attributes in the browser inspector. The entire application must repaint, correctly, with no exceptions. Anything that does not change is a literal that leaked in. This is a CI-checkable property, not a code-review opinion: a lint rule rejecting hex literals and hard-coded px in component styles is added to the existing gate set.
+
+**Why keep the axes at all when the combination is already chosen.** Three concrete reasons, none of them "in case we change our minds":
+
+1. **Dark mode is already a committed direction.** D14 says dark tokens are defined so a later dark mode is a swap rather than a rewrite. `violeta` and `oscuro` are exactly that — complete dark token sets, already authored. Without the theme axis, D14's promise would have to be built from scratch later.
+2. **Density is a plausible user preference.** `compacto` at ten rows per screen is right for scanning a catalogue and wrong for someone on a phone in bright sun; `estandar` is the same content at five rows. If that preference is ever offered, it is a stored attribute value, not a second stylesheet.
+3. **The tokens already exist, fully written.** Adopting all thirteen sets costs a file copy. Discarding twelve of them and reconstructing one later costs a refactor.
+
+**What actually ships, however, is three token sets — not thirteen.** D13 does not permit shipping CSS that no user renders. Production carries `compacto`, `menta`, and the one dark theme wired to `prefers-color-scheme`; the remaining ten stay in `design/reference/sistema/tokens.css` as the library. The inspector-flip criterion is then evaluated across the shipped sets, which is enough to prove no literal leaked — a value that correctly follows one theme swap follows all of them.
+
+**Structure changes are not free and must be re-measured.** Only `compacto` and `estandar` meet the byte budget with margin. `editorial` shows four listings per screen, which reads as empty in a catalogue still being seeded. Any change to `data-layout` re-opens the above-the-fold count in D14 and the thumbnail derivative size in D12.
 
 ### Performance Budget
 
@@ -354,7 +395,7 @@ Hard numbers, verified on the preview deployment before each user-facing PR merg
 |---|---|
 | Search results page | ≤ 150 KB total transfer |
 | Listing detail page | ≤ 500 KB total transfer including photos |
-| Card thumbnail | ≤ 40 KB |
+| Row thumbnail (128 × 96 derivative, serves 44 × 34 mobile and 64 × 48 desktop at 2×) | ≤ 10 KB |
 | Detail photo | ≤ 200 KB |
 | JavaScript on the read path | ≤ 30 KB |
 | LCP on a throttled 3G profile | ≤ 2.5 s |
@@ -430,4 +471,4 @@ rules:
 - [ ] **CSV bounds.** Maximum row count and file size. Should be sized against the largest real seed-broker portfolio, not guessed.
 - [ ] **Optional CSV columns.** Whether `habitaciones`, `banos`, and `metros2` are accepted depends on whether those fields exist on `listing`; confirm against the schema when the publication module is written rather than inventing columns the model cannot store.
 - [ ] **Draft lifetime.** An imported draft that never receives photos lives forever today. Decide whether drafts expire, and whether the broker is reminded — otherwise the table accumulates dead rows against the Neon free-tier ceiling.
-- [ ] **Palette and visual tone (D14).** The graphite exploration was rejected; the constraints in D14 hold but the palette is unresolved. Blocking for PR1b, since the tokens are its first task. `design/reference/BRIEF.md` is the input for exploring alternatives.
+- [x] **Palette and visual tone (D14).** **RESOLVED: `compacto` + `menta`.** The design system of record is `design/reference/sistema/SISTEMA.md`, with tokens at `design/reference/sistema/tokens.css` and six worked surfaces at `design/reference/sistema/pantallas-compacto-menta.html`. PR1b is unblocked. See D16 for the token contract that carries the system to the sixteen surfaces the reference does not draw.
