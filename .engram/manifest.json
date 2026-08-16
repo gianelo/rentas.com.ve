@@ -8,6 +8,14 @@
       "sessions": 3,
       "memories": 14,
       "prompts": 13
+    },
+    {
+      "id": "60f67f5b",
+      "created_by": "Gi-an",
+      "created_at": "2026-08-16T01:41:40Z",
+      "sessions": 0,
+      "memories": 1,
+      "prompts": 0
     }
   ]
 }
