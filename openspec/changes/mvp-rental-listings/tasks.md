@@ -100,14 +100,14 @@ The coverage failure names the scoped glob explicitly — `Coverage for lines (0
 
 ## Phase 1: Identity + Phone Verification Port (PR1)
 
-- [ ] 1.1 RED: unauthenticated protected action redirects to sign-in
-- [ ] 1.2 GREEN: session-guard helper, `src/modules/identity/application/`
-- [ ] 1.3 RED: Google sign-in creates one account with only email + display name
-- [ ] 1.4 GREEN: Auth.js callback restricts captured profile fields
-- [ ] 1.5 RED: expired session forces re-auth on protected action
-- [ ] 1.6 GREEN: expiry handling; sign-in UI at `app/(auth)/signin`
-- [ ] 1.7 RED: publish succeeds regardless of phone-verification status
-- [ ] 1.8 GREEN: `PhoneVerificationPort` contract + `DisabledPhoneVerificationAdapter` (`PHONE_VERIFICATION_ENABLED=false`, no domain branch)
+- [x] 1.1 RED: unauthenticated protected action redirects to sign-in
+- [x] 1.2 GREEN: session-guard helper, `src/modules/identity/application/`
+- [x] 1.3 RED: Google sign-in creates one account with only email + display name (implemented in PR0b — `toMinimalGoogleProfile` + `google-profile.test.ts`; verified against this spec scenario during PR1, no change needed)
+- [x] 1.4 GREEN: Auth.js callback restricts captured profile fields (implemented in PR0b — wired as the Google provider's `profile()` callback in `auth.ts`; verified during PR1, no change needed)
+- [x] 1.5 RED: expired session forces re-auth on protected action
+- [x] 1.6 GREEN: expiry handling; sign-in UI at `app/(auth)/signin`
+- [x] 1.7 RED: publish succeeds regardless of phone-verification status
+- [x] 1.8 GREEN: `PhoneVerificationPort` contract + `DisabledPhoneVerificationAdapter` (`PHONE_VERIFICATION_ENABLED=false`, no domain branch)
 
 ## Phase 1b: Design Foundation (PR1b)
 
