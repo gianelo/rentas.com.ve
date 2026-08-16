@@ -18,6 +18,25 @@
 // `src/styles/tokens.css` itself (not to lint it, but as the single
 // source of truth for two checks below).
 //
+// The four rules are NOT equally strong, and it matters that a reader knows
+// which is which rather than trusting the gate uniformly:
+//
+//   - colour, border-radius, font-size are BLANKET rules. Any literal is
+//     rejected. These are the strong ones.
+//   - width/height is a TARGETED rule. It rejects only values that exactly
+//     match the shipped layout's thumbnail tokens (--tw/--th/--twd/--thd).
+//     A different literal — `width: 45px` on a thumbnail — passes.
+//
+// That asymmetry is deliberate, not an oversight: only dimensions that vary
+// with `data-layout` have to be tokenized for a structure swap to repaint.
+// The structural values SISTEMA.md fixes (the 1100px container, the 240px
+// sidebar, the 640px/420px detail split) are identical across all four
+// structures, are not tokenized anywhere, and a blanket rule would reject
+// the layout primitives themselves. But the consequence is real: this rule
+// catches a copied token value, not every hard-coded dimension. If the
+// thumbnail geometry is ever inlined at a near-miss value, no gate catches
+// it — review does.
+//
 // Two checks run:
 //   1. Literal-value scan (tasks.md 1b.3) — no component style file may
 //      write a colour literal, a corner radius, a thumbnail dimension, or
@@ -208,6 +227,45 @@ function readTokensCss() {
   }
 }
 
+/**
+ * Resolves `var(--x)` indirection to the value it ultimately names.
+ *
+ * The theme contract compares light against dark, and the dark block reaches
+ * its palette through indirection (`--ink: var(--dark-ink)`) so the same
+ * values can serve both the explicit `[data-theme="oscuro"]` block and the
+ * `prefers-color-scheme` path without being written twice. Comparing the raw
+ * declaration strings would therefore compare `#1e2022` against
+ * `var(--dark-ink)` — always different, always passing, even when
+ * `--dark-ink` resolves to that exact same colour. The gate would report a
+ * contract it never checked, which is worse than having no gate: it is a
+ * green light nobody earned.
+ *
+ * The depth bound both terminates a circular reference and keeps a
+ * pathological chain from hanging the build.
+ */
+function resolveValue(value, dictionary, depth = 0) {
+  if (depth > 8) return value;
+
+  const resolved = value.replace(/var\(\s*(--[\w-]+)\s*(?:,[^)]*)?\)/g, (whole, name) => {
+    const target = dictionary.get(name);
+    return target === undefined ? whole : resolveValue(target, dictionary, depth + 1);
+  });
+
+  return resolved === value ? value : resolveValue(resolved, dictionary, depth + 1);
+}
+
+/** Every custom property declared anywhere in the file, for resolution only. */
+function collectAllCustomProperties(cssText) {
+  const declarations = new Map();
+  const pattern = /(--[\w-]+)\s*:\s*([^;]+);/g;
+  let match = pattern.exec(cssText);
+  while (match) {
+    if (!declarations.has(match[1])) declarations.set(match[1], match[2].trim());
+    match = pattern.exec(cssText);
+  }
+  return declarations;
+}
+
 /** tasks.md 1b.4 — the theme-contract check. */
 function checkThemeContract(cssText) {
   if (cssText === null) {
@@ -222,6 +280,7 @@ function checkThemeContract(cssText) {
   if (!darkBlock) issues.push(`${TOKENS_CSS_PATH}: missing ${DARK_THEME_SELECTOR} block.`);
   if (issues.length > 0) return issues;
 
+  const dictionary = collectAllCustomProperties(cssText);
   const light = parseCustomProperties(lightBlock);
   const dark = parseCustomProperties(darkBlock);
   const allKeys = new Set([...light.keys(), ...dark.keys()]);
@@ -239,9 +298,14 @@ function checkThemeContract(cssText) {
       );
       continue;
     }
-    if (light.get(key) === dark.get(key)) {
+    const lightValue = resolveValue(light.get(key), dictionary);
+    const darkValue = resolveValue(dark.get(key), dictionary);
+
+    if (lightValue === darkValue) {
+      const via =
+        light.get(key) === lightValue ? "" : ` (declared as ${light.get(key)} / ${dark.get(key)})`;
       issues.push(
-        `${TOKENS_CSS_PATH}: "${key}" resolves to the same value in ${LIGHT_THEME_SELECTOR} and ${DARK_THEME_SELECTOR} (${light.get(key)}) — swapping data-theme would not repaint it.`,
+        `${TOKENS_CSS_PATH}: "${key}" resolves to the same value in ${LIGHT_THEME_SELECTOR} and ${DARK_THEME_SELECTOR} — ${lightValue}${via} — so swapping data-theme would not repaint it.`,
       );
     }
   }
