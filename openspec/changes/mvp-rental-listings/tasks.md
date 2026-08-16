@@ -69,6 +69,8 @@ PR9 depends only on PR3 (publication) and PR4 (trust), not on PR5–PR8. It is p
 
 PR0c is deliberately last: a pipeline that runs nothing is not worth reviewing, and the gates can only be proven to *fail* correctly once there is something for them to fail against.
 
+**Note on the pnpm version ceiling (added during PR0c, after the founder's first Vercel deploy failed).** `package.json`'s `packageManager`/`devEngines` and `.github/workflows/ci.yml`'s `PNPM_VERSION` are pinned to **pnpm 10.x**, not the newer 11.x line used earlier in Phase 0. Vercel's build image does not recognize `packageManager: pnpm@11` — it falls back to npm, which then rejects the repo's `devEngines.packageManager` block outright (`EBADDEVENGINES`). The fix is a downgrade, not a Vercel environment variable (`ENABLE_EXPERIMENTAL_COREPACK` was considered and rejected — it would put an experimental flag on the critical path of every deploy). Whoever next bumps pnpm should re-check Vercel's supported package-manager versions before raising this ceiling past 10.x.
+
 - [x] 0.1 `pnpm init`, add Next.js 15 + React 19, TS, `tsconfig.json`
 - [x] 0.2 Configure Biome (`biome.json`), Vitest (`vitest.config.ts`), Playwright (`playwright.config.ts`)
 - [x] 0.3 Apply follow-up F1: update `openspec/config.yaml` `testing:`/`context:`/`rules` blocks per design
@@ -76,11 +78,25 @@ PR0c is deliberately last: a pipeline that runs nothing is not worth reviewing, 
 - [x] 0.5 Drizzle config + `src/shared/db/client.ts` (Neon pooled endpoint)
 - [x] 0.6 Auth.js v5 + Google provider + Drizzle adapter (`user`, `account`, `session` tables)
 - [ ] 0.7 Deploy skeleton to Vercel; confirm live Neon connection
-- [ ] 0.8 `.github/workflows/ci.yml`: lint, types, unit, coverage, `lint:tokens` and integration on every push; E2E, crawlability and both budget gates on pull requests only (Actions minutes are metered on a private repository)
+- [x] 0.8 `.github/workflows/ci.yml`: lint, types, unit, coverage, `lint:tokens` and integration on every push; E2E, crawlability and both budget gates on pull requests only (Actions minutes are metered on a private repository)
 - [x] 0.8b `pnpm lint:tokens` — fails on a colour literal, corner radius, thumbnail dimension or type size written as a value instead of a custom property in component styles (D16). Passes trivially until PR1b lands components; it exists from PR0 so no component is ever written without it
-- [ ] 0.9 Postgres service container in CI pinned to Neon's major version — the integration layer must not run against an emulator
+- [x] 0.9 Postgres service container in CI pinned to Neon's major version — the integration layer must not run against an emulator (pinned to `postgres:18`; the live Neon instance was verified at `server_version 18.4` on 2026-08-16, and the job asserts the container's version at runtime rather than trusting the image tag)
 - [x] 0.10 Coverage gate: 90% floor on `src/modules/*/domain/` and `src/modules/*/application/`; no target on `infrastructure/` or `app/`
-- [ ] 0.11 Confirm every gate fails the build when violated — a gate that only warns is not a gate
+- [x] 0.11 Confirm every gate fails the build when violated — a gate that only warns is not a gate
+
+**Gate-failure evidence (0.11), measured 2026-08-16.** Each gate was given a deliberate violation, the exit status recorded, the violation reverted, and the clean tree re-checked. A gate is only proven by the failing case; the passing case proves nothing on its own.
+
+| Gate | Deliberate violation | Violated | Clean |
+|---|---|---|---|
+| `biome ci .` | badly formatted source file | exit 1 | exit 0 |
+| `tsc --noEmit` | `const n: number = "not a number"` | exit 1 | exit 0 |
+| `vitest run` | a test asserting `expect(1).toBe(2)` | exit 1 | exit 0 |
+| `lint:tokens` | `.x { color: #272343; }` in `components/` | exit 1 | exit 0 |
+| coverage floor | an uncovered file under `src/modules/*/domain/` | exit 1 | exit 0 |
+
+The coverage failure names the scoped glob explicitly — `Coverage for lines (0%) does not meet "src/modules/*/domain/**" threshold (90%)` — which confirms the floor is the scoped policy from the design and not a repo-wide percentage in disguise.
+
+**Two gates cannot be proven yet, and the workflow says so out loud.** E2E/crawlability has no specs and no preview URL; both budget gates have no script to run. Rather than letting an empty run look green, each emits a GitHub warning stating that it currently cannot fail and must not be read as a passing check. They are re-proven when PR11 lands their implementations.
 
 ## Phase 1: Identity + Phone Verification Port (PR1)
 
