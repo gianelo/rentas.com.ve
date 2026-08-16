@@ -1,0 +1,55 @@
+/* Three-level button hierarchy (SISTEMA.md "Jerarquía de botones", D16).
+   One shared geometry (.base) plus one fill/border rule per level — never
+   mixed. Min-height follows the 44px mobile / 36px desktop target-size
+   tokens (src/styles/tokens.css); the desktop breakpoint matches
+   components/layout/Container.module.css's 768px. */
+.base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--target-min);
+  padding: 8px 16px;
+  border-radius: var(--r);
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (min-width: 768px) {
+  .base {
+    min-height: var(--target-min-desktop);
+  }
+}
+
+/* Level 1 — action: filled --accent (Publicar, Continuar, Renovar, Crear). */
+.action {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: none;
+}
+.action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Level 2 — selection/state: --tint fill, --accent border+text (toggles,
+   filters, active chips). Communicates state, not "submit". */
+.selection {
+  background: var(--tint);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+.selection:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Level 3 — neutral: --strong border, no fill (Cancelar, Corregir archivo). */
+.neutral {
+  background: none;
+  color: var(--ink);
+  border: 1px solid var(--strong);
+}
+.neutral:focus-visible {
+  outline: 2px solid var(--strong);
+  outline-offset: 2px;
+}

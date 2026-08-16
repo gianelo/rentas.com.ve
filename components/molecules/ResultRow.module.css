@@ -1,0 +1,65 @@
+/* SISTEMA.md "Fila de resultado": grid [miniatura] 1fr, price+badge share
+   line 1 (space-between), title below clamped to 2 lines, metadata below
+   that. All geometry/typography via tokens (D16) — see tasks.md 1b.8-1b.12. */
+.row {
+  display: grid;
+  grid-template-columns: var(--tw) 1fr;
+  gap: var(--gap);
+  padding: var(--rowpad);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+@media (min-width: 768px) {
+  .row {
+    grid-template-columns: var(--twd) 1fr;
+  }
+}
+
+.thumb {
+  width: var(--tw);
+  height: var(--th);
+  border-radius: var(--r);
+  background: var(--thumb);
+}
+
+@media (min-width: 768px) {
+  .thumb {
+    width: var(--twd);
+    height: var(--thd);
+  }
+}
+
+.content {
+  min-width: 0;
+}
+
+.line1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--ft);
+  font-weight: var(--ftw);
+  line-height: 1.35;
+  color: var(--ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-height: var(--tclamp);
+}
+
+.meta {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  font-weight: var(--meta-fw);
+  line-height: 1.4;
+  color: var(--soft);
+}
