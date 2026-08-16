@@ -39,7 +39,8 @@ This is the honest alternative to a third size exception. Granting one more woul
 | PR1b-a Tokens, root attributes, token contract, layout primitives | ~~200–300~~ **actual 734** | Shipped, `size:exception` |
 | PR1b-b Atoms, button hierarchy, publisher badge, contrast proof | ~~250–350~~ **actual 526** | Shipped at reduced scope |
 | PR1b-c Layout-measurement harness + the four measured bounds | 250–350 | Medium — the harness is ~130–155 before it proves anything |
-| PR2 City/zone schema + seed + UI | 400–600 | Low |
+| PR2 City/zone schema + seed + D5 proof | ~~400–600~~ **actual 258** | Shipped — split before a size:exception (see Phase 2) |
+| PR2b Cascading city→zone select | ~185 | Low — split out of PR2 at apply time |
 | PR3 Publication core | 1200–1800 | **High — must be split into 3–4 slices before apply** |
 | PR4 Trust: photo-hash dedup | 600–900 | Medium — split into 2 |
 | PR5 Search | 700–1000 | Medium — split into 2–3 |
@@ -167,11 +168,13 @@ The order is not cosmetic. **The token contract has to land before the first com
 
 ## Phase 2: City & Zone Data (PR2)
 
-- [ ] 2.1 Schema: `city`, `zone` tables; `zone` `UNIQUE(id, city_id)` (D5)
-- [ ] 2.2 RED: integration test — cross-city zone reference violates uniqueness
-- [ ] 2.3 Seed script `src/shared/db/seed.ts` with founder-supplied Distrito Capital + Maracaibo zone lists
-- [ ] 2.4 RED: zone selector offers only the selected city's zones
-- [ ] 2.5 GREEN: cascading city→zone select component (`components/`)
+**Split at apply time, per the 400-line review budget.** The 400–600 forecast held for the whole slice, but not for a single PR under the 400-line cap: schema + migration + seed + the real-Postgres integration proof alone measured 258 authored lines, and the cascading select (2.4/2.5) — component, its own unit test, and its stylesheet — added another 185, for 443 total. Per this change's standing rule ("deliver the schema and its structural proof fully and defer the select rather than overrunning"), 2.4/2.5 are deferred to a follow-up slice (**PR2b**) rather than taking a `size:exception`. This is the same proof-boundary split PR1b-b/PR1b-c already established: the tasks provable by a database constraint ship together; UI that needs its own component, test, and stylesheet becomes its own slice.
+
+- [x] 2.1 Schema: `city`, `zone` tables; `zone` `UNIQUE(id, city_id)` (D5)
+- [x] 2.2 RED: integration test — cross-city zone reference violates uniqueness (`tests/integration/zone.test.ts`; written and passing the local guard-clause path, not yet run against a live Postgres — see apply-progress for why)
+- [x] 2.3 Seed script `src/shared/db/seed.ts` with the founder's not-yet-supplied taxonomy — ships PROVISIONAL Distrito Capital + Maracaibo lists, flagged as such in the file, idempotent via `ON CONFLICT`
+- [ ] 2.4 RED: zone selector offers only the selected city's zones — **deferred to PR2b**
+- [ ] 2.5 GREEN: cascading city→zone select component (`components/`) — **deferred to PR2b**
 
 ## Phase 3: Listing Publication Core (PR3)
 
