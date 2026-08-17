@@ -37,5 +37,17 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/integration/**/*.test.ts"],
+    // Every file here shares ONE database, and `seed.test.ts` legitimately
+    // wipes `city`, `zone` and `listing` in its own `beforeAll` — testing an
+    // idempotent seed requires a clean slate. Run in parallel, that DELETE
+    // lands in the middle of another file's fixtures.
+    //
+    // **This suite was already racy; task 3.13 only made it visible**, by
+    // being the first file to insert a city and then use it across several
+    // specs. The others happened to finish inside the window. A test that
+    // passes because of timing is not a passing test, so the fix is
+    // structural rather than a retry or a sleep: one database, one file at a
+    // time. The cost is a few seconds on a four-file suite.
+    fileParallelism: false,
   },
 });
