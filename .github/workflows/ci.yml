@@ -335,6 +335,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PREVIEW_BASE_URL: ${{ needs.preview.outputs.url }}
+      # Same deliberately fake, unroutable values the `build` job above
+      # uses, and for the same reason: src/shared/db/client.ts validates
+      # DATABASE_URL at module load, so `pnpm build` needs one present, but
+      # this job must never touch a real database either.
+      DATABASE_URL: postgresql://ci:ci@ep-ci-build-0000-pooler.invalid.neon.tech/ci?sslmode=require
+      AUTH_SECRET: build-time-placeholder-not-a-real-secret
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -346,19 +352,36 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
+      # tasks.md 11.17/11.18. Needs no deployment — it reads .next's own
+      # build output — which is why it runs before the (deployment-dependent)
+      # Lighthouse step below rather than after it. This job builds again
+      # rather than downloading the `build` job's artifact because the two
+      # jobs run in parallel with no ordering dependency between them, and
+      # wiring an artifact hand-off would trade a few seconds of duplicate
+      # build time for a real cross-job coupling — not a trade worth making
+      # for a job that is already gated to pull_request only.
       - name: Bundle budget (build-output size assertion)
         run: |
-          if node -e "process.exit(require('./package.json').scripts['budget:bundle'] ? 0 : 1)"; then
-            pnpm build
-            pnpm run budget:bundle
-          else
-            echo "::warning title=budget:bundle not implemented yet::scripts/budget-bundle.ts does not exist (tasks.md 11.17-11.20). This gate currently cannot fail and must not be read as a passing budget check."
-          fi
+          pnpm build
+          pnpm run budget:bundle
 
+      # tasks.md 11.19/11.20. Runs against the real preview deployment
+      # resolved by the `preview` job above — this is the one gate in this
+      # job that genuinely needs it.
+      #
+      # The status check in front of it is not ceremony. Until a read-path
+      # page exists, the preview's root is a 404 — and a 404 is tiny, so it
+      # would sail through every byte budget and report green having verified
+      # nothing. This repository has already shipped three checks that could
+      # not fail; refusing to measure a page that is not there is how this one
+      # avoids becoming the fourth. It warns and skips rather than failing,
+      # because "the home page does not exist yet" is a schedule fact, not a
+      # performance regression.
       - name: Lighthouse budget
         run: |
-          if node -e "process.exit(require('./package.json').scripts['budget:lighthouse'] ? 0 : 1)"; then
-            pnpm run budget:lighthouse
-          else
-            echo "::warning title=budget:lighthouse not implemented yet::lighthouserc.json does not exist (tasks.md 11.19-11.20). This gate currently cannot fail and must not be read as a passing budget check."
+          status=$(curl -s -o /dev/null -w '%{http_code}' "$PREVIEW_BASE_URL/")
+          if [ "$status" != "200" ]; then
+            echo "::warning title=Lighthouse budget not measured::${PREVIEW_BASE_URL}/ returned HTTP ${status}. No page weight or LCP was checked. A 404 passes every byte budget trivially, so this step refuses to report a pass it did not earn. It starts measuring for real once a read-path page exists."
+            exit 0
           fi
+          pnpm run budget:lighthouse

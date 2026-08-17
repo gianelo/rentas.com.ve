@@ -1,0 +1,11 @@
+/* Form-control label (design.md D15, D16). Sized/weighted like SISTEMA.md's
+   "Metadato" role — the closest defined auxiliary-text style in the system
+   for a field caption — resolved entirely through tokens, never a literal. */
+.label {
+  display: block;
+  margin-bottom: 4px;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  font-weight: var(--meta-fw);
+  color: var(--soft);
+}
