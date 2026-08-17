@@ -198,7 +198,7 @@ The order is not cosmetic. **The token contract has to land before the first com
 - [ ] 4.3 RED: unit test — same-publisher match (active/expired/other listing) is allowed
 - [ ] 4.4 GREEN: `sharp` 9×8 grayscale dHash(64) in `PublishListingUseCase`
 - [ ] 4.5 GREEN: `PhotoHashPort` exposing only `findMatchesFromOtherPublishers(hash, excludePublisherId, maxDistance)` — no all-matches method (D4)
-- [ ] 4.6 GREEN: Drizzle/raw-SQL adapter using `bit_count` Hamming distance
+- [ ] 4.6 GREEN: Drizzle/raw-SQL adapter using `bit_count` Hamming distance. **MUST include a drift cross-check:** replay `KNOWN_HAMMING_DISTANCE_VECTORS` from `src/modules/listing-trust/domain/hamming-distance.ts` through a real `SELECT bit_count($1::bit(64) # $2::bit(64))` and assert the same distances the domain tests assert. The identical logic now lives in two places — TypeScript and a Postgres expression — and two implementations that drift are worse than one untested implementation, because drift returns a confident wrong answer instead of a visible gap
 - [ ] 4.7 E2E: publish → duplicate photo rejected cross-account, accepted same publisher
 
 ## Phase 5: Listing Search (PR5)
