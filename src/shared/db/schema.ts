@@ -177,3 +177,59 @@ export const listings = pgTable(
     index("listing_city_status_idx").on(listing.cityId, listing.status),
   ],
 );
+
+// listing_photo (tasks.md 3.8, design.md D12). Two derivatives per photo and
+// nothing else.
+//
+// **There is deliberately no column for the original file.** D12: "Originals
+// are discarded after hashing and normalization." A phone photo is 3–8 MB
+// and six per listing is ~30 MB, which against R2's 10 GB free tier caps the
+// catalogue at ~330 listings; storing only derivatives puts the same tier at
+// ~7,000. A nullable `original_key` would be a standing invitation to start
+// keeping them, so the column does not exist — the schema refuses what the
+// design decided rather than merely not doing it.
+//
+// **No `alt_text` column either, and that is a decision rather than an
+// omission.** The listing-search spec requires alternative text on every
+// photo; it does not require a publisher to type it. Asking someone
+// filling this form on a phone, one-handed, to describe six photographs
+// produces empty fields, not accessible ones. Alt text is composed at
+// render time from the listing's own title, zone, and this row's
+// `position`. The honest tradeoff, recorded rather than glossed: derived
+// alt text is weaker than a real description, and it is chosen because the
+// realistic alternative is not better text but no text.
+export const listingPhotos = pgTable(
+  "listing_photo",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    listingId: text("listing_id")
+      .notNull()
+      .references(() => listings.id, { onDelete: "cascade" }),
+    // Display order, zero-based. The detail screen shows one large photo
+    // plus a strip of thumbnails (SISTEMA.md screen 2), so which photo is
+    // first is a publisher's choice and has to survive a reload.
+    position: integer("position").notNull(),
+    // R2 object keys, not URLs. The public base URL is environment
+    // configuration (`R2_BUCKET_PUBLIC_URL`) and changes when the bucket
+    // moves behind a custom domain — baking it into every row would make
+    // that migration a data rewrite instead of a config change.
+    thumbnailKey: text("thumbnail_key").notNull(),
+    detailKey: text("detail_key").notNull(),
+    // Measured byte sizes of the two derivatives (D12: thumbnail ≤ 10 KB,
+    // detail ≤ 200 KB). Stored so the budget stays auditable against real
+    // production rows — `SELECT max(detail_bytes) FROM listing_photo` is a
+    // question the test suite cannot answer, because it only ever sees
+    // fixtures. A budget verified solely against test images is a budget
+    // that has never met a real photograph.
+    thumbnailBytes: integer("thumbnail_bytes").notNull(),
+    detailBytes: integer("detail_bytes").notNull(),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+  },
+  (photo) => [
+    // Two photos cannot claim the same slot in one listing's order.
+    unique("listing_photo_position_unique").on(photo.listingId, photo.position),
+    index("listing_photo_listing_idx").on(photo.listingId),
+  ],
+);
