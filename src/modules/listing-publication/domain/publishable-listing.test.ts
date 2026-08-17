@@ -99,6 +99,48 @@ describe("validatePublishableListing", () => {
     });
   });
 
+  /**
+   * `rooms` and `area_m2` are NOT NULL in the schema and were declared on
+   * `DraftListing` from the start — but nothing here checked them, so a draft
+   * missing either passed validation and died at the INSERT instead. That is
+   * a 500 where the publisher deserved a field error, and it is the same
+   * shape of defect this project has shipped repeatedly: a rule that exists
+   * in one layer and is merely *declared* in the other.
+   */
+  describe("rooms and area — required because the column is", () => {
+    it.each([
+      ["rooms", "rooms.required" as const],
+      ["areaM2", "areaM2.required" as const],
+    ])("rejects a missing %s", (field, code) => {
+      expect(validatePublishableListing(draft({ [field]: undefined }), ZONES)).toContain(code);
+    });
+
+    it.each([
+      ["negative", -1],
+      ["zero", 0],
+      ["fractional", 2.5],
+      ["not a number", Number.NaN],
+    ])("rejects a %s room count", (_label, rooms) => {
+      expect(validatePublishableListing(draft({ rooms }), ZONES)).toContain("rooms.invalid");
+    });
+
+    it.each([
+      ["negative", -1],
+      ["zero", 0],
+      ["fractional", 78.4],
+      ["infinite", Number.POSITIVE_INFINITY],
+    ])("rejects a %s area", (_label, areaM2) => {
+      expect(validatePublishableListing(draft({ areaM2 }), ZONES)).toContain("areaM2.invalid");
+    });
+
+    it("accepts a studio declared as one room", () => {
+      // Zero would be the intuitive encoding for a studio and it is refused
+      // on purpose: `area_m2` already carries the size, and a zero here reads
+      // as "unknown" everywhere it is rendered.
+      expect(validatePublishableListing(draft({ rooms: 1 }), ZONES)).toEqual([]);
+    });
+  });
+
   describe("minimum publishable content", () => {
     it("rejects a listing with no photo", () => {
       // spec.md scenario: "a publisher who has filled all fields except a

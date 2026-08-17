@@ -49,6 +49,10 @@ export type PublishViolation =
   | "cityId.unknown"
   | "zoneId.required"
   | "zoneId.notInCity"
+  | "rooms.required"
+  | "rooms.invalid"
+  | "areaM2.required"
+  | "areaM2.invalid"
   | "photos.required";
 
 /**
@@ -138,6 +142,28 @@ export function validatePublishableListing(
     // surfaces as a 500, and this is a form error the publisher can fix.
     // Both layers are wanted: this one explains, that one guarantees.
     violations.push("zoneId.notInCity");
+  }
+
+  // `rooms` and `area_m2` are NOT NULL in the schema. They were declared on
+  // `DraftListing` from the first version of this file and never checked,
+  // which meant a draft missing either passed validation and failed at the
+  // INSERT — a 500 where the publisher deserved a field error. Whole positive
+  // numbers for the same reason the price is: the row layout renders "2 hab ·
+  // 78 m²", and neither half has room for a fraction.
+  //
+  // A studio is one room, not zero. Zero is refused deliberately: `area_m2`
+  // already carries the size, and a zero here reads as "unknown" wherever it
+  // is rendered.
+  if (draft.rooms === undefined) {
+    violations.push("rooms.required");
+  } else if (!isWholePositiveNumber(draft.rooms)) {
+    violations.push("rooms.invalid");
+  }
+
+  if (draft.areaM2 === undefined) {
+    violations.push("areaM2.required");
+  } else if (!isWholePositiveNumber(draft.areaM2)) {
+    violations.push("areaM2.invalid");
   }
 
   if (!draft.photoCount || draft.photoCount < 1) {
