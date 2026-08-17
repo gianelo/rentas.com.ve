@@ -1,4 +1,13 @@
-import { integer, pgTable, primaryKey, text, timestamp, unique } from "drizzle-orm/pg-core";
+import {
+  foreignKey,
+  index,
+  integer,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  unique,
+} from "drizzle-orm/pg-core";
 import type { AdapterAccountType } from "next-auth/adapters";
 
 // Auth.js v5 core tables (design.md, Data Model: "user, account, session
@@ -96,5 +105,75 @@ export const zones = pgTable(
     // Keeps the seed idempotent (tasks.md 2.3) and rejects two curated rows
     // for the same zone name inside one city.
     unique("zone_city_id_name_unique").on(zone.cityId, zone.name),
+  ],
+);
+
+// listing (design.md D5, tasks.md 3.1). The rental advert itself.
+//
+// Two decisions here are load-bearing, and both are constraints rather than
+// application checks — the difference matters, because an application check
+// protects only the paths that remember to call it.
+//
+// 1. `publisher_type` is NOT NULL with NO DEFAULT. A default would be the
+//    quiet failure mode: every listing whose publisher type was never
+//    resolved would silently become an "owner", and the owner/broker
+//    distinction is a trust guarantee the whole product rests on
+//    (SISTEMA.md "Distinción dueño / inmobiliaria" — it must survive even
+//    the removal of colour). With no default, a caller that forgets the
+//    field gets a database error at insert time, not a wrong badge in
+//    production.
+//
+// 2. `(zone_id, city_id)` is a COMPOSITE foreign key into
+//    `zone(id, city_id)`, not two independent references. That is D5: "a
+//    Maracaibo listing physically cannot hold a Distrito Capital zone."
+//    Two separate FKs would each pass on their own while the pair remains
+//    nonsense. This is the constraint `zone_id_city_id_unique` exists to
+//    make possible, and tests/integration/zone.test.ts proves Postgres
+//    actually refuses the cross-city row.
+export const listings = pgTable(
+  "listing",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    publisherId: text("publisher_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // No .default() — see note 2 above. Adding one later is a silent
+    // behaviour change, not a convenience.
+    publisherType: text("publisher_type").$type<"owner" | "broker">().notNull(),
+    cityId: text("city_id")
+      .notNull()
+      .references(() => cities.id, { onDelete: "restrict" }),
+    zoneId: text("zone_id").notNull(),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    // Every price in this product is monthly USD (SISTEMA.md screen 3:
+    // "Precio: solo el número; todos los precios están en dólares"), stored
+    // as whole dollars. No currency column, because a second currency is a
+    // product decision that would also change the search filters and the
+    // row layout — not something to leave a nullable column open for.
+    priceUsd: integer("price_usd").notNull(),
+    rooms: integer("rooms").notNull(),
+    areaM2: integer("area_m2").notNull(),
+    // active | expired | hidden. Search shows `active` only (tasks.md
+    // 5.5/5.6); `hidden` is the auto-hide state from reports (Phase 8).
+    status: text("status").$type<"active" | "expired" | "hidden">().notNull(),
+    publishedAt: timestamp("published_at", { mode: "date", withTimezone: true }).notNull(),
+    // 30 days from publication (SISTEMA.md screen 3: "Tu aviso queda activo
+    // 30 días"). Stored rather than derived so the reminder job (Phase 7)
+    // can index it and a renewal can move it.
+    expiresAt: timestamp("expires_at", { mode: "date", withTimezone: true }).notNull(),
+  },
+  (listing) => [
+    foreignKey({
+      columns: [listing.zoneId, listing.cityId],
+      foreignColumns: [zones.id, zones.cityId],
+      name: "listing_zone_city_fk",
+    }),
+    // Search always filters by city first and city is non-nullable in the
+    // search port (tasks.md 5.1/5.2), so this is the access path every
+    // query takes.
+    index("listing_city_status_idx").on(listing.cityId, listing.status),
   ],
 );
