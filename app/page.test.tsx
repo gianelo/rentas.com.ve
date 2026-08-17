@@ -59,4 +59,15 @@ describe("HomePage", () => {
   it('declares no "use client" boundary (design.md D13 — no JS on the read path)', () => {
     expect(readFileSync("app/page.tsx", "utf-8")).not.toContain('"use client"');
   });
+
+  // SISTEMA.md "Assets" — "No hay logotipo: la marca es la palabra
+  // «rentas.» en el stack del sistema." All six reference screens render it
+  // as `>rentas.<`: lowercase, trailing period. This page originally shipped
+  // "Rentas", which reads as a plain capitalised noun and quietly discards
+  // the only brand asset the product has. No gate could catch that —
+  // lint:tokens checks values, not words — so it is asserted here.
+  it('renders the wordmark exactly as the design system defines it: "rentas."', () => {
+    expect(markup).toContain(">rentas.<");
+    expect(markup).not.toContain(">Rentas<");
+  });
 });

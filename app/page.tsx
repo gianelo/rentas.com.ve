@@ -36,9 +36,13 @@ export default function HomePage() {
     <PageShell
       header={
         <div className={styles.masthead}>
-          <Container>
-            <p className={styles.brand}>Rentas</p>
-          </Container>
+          <div className={styles.mastheadInner}>
+            <Container>
+              {/* "rentas." — lowercase, trailing period. SISTEMA.md
+                  "Assets": there is no logotype, the mark IS the word. */}
+              <p className={styles.brand}>rentas.</p>
+            </Container>
+          </div>
         </div>
       }
       footer={

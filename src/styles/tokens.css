@@ -56,6 +56,34 @@
   --meta-fs: 12px;
   --meta-fw: 600;
 
+  /* Page title and brand wordmark (SISTEMA.md "Tipografía" — "Título de
+     página | 20px / 700 / 1.25"). Same reason as the block above: the
+     shipped reference tokens.css does not carry this size, and D16 forbids
+     writing it as a literal.
+
+     This one is worth naming out loud, because its absence caused a real
+     defect rather than a hypothetical one: with no page-title token, the
+     home page's <h1> reached for --fpb instead, which the system defines as
+     "Precio en ficha | 26px / 700 / 1.1 | --mono". lint:tokens passed —
+     it verifies that a value IS a custom property, never that it is the
+     RIGHT one. A missing token does not produce a gate failure; it produces
+     a plausible wrong answer. */
+  --title-fs: 20px;
+  --title-fw: 700;
+  --title-lh: 1.25;
+  /* The brand is the word "rentas." set in the display face — SISTEMA.md
+     "Assets": there is no logotype. --disp resolves to --mono under
+     data-layout="compacto", so the wordmark changes with the structure axis
+     exactly like the price does. */
+  --brand-ls: -0.02em;
+
+  /* Brand bar height (SISTEMA.md screen 1 — "barra de marca 48px" on
+     mobile, "barra 56px" on desktop). Structural, but tokenized because
+     every screen in the system carries this bar and a literal would drift
+     between them. */
+  --brandbar-h: 48px;
+  --brandbar-h-desktop: 56px;
+
   --dark-r: 10px;
   --dark-rs: 6px;
   --dark-ctl: #22262e;
