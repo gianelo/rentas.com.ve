@@ -221,6 +221,31 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 export type SeedDatabase = Pick<typeof db, "insert" | "select">;
 
 /**
+ * Loads `.env` into an environment object WITHOUT overwriting anything the
+ * real environment already set. Exported so the precedence rule can be
+ * tested directly, because it is the dangerous half of this: if `.env` won,
+ * a deploy that supplies the real connection string through its environment
+ * could be silently redirected to whatever a stray local file names. Same
+ * rule, same reason, as vitest.integration.config.ts.
+ *
+ * `process.loadEnvFile` is Node's own parser (built in since 20.12, and
+ * this project requires >= 22), so no dotenv dependency and no hand-rolled
+ * quoting rules.
+ */
+export function loadDotEnvWithoutOverriding(env: Record<string, string | undefined>): void {
+  const alreadySet = { ...env };
+  try {
+    process.loadEnvFile(".env");
+  } catch {
+    // No .env — normal on a deploy, where the values come from the
+    // environment itself. Not an error, and not something to warn about.
+  }
+  for (const [key, value] of Object.entries(alreadySet)) {
+    if (value !== undefined) env[key] = value;
+  }
+}
+
+/**
  * The database handle is a parameter, defaulting to the real client, for
  * the same reason `drizzle.test.config.ts` exists: `./client` resolves
  * `DATABASE_URL` at import time and speaks Neon's HTTP driver, so a seed
@@ -322,6 +347,25 @@ export async function seed(database?: SeedDatabase): Promise<void> {
 // this module can also be imported for its data (PROVISIONAL_TAXONOMY)
 // without a side-effecting database call.
 if (import.meta.url === `file://${process.argv[1]}`) {
+  // `tsx` does not read `.env` — it only ever sees `process.env`. Without
+  // this block `pnpm db:seed` could only work where DATABASE_URL already
+  // came from the environment, which is why the command had never once run
+  // on a developer machine: it failed with "DATABASE_URL environment
+  // variable is not set" while the value sat in `.env`, right there.
+  // `drizzle-kit` carries its own .env loading, so `pnpm db:migrate`
+  // worked and hid the asymmetry.
+  //
+  // Deliberately inside the CLI entry and NOT at module scope. Loading
+  // `.env` on import would push DATABASE_URL into the environment of every
+  // test that imports this file, which is precisely the blindness that let
+  // the module-scope client import ship (see tests/integration/seed.test.ts).
+  //
+  // A value already present in the real environment MUST WIN over `.env`,
+  // matching vitest.integration.config.ts: a deploy supplies the real
+  // connection string through the environment, and a local file must never
+  // be able to redirect it.
+  loadDotEnvWithoutOverriding(process.env);
+
   seed()
     .then(() => {
       console.log("seed: complete");
