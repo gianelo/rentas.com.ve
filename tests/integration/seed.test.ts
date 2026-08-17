@@ -1,8 +1,12 @@
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type SeedDatabase, seed } from "../../src/shared/db/seed";
+
+const execFileAsync = promisify(execFile);
 
 /**
  * The seed populates the Vercel Preview environment on every deploy — it is
@@ -107,6 +111,56 @@ describe("seed", () => {
     expect(await countRows("zone")).toBe(10);
     expect(await countRows("listing")).toBe(10);
   });
+
+  /**
+   * REGRESSION GUARD, and the bug it guards against already shipped once.
+   *
+   * `seed()` takes a database handle so it can run without the real client.
+   * The first attempt wrote that as `seed(database: SeedDatabase = db)` with
+   * a plain `import { db } from "./client"` — which does not work, because
+   * `./client` resolves DATABASE_URL at MODULE scope. The default parameter
+   * is evaluated at call time, but the import that produces it runs at load
+   * time, so merely importing this module threw. The injection was
+   * cosmetic.
+   *
+   * It passed locally and failed in CI, for one reason: a local `.env`
+   * supplies DATABASE_URL and CI supplies only TEST_DATABASE_URL. That is
+   * also why this test must spawn a CHILD PROCESS. Inside the vitest run,
+   * `vitest.integration.config.ts` has already loaded `.env` into
+   * process.env, so an in-process assertion would be checking a world where
+   * the variable exists — it would pass no matter how the import is written,
+   * and reproduce the exact blindness that let the bug through.
+   */
+  it("can be imported with no DATABASE_URL, so it is testable without the real database", async () => {
+    const { DATABASE_URL, ...envWithoutDatabaseUrl } = process.env;
+    const { stdout } = await execFileAsync(
+      "pnpm",
+      [
+        "exec",
+        "tsx",
+        "-e",
+        'import("./src/shared/db/seed.ts").then(() => console.log("IMPORT_OK"))',
+      ],
+      { env: envWithoutDatabaseUrl, cwd: process.cwd() },
+    );
+
+    expect(stdout).toContain("IMPORT_OK");
+  }, 60_000);
+
+  it("still refuses to run against the real client when DATABASE_URL is absent", async () => {
+    // The other half of the contract: making the module importable must not
+    // have softened the guard. A seed that silently no-ops without a
+    // database would be worse than one that throws.
+    const { DATABASE_URL, ...envWithoutDatabaseUrl } = process.env;
+
+    await expect(
+      execFileAsync(
+        "pnpm",
+        ["exec", "tsx", "-e", 'import("./src/shared/db/seed.ts").then((m) => m.seed())'],
+        { env: envWithoutDatabaseUrl, cwd: process.cwd() },
+      ),
+    ).rejects.toThrow(/DATABASE_URL environment variable is not set/);
+  }, 60_000);
 
   it("refreshes the expiry window on re-run so a seeded catalogue never ages out", async () => {
     await client.query(

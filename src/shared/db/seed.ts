@@ -1,6 +1,17 @@
 import { createHash } from "node:crypto";
 import { and, eq } from "drizzle-orm";
-import { db } from "./client";
+// TYPE-ONLY, and it has to stay that way. `./client` calls
+// `getPooledDatabaseUrl()` at module scope, so a value import would make
+// merely *importing* this file throw when DATABASE_URL is unset — before
+// any caller has said which database it wants. A `database = db` default
+// parameter does not help: the default is evaluated at call time, but the
+// import that produces it runs at load time. `import type` is erased
+// entirely by the compiler, so it costs nothing at runtime; the real client
+// is pulled in by dynamic import inside `seed()`, and only when no handle
+// was passed. This is not a style preference — CI caught the value import
+// as a hard failure that local runs hid, because a local `.env` supplies
+// DATABASE_URL and CI supplies only TEST_DATABASE_URL.
+import type { db } from "./client";
 import { cities, listings, users, zones } from "./schema";
 
 /**
@@ -221,9 +232,12 @@ export type SeedDatabase = Pick<typeof db, "insert" | "select">;
  * same code against the disposable Postgres container and asserts the rows
  * it produces, including a second run to prove idempotency.
  */
-export async function seed(database: SeedDatabase = db): Promise<void> {
+export async function seed(database?: SeedDatabase): Promise<void> {
+  // Resolved here, not as a default parameter: the real client must not be
+  // loaded at all when a handle was supplied (see the import note above).
+  const target: SeedDatabase = database ?? (await import("./client")).db;
   for (const { city, zones: zoneNames } of PROVISIONAL_TAXONOMY) {
-    const [cityRow] = await database
+    const [cityRow] = await target
       .insert(cities)
       .values({ name: city })
       .onConflictDoUpdate({ target: cities.name, set: { name: city } })
@@ -234,7 +248,7 @@ export async function seed(database: SeedDatabase = db): Promise<void> {
     }
 
     for (const zoneName of zoneNames) {
-      await database
+      await target
         .insert(zones)
         .values({ cityId: cityRow.id, name: zoneName })
         .onConflictDoNothing({ target: [zones.cityId, zones.name] });
@@ -244,7 +258,7 @@ export async function seed(database: SeedDatabase = db): Promise<void> {
   const publisherIds = new Map<string, string>();
   for (const { key, name } of SEED_PUBLISHERS) {
     const email = `seed-${key}@rentas.invalid`;
-    const [row] = await database
+    const [row] = await target
       .insert(users)
       .values({ id: stableId(`publisher:${key}`), name, email })
       .onConflictDoUpdate({ target: users.email, set: { name } })
@@ -260,7 +274,7 @@ export async function seed(database: SeedDatabase = db): Promise<void> {
   const expiresAt = new Date(publishedAt.getTime() + THIRTY_DAYS_MS);
 
   for (const listing of SEEDED_LISTINGS) {
-    const [zoneRow] = await database
+    const [zoneRow] = await target
       .select({ id: zones.id, cityId: zones.cityId })
       .from(zones)
       .innerJoin(cities, eq(zones.cityId, cities.id))
@@ -280,7 +294,7 @@ export async function seed(database: SeedDatabase = db): Promise<void> {
       throw new Error(`seed: no seed publisher for type "${listing.publisherType}"`);
     }
 
-    await database
+    await target
       .insert(listings)
       .values({
         id: stableId(`listing:${listing.city}:${listing.zone}:${listing.title}`),
