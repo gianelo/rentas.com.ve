@@ -8,27 +8,46 @@
  * they belong to the document, and src/styles/base.css owns them. Repeating
  * them per page is how a page eventually disagrees with the shell. */
 
+/* Brand bar: 48px on mobile, 56px on desktop (SISTEMA.md screen 1). Every
+   screen in the system opens with this bar, so the home page uses the same
+   one rather than inventing a header of its own. */
 .masthead {
-  padding-block: 16px;
+  display: flex;
+  align-items: center;
+  min-block-size: var(--brandbar-h);
   border-bottom: 1px solid var(--line);
 }
 
+.mastheadInner {
+  inline-size: 100%;
+}
+
+/* The wordmark is literally the word "rentas." — SISTEMA.md "Assets": "No
+   hay logotipo: la marca es la palabra «rentas.» en el stack del sistema."
+   Lowercase and the trailing period are the mark, not a typo. Set in
+   var(--disp), which is --mono under data-layout="compacto". */
 .brand {
   margin: 0;
-  font-size: var(--fp);
-  font-weight: var(--fpw);
-  letter-spacing: 0.01em;
+  font-family: var(--disp);
+  font-size: var(--title-fs);
+  font-weight: var(--title-fw);
+  line-height: var(--title-lh);
+  letter-spacing: var(--brand-ls);
 }
 
 .content {
   padding-block: 32px 40px;
 }
 
+/* "Título de página | 20px / 700 / 1.25" (SISTEMA.md "Tipografía"), in the
+   sans stack -- only the price uses var(--disp). This deliberately does NOT
+   use --fpb: that token is the detail-page PRICE (26px / 700 / 1.1 / mono),
+   and reaching for it here was the original mistake. */
 .title {
   margin: 0 0 16px;
-  font-size: var(--fpb);
-  font-weight: var(--fpw);
-  line-height: 1.25;
+  font-size: var(--title-fs);
+  font-weight: var(--title-fw);
+  line-height: var(--title-lh);
 }
 
 .lead {
@@ -82,6 +101,10 @@
 /* Matches the 768px breakpoint used by components/layout/Container.module.css
    and Button.module.css — one breakpoint across the system, not three. */
 @media (min-width: 768px) {
+  .masthead {
+    min-block-size: var(--brandbar-h-desktop);
+  }
+
   .cta {
     min-height: var(--target-min-desktop);
   }

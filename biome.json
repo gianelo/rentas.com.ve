@@ -7,7 +7,14 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!design/reference", "!.engram", "!drizzle/meta", "!.claude"]
+    "includes": [
+      "**",
+      "!design/reference",
+      "!design/design_handoff_rentas",
+      "!.engram",
+      "!drizzle/meta",
+      "!.claude"
+    ]
   },
   "formatter": {
     "enabled": true,
