@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "@/styles/tokens.css";
+import "@/styles/base.css";
 
 // The read path ships no client-side JavaScript and no webfonts (design.md,
 // D13/D14). The root layout stays plain HTML with the system font stack —
