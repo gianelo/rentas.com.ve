@@ -1,0 +1,35 @@
+/* Document baseline. Split from tokens.css on purpose: that file declares
+   what values exist, this one applies the few that every page needs before
+   any component renders. Keeping them apart is what lets lint-tokens.mjs go
+   on treating tokens.css as a pure declaration source.
+ *
+ * This did not exist until the home page needed it, and its absence was
+ * visible rather than theoretical: <body> kept the browser's default 8px
+ * margin and transparent background, so a page painting var(--bg) on its
+ * own wrapper sat inside a white frame — glaring under the automatic dark
+ * theme (tokens.css, prefers-color-scheme). Four design-system slices
+ * shipped before anything rendered a full page, which is why nothing had
+ * caught it.
+ *
+ * Every value here resolves through a token, so this file repaints with the
+ * rest of the page when data-theme changes. It ships no webfont and no
+ * url() (design.md D14, asserted for tokens.css in
+ * components/design-contract.test.tsx). */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  /* The page owns the full viewport height so the themed background reaches
+     the bottom on short pages instead of stopping at the content. */
+  min-block-size: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--fp);
+  line-height: 1.55;
+}
