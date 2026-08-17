@@ -183,7 +183,7 @@ The order is not cosmetic. **The token contract has to land before the first com
 - [ ] 3.3 RED: unit test — publish rejected without `publisher_type`, no default applied
 - [ ] 3.4 RED: unit test — publish rejected without photo / missing min content (title, description, price, city, zone)
 - [ ] 3.5 GREEN: `PublishListingUseCase` validation (publisher_type, USD price, city/zone, min content)
-- [ ] 3.6 RED: non-image / oversized upload rejected (MIME + magic-byte + size)
+- [x] 3.6 RED: non-image / oversized upload rejected (MIME + magic-byte + size) — `inspectUploadedPhoto`, pure over bytes, 17 specs. Reads the file's own header rather than trusting `Content-Type`, which is a claim the uploader makes about their own bytes and which nothing verifies. SVG is refused outright even when honestly declared: it executes script, `image/svg+xml` is a legitimate image MIME type, and a public bucket serving it is script execution on the origin. **Two numbers here are chosen, not inherited, and both are recorded as such:** the 10 MB ceiling (design.md states only "a phone photo is 3–8 MB") and the exclusion of HEIC, which is the **iPhone camera default** — iOS normally transcodes to JPEG through a file input, but that is not guaranteed, and the fix if publishers hit it is a client-side transcode, never loosening the guard. The `sharp`-based pixel-bomb bound ships with 3.11, where the decoder already exists
 - [ ] 3.7 GREEN: `sharp`-based upload guard before persistence; R2 presigned PUT adapter
 - [ ] 3.8 Schema: `listing_photo` table
 - [ ] 3.9 Publish form UI + listing detail/card rendering `publisher_type` visibly
