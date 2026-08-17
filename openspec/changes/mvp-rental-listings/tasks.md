@@ -178,14 +178,16 @@ The order is not cosmetic. **The token contract has to land before the first com
 
 ## Phase 3: Listing Publication Core (PR3)
 
-**Split into slices, as this phase's High risk required.** PR3a `feat/publish-validation` (the pure rules); later slices carry the upload guard, the `listing_photo` schema, the `sharp` derivatives and the form.
+**Split into slices, as this phase's High risk required.** PR3a `feat/publish-validation` (the pure rules, #23); PR3b `feat/upload-guard` (the byte-level upload guard, #24); later slices carry the `listing_photo` schema, the `sharp` derivatives, the form, and the R2 adapter.
+
+Both shipped slices are pure — no database, no R2, no network — which is why they could be built and reviewed in parallel. The cost of that parallelism showed up here: they both edited this block and conflicted. Worth remembering before splitting bookkeeping across concurrent slices again.
 
 - [x] 3.1 Schema: `listing` table, `publisher_type` NOT NULL no default, composite FK `(zone_id, city_id) → zone(id, city_id)` (D5) — shipped in #20
 - [x] 3.2 RED: integration test — cross-city listing insert fails FK constraint — shipped in #20. Proven RED by dropping the constraint against live Postgres: the cross-city row inserted (`promise resolved ... instead of rejecting`), and re-adding the constraint then failed until the orphan row was deleted
 - [x] 3.3 RED: unit test — publish rejected without `publisher_type`, no default applied — proven twice, at both layers that can enforce it: `not_null_violation` from Postgres (#20) and `publisherType.required` from the validator, which also asserts explicitly that a missing type never silently becomes `owner`
 - [x] 3.4 RED: unit test — publish rejected without photo / missing min content (title, description, price, city, zone)
 - [ ] 3.5 GREEN: `PublishListingUseCase` validation (publisher_type, USD price, city/zone, min content) — **the rules themselves are done** as `validatePublishableListing`, a pure dependency-free function with 19 specs and 93.9% coverage. What remains is the use case that calls it: session gate, persistence port, and the write. Kept separate on purpose — the spec's "Uniform Validation Across Every Entry Path" means the broker importer (Phase 9) must be held to exactly these rules, so they had to live somewhere neither the form nor the importer owns
-- [ ] 3.6 RED: non-image / oversized upload rejected (MIME + magic-byte + size)
+- [x] 3.6 RED: non-image / oversized upload rejected (MIME + magic-byte + size) — `inspectUploadedPhoto`, pure over bytes, 17 specs. Reads the file's own header rather than trusting `Content-Type`, which is a claim the uploader makes about their own bytes and which nothing verifies. SVG is refused outright even when honestly declared: it executes script, `image/svg+xml` is a legitimate image MIME type, and a public bucket serving it is script execution on the origin. **Two numbers here are chosen, not inherited, and both are recorded as such:** the 10 MB ceiling (design.md states only "a phone photo is 3–8 MB") and the exclusion of HEIC, which is the **iPhone camera default** — iOS normally transcodes to JPEG through a file input, but that is not guaranteed, and the fix if publishers hit it is a client-side transcode, never loosening the guard. The `sharp`-based pixel-bomb bound ships with 3.11, where the decoder already exists
 - [ ] 3.7 GREEN: `sharp`-based upload guard before persistence; R2 presigned PUT adapter
 - [ ] 3.8 Schema: `listing_photo` table
 - [ ] 3.9 Publish form UI + listing detail/card rendering `publisher_type` visibly
