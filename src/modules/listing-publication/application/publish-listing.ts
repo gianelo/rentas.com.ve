@@ -65,8 +65,13 @@ export interface PublishListingDependencies {
  * Reading through this instead of casting means that if the validator ever
  * stops covering a field, the publish fails here, loudly, naming the field —
  * rather than writing a NULL into a column that refuses it.
+ *
+ * Exported only so it can be proven directly. Every path through
+ * `publishListing` is now supposed to make its throw unreachable, which is
+ * exactly why it cannot be reached from a test through the use case — and an
+ * untested backstop is not a backstop.
  */
-function present<T>(value: T | undefined, field: string): T {
+export function present<T>(value: T | undefined, field: string): T {
   if (value === undefined) {
     throw new Error(
       `publish-listing: ${field} passed validation but is undefined — ` +

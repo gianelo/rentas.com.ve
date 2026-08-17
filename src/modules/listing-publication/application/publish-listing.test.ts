@@ -10,6 +10,7 @@ import {
   LISTING_ACTIVE_DAYS,
   type PublishListingDependencies,
   PublishRejectedError,
+  present,
   publishListing,
 } from "./publish-listing";
 
@@ -283,6 +284,50 @@ describe("publishListing", () => {
 
     await expect(publishListing(request(), dependencies)).rejects.toThrow();
     expect(dependencies.listings.saved).toEqual([]);
+  });
+
+  it("does not consult the zone catalogue when no city was chosen", async () => {
+    const listZonesForCity = vi.fn(zones.listZonesForCity);
+
+    const failure = await publishListing(
+      request({ cityId: undefined }),
+      deps({
+        zones: { listZonesForCity },
+      }),
+    ).catch((error: unknown) => error);
+
+    expect((failure as PublishRejectedError).violations).toContain("cityId.required");
+    expect(listZonesForCity).not.toHaveBeenCalled();
+  });
+
+  it("uses the real clock when none is injected", async () => {
+    const { now: _injected, ...dependencies } = deps();
+    const before = Date.now();
+
+    await publishListing(request(), dependencies);
+
+    const publishedAt = (dependencies.listings.saved[0] as NewListing).publishedAt.getTime();
+    expect(publishedAt).toBeGreaterThanOrEqual(before);
+    expect(publishedAt).toBeLessThanOrEqual(Date.now());
+  });
+
+  describe("present — the backstop for a defect already shipped", () => {
+    // Unreachable through `publishListing`, and that is the point: every path
+    // is supposed to make it unreachable. Proven directly instead, because a
+    // backstop nothing exercises is not a backstop — which is precisely how
+    // rooms and area_m2 went unvalidated in the first place.
+    it("throws naming the field the validator stopped covering", () => {
+      expect(() => present(undefined, "areaM2")).toThrow(/areaM2/);
+      expect(() => present(undefined, "areaM2")).toThrow(/no longer covers/);
+    });
+
+    it("passes falsy-but-present values through untouched", () => {
+      // Zero and the empty string are refused by the validator, not by this.
+      // A truthiness check here would turn a validation failure into an
+      // unexplained 500 at exactly the wrong layer.
+      expect(present(0, "priceUsd")).toBe(0);
+      expect(present("", "title")).toBe("");
+    });
   });
 
   it("asks only for the zones of the city being published to", async () => {
