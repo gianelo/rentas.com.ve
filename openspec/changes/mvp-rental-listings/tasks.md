@@ -178,11 +178,13 @@ The order is not cosmetic. **The token contract has to land before the first com
 
 ## Phase 3: Listing Publication Core (PR3)
 
-- [ ] 3.1 Schema: `listing` table, `publisher_type` NOT NULL no default, composite FK `(zone_id, city_id) → zone(id, city_id)` (D5)
-- [ ] 3.2 RED: integration test — cross-city listing insert fails FK constraint
-- [ ] 3.3 RED: unit test — publish rejected without `publisher_type`, no default applied
-- [ ] 3.4 RED: unit test — publish rejected without photo / missing min content (title, description, price, city, zone)
-- [ ] 3.5 GREEN: `PublishListingUseCase` validation (publisher_type, USD price, city/zone, min content)
+**Split into slices, as this phase's High risk required.** PR3a `feat/publish-validation` (the pure rules); later slices carry the upload guard, the `listing_photo` schema, the `sharp` derivatives and the form.
+
+- [x] 3.1 Schema: `listing` table, `publisher_type` NOT NULL no default, composite FK `(zone_id, city_id) → zone(id, city_id)` (D5) — shipped in #20
+- [x] 3.2 RED: integration test — cross-city listing insert fails FK constraint — shipped in #20. Proven RED by dropping the constraint against live Postgres: the cross-city row inserted (`promise resolved ... instead of rejecting`), and re-adding the constraint then failed until the orphan row was deleted
+- [x] 3.3 RED: unit test — publish rejected without `publisher_type`, no default applied — proven twice, at both layers that can enforce it: `not_null_violation` from Postgres (#20) and `publisherType.required` from the validator, which also asserts explicitly that a missing type never silently becomes `owner`
+- [x] 3.4 RED: unit test — publish rejected without photo / missing min content (title, description, price, city, zone)
+- [ ] 3.5 GREEN: `PublishListingUseCase` validation (publisher_type, USD price, city/zone, min content) — **the rules themselves are done** as `validatePublishableListing`, a pure dependency-free function with 19 specs and 93.9% coverage. What remains is the use case that calls it: session gate, persistence port, and the write. Kept separate on purpose — the spec's "Uniform Validation Across Every Entry Path" means the broker importer (Phase 9) must be held to exactly these rules, so they had to live somewhere neither the form nor the importer owns
 - [ ] 3.6 RED: non-image / oversized upload rejected (MIME + magic-byte + size)
 - [ ] 3.7 GREEN: `sharp`-based upload guard before persistence; R2 presigned PUT adapter
 - [ ] 3.8 Schema: `listing_photo` table
