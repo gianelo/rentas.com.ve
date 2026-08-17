@@ -193,13 +193,15 @@ The order is not cosmetic. **The token contract has to land before the first com
 
 ## Phase 4: Trust — Photo-Hash Dedup (PR4)
 
-- [ ] 4.1 Schema: `listing_photo_hash` (`bit(64)`)
-- [ ] 4.2 RED: unit test — cross-publisher perceptually-matching photo rejects listing
-- [ ] 4.3 RED: unit test — same-publisher match (active/expired/other listing) is allowed
-- [ ] 4.4 GREEN: `sharp` 9×8 grayscale dHash(64) in `PublishListingUseCase`
-- [ ] 4.5 GREEN: `PhotoHashPort` exposing only `findMatchesFromOtherPublishers(hash, excludePublisherId, maxDistance)` — no all-matches method (D4)
-- [ ] 4.6 GREEN: Drizzle/raw-SQL adapter using `bit_count` Hamming distance. **MUST include a drift cross-check:** replay `KNOWN_HAMMING_DISTANCE_VECTORS` from `src/modules/listing-trust/domain/hamming-distance.ts` through a real `SELECT bit_count($1::bit(64) # $2::bit(64))` and assert the same distances the domain tests assert. The identical logic now lives in two places — TypeScript and a Postgres expression — and two implementations that drift are worse than one untested implementation, because drift returns a confident wrong answer instead of a visible gap
-- [ ] 4.7 E2E: publish → duplicate photo rejected cross-account, accepted same publisher
+**The pure half was pulled forward**, split across two slices — `trust/perceptual-hash-core` (dHash + Hamming, merged as #14) and `trust/perceptual-hash-adapter` (the port, the sharp boundary and the calibration harness). The reason for pulling it forward is the **uncalibrated `<= 8` threshold** (see Open Questions): the harness has to exist before real photographs can decide the number, and no amount of testing substitutes for that data. Tasks 4.1, 4.6, 4.7 and the `PublishListingUseCase` wiring all need `listing`, which is PR3.
+
+- [ ] 4.1 Schema: `listing_photo_hash` (`bit(64)`) — needs `listing` (PR3)
+- [x] 4.2 RED: cross-publisher perceptually-matching photo rejects the listing. **Proved against `PhotoHashPort` with an in-memory fake, not the real adapter** (`application/ports/photo-hash.port.test.ts`) — the database behaviour is not proven until 4.6
+- [x] 4.3 RED: same-publisher match (active/expired/other listing) is allowed — same fake, same caveat
+- [x] 4.4 GREEN (hash computation only): `sharp` 9×8 grayscale dHash(64) — pure algorithm in `domain/dhash.ts`, sharp confined to `infrastructure/sharp-dhash.ts`. Wiring into `PublishListingUseCase` needs `listing` (PR3)
+- [x] 4.5 GREEN: `PhotoHashPort` exposing only `findMatchesFromOtherPublishers(hash, excludePublisherId, maxDistance)` — no all-matches method (D4)
+- [ ] 4.6 GREEN: Drizzle/raw-SQL adapter using `bit_count` Hamming distance — needs `listing` (PR3) and 4.1. **MUST include a drift cross-check:** replay `KNOWN_HAMMING_DISTANCE_VECTORS` from `src/modules/listing-trust/domain/hamming-distance.ts` through a real `SELECT bit_count($1::bit(64) # $2::bit(64))` and assert the same distances the domain tests assert. The identical logic now lives in two places — TypeScript and a Postgres expression — and two implementations that drift are worse than one untested implementation, because drift returns a confident wrong answer instead of a visible gap
+- [ ] 4.7 E2E: publish → duplicate photo rejected cross-account, accepted same publisher — needs PR3
 
 ## Phase 5: Listing Search (PR5)
 
