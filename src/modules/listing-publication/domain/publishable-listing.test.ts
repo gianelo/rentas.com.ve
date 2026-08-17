@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { type DraftListing, validatePublishableListing } from "./publishable-listing";
+import {
+  type DraftListing,
+  MAX_PHOTOS_PER_LISTING,
+  validatePublishableListing,
+} from "./publishable-listing";
 
 /**
  * Every rule asserted here is quoted from a spec or the design system, not
@@ -149,6 +153,18 @@ describe("validatePublishableListing", () => {
       expect(validatePublishableListing(draft({ photoCount: 0 }), ZONES)).toContain(
         "photos.required",
       );
+    });
+
+    it("rejects more photos than a listing may hold", () => {
+      // D12's storage arithmetic ("six per listing is roughly 30 MB") is what
+      // the ~7,000-listing free-tier figure rests on, and until now nothing
+      // applied the ceiling that arithmetic assumed.
+      expect(
+        validatePublishableListing(draft({ photoCount: MAX_PHOTOS_PER_LISTING + 1 }), ZONES),
+      ).toContain("photos.tooMany");
+      expect(
+        validatePublishableListing(draft({ photoCount: MAX_PHOTOS_PER_LISTING }), ZONES),
+      ).toEqual([]);
     });
 
     it("rejects an empty or whitespace-only title", () => {

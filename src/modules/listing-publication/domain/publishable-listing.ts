@@ -53,7 +53,8 @@ export type PublishViolation =
   | "rooms.invalid"
   | "areaM2.required"
   | "areaM2.invalid"
-  | "photos.required";
+  | "photos.required"
+  | "photos.tooMany";
 
 /**
  * SISTEMA.md screen 3 ships a live counter against this exact number. The
@@ -62,6 +63,19 @@ export type PublishViolation =
  * to disagree with the rule it is counting toward.
  */
 export const MIN_DESCRIPTION_CHARACTERS = 120;
+
+/**
+ * Six. **The number is design.md's, but the enforcement is new here**: D12's
+ * storage arithmetic ("six per listing is roughly 30 MB") assumes a ceiling
+ * that nothing was actually applying, so the ~7,000-listing figure the free
+ * tier is planned around rested on publishers being moderate.
+ *
+ * It is also the cheapest DoS bound this flow has. Each photo costs a network
+ * read plus a `sharp` decode inside a serverless function with a fixed memory
+ * ceiling, so an unbounded array is a request that decides how much compute
+ * it gets to spend.
+ */
+export const MAX_PHOTOS_PER_LISTING = 6;
 
 const PUBLISHER_TYPES: readonly string[] = ["owner", "broker"];
 
@@ -168,6 +182,8 @@ export function validatePublishableListing(
 
   if (!draft.photoCount || draft.photoCount < 1) {
     violations.push("photos.required");
+  } else if (draft.photoCount > MAX_PHOTOS_PER_LISTING) {
+    violations.push("photos.tooMany");
   }
 
   return violations;
