@@ -1,0 +1,91 @@
+/* Publish form, SISTEMA.md screen 3. One column inside FormShell's 600px.
+   Geometry and colour through tokens only (D16) — no literal. */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.field,
+.fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.legend {
+  padding: 0;
+  color: var(--ink);
+}
+
+.choices {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  min-block-size: var(--target-min);
+  color: var(--ink);
+}
+
+.control {
+  min-block-size: var(--target-min);
+  padding: 8px 12px;
+  border-radius: var(--r);
+  border: 1px solid var(--strong);
+  background: var(--ctl);
+  color: var(--ink);
+  font: inherit;
+  inline-size: 100%;
+}
+
+/* 2px --err, as the design specifies. The border is never the only signal:
+   the message below carries the glyph and the words, and aria-describedby
+   reads it aloud. */
+.controlInvalid {
+  border: 2px solid var(--err);
+}
+
+.control:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.help {
+  margin: 0;
+  font-size: var(--meta-fs);
+  color: var(--soft);
+}
+
+.error {
+  margin: 0;
+  font-size: var(--meta-fs);
+  color: var(--err);
+}
+
+.closing {
+  margin: 0;
+  padding: 12px;
+  border-radius: var(--r);
+  background: var(--tint);
+  color: var(--ink);
+  font-size: var(--meta-fs);
+}
+
+@media (min-width: 768px) {
+  .control,
+  .choice {
+    min-block-size: var(--target-min-desktop);
+  }
+}
