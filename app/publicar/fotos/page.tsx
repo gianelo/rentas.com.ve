@@ -46,18 +46,23 @@ export default async function PublishPhotosPage() {
     <>
       <header className={styles.bar}>
         <div className={styles.barInner}>
-          <p className={styles.brand}>rentas.</p>
+          {/* Artboard 2g puts a way back where step 1 puts the wordmark. The
+              photos are the last thing anyone does and the first thing they
+              second-guess, so returning to the description must not cost the
+              browser's back button. */}
+          <a className={styles.back} href="/publicar">
+            ← Paso 1
+          </a>
           <span className={styles.step}>Paso 2 de 2</span>
         </div>
       </header>
 
       <main className={styles.page}>
         <FormShell>
-          <h1 className={styles.title}>Las fotos</h1>
+          <h1 className={styles.title}>Fotos</h1>
 
           <p className={styles.prose}>
-            Tus datos quedaron guardados. Elegí las fotos y las achicamos en tu teléfono antes de
-            subirlas, así gastás menos datos.
+            Sin fotos casi no se alquila. Con tres o más recibís el doble de mensajes.
           </p>
 
           {/* A real form around the uploader: the hidden `photoKey` inputs it

@@ -51,6 +51,13 @@
      forbids a type-size literal, and the shipped subset did not carry
      these values yet. */
   --badge-fs: 11px;
+  /* Small monospaced metadata — the step label and the "4 de 6" counter.
+     Artboard 2g sets 11px against --meta-fs's 12px, and the two are used in
+     different places, so they are different tokens rather than one rounded. */
+  --meta-fs-sm: 11px;
+  /* The photo thumbnail's corner. Artboard 2g draws 6px here rather than the
+     card radius: a 12px round on a 64x48 image eats the image. */
+  --r-thumb: 6px;
   --badge-fw: 700;
   --badge-ls: 0.06em;
   --meta-fs: 12px;
@@ -89,23 +96,27 @@
   --brandbar-h: 48px;
   --brandbar-h-desktop: 56px;
 
-  --dark-r: 10px;
-  --dark-rs: 6px;
-  --dark-ctl: #22262e;
-  --dark-bg: #14161a;
-  --dark-surface: #1b1e24;
-  --dark-line: #2c313a;
-  --dark-strong: #4a515c;
-  --dark-ink: #eef1f4;
-  --dark-soft: #9aa3ad;
-  --dark-accent: #d8a13a;
-  --dark-accent-ink: #14161a;
-  --dark-tint: #2a2415;
-  --dark-warn: #e0b464;
-  --dark-warn-bg: #2c2517;
-  --dark-err: #e98a80;
-  --dark-err-bg: #2e1c1a;
-  --dark-thumb: repeating-linear-gradient(135deg, #23272f 0 7px, #1d2027 7px 14px);
+  /* Redrawn by the founder from menta's own palette (2026-08-18), replacing
+     an amber theme that shared nothing with it. `--surface` is menta's
+     accent navy and `--accent` is its mint, so the dark theme is the same
+     product at night rather than a different one. */
+  --dark-r: 12px;
+  --dark-rs: 999px;
+  --dark-ctl: #332e52;
+  --dark-bg: #1b1830;
+  --dark-surface: #272343;
+  --dark-line: #3b3663;
+  --dark-strong: #788e98;
+  --dark-ink: #f0f5f9;
+  --dark-soft: #9ba8b4;
+  --dark-accent: #bae8e8;
+  --dark-accent-ink: #272343;
+  --dark-tint: #332e52;
+  --dark-warn: #bae8e8;
+  --dark-warn-bg: #332e52;
+  --dark-err: #f0a39a;
+  --dark-err-bg: #43283a;
+  --dark-thumb: repeating-linear-gradient(135deg, #3b3663 0 7px, #332e52 7px 14px);
 }
 
 /* ---------- data-layout: compacto (shipped structure) ---------- */
@@ -123,6 +134,12 @@
   --ftw: 400;
   --tclamp: 36px;
   --disp: var(--mono);
+  /* New in the 2026-08-18 design update. Metadata — counts, file sizes, step
+     labels — is monospaced so numbers line up in a column. It is declared
+     separately from --disp rather than reusing it: they happen to share a
+     value under `compacto` and mean different things, and one token with two
+     meanings is how a display-font change silently resizes every caption. */
+  --meta: var(--mono);
 }
 
 /* ---------- data-theme: menta (shipped light theme, default) ---------- */
@@ -139,8 +156,13 @@
   --accent: #272343;
   --accent-ink: #ffffff;
   --tint: #e3f6f5;
-  --warn: #8a5a00;
-  --warn-bg: #faf2e1;
+  /* Both repainted from the palette itself (design update, 2026-08-18). The
+     mustard pair was the only colour on this screen belonging to no theme;
+     `--warn` is now the accent navy and `--warn-bg` the mint, so "vence
+     pronto" reads as part of the product rather than a borrowed browser
+     warning. */
+  --warn: #272343;
+  --warn-bg: #bae8e8;
   --err: #9c2b20;
   --err-bg: #fbecea;
   --thumb: repeating-linear-gradient(135deg, #bae8e8 0 7px, #e3f6f5 7px 14px);

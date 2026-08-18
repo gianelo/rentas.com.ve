@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { MAX_PHOTOS_PER_LISTING } from "../../../src/modules/listing-publication/domain/publishable-listing";
 import { SUPPORTED_PHOTO_CONTENT_TYPES } from "../../../src/modules/listing-publication/domain/uploaded-photo";
 import { requestUploadTargets } from "./actions";
@@ -8,36 +8,51 @@ import { computeResize, UPLOAD_CONTENT_TYPE, UPLOAD_QUALITY } from "./compress";
 import styles from "./photo-uploader.module.css";
 
 /**
- * Step 2 of 2 — the only client component in the publish flow, and the only
- * screen in the product where SISTEMA.md allows JavaScript. The reason is
- * specific: a phone photo is 3–8 MB, six of them on a Venezuelan mobile
- * connection is the slowest thing this product ever asks anyone to do, and
- * compressing before the bytes leave the device is the only fix that works
- * on the connection rather than around it.
+ * SISTEMA.md artboard `2g` — step 2 of 2.
  *
- * ## The order is the design
+ * The only client component in the publish flow, and the only screen where
+ * the design allows JavaScript. The reason is specific: a phone photo is
+ * 3–8 MB, six of them on a Venezuelan mobile connection is the slowest thing
+ * this product ever asks anyone to do, and compressing before the bytes leave
+ * the device is the only fix that works on the connection rather than around
+ * it. The screen says so out loud — `2,4 MB → 38 KB` per row — because the
+ * saving is the reason the wait is worth it.
  *
- * **Compress → measure → sign → upload.** The presigned PUT pins
- * `ContentLength` into its signature, so a body of any other length fails at
- * R2's edge. That means the exact byte count must be known *before* the
- * signature is requested — compressing after signing would invalidate every
- * URL just issued. It reads as an implementation detail and it is the whole
- * sequence.
+ * **The design says "Hasta 8 fotos"; the founder chose to keep 6**
+ * (2026-08-18). Eight costs about a quarter of the free tier's catalogue
+ * capacity — ~5,900 listings against ~7,900, measured against the stored
+ * derivatives rather than the discarded originals. So the copy reads from
+ * `MAX_PHOTOS_PER_LISTING` rather than repeating a number.
  *
- * Nothing here decides what is acceptable. `validateUploadRequest` refuses a
- * request worth no signature, `inspectUploadedPhoto` reads the file's own
- * header after upload, and `deriveListingPhoto` produces what is actually
- * stored. A client that lies gets a signature it cannot use.
+ * Order: **compress → measure → sign → upload.** The presigned PUT pins
+ * `ContentLength` into its signature, so the exact byte count has to be known
+ * before the signature is requested; compressing afterwards would invalidate
+ * every URL just issued.
  */
 
-type Stage = "idle" | "compressing" | "signing" | "uploading" | "done" | "failed";
+type PhotoStatus = "compressing" | "uploading" | "ready" | "failed";
 
-export interface UploadedPhoto {
-  readonly key: string;
+interface Photo {
+  readonly id: string;
   readonly name: string;
+  readonly originalBytes: number;
+  status: PhotoStatus;
+  compressedBytes?: number;
+  key?: string;
+  error?: string;
+  preview?: string;
+  blob?: Blob;
 }
 
-async function compress(file: File): Promise<Blob> {
+/** "2,4 MB" / "38 KB" — Spanish decimal comma, as the artboard writes it. */
+function formatBytes(bytes: number): string {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
+  }
+  return `${Math.round(bytes / 1024)} KB`;
+}
+
+async function compress(file: File): Promise<{ blob: Blob; preview: string }> {
   const bitmap = await createImageBitmap(file);
   const { width, height } = computeResize({ width: bitmap.width, height: bitmap.height });
 
@@ -45,121 +60,254 @@ async function compress(file: File): Promise<Blob> {
   canvas.width = width;
   canvas.height = height;
   const context = canvas.getContext("2d");
-  if (!context) throw new Error("El navegador no pudo procesar la imagen.");
+  if (!context) throw new Error("Tu navegador no pudo procesar esta imagen.");
   context.drawImage(bitmap, 0, 0, width, height);
   bitmap.close();
 
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, UPLOAD_CONTENT_TYPE, UPLOAD_QUALITY),
   );
-  if (!blob) throw new Error("El navegador no pudo comprimir la imagen.");
-  return blob;
+  if (!blob) throw new Error("Tu navegador no pudo comprimir esta imagen.");
+  return { blob, preview: URL.createObjectURL(blob) };
 }
 
-export function PhotoUploader({ onUploaded }: { onUploaded?: (photos: UploadedPhoto[]) => void }) {
-  const [stage, setStage] = useState<Stage>("idle");
-  const [message, setMessage] = useState<string>("");
-  const [uploaded, setUploaded] = useState<UploadedPhoto[]>([]);
+/**
+ * The refusal a publisher actually sees. `createImageBitmap` throws for a
+ * video, a PDF or a corrupt file alike, so the declared type is what
+ * distinguishes them — and "es un video" is the case the artboard draws,
+ * because picking one out of a phone gallery by accident is easy.
+ */
+function refusalFor(file: File): string {
+  if (file.type.startsWith("video/")) return "✱ Es un video, no una foto";
+  if (!(SUPPORTED_PHOTO_CONTENT_TYPES as readonly string[]).includes(file.type)) {
+    return "✱ Ese formato no lo podemos usar";
+  }
+  return "✱ No pudimos leer esta foto";
+}
+
+export function PhotoUploader() {
+  const inputId = useId();
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [notice, setNotice] = useState("");
+
+  const update = (id: string, patch: Partial<Photo>) =>
+    setPhotos((current) => current.map((p) => (p.id === id ? { ...p, ...patch } : p)));
 
   async function handleFiles(fileList: FileList | null) {
     const files = Array.from(fileList ?? []);
     if (files.length === 0) return;
 
-    if (files.length > MAX_PHOTOS_PER_LISTING) {
-      // Said here as well as refused on the server, because a publisher who
-      // picked ten photos should learn that before waiting for ten uploads.
-      setStage("failed");
-      setMessage(`Hasta ${MAX_PHOTOS_PER_LISTING} fotos por aviso. Elegí las mejores.`);
+    const room = MAX_PHOTOS_PER_LISTING - photos.length;
+    if (files.length > room) {
+      // Said before the wait, not after it: someone who picked ten photos
+      // should not watch six upload to learn the rest were dropped.
+      setNotice(
+        room === 0
+          ? `Ya tenés ${MAX_PHOTOS_PER_LISTING} fotos. Quitá alguna para agregar otra.`
+          : `Podés agregar ${room} más. Elegí las mejores.`,
+      );
+      return;
+    }
+    setNotice("");
+
+    const added: Photo[] = files.map((file, index) => ({
+      id: `${Date.now()}-${index}-${file.name}`,
+      name: file.name.replace(/\.[^.]+$/, ""),
+      originalBytes: file.size,
+      status: "compressing",
+    }));
+    setPhotos((current) => [...current, ...added]);
+
+    // Sequential: parallel decodes on a phone compete for the same memory and
+    // give no honest sense of progress.
+    const compressed: { photo: Photo; blob: Blob }[] = [];
+    for (const [index, file] of files.entries()) {
+      const photo = added[index] as Photo;
+      try {
+        const { blob, preview } = await compress(file);
+        update(photo.id, { compressedBytes: blob.size, preview, blob, status: "uploading" });
+        compressed.push({ photo, blob });
+      } catch {
+        update(photo.id, { status: "failed", error: refusalFor(file) });
+      }
+    }
+
+    if (compressed.length === 0) return;
+
+    const result = await requestUploadTargets(
+      compressed.map(({ blob }) => ({ contentType: UPLOAD_CONTENT_TYPE, byteLength: blob.size })),
+    );
+    if (!result.ok) {
+      for (const { photo } of compressed) {
+        update(photo.id, { status: "failed", error: "✱ No pudimos preparar la subida" });
+      }
       return;
     }
 
-    try {
-      setStage("compressing");
-      setMessage("Preparando las fotos en tu teléfono…");
-      const blobs = await Promise.all(files.map(compress));
-
-      setStage("signing");
-      setMessage("Pidiendo permiso para subirlas…");
-      const result = await requestUploadTargets(
-        blobs.map((blob) => ({ contentType: UPLOAD_CONTENT_TYPE, byteLength: blob.size })),
-      );
-      if (!result.ok) {
-        setStage("failed");
-        setMessage("No pudimos preparar la subida. Volvé a intentar.");
-        return;
-      }
-
-      setStage("uploading");
-      const done: UploadedPhoto[] = [];
-      for (const [index, target] of result.targets.entries()) {
-        setMessage(`Subiendo ${index + 1} de ${result.targets.length}…`);
-        const blob = blobs[index] as Blob;
-        // Sequential, matching the server pipeline: six parallel uploads on a
-        // constrained connection make every one of them slower and give the
-        // publisher no idea which is progressing.
+    for (const [index, target] of result.targets.entries()) {
+      const entry = compressed[index];
+      if (!entry) continue;
+      try {
         const response = await fetch(target.url, {
           method: "PUT",
-          // Exactly the type that was signed. Any other value fails the
+          // Exactly the type that was signed; any other value fails the
           // signature at R2's edge rather than landing something unexpected.
           headers: { "content-type": UPLOAD_CONTENT_TYPE },
-          body: blob,
+          body: entry.blob,
         });
-        if (!response.ok) throw new Error(`R2 respondió ${response.status}`);
-        done.push({ key: target.key, name: files[index]?.name ?? `foto-${index + 1}` });
+        if (!response.ok) throw new Error(String(response.status));
+        update(entry.photo.id, { status: "ready", key: target.key });
+      } catch {
+        update(entry.photo.id, { status: "failed", error: "✱ No pudimos subirla" });
       }
-
-      setUploaded(done);
-      setStage("done");
-      setMessage(
-        `${done.length} foto${done.length === 1 ? "" : "s"} lista${done.length === 1 ? "" : "s"}.`,
-      );
-      onUploaded?.(done);
-    } catch (error) {
-      setStage("failed");
-      setMessage(error instanceof Error ? error.message : "No pudimos subir las fotos.");
     }
   }
 
-  const busy = stage === "compressing" || stage === "signing" || stage === "uploading";
+  function remove(id: string) {
+    setPhotos((current) => {
+      const gone = current.find((p) => p.id === id);
+      if (gone?.preview) URL.revokeObjectURL(gone.preview);
+      return current.filter((p) => p.id !== id);
+    });
+    setNotice("");
+  }
+
+  const ready = photos.filter((p) => p.status === "ready");
+
+  const picker = (label: string, className: string | undefined) => (
+    <>
+      <input
+        id={inputId}
+        className={styles.fileInput}
+        type="file"
+        multiple
+        accept={SUPPORTED_PHOTO_CONTENT_TYPES.join(",")}
+        onChange={(event) => {
+          void handleFiles(event.target.files);
+          event.target.value = "";
+        }}
+      />
+      {/* The label IS the button the artboard draws. The input stays in the
+          tab order and the accessibility tree — `display: none` removes it
+          from both. */}
+      <label className={className} htmlFor={inputId}>
+        {label}
+      </label>
+    </>
+  );
 
   return (
     <div className={styles.uploader}>
-      <label className={styles.label} htmlFor="photos">
-        Fotos <span className={styles.required}>✱ obligatorio</span>
-      </label>
+      <div className={styles.heading}>
+        <span />
+        <span className={styles.count}>
+          {photos.length} de {MAX_PHOTOS_PER_LISTING}
+        </span>
+      </div>
 
-      <input
-        id="photos"
-        name="photos"
-        type="file"
-        multiple
-        // The same list the guard enforces. A file input advertising a type
-        // the guard rejects wastes a publisher's upload; one omitting a type
-        // the guard accepts hides a format that would have worked.
-        accept={SUPPORTED_PHOTO_CONTENT_TYPES.join(",")}
-        className={styles.input}
-        disabled={busy}
-        onChange={(event) => void handleFiles(event.target.files)}
-      />
+      {photos.length === 0 ? (
+        <div className={styles.empty}>
+          <span className={styles.emptyLabel}>Todavía no hay fotos</span>
+          {picker("Elegir del teléfono", styles.pickButton)}
+          <span className={styles.hint}>Hasta {MAX_PHOTOS_PER_LISTING} fotos · JPG o PNG</span>
+        </div>
+      ) : (
+        <ul className={styles.list}>
+          {photos.map((photo, index) => (
+            <li
+              key={photo.id}
+              className={
+                photo.status === "failed" ? `${styles.row} ${styles.rowFailed}` : styles.row
+              }
+            >
+              <div
+                className={
+                  photo.status === "failed"
+                    ? `${styles.thumb} ${styles.thumbFailed}`
+                    : photo.status === "ready"
+                      ? styles.thumb
+                      : `${styles.thumb} ${styles.thumbBusy}`
+                }
+              >
+                {photo.preview ? (
+                  /* next/image optimises remote assets through a metered
+                     service. This src is a blob: URL for a file already on
+                     the device — nothing to fetch, resize or cache — and
+                     routing it through the optimiser would spend a paid
+                     transform on bytes that never left the phone. */
+                  // biome-ignore lint/performance/noImgElement: blob: URL, nothing to optimise
+                  <img className={styles.thumbImage} src={photo.preview} alt="" />
+                ) : null}
+                {/* Said in words, not implied by position: a list read aloud
+                    has no "first". */}
+                {index === 0 && photo.status !== "failed" ? (
+                  <span className={styles.cover}>Portada</span>
+                ) : null}
+              </div>
 
-      <p className={styles.help}>
-        Hasta {MAX_PHOTOS_PER_LISTING}. Se achican en tu teléfono antes de subir, así gastás menos
-        datos.
+              <div className={styles.rowBody}>
+                <div className={styles.name}>{photo.name}</div>
+
+                {photo.status === "failed" ? (
+                  <div className={styles.rowError}>{photo.error}</div>
+                ) : photo.status === "ready" ? (
+                  <div className={styles.size}>
+                    {formatBytes(photo.originalBytes)} → {formatBytes(photo.compressedBytes ?? 0)}
+                  </div>
+                ) : (
+                  <>
+                    <div className={styles.progressTrack}>
+                      <div
+                        className={styles.progressFill}
+                        style={{ inlineSize: photo.status === "uploading" ? "80%" : "40%" }}
+                      />
+                    </div>
+                    <div className={styles.size}>
+                      {photo.status === "uploading" ? "Subiendo…" : "Comprimiendo en tu teléfono…"}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <button
+                type="button"
+                className={
+                  photo.status === "failed"
+                    ? `${styles.remove} ${styles.removeFailed}`
+                    : styles.remove
+                }
+                onClick={() => remove(photo.id)}
+                aria-label={`Quitar ${photo.name}`}
+              >
+                ×
+              </button>
+            </li>
+          ))}
+
+          {photos.length < MAX_PHOTOS_PER_LISTING ? picker("+ Agregar más", styles.addMore) : null}
+        </ul>
+      )}
+
+      {notice ? (
+        <p className={styles.rowError} role="status" aria-live="polite">
+          {notice}
+        </p>
+      ) : null}
+
+      <p className={styles.hint}>
+        Las comprimimos acá antes de subirlas, así gastás menos datos. La primera es la portada.
       </p>
 
-      {/* Announced, not merely shown: this is the slowest step in the flow and
-          a screen-reader user gets no progress from a changing paragraph
-          unless it is a live region. */}
-      <p
-        className={stage === "failed" ? styles.error : styles.status}
-        role="status"
-        aria-live="polite"
-      >
-        {message}
-      </p>
+      <div className={styles.trust}>
+        <p className={styles.trustLead}>Tienen que ser fotos tuyas, de esta propiedad.</p>
+        <p className={styles.trustBody}>
+          Publicar fotos tomadas de otro aviso es motivo de baja de la cuenta. Es el reporte más
+          frecuente que recibimos.
+        </p>
+      </div>
 
-      {uploaded.map((photo) => (
-        <input key={photo.key} type="hidden" name="photoKey" value={photo.key} />
+      {ready.map((photo) => (
+        <input key={photo.id} type="hidden" name="photoKey" value={photo.key} />
       ))}
     </div>
   );

@@ -61,6 +61,9 @@ const TOKENS_CSS_PATH = "src/styles/tokens.css";
 const LAYOUT_SELECTOR = '[data-layout="compacto"]';
 const LIGHT_THEME_SELECTOR = '[data-theme="menta"]';
 const DARK_THEME_SELECTOR = '[data-theme="oscuro"]';
+
+/** Geometry, not colour. Kept deliberately identical in both themes. */
+const SHARED_ACROSS_THEMES = new Set(["--r", "--rs"]);
 // Thumbnail-geometry custom properties (design/reference/sistema/tokens.css):
 // mobile width/height and desktop width/height for the result-row thumbnail.
 const THUMBNAIL_TOKEN_NAMES = ["--tw", "--th", "--twd", "--thd"];
@@ -135,8 +138,16 @@ function classifyViolation(property, rawValue, thumbnailDimensions) {
       : null;
   }
   if (property === "border-radius") {
-    if (isZero(value)) return null;
-    return value.startsWith("var(") ? null : "corner radius literal";
+    // `border-radius` takes up to four values, and the check used to read the
+    // whole string: `0 var(--r-thumb) 0 var(--r-thumb)` — a badge tucked into
+    // a thumbnail's corner, straight from the artboard — was reported as a
+    // literal because it neither equalled zero nor started with `var(`.
+    // Splitting on whitespace makes every part answerable, so a real literal
+    // hiding among tokens (`0 6px 0 var(--r)`) is now caught too, which the
+    // old check would have missed entirely.
+    const parts = value.split(/[\s/]+/).filter(Boolean);
+    const offending = parts.find((part) => !isZero(part) && !part.startsWith("var("));
+    return offending ? "corner radius literal" : null;
   }
   if (property === "font-size") {
     return value.startsWith("var(") ? null : "type size literal";
@@ -300,6 +311,13 @@ function checkThemeContract(cssText) {
     }
     const lightValue = resolveValue(light.get(key), dictionary);
     const darkValue = resolveValue(dark.get(key), dictionary);
+
+    // Geometry may legitimately be identical across themes, and since the
+    // 2026-08-18 design update it is: the founder's dark palette keeps
+    // menta's 12px radius and its pill. A shared radius is not an unthemed
+    // value leaking through — it is the same product at night. Colour is
+    // what must repaint, and everything outside this pair still must.
+    if (SHARED_ACROSS_THEMES.has(key)) continue;
 
     if (lightValue === darkValue) {
       const via =
