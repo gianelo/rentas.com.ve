@@ -40,6 +40,14 @@
       "sessions": 0,
       "memories": 25,
       "prompts": 0
+    },
+    {
+      "id": "ed8f0c68",
+      "created_by": "gianelo",
+      "created_at": "2026-08-18T13:16:32Z",
+      "sessions": 1,
+      "memories": 23,
+      "prompts": 114
     }
   ]
 }
