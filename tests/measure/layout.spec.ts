@@ -156,3 +156,44 @@ test.describe("publish form measurement (3.9)", () => {
     }
   });
 });
+
+/**
+ * The zone cascade (3.9). This is the spec that should have existed before
+ * the form shipped: every other test on this screen hands `cityId` in as a
+ * prop, so none of them ever walked the path a person walks — open the page,
+ * choose a city, choose a zone. In production the city `<select>` sat inside
+ * the POST form with nothing to reload the page, so the zone list stayed
+ * empty for every city and the form could never be submitted at all.
+ */
+test.describe("zone selection (3.9)", () => {
+  test("3.9: choosing a city offers that city's zones, with no JavaScript", async ({ browser }) => {
+    // Scripting off, because step 1 must work before any bundle arrives —
+    // and because a cascade that only works with JS is exactly the defect
+    // this test exists to catch.
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto("/measure");
+
+    await page.selectOption("#cityId", { label: "Maracaibo" });
+
+    const zoneOptions = await page.locator("#zoneId option").allTextContents();
+    console.log(`[3.9] zone options after choosing Maracaibo: ${JSON.stringify(zoneOptions)}`);
+
+    expect(zoneOptions).toContain("La Lago");
+    await context.close();
+  });
+
+  test("3.9: every curated zone is reachable, grouped by its city", async ({ page }) => {
+    await page.goto("/measure");
+
+    const groups = await page
+      .locator("#zoneId optgroup")
+      .evaluateAll((nodes) => nodes.map((node) => (node as HTMLOptGroupElement).label));
+    console.log(`[3.9] zone groups: ${JSON.stringify(groups)}`);
+
+    // Grouping is what lets one static select serve both cities without
+    // JavaScript: the label says which city a zone belongs to, so a
+    // mismatched pair is visible before the validator has to explain it.
+    expect(groups).toEqual(["Distrito Capital", "Maracaibo"]);
+  });
+});

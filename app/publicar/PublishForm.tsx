@@ -88,7 +88,6 @@ export function PublishForm({
     }
   }
 
-  const zonesForCity = values.cityId ? zones.filter((zone) => zone.cityId === values.cityId) : [];
   const publisherTypeError = errors.get("publisherType");
 
   return (
@@ -188,16 +187,37 @@ export function PublishForm({
             )}
           </Field>
 
-          {/* Filtered here rather than by the caller, the rule CityZoneSelect
-              already follows: nothing is left for a caller to forget. */}
+          {/* Every zone, grouped by its city, rather than only the selected
+              city's.
+
+              **This is the shape a cascade cannot have without JavaScript.**
+              The first version filtered by `values.cityId`, which only ever
+              arrived as a query parameter — and the city `<select>` sits
+              inside a POST form with nothing to reload the page, so it never
+              arrived at all. The zone list was empty for every city and the
+              form could not be submitted, ever. No unit test caught it
+              because they all handed `cityId` in as a prop, which is not the
+              path a person walks.
+
+              `<optgroup>` is what lets one static select serve both cities:
+              the group label says which city a zone belongs to, so a
+              mismatched pair is visible before the validator has to explain
+              it — and `zoneId.notInCity` plus `listing`'s composite foreign
+              key still refuse the pairing if someone insists. */}
           <Field name="zoneId" label="Zona" value={values.zoneId} error={errors.get("zoneId")}>
             {(attributes) => (
               <select {...attributes}>
-                <option value="">Elegí primero la ciudad</option>
-                {zonesForCity.map((zone) => (
-                  <option key={zone.id} value={zone.id}>
-                    {zone.name}
-                  </option>
+                <option value="">Elegí una zona</option>
+                {cities.map((city) => (
+                  <optgroup key={city.id} label={city.name}>
+                    {zones
+                      .filter((zone) => zone.cityId === city.id)
+                      .map((zone) => (
+                        <option key={zone.id} value={zone.id}>
+                          {zone.name}
+                        </option>
+                      ))}
+                  </optgroup>
                 ))}
               </select>
             )}

@@ -93,12 +93,21 @@ describe("PublishForm", () => {
     expect(markup.indexOf('name="description"')).toBeGreaterThan(markup.indexOf('name="areaM2"'));
   });
 
-  it("offers only the selected city's zones", () => {
+  it("offers every zone, grouped by its city", () => {
     const markup = render({ values: { cityId: "dc" } });
 
+    // This spec replaces one that asserted the opposite — that only the
+    // selected city's zones appear — and that spec **locked the bug in**.
+    // The city `<select>` sits inside a POST form with nothing to reload the
+    // page, so `cityId` only ever arrived as a query parameter, which meant
+    // it never arrived: the zone list was empty for every city and the form
+    // could not be submitted at all. The test passed the whole time, because
+    // it handed `cityId` in as a prop rather than walking the path a person
+    // walks.
+    expect(markup).toContain('<optgroup label="Distrito Capital">');
+    expect(markup).toContain('<optgroup label="Maracaibo">');
     expect(markup).toContain("Chacao");
-    expect(markup).toContain("Altamira");
-    expect(markup).not.toContain("La Lago");
+    expect(markup).toContain("La Lago");
   });
 
   it("states the description minimum before anyone has failed it", () => {

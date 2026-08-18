@@ -84,8 +84,9 @@ export default function MeasureHarnessPage() {
           zones={[
             { id: "chacao", name: "Chacao", cityId: "dc" },
             { id: "altamira", name: "Altamira", cityId: "dc" },
+            { id: "la-lago", name: "La Lago", cityId: "mcbo" },
           ]}
-          values={{ cityId: "dc", title: "Apartamento 2 habitaciones en Chacao", priceUsd: "450" }}
+          values={{ title: "Apartamento 2 habitaciones en Chacao", priceUsd: "450" }}
         />
       </div>
     </Container>
