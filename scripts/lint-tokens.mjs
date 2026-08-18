@@ -138,8 +138,16 @@ function classifyViolation(property, rawValue, thumbnailDimensions) {
       : null;
   }
   if (property === "border-radius") {
-    if (isZero(value)) return null;
-    return value.startsWith("var(") ? null : "corner radius literal";
+    // `border-radius` takes up to four values, and the check used to read the
+    // whole string: `0 var(--r-thumb) 0 var(--r-thumb)` — a badge tucked into
+    // a thumbnail's corner, straight from the artboard — was reported as a
+    // literal because it neither equalled zero nor started with `var(`.
+    // Splitting on whitespace makes every part answerable, so a real literal
+    // hiding among tokens (`0 6px 0 var(--r)`) is now caught too, which the
+    // old check would have missed entirely.
+    const parts = value.split(/[\s/]+/).filter(Boolean);
+    const offending = parts.find((part) => !isZero(part) && !part.startsWith("var("));
+    return offending ? "corner radius literal" : null;
   }
   if (property === "font-size") {
     return value.startsWith("var(") ? null : "type size literal";

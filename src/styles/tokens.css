@@ -51,6 +51,13 @@
      forbids a type-size literal, and the shipped subset did not carry
      these values yet. */
   --badge-fs: 11px;
+  /* Small monospaced metadata — the step label and the "4 de 6" counter.
+     Artboard 2g sets 11px against --meta-fs's 12px, and the two are used in
+     different places, so they are different tokens rather than one rounded. */
+  --meta-fs-sm: 11px;
+  /* The photo thumbnail's corner. Artboard 2g draws 6px here rather than the
+     card radius: a 12px round on a 64x48 image eats the image. */
+  --r-thumb: 6px;
   --badge-fw: 700;
   --badge-ls: 0.06em;
   --meta-fs: 12px;

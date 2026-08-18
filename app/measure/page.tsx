@@ -4,6 +4,7 @@ import { Container } from "../../components/layout/Container";
 import { FormShell } from "../../components/layout/FormShell";
 import { ReadingWidth } from "../../components/layout/ReadingWidth";
 import { ResultRow } from "../../components/molecules/ResultRow";
+import { PhotoUploader } from "../publicar/fotos/PhotoUploader";
 import { PublishForm } from "../publicar/PublishForm";
 import publishStyles from "../publicar/publish-page.module.css";
 
@@ -98,6 +99,15 @@ export default function MeasureHarnessPage() {
             ]}
             values={{ title: "Apartamento 2 habitaciones en Chacao", priceUsd: "450" }}
           />
+        </FormShell>
+      </div>
+
+      {/* Artboard 2g's empty state, so its geometry is measurable and its
+          screenshot reviewable. /publicar/fotos is session-gated and needs a
+          draft cookie, so Playwright cannot reach the real screen. */}
+      <div data-testid="photo-uploader" className={publishStyles.page}>
+        <FormShell>
+          <PhotoUploader />
         </FormShell>
       </div>
     </Container>
