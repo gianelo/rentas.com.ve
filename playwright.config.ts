@@ -4,6 +4,12 @@ import { defineConfig, devices } from "@playwright/test";
 // a Next.js preview deployment, not a local dev server — the crawlability
 // suite specifically requires scripting disabled, which this config's
 // per-project `javaScriptEnabled` override supports once test files exist.
+// `||`, not `??`: CI sets this to an EMPTY STRING when there is no bypass
+// secret, and an empty string is not nullish — the first run produced
+// `baseURL: ""` and three "Cannot navigate to invalid URL" failures. Absent
+// and empty must mean the same thing here.
+const previewUrl = process.env.PLAYWRIGHT_BASE_URL || undefined;
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: true,
@@ -12,9 +18,36 @@ export default defineConfig({
   workers: process.env.CI ? 2 : undefined,
   reporter: "html",
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000",
+    baseURL: previewUrl ?? "http://localhost:3000",
     trace: "on-first-retry",
+    // Vercel deployment protection puts an SSO wall in front of every
+    // preview: without this header the suite tests vercel.com/login and
+    // reports the app as broken. The bypass secret is enabled per project
+    // under Deployment Protection → Protection Bypass for Automation.
+    ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+      ? {
+          extraHTTPHeaders: {
+            "x-vercel-protection-bypass": process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+            "x-vercel-set-bypass-cookie": "true",
+          },
+        }
+      : {}),
   },
+
+  // With no base URL — no preview, or no bypass secret to get past its SSO
+  // wall — the suite runs against a real production build served locally.
+  // That covers less than a deployment does, and it is stated rather than
+  // hidden: it proves the built app, not Vercel's routing or its environment.
+  ...(previewUrl
+    ? {}
+    : {
+        webServer: {
+          command: "pnpm build && pnpm start",
+          url: "http://localhost:3000",
+          reuseExistingServer: !process.env.CI,
+          timeout: 180_000,
+        },
+      }),
   projects: [
     {
       name: "chromium",
