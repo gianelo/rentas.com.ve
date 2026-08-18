@@ -1,4 +1,5 @@
 import {
+  customType,
   foreignKey,
   index,
   integer,
@@ -233,3 +234,40 @@ export const listingPhotos = pgTable(
     index("listing_photo_listing_idx").on(photo.listingId),
   ],
 );
+
+/**
+ * A 64-bit dHash of one photo, as Postgres `bit(64)` (design.md D4).
+ *
+ * **Not `bigint`, and not `text`.** The similarity query is
+ * `bit_count(hash # $1) <= $2` — Postgres's own population count over an XOR
+ * — and that operator pair only exists for bit strings. Storing this as a
+ * number would force every comparison into application code, which is
+ * exactly the sequential-scan-in-TypeScript this design avoids; storing it
+ * as text would make the same query a lie that happens to parse.
+ *
+ * Drizzle has no first-class `bit`, so the type is declared here rather than
+ * approximated with one that ships. `customType` keeps the SQL honest while
+ * the TypeScript side stays a plain string of 64 ones and zeroes.
+ */
+const bit64 = customType<{ data: string; driverData: string }>({
+  dataType: () => "bit(64)",
+});
+
+// listing_photo_hash (tasks.md 4.1, design.md D4). One hash per photo, and
+// the primary key says so: a photo with two hashes would make "is this a
+// duplicate" depend on which row a scan reached first.
+//
+// **There is deliberately no `publisher_id` column here**, even though the
+// duplicate query filters on it. It is reachable by joining `listing_photo`
+// to `listing`, and a copy kept in this table would be a second source of
+// truth for who owns a listing — the exact fact D4's same-publisher
+// exemption depends on. A denormalised copy that drifts turns "this is your
+// own photo, republish freely" into a false accusation of duplication, which
+// is the worst failure this feature has.
+export const listingPhotoHashes = pgTable("listing_photo_hash", {
+  photoId: text("photo_id")
+    .primaryKey()
+    .references(() => listingPhotos.id, { onDelete: "cascade" }),
+  hash: bit64("hash").notNull(),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+});
