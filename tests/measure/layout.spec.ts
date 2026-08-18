@@ -115,7 +115,7 @@ test.describe("publish form measurement (3.9)", () => {
     await page.setViewportSize({ width: 1280, height: 1000 });
     await page.goto("/measure");
 
-    const box = await page.getByTestId("publish-form").locator("form").boundingBox();
+    const box = await page.getByTestId("publish-column").locator("form").boundingBox();
     if (!box) throw new Error("publish form did not render a measurable box");
 
     console.log(`[3.9] measured form width at 1280px: ${box.width}px (bound: <= 600px)`);
@@ -195,5 +195,48 @@ test.describe("zone selection (3.9)", () => {
     // JavaScript: the label says which city a zone belongs to, so a
     // mismatched pair is visible before the validator has to explain it.
     expect(groups).toEqual(["Distrito Capital", "Maracaibo"]);
+  });
+});
+
+/**
+ * The column, not just the form (3.9). The first version of these
+ * measurements bounded the `<form>` — which `FormShell` already capped — and
+ * nothing bounded the column around it. On a 1280 screen the heading sat
+ * against the left edge while the fields floated centred, and every test
+ * passed. The bound was on the wrong element.
+ */
+test.describe("publish column measurement (3.9)", () => {
+  test("3.9: the whole column is 600px and centred at 1280px, heading included", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.goto("/measure");
+
+    const column = await page.getByTestId("publish-column").boundingBox();
+    const title = await page.getByTestId("publish-title").boundingBox();
+    if (!column || !title) throw new Error("column/title did not render a measurable box");
+
+    console.log(`[3.9] column x=${column.x} width=${column.width} (bound: <= 600, centred)`);
+    expect(column.width).toBeLessThanOrEqual(600);
+
+    // The heading starts where the column starts. If the column were fluid
+    // this would be near zero while the form sat in the middle — which is
+    // exactly what shipped.
+    expect(Math.abs(title.x - column.x)).toBeLessThanOrEqual(20);
+  });
+
+  test("3.9: the heading and the fields share a left edge", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.goto("/measure");
+
+    const title = await page.getByTestId("publish-title").boundingBox();
+    const field = await page.locator("#title").boundingBox();
+    if (!title || !field) throw new Error("title/field did not render a measurable box");
+
+    console.log(`[3.9] title.x=${title.x} field.x=${field.x} (bound: same edge)`);
+    // A page whose heading and inputs do not line up reads as two screens
+    // stacked, and that is what a fluid container around a capped form looks
+    // like from the outside.
+    expect(Math.abs(title.x - field.x)).toBeLessThanOrEqual(20);
   });
 });

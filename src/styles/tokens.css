@@ -22,15 +22,15 @@
    v1 ships light only — no theme-toggle UI exists. `oscuro` is reachable
    two ways: directly, by setting data-theme="oscuro" (used by the
    automated theme-contract check in scripts/lint-tokens.mjs, and
-   available to a future manual toggle); and automatically, when the
-   visitor's OS prefers dark colour schemes, via the
-   `@media (prefers-color-scheme: dark)` block below — the app shell only
-   ever sets data-theme="menta", so this media query is the only path a
-   real v1 visitor takes to `oscuro`'s values.
+   available to a future manual toggle).
+
+   **A visitor never reaches `oscuro` automatically.** An earlier version
+   repainted `menta` through `@media (prefers-color-scheme: dark)`; that is
+   gone. Choosing a palette out of nine is a design decision, and it is the
+   founder's, not the operating system's.
 
    The `--dark-*` custom properties hold `oscuro`'s literal values exactly
-   once; both the direct [data-theme="oscuro"] block and the automatic
-   media-query override reference them, so the two paths cannot drift. */
+   once, so the palette stays defined in a single place. */
 
 :root {
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -167,27 +167,14 @@
   --thumb: var(--dark-thumb);
 }
 
-/* Automatic dark mode: no toggle UI ships in v1 (design.md D16). The app
-   shell only ever sets data-theme="menta"; when the visitor's OS prefers
-   a dark colour scheme, this override repaints it with oscuro's values. */
-@media (prefers-color-scheme: dark) {
-  [data-theme="menta"] {
-    --r: var(--dark-r);
-    --rs: var(--dark-rs);
-    --ctl: var(--dark-ctl);
-    --bg: var(--dark-bg);
-    --surface: var(--dark-surface);
-    --line: var(--dark-line);
-    --strong: var(--dark-strong);
-    --ink: var(--dark-ink);
-    --soft: var(--dark-soft);
-    --accent: var(--dark-accent);
-    --accent-ink: var(--dark-accent-ink);
-    --tint: var(--dark-tint);
-    --warn: var(--dark-warn);
-    --warn-bg: var(--dark-warn-bg);
-    --err: var(--dark-err);
-    --err-bg: var(--dark-err-bg);
-    --thumb: var(--dark-thumb);
-  }
-}
+/* **No automatic dark mode.** An earlier version repainted
+   [data-theme="menta"] with oscuro's values whenever the visitor's OS
+   preferred a dark scheme, and that was wrong twice over.
+
+   The founder chose `compacto` + `menta` from a system of nine palettes,
+   and that rule made their own choice impossible to see without changing
+   the operating system's settings. It also invented a pairing the design
+   never states: `oscuro` is one of the nine, not menta's night variant.
+
+   Dark mode is a theme, and choosing a theme is the founder's decision:
+   `data-theme="oscuro"` already exists and is one attribute away. */

@@ -4,6 +4,14 @@
    stays 600px at every viewport wider than the form itself, not only above
    the shared breakpoint. */
 .formShell {
+  /* `inline-size: 100%` is load-bearing, not belt-and-braces. Inside a flex
+     column — which is what a page shell is — `margin-inline: auto` cancels
+     `align-items: stretch`, so without a width this collapses to its content
+     and centres at that size. Measured: 398px wide and indented 85px from a
+     600px column, with the heading correctly at the column's edge and the
+     fields floating inside it. A markup test cannot see that; only a browser
+     can. */
+  inline-size: 100%;
   max-width: 600px;
   margin-inline: auto;
 }

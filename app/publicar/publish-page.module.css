@@ -34,7 +34,13 @@
   color: var(--soft);
 }
 
+/* The WHOLE column is 600px and centred, heading included — not just the
+   form inside it. The first version capped only the form, so on a 1280
+   screen the <h1> sat against the left edge while the fields floated in the
+   middle. The artboard is `width:600px; margin:0 auto` on the container. */
 .column {
+  max-inline-size: 600px;
+  margin-inline: auto;
   padding-block: 32px 48px;
   padding-inline: 16px;
   display: flex;
@@ -55,4 +61,67 @@
   .barInner {
     min-block-size: var(--brandbar-h-desktop);
   }
+}
+
+/* Shared page furniture. "Not designed yet" was used as a reason to ship raw
+   HTML here, and that was the wrong reading: the design system exists so a
+   screen without an artboard still looks like the product. Every value below
+   already existed as a token. */
+
+.prose {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.note {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  line-height: 1.5;
+  color: var(--soft);
+}
+
+/* The draft read back, in the same tinted card the publish form closes with
+   — it is the last moment anyone can check what they wrote. */
+.summary {
+  margin: 0;
+  padding: 12px;
+  border-radius: var(--r);
+  background: var(--tint);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--gap) 16px;
+}
+
+.summaryTerm {
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--soft);
+}
+
+.summaryValue {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.link {
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  line-height: 1.5;
+  color: var(--accent);
+}
+
+/* A form inside the shell stacks like the publish form does. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }

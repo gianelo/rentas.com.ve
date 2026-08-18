@@ -6,8 +6,7 @@
  * This did not exist until the home page needed it, and its absence was
  * visible rather than theoretical: <body> kept the browser's default 8px
  * margin and transparent background, so a page painting var(--bg) on its
- * own wrapper sat inside a white frame — glaring under the automatic dark
- * theme (tokens.css, prefers-color-scheme). Four design-system slices
+ * own wrapper sat inside a white frame. Four design-system slices
  * shipped before anything rendered a full page, which is why nothing had
  * caught it.
  *

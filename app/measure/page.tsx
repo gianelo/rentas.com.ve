@@ -4,6 +4,7 @@ import { Container } from "../../components/layout/Container";
 import { ReadingWidth } from "../../components/layout/ReadingWidth";
 import { ResultRow } from "../../components/molecules/ResultRow";
 import { PublishForm } from "../publicar/PublishForm";
+import publishStyles from "../publicar/publish-page.module.css";
 
 /**
  * Layout-measurement harness (tasks.md 1b.10–1b.12, 1b.14). Renders the
@@ -75,7 +76,14 @@ export default function MeasureHarnessPage() {
           the publish form shipped with eleven green tests and nine layout
           differences, because every one of those tests read markup and none
           could see geometry. */}
-      <div data-testid="publish-form">
+      {/* Wrapped in the page's own column so its width is measurable, not just
+          the form's. Measuring only the form is what let the heading sit
+          against the left edge of a 1280 screen while the fields floated
+          centred — the bound was on the wrong element. */}
+      <div data-testid="publish-column" className={publishStyles.column}>
+        <h1 data-testid="publish-title" className={publishStyles.title}>
+          Publicar una propiedad
+        </h1>
         <PublishForm
           cities={[
             { id: "dc", name: "Distrito Capital" },
