@@ -43,6 +43,7 @@ export type PublishViolation =
   | "title.required"
   | "description.required"
   | "description.tooShort"
+  | "description.tooLong"
   | "priceUsd.required"
   | "priceUsd.invalid"
   | "cityId.required"
@@ -63,6 +64,21 @@ export type PublishViolation =
  * to disagree with the rule it is counting toward.
  */
 export const MIN_DESCRIPTION_CHARACTERS = 120;
+
+/**
+ * 1,200 characters — ten times the minimum, and roughly 200 words.
+ *
+ * **The design states a minimum and a counter but no ceiling**, and `text`
+ * has none in Postgres either, so until now nothing stopped megabytes of
+ * pasted prose from landing in a mandatory column, six listings at a time,
+ * against a free tier.
+ *
+ * The number is chosen on product grounds rather than storage ones: nobody
+ * reads 1,200+ characters of rental copy on a phone, and the detail page has
+ * to render whatever is stored. A publisher with more to say has photos and
+ * a WhatsApp conversation, which is where the rest of it belongs.
+ */
+export const MAX_DESCRIPTION_CHARACTERS = 1_200;
 
 /**
  * Six. **The number is design.md's, but the enforcement is new here**: D12's
@@ -125,8 +141,13 @@ export function validatePublishableListing(
 
   if (isBlank(draft.description)) {
     violations.push("description.required");
-  } else if (characterCount(draft.description as string) < MIN_DESCRIPTION_CHARACTERS) {
-    violations.push("description.tooShort");
+  } else {
+    const length = characterCount(draft.description as string);
+    if (length < MIN_DESCRIPTION_CHARACTERS) {
+      violations.push("description.tooShort");
+    } else if (length > MAX_DESCRIPTION_CHARACTERS) {
+      violations.push("description.tooLong");
+    }
   }
 
   // "USD-Only Price": one numeric field, no currency selector, no
