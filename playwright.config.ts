@@ -42,7 +42,10 @@ export default defineConfig({
     ? {}
     : {
         webServer: {
-          command: "pnpm build && pnpm start",
+          // CI builds once before running both projects and sets this to
+          // `pnpm start`; locally the default builds too, so a bare
+          // `playwright test` still works from a clean checkout.
+          command: process.env.PLAYWRIGHT_WEB_COMMAND ?? "pnpm build && pnpm start",
           url: "http://localhost:3000",
           reuseExistingServer: !process.env.CI,
           timeout: 180_000,
