@@ -1,0 +1,90 @@
+/* Form field. Every value below is transcribed from the design system's own
+   artboard markup (design/reference/sistema/pantallas-compacto-menta.html),
+   not measured off a screenshot. Colour, radius and type size go through
+   tokens (D16). */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+/* Two related fields on one line, at every width — the mobile artboard pairs
+   city and zone exactly as the desktop one does. */
+.row {
+  display: flex;
+  gap: 12px;
+}
+
+.row > * {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.label {
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+/* The glyph and the word carry the meaning; the colour is additive. In
+   forced-colors mode this rule is dropped and the field is still marked. */
+.required {
+  color: var(--err);
+}
+
+.control {
+  min-block-size: var(--target-min);
+  padding: 0 12px;
+  border: 1px solid var(--strong);
+  border-radius: var(--r);
+  background: var(--ctl);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  line-height: 1.55;
+  inline-size: 100%;
+}
+
+/* A textarea is the one control that is not a single line, so it takes real
+   padding and grows downward instead of centring its text. */
+textarea.control {
+  padding: 12px;
+  resize: vertical;
+  min-block-size: auto;
+}
+
+.controlInvalid {
+  border: 2px solid var(--err);
+}
+
+.control:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.error {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  line-height: 1.5;
+  color: var(--err);
+}
+
+.help {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  line-height: 1.5;
+  color: var(--soft);
+}
+
+/* 44px is a thumb on a phone; 36px is a pointer on a desktop. Both numbers
+   are the artboards' own. */
+@media (min-width: 768px) {
+  .control {
+    min-block-size: var(--target-min-desktop);
+  }
+}
