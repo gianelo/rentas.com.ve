@@ -4,25 +4,21 @@ import { redirect } from "next/navigation";
 import { requireSession } from "../../_lib/require-session";
 import { DRAFT_COOKIE, parseDraft } from "../draft";
 import styles from "../publish-page.module.css";
+import { PhotoUploader } from "./PhotoUploader";
 
 export const metadata: Metadata = {
   title: "Publicar · fotos — Rentas",
 };
 
 /**
- * SISTEMA.md screen 3, step 2 of 2 — **not built yet, and honest about it**.
+ * SISTEMA.md screen 3, step 2 of 2 — the photos.
  *
- * The upload itself is task 3.14: the presigned PUT, the on-device
- * compression that makes this the one screen allowed client JavaScript, and
- * the call to `publishListing`. Every piece it needs already exists and is
- * proven — the storage port and its R2 adapter, the upload guard, the
- * derivatives, the use case, the transactional repository. What is missing is
- * the wiring and the interface.
- *
- * This page ships anyway rather than leaving step 1 pointing at a 404,
- * because it does one useful thing: it reads the draft back and shows it. If
- * a value is wrong or missing here, the round trip through the cookie is
- * broken, and that is worth finding before the upload is built on top of it.
+ * The upload works: compress on the device, request a signature for the exact
+ * compressed size, PUT straight to R2. **What is still missing is the last
+ * step**, task 3.14c — running `processUploadedPhoto` over each uploaded key
+ * and then `publishListing`. Until that lands the photos reach the bucket's
+ * incoming prefix and no listing row is written, which is why this page still
+ * shows the draft back rather than a published advert.
  */
 export default async function PublishPhotosPage() {
   await requireSession("/publicar/fotos");
@@ -49,9 +45,11 @@ export default async function PublishPhotosPage() {
         <h1 className={styles.title}>Las fotos</h1>
 
         <p>
-          Tus datos quedaron guardados. La subida de fotos es lo próximo que se construye — es el
-          único paso que usa JavaScript, para comprimir en tu teléfono antes de subir.
+          Tus datos quedaron guardados. Elegí las fotos y las achicamos en tu teléfono antes de
+          subirlas, así gastás menos datos.
         </p>
+
+        <PhotoUploader />
 
         <dl>
           <dt>Título</dt>
