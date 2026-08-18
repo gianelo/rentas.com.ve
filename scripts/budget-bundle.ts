@@ -74,7 +74,24 @@ const EXCLUDED_ROUTE_SUBSTRINGS = ["(auth)", "/measure", "_not-found"];
 
 type BuildManifest = { pages?: Record<string, string[]> };
 
+const DEV_MARKER = join(NEXT_DIR, "static", "development");
+
 function readManifest(): Record<string, string[]> {
+  // `next dev` writes into the same .next directory a production build uses,
+  // and `pnpm test:measure` starts a dev server. Run the two in sequence and
+  // this gate silently measures unminified development chunks: the observed
+  // failure was 1,854,100 bytes against a 133,120-byte budget — a number so
+  // wrong it reads as a catastrophic regression rather than as the wrong
+  // input. A gate that reports a fabricated number is worse than one that
+  // refuses to answer.
+  if (existsSync(DEV_MARKER)) {
+    console.error(
+      `budget:bundle: ${NEXT_DIR} holds a development build (${DEV_MARKER} exists). ` +
+        'Run "pnpm build" first — measuring dev chunks would report a number that means nothing.',
+    );
+    process.exit(1);
+  }
+
   if (!existsSync(MANIFEST_PATH)) {
     console.error(
       `budget:bundle: ${MANIFEST_PATH} not found. Run "pnpm build" first — ` +
