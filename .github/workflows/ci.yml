@@ -308,6 +308,13 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET != '' && needs.preview.outputs.url || '' }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          # The same deliberately fake, unroutable value the build job carries,
+          # and for the same reason: src/shared/db/client.ts resolves and
+          # validates DATABASE_URL at module load ON PURPOSE, so a change that
+          # breaks the pooled-endpoint guard fails in CI rather than at deploy
+          # time. Without it the local production build this suite falls back to
+          # cannot collect /api/auth/[...nextauth] and never starts.
+          DATABASE_URL: postgresql://ci:ci@ep-ci-build-0000-pooler.invalid.neon.tech/ci?sslmode=require
         run: |
           pnpm exec playwright install --with-deps chromium
           fail=0
