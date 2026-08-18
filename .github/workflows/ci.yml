@@ -298,10 +298,23 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
-      - name: E2E + crawlability against the PR preview
-        if: needs.preview.outputs.url != ''
+      # The preview URL is used ONLY when a bypass secret exists to get past
+      # Vercel's deployment-protection SSO wall. Without it every request
+      # lands on vercel.com/login and the suite reports the app as broken --
+      # which is exactly what happened the first time these specs ran. With
+      # no secret the config falls back to a local production build, which
+      # covers less and says so.
+      - name: E2E + crawlability
         env:
-          PLAYWRIGHT_BASE_URL: ${{ needs.preview.outputs.url }}
+          PLAYWRIGHT_BASE_URL: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET != '' && needs.preview.outputs.url || '' }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          # The same deliberately fake, unroutable value the build job carries,
+          # and for the same reason: src/shared/db/client.ts resolves and
+          # validates DATABASE_URL at module load ON PURPOSE, so a change that
+          # breaks the pooled-endpoint guard fails in CI rather than at deploy
+          # time. Without it the local production build this suite falls back to
+          # cannot collect /api/auth/[...nextauth] and never starts.
+          DATABASE_URL: postgresql://ci:ci@ep-ci-build-0000-pooler.invalid.neon.tech/ci?sslmode=require
         run: |
           pnpm exec playwright install --with-deps chromium
           fail=0
@@ -315,11 +328,12 @@ jobs:
               echo "$output"
             else
               echo "$output"
-              if echo "$output" | grep -qi "no tests found"; then
-                echo "::warning title=$project gate has no specs yet::tests/e2e/ is empty (tasks.md Phase 4+/11). This step currently cannot fail."
-              else
-                fail=1
-              fi
+              # No "no tests found" tolerance any more. It existed while
+              # tests/e2e/ was empty, and it meant this job installed a
+              # browser, ran for minutes and could not fail -- reported as a
+              # passing gate on every push. An emptied directory is now a
+              # failure, because that is what it is.
+              fail=1
             fi
           done
           exit $fail
