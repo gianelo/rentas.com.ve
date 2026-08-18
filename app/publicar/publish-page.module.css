@@ -1,0 +1,58 @@
+/* Screen 3 chrome, artboard 2c. The bar spans the full width while its
+   contents stay inside the 1100px container the whole product uses; the form
+   column below is 600px, centred, at every width wide enough for it. */
+
+.bar {
+  border-block-end: 1px solid var(--line);
+}
+
+.barInner {
+  max-inline-size: 1100px;
+  margin-inline: auto;
+  min-block-size: var(--brandbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 16px;
+}
+
+.brand {
+  margin: 0;
+  font-family: var(--disp);
+  font-size: var(--title-fs);
+  font-weight: var(--title-fw);
+  line-height: var(--title-lh);
+  letter-spacing: var(--brand-ls);
+  color: var(--ink);
+}
+
+.step {
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--soft);
+}
+
+.column {
+  padding-block: 32px 48px;
+  padding-inline: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--disp);
+  font-size: var(--title-fs);
+  font-weight: var(--title-fw);
+  line-height: var(--title-lh);
+  color: var(--ink);
+}
+
+@media (min-width: 768px) {
+  .barInner {
+    min-block-size: var(--brandbar-h-desktop);
+  }
+}

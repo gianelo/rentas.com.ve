@@ -51,13 +51,27 @@ describe("PublishForm", () => {
     expect(render()).toMatch(/no se puede cambiar/i);
   });
 
-  it("marks every required field with the glyph and the word, never colour alone", () => {
+  it("marks exactly the three fields the artboard marks, never colour alone", () => {
     const markup = render();
     const markers = markup.match(/✱ obligatorio/g) ?? [];
 
-    // publisherType, title, priceUsd, cityId, zoneId, rooms, areaM2,
-    // description — eight required fields, eight markers.
-    expect(markers).toHaveLength(8);
+    // Three, not eight. The first version marked every required field, which
+    // is defensible in the abstract and wrong here: artboard 2c marks the
+    // publisher type, the title and the price, and leaves the selects and the
+    // description unmarked. A marker on every field is a marker that stops
+    // meaning anything — which is the same reason the design reserves colour
+    // for the two listing states that ask for an action.
+    expect(markers).toHaveLength(3);
+  });
+
+  it("pairs city with zone, and rooms with area, on one row", () => {
+    const markup = render();
+
+    // The 360 artboard puts them side by side exactly as 1280 does, so this
+    // is structure rather than a breakpoint. Geometry is measured for real in
+    // tests/measure/layout.spec.ts; this only asserts the pairing exists.
+    const rows = markup.match(/class="[^"]*row[^"]*"/g) ?? [];
+    expect(rows.length).toBeGreaterThanOrEqual(2);
   });
 
   it("asks for rooms and area, which the schema requires and the design's field list omits", () => {

@@ -2,10 +2,9 @@ import { asc } from "drizzle-orm";
 import type { Metadata } from "next";
 import { db } from "@/shared/db/client";
 import { cities as citiesTable, zones as zonesTable } from "@/shared/db/schema";
-import { Container } from "../../components/layout/Container";
-import { PageShell } from "../../components/layout/PageShell";
 import { requireSession } from "../_lib/require-session";
 import { PublishForm } from "./PublishForm";
+import styles from "./publish-page.module.css";
 
 export const metadata: Metadata = {
   title: "Publicar — Rentas",
@@ -46,15 +45,24 @@ export default async function PublishPage({ searchParams }: PublishPageProps) {
   ]);
 
   return (
-    <PageShell>
-      <Container>
-        <h1>Publicar un alquiler</h1>
+    <>
+      {/* The bar the artboard puts on both viewports: the wordmark, and how
+          far along the two steps someone is. */}
+      <header className={styles.bar}>
+        <div className={styles.barInner}>
+          <p className={styles.brand}>rentas.</p>
+          <span className={styles.step}>Paso 1 de 2</span>
+        </div>
+      </header>
+
+      <main className={styles.column}>
+        <h1 className={styles.title}>Publicar una propiedad</h1>
         {/* The city arrives as a query parameter so choosing one reloads the
             page with the zone list already filtered — the same no-JS cascade
-            CityZoneSelect uses on the search side. Nothing is written by a
-            GET, so a stale pair is a rendering question, not a data one. */}
+            the search side uses. Nothing is written by a GET, so a stale pair
+            is a rendering question rather than a data one. */}
         <PublishForm cities={cities} zones={zones} values={{ cityId: ciudad }} />
-      </Container>
-    </PageShell>
+      </main>
+    </>
   );
 }
