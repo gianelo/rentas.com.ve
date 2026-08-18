@@ -1,5 +1,4 @@
 import { ActionButton } from "../../components/atoms/buttons";
-import { FormShell } from "../../components/layout/FormShell";
 import { Field, FieldRow, REQUIRED_MARK } from "../../components/molecules/Field";
 import {
   MIN_DESCRIPTION_CHARACTERS,
@@ -91,17 +90,16 @@ export function PublishForm({
   const publisherTypeError = errors.get("publisherType");
 
   return (
-    <FormShell>
-      <form action={action} method="post" className={styles.form}>
-        <fieldset className={styles.fieldset}>
-          {/* A fieldset/legend rather than a Label: a radio group has no single
+    <form action={action} method="post" className={styles.form}>
+      <fieldset className={styles.fieldset}>
+        {/* A fieldset/legend rather than a Label: a radio group has no single
               control for a label to point at. */}
-          <legend className={styles.legend}>
-            ¿Publicás como dueño o inmobiliaria?
-            <span className={styles.required}> {REQUIRED_MARK}</span>
-          </legend>
+        <legend className={styles.legend}>
+          ¿Publicás como dueño o inmobiliaria?
+          <span className={styles.required}> {REQUIRED_MARK}</span>
+        </legend>
 
-          {/* The artboard draws these as two boxes, not radios. Real radios
+        {/* The artboard draws these as two boxes, not radios. Real radios
               ship anyway: they are what makes the group submit and stay
               operable without JavaScript. The appearance is the design's, the
               semantics are the ones a form needs.
@@ -109,85 +107,72 @@ export function PublishForm({
               No `defaultChecked` here, and none may be added — the domain
               refuses a missing publisher type and applies no default so that
               nobody is published as an owner they never claimed to be. */}
-          <div className={styles.choices}>
-            <label className={styles.choice}>
-              <input
-                className={styles.choiceInput}
-                type="radio"
-                name="publisherType"
-                value="owner"
-              />
-              <span className={styles.choiceBox}>Dueño</span>
-            </label>
-            <label className={styles.choice}>
-              <input
-                className={styles.choiceInput}
-                type="radio"
-                name="publisherType"
-                value="broker"
-              />
-              <span className={styles.choiceBox}>Inmobiliaria</span>
-            </label>
-          </div>
+        <div className={styles.choices}>
+          <label className={styles.choice}>
+            <input className={styles.choiceInput} type="radio" name="publisherType" value="owner" />
+            <span className={styles.choiceBox}>Dueño</span>
+          </label>
+          <label className={styles.choice}>
+            <input
+              className={styles.choiceInput}
+              type="radio"
+              name="publisherType"
+              value="broker"
+            />
+            <span className={styles.choiceBox}>Inmobiliaria</span>
+          </label>
+        </div>
 
-          {publisherTypeError ? (
-            <p className={styles.error} id="publisherType-error">
-              {publisherTypeError}
-            </p>
-          ) : null}
-          <p className={styles.help}>
-            Se muestra siempre en tu aviso. No se puede cambiar después.
+        {publisherTypeError ? (
+          <p className={styles.error} id="publisherType-error">
+            {publisherTypeError}
           </p>
-        </fieldset>
+        ) : null}
+        <p className={styles.help}>Se muestra siempre en tu aviso. No se puede cambiar después.</p>
+      </fieldset>
 
-        <Field
-          name="title"
-          label="Título"
-          required
-          value={values.title}
-          error={errors.get("title")}
-        >
-          {(attributes) => <input {...attributes} type="text" />}
-        </Field>
+      <Field name="title" label="Título" required value={values.title} error={errors.get("title")}>
+        {(attributes) => <input {...attributes} type="text" />}
+      </Field>
 
-        <Field
-          name="priceUsd"
-          label="Precio mensual en dólares"
-          required
-          help="Solo el número. Todos los precios están en dólares."
-          value={values.priceUsd}
-          error={errors.get("priceUsd")}
-        >
-          {/* The display font with tabular numerals, as the artboard specifies
+      <Field
+        name="priceUsd"
+        label="Precio mensual en dólares"
+        required
+        help="Solo el número. Todos los precios están en dólares."
+        value={values.priceUsd}
+        error={errors.get("priceUsd")}
+      >
+        {/* The display font with tabular numerals, as the artboard specifies
               — the same rule the Price atom already carries. `inputMode`
               rather than `type="number"`, because a number input hides what
               was typed when it cannot parse it, and this form shows the
               offending value back next to its error. */}
+        {(attributes) => (
+          <input
+            {...attributes}
+            className={`${attributes.className} ${styles.priceControl}`}
+            type="text"
+            inputMode="numeric"
+          />
+        )}
+      </Field>
+
+      <FieldRow>
+        <Field name="cityId" label="Ciudad" value={values.cityId} error={errors.get("cityId")}>
           {(attributes) => (
-            <input
-              {...attributes}
-              className={`${attributes.className} ${styles.priceControl}`}
-              type="text"
-              inputMode="numeric"
-            />
+            <select {...attributes}>
+              <option value="">Elegí una ciudad</option>
+              {cities.map((city) => (
+                <option key={city.id} value={city.id}>
+                  {city.name}
+                </option>
+              ))}
+            </select>
           )}
         </Field>
 
-        <FieldRow>
-          <Field name="cityId" label="Ciudad" value={values.cityId} error={errors.get("cityId")}>
-            {(attributes) => (
-              <select {...attributes}>
-                <option value="">Elegí una ciudad</option>
-                {cities.map((city) => (
-                  <option key={city.id} value={city.id}>
-                    {city.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          </Field>
-
-          {/* Every zone, grouped by its city, rather than only the selected
+        {/* Every zone, grouped by its city, rather than only the selected
               city's.
 
               **This is the shape a cascade cannot have without JavaScript.**
@@ -204,64 +189,63 @@ export function PublishForm({
               mismatched pair is visible before the validator has to explain
               it — and `zoneId.notInCity` plus `listing`'s composite foreign
               key still refuse the pairing if someone insists. */}
-          <Field name="zoneId" label="Zona" value={values.zoneId} error={errors.get("zoneId")}>
-            {(attributes) => (
-              <select {...attributes}>
-                <option value="">Elegí una zona</option>
-                {cities.map((city) => (
-                  <optgroup key={city.id} label={city.name}>
-                    {zones
-                      .filter((zone) => zone.cityId === city.id)
-                      .map((zone) => (
-                        <option key={zone.id} value={zone.id}>
-                          {zone.name}
-                        </option>
-                      ))}
-                  </optgroup>
-                ))}
-              </select>
-            )}
-          </Field>
-        </FieldRow>
+        <Field name="zoneId" label="Zona" value={values.zoneId} error={errors.get("zoneId")}>
+          {(attributes) => (
+            <select {...attributes}>
+              <option value="">Elegí una zona</option>
+              {cities.map((city) => (
+                <optgroup key={city.id} label={city.name}>
+                  {zones
+                    .filter((zone) => zone.cityId === city.id)
+                    .map((zone) => (
+                      <option key={zone.id} value={zone.id}>
+                        {zone.name}
+                      </option>
+                    ))}
+                </optgroup>
+              ))}
+            </select>
+          )}
+        </Field>
+      </FieldRow>
 
-        <FieldRow>
-          <Field
-            name="rooms"
-            label="Habitaciones"
-            help="Un estudio cuenta como 1."
-            value={values.rooms}
-            error={errors.get("rooms")}
-          >
-            {(attributes) => <input {...attributes} type="text" inputMode="numeric" />}
-          </Field>
-
-          <Field
-            name="areaM2"
-            label="Metros cuadrados"
-            value={values.areaM2}
-            error={errors.get("areaM2")}
-          >
-            {(attributes) => <input {...attributes} type="text" inputMode="numeric" />}
-          </Field>
-        </FieldRow>
-
+      <FieldRow>
         <Field
-          name="description"
-          label="Descripción"
-          help={`Mínimo ${MIN_DESCRIPTION_CHARACTERS} caracteres. Mientras más detalle, más contactos recibís.`}
-          value={values.description}
-          error={errors.get("description")}
+          name="rooms"
+          label="Habitaciones"
+          help="Un estudio cuenta como 1."
+          value={values.rooms}
+          error={errors.get("rooms")}
         >
-          {(attributes) => <textarea {...attributes} rows={3} />}
+          {(attributes) => <input {...attributes} type="text" inputMode="numeric" />}
         </Field>
 
-        <ActionButton type="submit">Continuar a las fotos</ActionButton>
+        <Field
+          name="areaM2"
+          label="Metros cuadrados"
+          value={values.areaM2}
+          error={errors.get("areaM2")}
+        >
+          {(attributes) => <input {...attributes} type="text" inputMode="numeric" />}
+        </Field>
+      </FieldRow>
 
-        {/* Below the button, where the artboard puts it. */}
-        <p className={styles.closing}>
-          Tu aviso queda activo 30 días. Te avisamos antes de que venza.
-        </p>
-      </form>
-    </FormShell>
+      <Field
+        name="description"
+        label="Descripción"
+        help={`Mínimo ${MIN_DESCRIPTION_CHARACTERS} caracteres. Mientras más detalle, más contactos recibís.`}
+        value={values.description}
+        error={errors.get("description")}
+      >
+        {(attributes) => <textarea {...attributes} rows={3} />}
+      </Field>
+
+      <ActionButton type="submit">Continuar a las fotos</ActionButton>
+
+      {/* Below the button, where the artboard puts it. */}
+      <p className={styles.closing}>
+        Tu aviso queda activo 30 días. Te avisamos antes de que venza.
+      </p>
+    </form>
   );
 }

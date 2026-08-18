@@ -161,6 +161,19 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+
+      # The same cache the e2e job carries. Adding it there and not here is
+      # why this job kept hanging on the browser download while e2e dropped
+      # to 1m41s -- one fix applied to one of the two places that needed it.
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      # --with-deps on every path: the apt libraries it installs do not live
+      # in that cache, so a hit without them leaves a browser that cannot
+      # start.
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:measure
 

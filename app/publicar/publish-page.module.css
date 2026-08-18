@@ -34,12 +34,14 @@
   color: var(--soft);
 }
 
-.column {
+/* The page's own job is vertical rhythm and a safety margin on narrow
+   screens. **The width belongs to FormShell**, not here: a max-width written
+   into a page stylesheet has to be remembered again on every screen, and
+   forgetting it once is what put the heading against the left edge of a
+   1280 viewport. */
+.page {
   padding-block: 32px 48px;
   padding-inline: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
 }
 
 .title {
@@ -55,4 +57,67 @@
   .barInner {
     min-block-size: var(--brandbar-h-desktop);
   }
+}
+
+/* Shared page furniture. "Not designed yet" was used as a reason to ship raw
+   HTML here, and that was the wrong reading: the design system exists so a
+   screen without an artboard still looks like the product. Every value below
+   already existed as a token. */
+
+.prose {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.note {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  line-height: 1.5;
+  color: var(--soft);
+}
+
+/* The draft read back, in the same tinted card the publish form closes with
+   — it is the last moment anyone can check what they wrote. */
+.summary {
+  margin: 0;
+  padding: 12px;
+  border-radius: var(--r);
+  background: var(--tint);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--gap) 16px;
+}
+
+.summaryTerm {
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--soft);
+}
+
+.summaryValue {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.link {
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  line-height: 1.5;
+  color: var(--accent);
+}
+
+/* A form inside the shell stacks like the publish form does. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }

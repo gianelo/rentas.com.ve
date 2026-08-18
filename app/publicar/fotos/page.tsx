@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ActionButton } from "../../../components/atoms/buttons";
+import { FormShell } from "../../../components/layout/FormShell";
 import { requireSession } from "../../_lib/require-session";
 import { DRAFT_COOKIE, parseDraft } from "../draft";
 import styles from "../publish-page.module.css";
@@ -20,9 +21,14 @@ export const metadata: Metadata = {
  * `processUploadedPhoto` over every uploaded key before `publishListing`
  * writes the listing and its photo rows in one transaction.
  *
- * The draft summary stays on this page on purpose. It is the last moment
- * anyone can check what they wrote before it becomes an advert, and step 1
- * is one link away.
+ * The draft summary stays on this page on purpose: it is the last moment
+ * anyone can check what they wrote before it becomes an advert, and step 1 is
+ * one link away.
+ *
+ * The width comes from `FormShell`, the same shell step 1 uses. A max-width
+ * written into this page's own stylesheet would have to be remembered again
+ * on every screen after it — and forgetting it once is what put a heading
+ * against the left edge of a 1280 viewport.
  */
 export default async function PublishPhotosPage() {
   await requireSession("/publicar/fotos");
@@ -45,36 +51,40 @@ export default async function PublishPhotosPage() {
         </div>
       </header>
 
-      <main className={styles.column}>
-        <h1 className={styles.title}>Las fotos</h1>
+      <main className={styles.page}>
+        <FormShell>
+          <h1 className={styles.title}>Las fotos</h1>
 
-        <p>
-          Tus datos quedaron guardados. Elegí las fotos y las achicamos en tu teléfono antes de
-          subirlas, así gastás menos datos.
-        </p>
+          <p className={styles.prose}>
+            Tus datos quedaron guardados. Elegí las fotos y las achicamos en tu teléfono antes de
+            subirlas, así gastás menos datos.
+          </p>
 
-        {/* A real form around the uploader: the hidden `photoKey` inputs it
-            renders are what this action receives, so the browser carries them
-            without any client code marshalling a request. */}
-        <form action={publishFromDraft} className={styles.column}>
-          <PhotoUploader />
-          <ActionButton type="submit">Publicar el aviso</ActionButton>
-        </form>
+          {/* A real form around the uploader: the hidden `photoKey` inputs it
+              renders are what this action receives, so the browser carries
+              them without any client code marshalling a request. */}
+          <form action={publishFromDraft} className={styles.form}>
+            <PhotoUploader />
+            <ActionButton type="submit">Publicar el aviso</ActionButton>
+          </form>
 
-        <dl>
-          <dt>Título</dt>
-          <dd>{values.title}</dd>
-          <dt>Precio mensual</dt>
-          <dd>{values.priceUsd} USD</dd>
-          <dt>Habitaciones</dt>
-          <dd>{values.rooms}</dd>
-          <dt>Metros cuadrados</dt>
-          <dd>{values.areaM2}</dd>
-        </dl>
+          <dl className={styles.summary}>
+            <dt className={styles.summaryTerm}>Título</dt>
+            <dd className={styles.summaryValue}>{values.title}</dd>
+            <dt className={styles.summaryTerm}>Precio mensual</dt>
+            <dd className={styles.summaryValue}>{values.priceUsd} USD</dd>
+            <dt className={styles.summaryTerm}>Habitaciones</dt>
+            <dd className={styles.summaryValue}>{values.rooms}</dd>
+            <dt className={styles.summaryTerm}>Metros cuadrados</dt>
+            <dd className={styles.summaryValue}>{values.areaM2}</dd>
+          </dl>
 
-        <p>
-          <a href="/publicar">Volver a los datos</a>
-        </p>
+          <p className={styles.note}>
+            <a className={styles.link} href="/publicar">
+              Volver a los datos
+            </a>
+          </p>
+        </FormShell>
       </main>
     </>
   );
