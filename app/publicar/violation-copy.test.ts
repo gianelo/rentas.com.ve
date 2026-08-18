@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  MAX_DESCRIPTION_CHARACTERS,
   MIN_DESCRIPTION_CHARACTERS,
   type PublishViolation,
   validatePublishableListing,
@@ -36,6 +37,12 @@ const EVERY_VIOLATION: readonly PublishViolation[] = [
     },
     [{ id: "zone-chacao", cityId: "city-capital" }],
   ),
+  // A third draft only for the ceiling: it is the one rule the two above
+  // cannot reach, because a description cannot be both too short and too
+  // long. Adding a violation code therefore costs a fixture here as well as
+  // an entry in the map — which is the point. A code nothing can produce is
+  // copy nobody will ever read.
+  ...validatePublishableListing({ description: "x".repeat(MAX_DESCRIPTION_CHARACTERS + 1) }, []),
 ];
 
 describe("publish violation copy", () => {
@@ -53,7 +60,7 @@ describe("publish violation copy", () => {
     const written = Object.keys(PUBLISH_VIOLATION_COPY).sort();
 
     expect(written).toEqual(reachable);
-    expect(reachable).toHaveLength(17);
+    expect(reachable).toHaveLength(18);
   });
 
   it("gives every code a real sentence, not a placeholder", () => {

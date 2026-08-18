@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   type DraftListing,
+  MAX_DESCRIPTION_CHARACTERS,
   MAX_PHOTOS_PER_LISTING,
   validatePublishableListing,
 } from "./publishable-listing";
@@ -184,6 +185,26 @@ describe("validatePublishableListing", () => {
       expect(validatePublishableListing(draft({ description: "a".repeat(120) }), ZONES)).toEqual(
         [],
       );
+    });
+
+    it("rejects a description longer than a phone screen will ever be read on", () => {
+      // `description` is `text` NOT NULL with no ceiling in Postgres, so
+      // without this nothing stops megabytes of pasted text from landing in
+      // a mandatory column — six times per listing, against a free tier.
+      // The limit is a product one first: nobody reads 1,200+ characters of
+      // rental copy on a phone, and the detail page has to render all of it.
+      expect(
+        validatePublishableListing(
+          draft({ description: "a".repeat(MAX_DESCRIPTION_CHARACTERS + 1) }),
+          ZONES,
+        ),
+      ).toContain("description.tooLong");
+      expect(
+        validatePublishableListing(
+          draft({ description: "a".repeat(MAX_DESCRIPTION_CHARACTERS) }),
+          ZONES,
+        ),
+      ).toEqual([]);
     });
 
     it("counts characters, not bytes, so accented Spanish is not penalised", () => {

@@ -1,4 +1,5 @@
 import {
+  MAX_DESCRIPTION_CHARACTERS,
   MAX_PHOTOS_PER_LISTING,
   MIN_DESCRIPTION_CHARACTERS,
   type PublishViolation,
@@ -84,6 +85,13 @@ export const PUBLISH_VIOLATION_COPY: Record<PublishViolation, ViolationCopy> = {
     field: "description",
     message: (context) =>
       `✱ Mínimo ${MIN_DESCRIPTION_CHARACTERS} caracteres. Vas ${countCharacters(context)}.`,
+  },
+  // The publisher is not told to "shorten it" without knowing by how much,
+  // for the same reason the minimum reports how far along they are.
+  "description.tooLong": {
+    field: "description",
+    message: (context) =>
+      `Máximo ${MAX_DESCRIPTION_CHARACTERS} caracteres. Vas ${countCharacters(context)}.`,
   },
   "priceUsd.required": {
     field: "priceUsd",
