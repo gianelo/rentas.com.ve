@@ -64,9 +64,22 @@ export interface PublishFormProps {
   readonly zones: readonly FormZone[];
   readonly values?: PublishFormValues;
   readonly violations?: readonly PublishViolation[];
+  /**
+   * The Server Action that receives the submission. Optional so the layout
+   * harness and the unit specs can render the real form without a server
+   * runtime — those two need its geometry and its markup, not its handler.
+   * The page always passes one.
+   */
+  readonly action?: (formData: FormData) => Promise<void>;
 }
 
-export function PublishForm({ cities, zones, values = {}, violations = [] }: PublishFormProps) {
+export function PublishForm({
+  cities,
+  zones,
+  values = {},
+  violations = [],
+  action,
+}: PublishFormProps) {
   const errors = new Map<PublishField, string>();
   for (const violation of violations) {
     const copy = PUBLISH_VIOLATION_COPY[violation];
@@ -80,7 +93,7 @@ export function PublishForm({ cities, zones, values = {}, violations = [] }: Pub
 
   return (
     <FormShell>
-      <form method="post" className={styles.form}>
+      <form action={action} method="post" className={styles.form}>
         <fieldset className={styles.fieldset}>
           {/* A fieldset/legend rather than a Label: a radio group has no single
               control for a label to point at. */}

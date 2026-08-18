@@ -1,8 +1,11 @@
 import { asc } from "drizzle-orm";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { db } from "@/shared/db/client";
 import { cities as citiesTable, zones as zonesTable } from "@/shared/db/schema";
 import { requireSession } from "../_lib/require-session";
+import { submitPublishStep1 } from "./actions";
+import { DRAFT_COOKIE, parseDraft } from "./draft";
 import { PublishForm } from "./PublishForm";
 import styles from "./publish-page.module.css";
 
@@ -33,6 +36,14 @@ export default async function PublishPage({ searchParams }: PublishPageProps) {
 
   const { ciudad } = await searchParams;
 
+  // What step 1 sent back to itself: the words already typed, and what was
+  // wrong with them. A page cannot clear a cookie in Next — only an action or
+  // a route handler can — so this one expires on its own after ten minutes.
+  // Returning inside that window and finding your draft restored is the
+  // better failure anyway: the alternative is retyping a description written
+  // one-handed on a phone.
+  const draft = parseDraft((await cookies()).get(DRAFT_COOKIE)?.value);
+
   const [cities, zones] = await Promise.all([
     db
       .select({ id: citiesTable.id, name: citiesTable.name })
@@ -61,7 +72,13 @@ export default async function PublishPage({ searchParams }: PublishPageProps) {
             page with the zone list already filtered — the same no-JS cascade
             the search side uses. Nothing is written by a GET, so a stale pair
             is a rendering question rather than a data one. */}
-        <PublishForm cities={cities} zones={zones} values={{ cityId: ciudad }} />
+        <PublishForm
+          action={submitPublishStep1}
+          cities={cities}
+          zones={zones}
+          values={{ ...draft?.values, cityId: ciudad ?? draft?.values.cityId }}
+          violations={draft?.violations}
+        />
       </main>
     </>
   );
