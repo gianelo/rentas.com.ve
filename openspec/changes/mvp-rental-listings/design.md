@@ -365,7 +365,9 @@ The approved reference lives at `design/reference/sistema/`:
 
 **Six screens are drawn; the other sixteen are derived, not improvised.** The reference covers search results, listing detail, publish step 1, zone landing, my listings, and bulk import preview — the load-bearing ones. The remaining surfaces (empty, rejected, expired, auth, contribution, email) are built from the same tokens, the same three-level button hierarchy, and the same row anatomy. What was adopted is the *system*; the six screens are its worked examples. A surface that needs a value the system does not define is a signal to extend the system, not to invent a local one.
 
-The rejected graphite exploration stays at `design/reference/exploraciones/grafito.html` as a comparison point. `design/reference/BRIEF.md` and `BRIEF-PANTALLAS.md` were the inputs that produced this system and are now **historical** — superseded by `SISTEMA.md` wherever they disagree, and they do disagree: both were written against the `estandar` structure (96 × 72 thumbnail, five listings above the fold).
+The rejected graphite exploration was removed on 2026-08-17: it was kept "as a comparison point" and never once consulted, while the comparison that actually matters — implementation against the adopted system — is served by `design/reference/sistema/`. `design/reference/BRIEF.md` and `BRIEF-PANTALLAS.md` were the inputs that produced this system and are now **historical** — superseded by `SISTEMA.md` wherever they disagree, and they do disagree: both were written against the `estandar` structure (96 × 72 thumbnail, five listings above the fold). They stay for provenance: `design.md` cites the brief as the source of the 768px breakpoint, and a citation whose source has been deleted cannot be checked.
+
+`design/README.md` maps every file in that folder to what it is and to its original Claude Design name. It exists because these files were moved and renamed out of the exported handoff structure, which later made the design system look absent from the repository when it was merely elsewhere.
 
 ### D15 — Accessibility baseline
 
