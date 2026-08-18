@@ -68,6 +68,11 @@
      it verifies that a value IS a custom property, never that it is the
      RIGHT one. A missing token does not produce a gate failure; it produces
      a plausible wrong answer. */
+  /* Form controls: 15px, from the design system's own artboard markup
+     (design/reference/sistema/pantallas-compacto-menta.html). Not --fp,
+     which happens to share the value but means "price" — two meanings on one
+     token is how a price change silently resizes every text input. */
+  --control-fs: 15px;
   --title-fs: 20px;
   --title-fw: 700;
   --title-lh: 1.25;

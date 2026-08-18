@@ -3,6 +3,7 @@ import { ActionButton, NeutralButton, SelectionButton } from "../../components/a
 import { Container } from "../../components/layout/Container";
 import { ReadingWidth } from "../../components/layout/ReadingWidth";
 import { ResultRow } from "../../components/molecules/ResultRow";
+import { PublishForm } from "../publicar/PublishForm";
 
 /**
  * Layout-measurement harness (tasks.md 1b.10–1b.12, 1b.14). Renders the
@@ -68,6 +69,25 @@ export default function MeasureHarnessPage() {
           a que siga siendo gratuito para el resto.
         </p>
       </ReadingWidth>
+
+      {/* Screen 3, mounted here because /publicar is session-gated and
+          Playwright cannot reach it. This is the harness earning its keep:
+          the publish form shipped with eleven green tests and nine layout
+          differences, because every one of those tests read markup and none
+          could see geometry. */}
+      <div data-testid="publish-form">
+        <PublishForm
+          cities={[
+            { id: "dc", name: "Distrito Capital" },
+            { id: "mcbo", name: "Maracaibo" },
+          ]}
+          zones={[
+            { id: "chacao", name: "Chacao", cityId: "dc" },
+            { id: "altamira", name: "Altamira", cityId: "dc" },
+          ]}
+          values={{ cityId: "dc", title: "Apartamento 2 habitaciones en Chacao", priceUsd: "450" }}
+        />
+      </div>
     </Container>
   );
 }

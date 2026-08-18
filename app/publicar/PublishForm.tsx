@@ -1,7 +1,6 @@
-import type { ReactNode } from "react";
 import { ActionButton } from "../../components/atoms/buttons";
-import { Label } from "../../components/atoms/Label";
 import { FormShell } from "../../components/layout/FormShell";
+import { Field, FieldRow, REQUIRED_MARK } from "../../components/molecules/Field";
 import {
   MIN_DESCRIPTION_CHARACTERS,
   type PublishViolation,
@@ -10,22 +9,26 @@ import styles from "./publish-form.module.css";
 import { PUBLISH_VIOLATION_COPY, type PublishField } from "./violation-copy";
 
 /**
- * SISTEMA.md screen 3, step 1 of 2. "Es un formulario, no un embudo de cinco
- * pasos" — one column, every field visible, and step 2 is the photos.
+ * SISTEMA.md screen 3, step 1 of 2 — artboard `2c`.
  *
- * A server component with a native `method="post"`. The design allows client
- * JS in step 2 only (to compress photos on the device), and this screen is
- * the one someone fills standing up on a phone: it has to work before any
- * bundle arrives, on a connection that may never deliver one.
+ * Every label, help text, order and measurement here is transcribed from the
+ * design system's own markup
+ * (`design/reference/sistema/pantallas-compacto-menta.html`). The first
+ * version of this file was built from the handoff prose instead, which
+ * describes the rules but never the layout, and it differed in nine ways
+ * while passing every test in the suite — because no test in the suite could
+ * see layout. The measurements in `tests/measure/layout.spec.ts` are the
+ * other half of that fix.
  *
- * **Two departures from the design's field list, both deliberate.**
- * `habitaciones` and `metros²` are not in it — it reads "publicás como ·
- * título · precio · ciudad · zona · descripción" — but `listing.rooms` and
- * `listing.area_m2` are NOT NULL, the result row renders `zona · N hab · N
- * m²`, search filters by rooms, and the broker importer has a Habitaciones
- * column. Without these two inputs an owner publishing one listing cannot
- * produce a valid row at all. Placement is the founder's decision, recorded:
- * after the location, before the description, grouped as the physical facts.
+ * A native `method="post"` server component: JS is allowed in step 2 only, to
+ * compress photos on the device. This is the screen someone fills standing up
+ * on a phone, and it has to work before any bundle arrives.
+ *
+ * **`habitaciones` and `metros²` are not in the design's field list.** Both
+ * columns are NOT NULL, the result row renders `zona · N hab · N m²`, search
+ * filters by rooms, and the importer has a Habitaciones column — so without
+ * them an owner publishing one listing cannot produce a valid row. Surfaced
+ * before building; the founder chose this placement.
  */
 
 export interface FormCity {
@@ -41,9 +44,9 @@ export interface FormZone {
 
 /**
  * Strings, not numbers. These are the values a browser posted, and a price
- * typed as "quinientos" has to survive the round trip so it can be shown
- * back next to its error — parsing it away would blank the field and hide
- * what the publisher actually wrote.
+ * typed as "quinientos" has to survive the round trip so it can be shown back
+ * next to its error — parsing it away would blank the field and hide what the
+ * publisher actually wrote.
  */
 export interface PublishFormValues {
   readonly publisherType?: string;
@@ -63,76 +66,13 @@ export interface PublishFormProps {
   readonly violations?: readonly PublishViolation[];
 }
 
-const REQUIRED_MARK = "✱ obligatorio";
-
-/** What `Field` hands its control: identity, the submitted value, and the
- *  accessibility attributes that must never be forgotten on one of eight. */
-interface ControlAttributes {
-  id: string;
-  name: string;
-  defaultValue: string;
-  className?: string;
-  "aria-invalid"?: "true";
-  "aria-describedby"?: string;
-}
-
 export function PublishForm({ cities, zones, values = {}, violations = [] }: PublishFormProps) {
-  // Grouped by field so each control can name its own message through
-  // `aria-describedby`. A single list at the top of the form would make a
-  // screen-reader user hunt for which control each sentence belongs to.
   const errors = new Map<PublishField, string>();
   for (const violation of violations) {
     const copy = PUBLISH_VIOLATION_COPY[violation];
     if (!errors.has(copy.field)) {
       errors.set(copy.field, copy.message({ description: values.description }));
     }
-  }
-
-  /**
-   * One field, rendered the same way every time. Written once rather than
-   * eight times because the parts that must not drift are the invisible
-   * ones: `aria-invalid`, the `aria-describedby` that reads the message
-   * aloud, the 2px error border, and the submitted value coming back. Eight
-   * hand-written copies is eight chances for one of them to lose the
-   * `aria-describedby` and fail silently for exactly the people it is for.
-   */
-  function Field({
-    name,
-    label,
-    help,
-    children,
-  }: {
-    // `keyof PublishFormValues`, not `PublishField`: `photos` is a field the
-    // domain validates but this screen has no control for — it belongs to
-    // step 2 — so a `<Field name="photos">` is made unrepresentable rather
-    // than merely avoided.
-    name: keyof PublishFormValues;
-    label: string;
-    help?: string;
-    children: (attributes: ControlAttributes) => ReactNode;
-  }) {
-    const message = errors.get(name);
-
-    return (
-      <div className={styles.field}>
-        <Label htmlFor={name}>
-          {label} {REQUIRED_MARK}
-        </Label>
-        {children({
-          id: name,
-          name,
-          defaultValue: values[name] ?? "",
-          className: message ? `${styles.control} ${styles.controlInvalid}` : styles.control,
-          ...(message ? { "aria-invalid": "true", "aria-describedby": `${name}-error` } : {}),
-        })}
-        {help && <p className={styles.help}>{help}</p>}
-        {message && (
-          <p className={styles.error} id={`${name}-error`}>
-            {message}
-          </p>
-        )}
-      </div>
-    );
   }
 
   const zonesForCity = values.cityId ? zones.filter((zone) => zone.cityId === values.cityId) : [];
@@ -144,97 +84,150 @@ export function PublishForm({ cities, zones, values = {}, violations = [] }: Pub
         <fieldset className={styles.fieldset}>
           {/* A fieldset/legend rather than a Label: a radio group has no single
               control for a label to point at. */}
-          <legend className={styles.legend}>Publicás como {REQUIRED_MARK}</legend>
-          {/* No `defaultChecked` anywhere, and none may be added. The domain
+          <legend className={styles.legend}>
+            ¿Publicás como dueño o inmobiliaria?
+            <span className={styles.required}> {REQUIRED_MARK}</span>
+          </legend>
+
+          {/* The artboard draws these as two boxes, not radios. Real radios
+              ship anyway: they are what makes the group submit and stay
+              operable without JavaScript. The appearance is the design's, the
+              semantics are the ones a form needs.
+
+              No `defaultChecked` here, and none may be added — the domain
               refuses a missing publisher type and applies no default so that
-              nobody is published as an owner they never claimed to be — a
-              pre-selected radio would restore that default in the one layer
-              the domain cannot see. */}
+              nobody is published as an owner they never claimed to be. */}
           <div className={styles.choices}>
             <label className={styles.choice}>
-              <input type="radio" name="publisherType" value="owner" />
-              Dueño
+              <input
+                className={styles.choiceInput}
+                type="radio"
+                name="publisherType"
+                value="owner"
+              />
+              <span className={styles.choiceBox}>Dueño</span>
             </label>
             <label className={styles.choice}>
-              <input type="radio" name="publisherType" value="broker" />
-              Inmobiliaria
+              <input
+                className={styles.choiceInput}
+                type="radio"
+                name="publisherType"
+                value="broker"
+              />
+              <span className={styles.choiceBox}>Inmobiliaria</span>
             </label>
           </div>
-          <p className={styles.help}>No se puede cambiar después de publicar.</p>
-          {publisherTypeError && (
+
+          {publisherTypeError ? (
             <p className={styles.error} id="publisherType-error">
               {publisherTypeError}
             </p>
-          )}
+          ) : null}
+          <p className={styles.help}>
+            Se muestra siempre en tu aviso. No se puede cambiar después.
+          </p>
         </fieldset>
 
-        <Field name="title" label="Título" help="Como lo dirías vos, sin mayúsculas de más.">
+        <Field
+          name="title"
+          label="Título"
+          required
+          value={values.title}
+          error={errors.get("title")}
+        >
           {(attributes) => <input {...attributes} type="text" />}
         </Field>
 
         <Field
           name="priceUsd"
-          label="Precio mensual"
+          label="Precio mensual en dólares"
+          required
           help="Solo el número. Todos los precios están en dólares."
+          value={values.priceUsd}
+          error={errors.get("priceUsd")}
         >
-          {/* `inputMode` rather than `type="number"`: a number input hides what
-              a publisher typed when it cannot parse it, and this form shows
-              the offending value back next to its error. */}
-          {(attributes) => <input {...attributes} type="text" inputMode="numeric" />}
-        </Field>
-
-        <Field name="cityId" label="Ciudad">
+          {/* The display font with tabular numerals, as the artboard specifies
+              — the same rule the Price atom already carries. `inputMode`
+              rather than `type="number"`, because a number input hides what
+              was typed when it cannot parse it, and this form shows the
+              offending value back next to its error. */}
           {(attributes) => (
-            <select {...attributes}>
-              <option value="">Elegí una ciudad</option>
-              {cities.map((city) => (
-                <option key={city.id} value={city.id}>
-                  {city.name}
-                </option>
-              ))}
-            </select>
+            <input
+              {...attributes}
+              className={`${attributes.className} ${styles.priceControl}`}
+              type="text"
+              inputMode="numeric"
+            />
           )}
         </Field>
 
-        <Field name="zoneId" label="Zona">
+        <FieldRow>
+          <Field name="cityId" label="Ciudad" value={values.cityId} error={errors.get("cityId")}>
+            {(attributes) => (
+              <select {...attributes}>
+                <option value="">Elegí una ciudad</option>
+                {cities.map((city) => (
+                  <option key={city.id} value={city.id}>
+                    {city.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+
           {/* Filtered here rather than by the caller, the rule CityZoneSelect
               already follows: nothing is left for a caller to forget. */}
-          {(attributes) => (
-            <select {...attributes}>
-              <option value="">Elegí primero la ciudad</option>
-              {zonesForCity.map((zone) => (
-                <option key={zone.id} value={zone.id}>
-                  {zone.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </Field>
+          <Field name="zoneId" label="Zona" value={values.zoneId} error={errors.get("zoneId")}>
+            {(attributes) => (
+              <select {...attributes}>
+                <option value="">Elegí primero la ciudad</option>
+                {zonesForCity.map((zone) => (
+                  <option key={zone.id} value={zone.id}>
+                    {zone.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+        </FieldRow>
 
-        <Field name="rooms" label="Habitaciones" help="Un estudio cuenta como 1.">
-          {(attributes) => <input {...attributes} type="text" inputMode="numeric" />}
-        </Field>
+        <FieldRow>
+          <Field
+            name="rooms"
+            label="Habitaciones"
+            help="Un estudio cuenta como 1."
+            value={values.rooms}
+            error={errors.get("rooms")}
+          >
+            {(attributes) => <input {...attributes} type="text" inputMode="numeric" />}
+          </Field>
 
-        <Field name="areaM2" label="Metros cuadrados">
-          {(attributes) => <input {...attributes} type="text" inputMode="numeric" />}
-        </Field>
+          <Field
+            name="areaM2"
+            label="Metros cuadrados"
+            value={values.areaM2}
+            error={errors.get("areaM2")}
+          >
+            {(attributes) => <input {...attributes} type="text" inputMode="numeric" />}
+          </Field>
+        </FieldRow>
 
-        {/* The minimum is stated before anyone fails it. The design pairs a
-            neutral help text with the error rather than letting the error be
-            the first time the rule is mentioned. */}
         <Field
           name="description"
           label="Descripción"
-          help={`Mínimo ${MIN_DESCRIPTION_CHARACTERS} caracteres. Contá lo que no se ve en las fotos.`}
+          help={`Mínimo ${MIN_DESCRIPTION_CHARACTERS} caracteres. Mientras más detalle, más contactos recibís.`}
+          value={values.description}
+          error={errors.get("description")}
         >
-          {(attributes) => <textarea {...attributes} rows={6} />}
+          {(attributes) => <textarea {...attributes} rows={3} />}
         </Field>
 
+        <ActionButton type="submit">Continuar a las fotos</ActionButton>
+
+        {/* Below the button, where the artboard puts it. */}
         <p className={styles.closing}>
           Tu aviso queda activo 30 días. Te avisamos antes de que venza.
         </p>
-
-        <ActionButton type="submit">Continuar a las fotos</ActionButton>
       </form>
     </FormShell>
   );

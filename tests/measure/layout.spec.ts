@@ -87,3 +87,72 @@ test.describe("layout measurement", () => {
     }
   });
 });
+
+/**
+ * Screen 3 (artboard 2c). These exist because the publish form shipped with
+ * eleven green tests and nine layout differences from the design: every one
+ * of those tests read markup, and none could see geometry. Markup assertions
+ * prove a field exists; only a browser proves where it is.
+ */
+test.describe("publish form measurement (3.9)", () => {
+  test("3.9: city and zone sit on one row at 360px, not stacked", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 900 });
+    await page.goto("/measure");
+
+    const city = await page.locator("#cityId").boundingBox();
+    const zone = await page.locator("#zoneId").boundingBox();
+    if (!city || !zone) throw new Error("city/zone selects did not render a measurable box");
+
+    console.log(`[3.9] 360px city.y=${city.y} zone.y=${zone.y} (bound: same row)`);
+    // Same row means the same top edge, within a pixel of rounding. The
+    // mobile artboard pairs them exactly as the desktop one does, so a
+    // stacked pair at 360 is a defect on the viewport designed for first.
+    expect(Math.abs(city.y - zone.y)).toBeLessThanOrEqual(1);
+    expect(zone.x).toBeGreaterThan(city.x);
+  });
+
+  test("3.9: the form column stays within 600px at 1280px", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.goto("/measure");
+
+    const box = await page.getByTestId("publish-form").locator("form").boundingBox();
+    if (!box) throw new Error("publish form did not render a measurable box");
+
+    console.log(`[3.9] measured form width at 1280px: ${box.width}px (bound: <= 600px)`);
+    // "Una columna de 600" — a wide form loses the relationship between label
+    // and field (D14), which is why this is a bound and not a preference.
+    expect(box.width).toBeLessThanOrEqual(600);
+  });
+
+  test("3.9: no horizontal overflow at 360px, selects included", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 900 });
+    await page.goto("/measure");
+
+    const overflow = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+
+    console.log(
+      `[3.9] 360px scrollWidth=${overflow.scrollWidth} clientWidth=${overflow.clientWidth}`,
+    );
+    // Two selects side by side is the likeliest way this breaks: a select
+    // sizes to its widest option unless something stops it.
+    expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
+  });
+
+  test("3.9: every form control is a real 44px target at 360px", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 900 });
+    await page.goto("/measure");
+
+    for (const selector of ["#title", "#priceUsd", "#cityId", "#rooms"]) {
+      const box = await page.locator(selector).boundingBox();
+      if (!box) throw new Error(`${selector} did not render a measurable box`);
+      console.log(`[3.9] mobile ${selector}: height ${box.height}px (bound: >= 44px)`);
+      // Declared in CSS is not the same as rendered: a flex parent, a
+      // conflicting reset, or a shorthand later in the cascade all silently
+      // shrink this, and nobody notices until a thumb misses.
+      expect(box.height).toBeGreaterThanOrEqual(44);
+    }
+  });
+});

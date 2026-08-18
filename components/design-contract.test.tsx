@@ -1,8 +1,10 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { extname, join } from "node:path";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import * as buttons from "./atoms/buttons";
 import { contrastRatio, relativeLuminance, themeColor } from "./contrast";
+import { Field } from "./molecules/Field";
 
 const buttonCss = readFileSync("components/atoms/Button.module.css", "utf-8");
 const badgeCss = readFileSync("components/atoms/PublisherBadge.module.css", "utf-8");
@@ -121,5 +123,87 @@ describe("no webfont, no read-path JS (1b.18)", () => {
     for (const file of files) {
       expect(readFileSync(file, "utf-8")).not.toContain('"use client"');
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Form fields (3.9). These are SYSTEM rules, not publish-form rules: the
+// renewal screen, the report flow and the import preview all get them by
+// composing `Field`, and each assertion below is the thing that would
+// silently rot if a future screen hand-rolled its own markup instead.
+// ---------------------------------------------------------------------------
+
+const fieldCss = readFileSync("components/molecules/Field.module.css", "utf-8");
+
+function renderField(props: Partial<Parameters<typeof Field>[0]> = {}) {
+  return renderToStaticMarkup(
+    <Field name="titulo" label="Título" {...props}>
+      {(attributes) => <input {...attributes} type="text" />}
+    </Field>,
+  );
+}
+
+describe("required marking is never colour alone (3.9)", () => {
+  it("renders the glyph and the word, both inside the label", () => {
+    const markup = renderField({ required: true });
+
+    // The design says it outright, and forced-colors mode drops the red
+    // entirely — leaving a field that looks optional and is not.
+    expect(markup).toContain("✱");
+    expect(markup.toLowerCase()).toContain("obligatorio");
+    expect(markup).toMatch(/<label[^>]*>[\s\S]*obligatorio[\s\S]*<\/label>/i);
+  });
+
+  it("marks nothing when the field is optional", () => {
+    expect(renderField()).not.toContain("obligatorio");
+  });
+});
+
+describe("an invalid field is announced, not only drawn (3.9)", () => {
+  it("sets aria-invalid and points aria-describedby at a message that exists", () => {
+    const markup = renderField({ error: "✱ Mínimo 120 caracteres. Vas 24." });
+
+    expect(markup).toContain('aria-invalid="true"');
+    expect(markup).toContain('aria-describedby="titulo-error"');
+    // The id must resolve. An aria-describedby pointing at nothing is worse
+    // than none: it reports as accessible and reads as silence.
+    expect(markup).toContain('id="titulo-error"');
+  });
+
+  it("adds nothing to announce when the field is valid", () => {
+    const markup = renderField();
+
+    expect(markup).not.toContain("aria-invalid");
+    expect(markup).not.toContain("aria-describedby");
+  });
+
+  it("keeps the help text when an error appears, and puts the error first", () => {
+    const markup = renderField({ error: "Muy corta.", help: "Mínimo 120 caracteres." });
+
+    // Order is the artboard's. The rule must not be mentioned for the first
+    // time by the message saying it was broken.
+    expect(markup.indexOf("Muy corta.")).toBeLessThan(markup.indexOf("Mínimo 120"));
+    expect(markup).toContain("Mínimo 120 caracteres.");
+  });
+});
+
+describe("field geometry comes from tokens, not literals (3.9/D16)", () => {
+  it("uses the touch-target tokens rather than a bare 44px", () => {
+    expect(block(fieldCss, "control")).toContain("var(--target-min)");
+    expect(fieldCss).toContain("var(--target-min-desktop)");
+  });
+
+  it("declares the 2px error border the design specifies", () => {
+    expect(block(fieldCss, "controlInvalid")).toMatch(/border:\s*2px solid var\(--err\)/);
+  });
+
+  it("pairs two fields on one row at every width, not behind a media query", () => {
+    // The 360 artboard puts city and zone side by side exactly as 1280 does.
+    // A media query here would silently stack them on the viewport the
+    // product is designed for first.
+    const rowIndex = fieldCss.indexOf(".row");
+    const mediaIndex = fieldCss.indexOf("@media");
+    expect(rowIndex).toBeGreaterThan(-1);
+    expect(rowIndex).toBeLessThan(mediaIndex);
   });
 });
