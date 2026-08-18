@@ -298,6 +298,24 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
+      # The browser download is this job's slowest and least reliable step: it
+      # once hung for nineteen minutes and had to be killed by hand. The key
+      # carries the pinned Playwright version, so an upgrade misses the cache
+      # and re-downloads rather than silently running the wrong browser.
+      - name: Cache the Playwright browser
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      # `--with-deps` runs on every path, cache hit or not: the system
+      # libraries it installs through apt do NOT live in ~/.cache/ms-playwright,
+      # so skipping it on a hit would leave a cached browser that cannot start.
+      # The cache saves the ~150 MB download, which is the slow half.
+      - name: Install the browser
+        run: pnpm exec playwright install --with-deps chromium
+
       # The preview URL is used ONLY when a bypass secret exists to get past
       # Vercel's deployment-protection SSO wall. Without it every request
       # lands on vercel.com/login and the suite reports the app as broken --
@@ -315,8 +333,16 @@ jobs:
           # time. Without it the local production build this suite falls back to
           # cannot collect /api/auth/[...nextauth] and never starts.
           DATABASE_URL: postgresql://ci:ci@ep-ci-build-0000-pooler.invalid.neon.tech/ci?sslmode=require
+          PLAYWRIGHT_WEB_COMMAND: pnpm start
         run: |
-          pnpm exec playwright install --with-deps chromium
+          # Built once here rather than by each project's webServer. The two
+          # projects run as separate `playwright test` invocations, so each was
+          # starting its own server and compiling the whole application again:
+          # one 8m5s job doing a 50-second build twice. PLAYWRIGHT_WEB_COMMAND
+          # tells the config to serve what this step already produced.
+          if [ -z "$PLAYWRIGHT_BASE_URL" ]; then
+            pnpm build
+          fi
           fail=0
           # `if cmd` rather than capturing $? after an assignment: Actions runs
           # these steps under `bash -e`, where a failing command substitution
