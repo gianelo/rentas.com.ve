@@ -132,3 +132,62 @@
   text-decoration: none;
   padding-block: 12px;
 }
+
+/* The bar swaps its left slot at the breakpoint: a way back on a phone, the
+   wordmark on a desktop where the footer already offers one. Both render and
+   CSS chooses, so neither depends on JavaScript. */
+.brandDesktop {
+  display: none;
+}
+
+/* Artboard 2g's footer: the action, and a way back beside it rather than
+   under it. Stacked on a phone, where a row of two would leave each too
+   narrow to hit. */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.secondary {
+  min-block-size: var(--target-min);
+  border-radius: var(--r);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 16px;
+  border: 1px solid var(--strong);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+@media (min-width: 768px) {
+  .back {
+    display: none;
+  }
+
+  .brandDesktop {
+    display: block;
+    margin: 0;
+    font-family: var(--disp);
+    font-size: var(--title-fs);
+    font-weight: var(--title-fw);
+    line-height: var(--title-lh);
+    letter-spacing: var(--brand-ls);
+    color: var(--ink);
+  }
+
+  .actions {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .secondary {
+    min-block-size: var(--target-min-desktop);
+  }
+}

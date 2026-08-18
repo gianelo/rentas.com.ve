@@ -50,9 +50,14 @@ export default async function PublishPhotosPage() {
               photos are the last thing anyone does and the first thing they
               second-guess, so returning to the description must not cost the
               browser's back button. */}
+          {/* Artboard 2g puts a way back where step 1 puts the wordmark — on
+              mobile. At 1280 the wordmark returns and "Volver al paso 1"
+              moves to the footer beside the publish button, so both are
+              rendered and CSS picks one. */}
           <a className={styles.back} href="/publicar">
             ← Paso 1
           </a>
+          <p className={styles.brandDesktop}>rentas.</p>
           <span className={styles.step}>Paso 2 de 2</span>
         </div>
       </header>
@@ -70,7 +75,12 @@ export default async function PublishPhotosPage() {
               them without any client code marshalling a request. */}
           <form action={publishFromDraft} className={styles.form}>
             <PhotoUploader />
-            <ActionButton type="submit">Publicar el aviso</ActionButton>
+            <div className={styles.actions}>
+              <ActionButton type="submit">Publicar aviso</ActionButton>
+              <a className={styles.secondary} href="/publicar">
+                Volver al paso 1
+              </a>
+            </div>
           </form>
 
           <dl className={styles.summary}>

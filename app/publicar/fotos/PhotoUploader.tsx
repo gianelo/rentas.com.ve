@@ -38,6 +38,8 @@ interface Photo {
   readonly originalBytes: number;
   status: PhotoStatus;
   compressedBytes?: number;
+  /** 0–1, real bytes sent. Only meaningful while uploading. */
+  progress?: number;
   key?: string;
   error?: string;
   preview?: string;
@@ -69,6 +71,42 @@ async function compress(file: File): Promise<{ blob: Blob; preview: string }> {
   );
   if (!blob) throw new Error("Tu navegador no pudo comprimir esta imagen.");
   return { blob, preview: URL.createObjectURL(blob) };
+}
+
+/**
+ * `XMLHttpRequest`, not `fetch`, and this is the only reason: **fetch cannot
+ * report upload progress.** It has no event for bytes sent, so a bar driven
+ * by it can only be a guess — the first version painted 40% and then 80%,
+ * numbers that meant nothing.
+ *
+ * The artboard draws a real bar because on a Venezuelan mobile connection
+ * this wait is measured in tens of seconds, and a progress bar that does not
+ * move is worse than none: it tells someone the upload has died when it has
+ * not.
+ */
+function putWithProgress(
+  url: string,
+  blob: Blob,
+  onProgress: (fraction: number) => void,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open("PUT", url);
+    // Exactly the type that was signed; any other value fails the signature
+    // at R2's edge rather than landing something unexpected.
+    request.setRequestHeader("content-type", UPLOAD_CONTENT_TYPE);
+    request.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable) onProgress(event.loaded / event.total);
+    });
+    request.addEventListener("load", () =>
+      request.status >= 200 && request.status < 300
+        ? resolve()
+        : reject(new Error(String(request.status))),
+    );
+    request.addEventListener("error", () => reject(new Error("network")));
+    request.addEventListener("abort", () => reject(new Error("abort")));
+    request.send(blob);
+  });
 }
 
 /**
@@ -148,14 +186,10 @@ export function PhotoUploader() {
       const entry = compressed[index];
       if (!entry) continue;
       try {
-        const response = await fetch(target.url, {
-          method: "PUT",
-          // Exactly the type that was signed; any other value fails the
-          // signature at R2's edge rather than landing something unexpected.
-          headers: { "content-type": UPLOAD_CONTENT_TYPE },
-          body: entry.blob,
-        });
-        if (!response.ok) throw new Error(String(response.status));
+        update(entry.photo.id, { progress: 0 });
+        await putWithProgress(target.url, entry.blob, (fraction) =>
+          update(entry.photo.id, { progress: fraction }),
+        );
         update(entry.photo.id, { status: "ready", key: target.key });
       } catch {
         update(entry.photo.id, { status: "failed", error: "✱ No pudimos subirla" });
