@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { ActionButton } from "../../../components/atoms/buttons";
 import { requireSession } from "../../_lib/require-session";
 import { DRAFT_COOKIE, parseDraft } from "../draft";
 import styles from "../publish-page.module.css";
+import { publishFromDraft } from "./actions";
 import { PhotoUploader } from "./PhotoUploader";
 
 export const metadata: Metadata = {
@@ -13,12 +15,14 @@ export const metadata: Metadata = {
 /**
  * SISTEMA.md screen 3, step 2 of 2 — the photos.
  *
- * The upload works: compress on the device, request a signature for the exact
- * compressed size, PUT straight to R2. **What is still missing is the last
- * step**, task 3.14c — running `processUploadedPhoto` over each uploaded key
- * and then `publishListing`. Until that lands the photos reach the bucket's
- * incoming prefix and no listing row is written, which is why this page still
- * shows the draft back rather than a published advert.
+ * Compress on the device, request a signature for the exact compressed size,
+ * PUT straight to R2 — then submit, and `publishFromDraft` runs
+ * `processUploadedPhoto` over every uploaded key before `publishListing`
+ * writes the listing and its photo rows in one transaction.
+ *
+ * The draft summary stays on this page on purpose. It is the last moment
+ * anyone can check what they wrote before it becomes an advert, and step 1
+ * is one link away.
  */
 export default async function PublishPhotosPage() {
   await requireSession("/publicar/fotos");
@@ -49,7 +53,13 @@ export default async function PublishPhotosPage() {
           subirlas, así gastás menos datos.
         </p>
 
-        <PhotoUploader />
+        {/* A real form around the uploader: the hidden `photoKey` inputs it
+            renders are what this action receives, so the browser carries them
+            without any client code marshalling a request. */}
+        <form action={publishFromDraft} className={styles.column}>
+          <PhotoUploader />
+          <ActionButton type="submit">Publicar el aviso</ActionButton>
+        </form>
 
         <dl>
           <dt>Título</dt>
