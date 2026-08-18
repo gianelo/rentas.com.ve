@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { ActionButton, NeutralButton, SelectionButton } from "../../components/atoms/buttons";
 import { Container } from "../../components/layout/Container";
+import { FormShell } from "../../components/layout/FormShell";
 import { ReadingWidth } from "../../components/layout/ReadingWidth";
 import { ResultRow } from "../../components/molecules/ResultRow";
 import { PublishForm } from "../publicar/PublishForm";
@@ -80,22 +81,24 @@ export default function MeasureHarnessPage() {
           the form's. Measuring only the form is what let the heading sit
           against the left edge of a 1280 screen while the fields floated
           centred — the bound was on the wrong element. */}
-      <div data-testid="publish-column" className={publishStyles.column}>
-        <h1 data-testid="publish-title" className={publishStyles.title}>
-          Publicar una propiedad
-        </h1>
-        <PublishForm
-          cities={[
-            { id: "dc", name: "Distrito Capital" },
-            { id: "mcbo", name: "Maracaibo" },
-          ]}
-          zones={[
-            { id: "chacao", name: "Chacao", cityId: "dc" },
-            { id: "altamira", name: "Altamira", cityId: "dc" },
-            { id: "la-lago", name: "La Lago", cityId: "mcbo" },
-          ]}
-          values={{ title: "Apartamento 2 habitaciones en Chacao", priceUsd: "450" }}
-        />
+      <div data-testid="publish-column" className={publishStyles.page}>
+        <FormShell>
+          <h1 data-testid="publish-title" className={publishStyles.title}>
+            Publicar una propiedad
+          </h1>
+          <PublishForm
+            cities={[
+              { id: "dc", name: "Distrito Capital" },
+              { id: "mcbo", name: "Maracaibo" },
+            ]}
+            zones={[
+              { id: "chacao", name: "Chacao", cityId: "dc" },
+              { id: "altamira", name: "Altamira", cityId: "dc" },
+              { id: "la-lago", name: "La Lago", cityId: "mcbo" },
+            ]}
+            values={{ title: "Apartamento 2 habitaciones en Chacao", priceUsd: "450" }}
+          />
+        </FormShell>
       </div>
     </Container>
   );

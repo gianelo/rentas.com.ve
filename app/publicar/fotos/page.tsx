@@ -21,9 +21,14 @@ export const metadata: Metadata = {
  * `processUploadedPhoto` over every uploaded key before `publishListing`
  * writes the listing and its photo rows in one transaction.
  *
- * The draft summary stays on this page on purpose. It is the last moment
- * anyone can check what they wrote before it becomes an advert, and step 1
- * is one link away.
+ * The draft summary stays on this page on purpose: it is the last moment
+ * anyone can check what they wrote before it becomes an advert, and step 1 is
+ * one link away.
+ *
+ * The width comes from `FormShell`, the same shell step 1 uses. A max-width
+ * written into this page's own stylesheet would have to be remembered again
+ * on every screen after it — and forgetting it once is what put a heading
+ * against the left edge of a 1280 viewport.
  */
 export default async function PublishPhotosPage() {
   await requireSession("/publicar/fotos");
@@ -47,8 +52,6 @@ export default async function PublishPhotosPage() {
       </header>
 
       <main className={styles.page}>
-        {/* The same shell step 1 uses, so the two screens line up instead of
-            each page deciding its own width. */}
         <FormShell>
           <h1 className={styles.title}>Las fotos</h1>
 

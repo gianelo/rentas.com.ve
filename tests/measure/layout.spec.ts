@@ -212,12 +212,18 @@ test.describe("publish column measurement (3.9)", () => {
     await page.setViewportSize({ width: 1280, height: 1000 });
     await page.goto("/measure");
 
-    const column = await page.getByTestId("publish-column").boundingBox();
+    // The SHELL, not the <main> around it. The page is fluid on purpose --
+    // it carries vertical rhythm and a safety margin -- and FormShell is the
+    // thing that owns the 600px column. Pointing this at the page was the
+    // same mis-aimed bound as before, in the other direction.
+    const column = await page.getByTestId("publish-column").locator("> div").boundingBox();
     const title = await page.getByTestId("publish-title").boundingBox();
-    if (!column || !title) throw new Error("column/title did not render a measurable box");
+    if (!column || !title) throw new Error("shell/title did not render a measurable box");
 
-    console.log(`[3.9] column x=${column.x} width=${column.width} (bound: <= 600, centred)`);
+    console.log(`[3.9] shell x=${column.x} width=${column.width} (bound: <= 600, centred)`);
     expect(column.width).toBeLessThanOrEqual(600);
+    // Centred: equal space either side of a 1280 viewport.
+    expect(Math.abs(column.x - (1280 - column.x - column.width))).toBeLessThanOrEqual(2);
 
     // The heading starts where the column starts. If the column were fluid
     // this would be near zero while the form sat in the middle — which is

@@ -14,4 +14,11 @@
   inline-size: 100%;
   max-width: 600px;
   margin-inline: auto;
+
+  /* It stacks what it holds, so the heading, the form and anything else a
+     form screen needs share one rhythm without each page inventing its own.
+     24px is the artboard's gap. */
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }

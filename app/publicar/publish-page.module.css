@@ -34,18 +34,14 @@
   color: var(--soft);
 }
 
-/* The WHOLE column is 600px and centred, heading included — not just the
-   form inside it. The first version capped only the form, so on a 1280
-   screen the <h1> sat against the left edge while the fields floated in the
-   middle. The artboard is `width:600px; margin:0 auto` on the container. */
-.column {
-  max-inline-size: 600px;
-  margin-inline: auto;
+/* The page's own job is vertical rhythm and a safety margin on narrow
+   screens. **The width belongs to FormShell**, not here: a max-width written
+   into a page stylesheet has to be remembered again on every screen, and
+   forgetting it once is what put the heading against the left edge of a
+   1280 viewport. */
+.page {
   padding-block: 32px 48px;
   padding-inline: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
 }
 
 .title {

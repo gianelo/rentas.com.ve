@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { db } from "@/shared/db/client";
 import { cities as citiesTable, zones as zonesTable } from "@/shared/db/schema";
+import { FormShell } from "../../components/layout/FormShell";
 import { requireSession } from "../_lib/require-session";
 import { submitPublishStep1 } from "./actions";
 import { DRAFT_COOKIE, parseDraft } from "./draft";
@@ -66,19 +67,27 @@ export default async function PublishPage({ searchParams }: PublishPageProps) {
         </div>
       </header>
 
-      <main className={styles.column}>
-        <h1 className={styles.title}>Publicar una propiedad</h1>
-        {/* The city arrives as a query parameter so choosing one reloads the
+      <main className={styles.page}>
+        {/* FormShell owns the 600px column — the heading is inside it, not
+            beside it. Writing a max-width into this page's own stylesheet is
+            what put the heading against the left edge of a 1280 screen, and
+            it would have to be remembered again on every screen after this
+            one. The primitive already existed; not using it was the bug. */}
+        <FormShell>
+          <h1 className={styles.title}>Publicar una propiedad</h1>
+
+          {/* The city arrives as a query parameter so choosing one reloads the
             page with the zone list already filtered — the same no-JS cascade
             the search side uses. Nothing is written by a GET, so a stale pair
             is a rendering question rather than a data one. */}
-        <PublishForm
-          action={submitPublishStep1}
-          cities={cities}
-          zones={zones}
-          values={{ ...draft?.values, cityId: ciudad ?? draft?.values.cityId }}
-          violations={draft?.violations}
-        />
+          <PublishForm
+            action={submitPublishStep1}
+            cities={cities}
+            zones={zones}
+            values={{ ...draft?.values, cityId: ciudad ?? draft?.values.cityId }}
+            violations={draft?.violations}
+          />
+        </FormShell>
       </main>
     </>
   );
