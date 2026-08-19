@@ -43,9 +43,11 @@ describe("SearchFilters", () => {
     expect(markup).toContain("La Lago");
   });
 
-  it("preselects nothing until the URL says so", () => {
-    // A default city would silently answer D5's question for the visitor,
-    // and they would never learn the catalogue has two cities.
+  it("preselects nothing on its own — the page decides the default", () => {
+    // The component stays dumb about which city is chosen: it renders what
+    // its caller passes. Artboard 2a shows Distrito Capital already selected,
+    // and the page supplies that when the URL names none, so the default
+    // lives in one place instead of two disagreeing ones.
     expect(render()).not.toContain("checked");
   });
 
