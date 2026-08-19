@@ -4,6 +4,7 @@ import { Container } from "../../components/layout/Container";
 import { FormShell } from "../../components/layout/FormShell";
 import { ReadingWidth } from "../../components/layout/ReadingWidth";
 import { ResultRow } from "../../components/molecules/ResultRow";
+import { SearchFilters } from "../../components/molecules/SearchFilters";
 import { PhotoUploader } from "../publicar/fotos/PhotoUploader";
 import { PublishForm } from "../publicar/PublishForm";
 import publishStyles from "../publicar/publish-page.module.css";
@@ -102,6 +103,18 @@ export default function MeasureHarnessPage() {
             values={{ title: "Apartamento 2 habitaciones en Chacao", priceUsd: "450" }}
           />
         </FormShell>
+      </div>
+
+      {/* Artboard 2a's filters, so the two compositions are measurable: a
+          scrolling row of chips at 360, a stacked 240px sidebar at 1280. */}
+      <div data-testid="search-filters-harness" style={{ maxWidth: 240 }}>
+        <SearchFilters
+          cities={[
+            { id: "dc", name: "Distrito Capital" },
+            { id: "mcbo", name: "Maracaibo" },
+          ]}
+          zones={[{ id: "chacao", name: "Chacao", cityId: "dc" }]}
+        />
       </div>
 
       {/* Artboard 2g's empty state, so its geometry is measurable and its
