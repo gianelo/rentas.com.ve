@@ -1,0 +1,89 @@
+/* Artboard 2a's results column. */
+
+.count {
+  margin: 0 0 12px;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--soft);
+}
+
+.results {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.empty {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--bg);
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+/* Artboard 2a's bar: the wordmark and the publish action, inside the 1100
+   container the whole product uses. */
+.bar {
+  border-block-end: 1px solid var(--line);
+}
+
+.barInner {
+  max-inline-size: 1100px;
+  margin-inline: auto;
+  min-block-size: var(--brandbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 16px;
+}
+
+.brand {
+  margin: 0;
+  font-family: var(--disp);
+  font-size: var(--title-fs);
+  font-weight: var(--title-fw);
+  line-height: var(--title-lh);
+  letter-spacing: var(--brand-ls);
+  color: var(--ink);
+}
+
+.publish {
+  min-block-size: var(--target-min-desktop);
+  display: flex;
+  align-items: center;
+  padding-inline: 16px;
+  border-radius: var(--r);
+  background: var(--tint);
+  color: var(--accent);
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+/* Present for a screen reader and for a crawler, absent from the layout.
+   `display: none` would remove it from both, which is the opposite of what a
+   document outline needs. */
+.srOnly {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .barInner {
+    min-block-size: var(--brandbar-h-desktop);
+  }
+}

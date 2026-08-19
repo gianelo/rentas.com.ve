@@ -14,14 +14,21 @@ import { expect, test } from "@playwright/test";
  * measurement.
  */
 
-test("the home page renders its own content, not a framework shell", async ({ page }) => {
+test("the root IS the search, not a landing page that links to it", async ({ page }) => {
   const response = await page.goto("/");
 
   expect(response?.status()).toBe(200);
+  // One heading, and it describes the site rather than the result count.
+  // Artboard 2a gives this screen no heading at all, which is fine for a
+  // results page reached from elsewhere and wrong for the strongest URL on
+  // the domain — so it exists and is visually hidden.
   await expect(page.locator("h1")).toHaveCount(1);
   // The wordmark is lowercase with a period — it IS the mark, and a
   // capitalised "Rentas" means somebody retyped it from memory.
   await expect(page.getByText("rentas.", { exact: true })).toBeVisible();
+  // The filters are the page. A root that showed a value proposition and a
+  // button would be spending the domain's best URL on a click.
+  await expect(page.getByTestId("search-filters")).toBeVisible();
 });
 
 test("publishing is refused without a session, and remembers where you were going", async ({
