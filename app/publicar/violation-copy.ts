@@ -35,7 +35,9 @@ export type PublishField =
   | "zoneId"
   | "rooms"
   | "areaM2"
-  | "photos";
+  | "photos"
+  | "contactMethod"
+  | "contactValue";
 
 export interface PublishCopyContext {
   /** The submitted description, so the counter reports what was written. */
@@ -139,6 +141,27 @@ export const PUBLISH_VIOLATION_COPY: Record<PublishViolation, ViolationCopy> = {
   "areaM2.invalid": {
     field: "areaM2",
     message: () => "Los metros cuadrados, en números enteros. Por ejemplo: 78.",
+  },
+  // The reveal button's whole purpose. A listing without a contact is a dead
+  // end wearing a button.
+  "contactMethod.required": {
+    field: "contactMethod",
+    message: () => `${REQUIRED}. ¿Por dónde querés que te escriban?`,
+  },
+  "contactMethod.invalid": {
+    field: "contactMethod",
+    message: () => "Elegí WhatsApp, teléfono o correo.",
+  },
+  "contactValue.required": {
+    field: "contactValue",
+    message: () => `${REQUIRED}. Poné el dato por el que te contactan.`,
+  },
+  // Shape, not verification: nothing here proves the line rings. It catches
+  // the typo while the publisher is still on the form, which is the only
+  // moment it is cheap to fix.
+  "contactValue.invalid": {
+    field: "contactValue",
+    message: () => "Revisá el dato: un correo lleva @, y un teléfono solo números.",
   },
   "photos.required": {
     field: "photos",

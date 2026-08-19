@@ -51,17 +51,20 @@ describe("PublishForm", () => {
     expect(render()).toMatch(/no se puede cambiar/i);
   });
 
-  it("marks exactly the three fields the artboard marks, never colour alone", () => {
+  it("marks the artboard's three fields, plus the contact pair it never drew", () => {
     const markup = render();
     const markers = markup.match(/✱ obligatorio/g) ?? [];
 
-    // Three, not eight. The first version marked every required field, which
-    // is defensible in the abstract and wrong here: artboard 2c marks the
-    // publisher type, the title and the price, and leaves the selects and the
-    // description unmarked. A marker on every field is a marker that stops
-    // meaning anything — which is the same reason the design reserves colour
-    // for the two listing states that ask for an action.
-    expect(markers).toHaveLength(3);
+    // Artboard 2c marks three: the publisher type, the title and the price.
+    // It leaves the selects and the description unmarked, and a marker on
+    // every field is a marker that stops meaning anything.
+    //
+    // The contact pair is an ADDITION to the design — 2b renders "Ver
+    // WhatsApp del dueño" while no artboard collects a value — so whether it
+    // carries the marker is a decision, not a transcription. It does: a
+    // listing whose contact cannot be revealed is a dead end wearing a
+    // button, which makes it as unmissable as the price.
+    expect(markers).toHaveLength(5);
   });
 
   it("pairs city with zone, and rooms with area, on one row", () => {
@@ -85,7 +88,17 @@ describe("PublishForm", () => {
 
   it("orders the fields the way the design lists them", () => {
     const markup = render();
-    const order = ["publisherType", "title", "priceUsd", "cityId", "zoneId", "rooms", "areaM2"];
+    const order = [
+      "publisherType",
+      "title",
+      "priceUsd",
+      "cityId",
+      "zoneId",
+      "rooms",
+      "areaM2",
+      "contactMethod",
+      "contactValue",
+    ];
     const positions = order.map((name) => markup.indexOf(`name="${name}"`));
 
     expect(positions).toEqual([...positions].sort((a, b) => a - b));

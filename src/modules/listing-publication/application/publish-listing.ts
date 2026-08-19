@@ -136,6 +136,8 @@ export async function publishListing(
     priceUsd: present(request.priceUsd, "priceUsd"),
     rooms: present(request.rooms, "rooms"),
     areaM2: present(request.areaM2, "areaM2"),
+    contactMethod: present(request.contactMethod, "contactMethod"),
+    contactValue: present(request.contactValue, "contactValue"),
     status: "active",
     publishedAt,
     expiresAt: new Date(publishedAt.getTime() + LISTING_ACTIVE_DAYS * 86_400_000),

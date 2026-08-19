@@ -43,6 +43,14 @@ const EVERY_VIOLATION: readonly PublishViolation[] = [
   // an entry in the map — which is the point. A code nothing can produce is
   // copy nobody will ever read.
   ...validatePublishableListing({ description: "x".repeat(MAX_DESCRIPTION_CHARACTERS + 1) }, []),
+  // A fourth and fifth draft for the contact's invalid shapes: a method
+  // outside the three offered, and a value the chosen method refuses. The
+  // drafts above reach both `required` codes but neither `invalid` one.
+  ...validatePublishableListing(
+    { contactMethod: "telegram" as never, contactValue: "no-es-un-numero" },
+    [],
+  ),
+  ...validatePublishableListing({ contactMethod: "email", contactValue: "sin-arroba" }, []),
 ];
 
 describe("publish violation copy", () => {
@@ -60,7 +68,7 @@ describe("publish violation copy", () => {
     const written = Object.keys(PUBLISH_VIOLATION_COPY).sort();
 
     expect(written).toEqual(reachable);
-    expect(reachable).toHaveLength(18);
+    expect(reachable).toHaveLength(22);
   });
 
   it("gives every code a real sentence, not a placeholder", () => {

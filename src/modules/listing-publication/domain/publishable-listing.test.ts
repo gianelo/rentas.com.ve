@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  type ContactMethod,
   type DraftListing,
   MAX_DESCRIPTION_CHARACTERS,
   MAX_PHOTOS_PER_LISTING,
@@ -47,6 +48,8 @@ function draft(overrides: Partial<DraftListing> = {}): DraftListing {
     priceUsd: 520,
     cityId: CAPITAL,
     zoneId: "zone-chacao",
+    contactMethod: "whatsapp",
+    contactValue: "04121234567",
     photoCount: 1,
     rooms: 2,
     areaM2: 78,
@@ -261,5 +264,83 @@ describe("validatePublishableListing", () => {
         "photos.required",
       ]),
     );
+  });
+});
+
+/**
+ * The contact is what the whole product exists to deliver: a tenant finds a
+ * listing and gets a way to reach whoever published it. **The design draws
+ * this and never asks for it** — artboard 2b renders "Ver WhatsApp del dueño"
+ * while no form in the system collects a contact.
+ */
+describe("contact — a method plus a value, not a phone number", () => {
+  it("rejects a missing method", () => {
+    expect(validatePublishableListing(draft({ contactMethod: undefined }), ZONES)).toContain(
+      "contactMethod.required",
+    );
+  });
+
+  it("rejects a method outside the three offered", () => {
+    expect(
+      validatePublishableListing(draft({ contactMethod: "telegram" as ContactMethod }), ZONES),
+    ).toContain("contactMethod.invalid");
+  });
+
+  it("rejects a missing or blank value", () => {
+    expect(validatePublishableListing(draft({ contactValue: undefined }), ZONES)).toContain(
+      "contactValue.required",
+    );
+    expect(validatePublishableListing(draft({ contactValue: "   " }), ZONES)).toContain(
+      "contactValue.required",
+    );
+  });
+
+  it.each([
+    ["0412 123 4567", "spaces, as people write them"],
+    ["0412-1234567", "a dash"],
+    ["+58 412 1234567", "the country code"],
+    ["04121234567", "plain"],
+  ])("accepts %s — %s", (contactValue) => {
+    // Refusing any of these teaches publishers to distrust the form. They are
+    // the same number written the way a person writes it.
+    expect(validatePublishableListing(draft({ contactValue }), ZONES)).toEqual([]);
+  });
+
+  it.each([
+    ["0412", "too short"],
+    ["no-tengo", "not a number at all"],
+  ])("rejects %s as a phone — %s", (contactValue) => {
+    expect(validatePublishableListing(draft({ contactValue }), ZONES)).toContain(
+      "contactValue.invalid",
+    );
+  });
+
+  it("checks an email as an email, not as a phone", () => {
+    // The method decides which shape applies. Without that, an address would
+    // be judged by the phone rule and refused for having no digits.
+    expect(
+      validatePublishableListing(
+        draft({ contactMethod: "email", contactValue: "ana@ejemplo.com" }),
+        ZONES,
+      ),
+    ).toEqual([]);
+    expect(
+      validatePublishableListing(
+        draft({ contactMethod: "email", contactValue: "ana-arroba-ejemplo" }),
+        ZONES,
+      ),
+    ).toContain("contactValue.invalid");
+  });
+
+  it("does not pretend to verify anything", () => {
+    // Shape only. Nothing here proves the line rings or the address exists —
+    // only sending something does, and phone verification is a disabled port
+    // (D9). An address nobody reads passes, and that is honest.
+    expect(
+      validatePublishableListing(
+        draft({ contactMethod: "email", contactValue: "nadie@dominio-que-no-existe.com" }),
+        ZONES,
+      ),
+    ).toEqual([]);
   });
 });

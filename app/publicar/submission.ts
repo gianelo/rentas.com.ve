@@ -34,6 +34,8 @@ const VALUE_KEYS = [
   "zoneId",
   "rooms",
   "areaM2",
+  "contactMethod",
+  "contactValue",
   "description",
 ] as const;
 
@@ -66,6 +68,8 @@ export function toDraft(values: PublishFormValues): DraftListing {
     zoneId: values.zoneId,
     rooms: number(values.rooms),
     areaM2: number(values.areaM2),
+    contactMethod: values.contactMethod as DraftListing["contactMethod"],
+    contactValue: values.contactValue,
     // Step 2's business. Declared so the validator sees a complete draft and
     // the filtered codes above are the only ones it could have raised.
     photoCount: 1,

@@ -43,6 +43,13 @@
       "when": 1787099129954,
       "tag": "0005_hesitant_brood",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787105409327,
+      "tag": "0006_superb_nicolaos",
+      "breakpoints": true
     }
   ]
 }

@@ -55,6 +55,8 @@ export interface PublishFormValues {
   readonly zoneId?: string;
   readonly rooms?: string;
   readonly areaM2?: string;
+  readonly contactMethod?: string;
+  readonly contactValue?: string;
   readonly description?: string;
 }
 
@@ -227,6 +229,44 @@ export function PublishForm({
           error={errors.get("areaM2")}
         >
           {(attributes) => <input {...attributes} type="text" inputMode="numeric" />}
+        </Field>
+      </FieldRow>
+
+      {/* The contact is the whole point of the product: a tenant finds a
+            listing and gets a way to reach whoever published it. **The design
+            draws it and never asks for it** — artboard 2b renders "Ver
+            WhatsApp del dueño" while no artboard collects a value — so this
+            pair is an addition to the design, surfaced rather than slipped in.
+
+            Copied onto the listing at publish time: editing the account
+            default later must not rewrite adverts somebody has already seen. */}
+      <FieldRow>
+        <Field
+          name="contactMethod"
+          label="¿Por dónde te contactan?"
+          required
+          value={values.contactMethod}
+          error={errors.get("contactMethod")}
+        >
+          {(attributes) => (
+            <select {...attributes}>
+              <option value="">Elegí</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="telefono">Teléfono</option>
+              <option value="email">Correo</option>
+            </select>
+          )}
+        </Field>
+
+        <Field
+          name="contactValue"
+          label="Tu dato"
+          required
+          help="Se muestra solo a quien inicie sesión."
+          value={values.contactValue}
+          error={errors.get("contactValue")}
+        >
+          {(attributes) => <input {...attributes} type="text" />}
         </Field>
       </FieldRow>
 
