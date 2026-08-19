@@ -13,6 +13,17 @@
 
 export type PublisherType = "owner" | "broker";
 
+/**
+ * How the publisher wants to be reached (founder, 2026-08-18): "el valor que
+ * quiera mostrar la persona. Sea email, WhatsApp o número de teléfono."
+ *
+ * A single `whatsapp` column would have forced everyone who prefers email to
+ * lie in it — and the reveal button's label comes from this, so a listing
+ * that says "Ver WhatsApp" while holding an address is a promise the product
+ * does not keep.
+ */
+export type ContactMethod = "whatsapp" | "telefono" | "email";
+
 export interface DraftListing {
   readonly publisherType?: PublisherType;
   readonly title?: string;
@@ -20,6 +31,8 @@ export interface DraftListing {
   readonly priceUsd?: number;
   readonly cityId?: string;
   readonly zoneId?: string;
+  readonly contactMethod?: ContactMethod;
+  readonly contactValue?: string;
   readonly photoCount?: number;
   readonly rooms?: number;
   readonly areaM2?: number;
@@ -55,6 +68,10 @@ export type PublishViolation =
   | "areaM2.required"
   | "areaM2.invalid"
   | "photos.required"
+  | "contactMethod.required"
+  | "contactMethod.invalid"
+  | "contactValue.required"
+  | "contactValue.invalid"
   | "photos.tooMany";
 
 /**
@@ -94,6 +111,32 @@ export const MAX_DESCRIPTION_CHARACTERS = 1_200;
 export const MAX_PHOTOS_PER_LISTING = 6;
 
 const PUBLISHER_TYPES: readonly string[] = ["owner", "broker"];
+const CONTACT_METHODS: readonly string[] = ["whatsapp", "telefono", "email"];
+
+/**
+ * Shape checks, not verification. Neither proves the address exists or the
+ * line rings — only sending something does, and phone verification is a
+ * disabled port (design.md D9). What they catch is the typo a publisher can
+ * fix while they are still on the form, which is the only moment it is cheap:
+ * afterwards the cost lands on a tenant who reveals a contact that goes
+ * nowhere, and they have no way to tell that from being ignored.
+ */
+function looksLikeEmail(value: string): boolean {
+  // Deliberately loose. The strict grammar for an address is famously
+  // unimplementable, and every over-tight regex rejects somebody's real one.
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value);
+}
+
+/**
+ * Venezuelan numbers are 11 digits (0412…) or 12 with the country code
+ * (58412…). Separators are stripped before counting, because "0412 123 4567"
+ * and "0412-1234567" are the same number written the way people write it, and
+ * refusing one of them teaches publishers to distrust the form.
+ */
+function looksLikePhone(value: string): boolean {
+  const digits = value.replace(/[\s()+.-]/g, "");
+  return /^\d{10,13}$/.test(digits);
+}
 
 function isBlank(value: string | undefined): boolean {
   return value === undefined || value.trim() === "";
@@ -199,6 +242,23 @@ export function validatePublishableListing(
     violations.push("areaM2.required");
   } else if (!isWholePositiveNumber(draft.areaM2)) {
     violations.push("areaM2.invalid");
+  }
+
+  // The contact is what the whole product exists to deliver: a tenant finds
+  // a listing and gets a way to reach whoever published it. A listing without
+  // one is a dead end wearing a reveal button.
+  if (draft.contactMethod === undefined) {
+    violations.push("contactMethod.required");
+  } else if (!CONTACT_METHODS.includes(draft.contactMethod)) {
+    violations.push("contactMethod.invalid");
+  }
+
+  if (isBlank(draft.contactValue)) {
+    violations.push("contactValue.required");
+  } else if (draft.contactMethod === "email") {
+    if (!looksLikeEmail(draft.contactValue as string)) violations.push("contactValue.invalid");
+  } else if (draft.contactMethod !== undefined) {
+    if (!looksLikePhone(draft.contactValue as string)) violations.push("contactValue.invalid");
   }
 
   if (!draft.photoCount || draft.photoCount < 1) {

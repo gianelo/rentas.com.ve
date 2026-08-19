@@ -332,6 +332,12 @@ export async function seed(database?: SeedDatabase): Promise<void> {
         priceUsd: listing.priceUsd,
         rooms: listing.rooms,
         areaM2: listing.areaM2,
+        // Seeded listings are demo data, so the contact is deliberately
+        // UNUSABLE. Inventing a plausible number would put a contact into
+        // the product that nobody owns, and the reveal button would hand a
+        // tenant something that goes nowhere.
+        contactMethod: "whatsapp" as const,
+        contactValue: "sin-contacto",
         status: "active",
         publishedAt,
         expiresAt,

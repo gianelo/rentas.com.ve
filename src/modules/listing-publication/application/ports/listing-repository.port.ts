@@ -1,4 +1,4 @@
-import type { PublisherType } from "../../domain/publishable-listing";
+import type { ContactMethod, PublisherType } from "../../domain/publishable-listing";
 
 /**
  * Persistence for a published listing and its photos.
@@ -36,6 +36,9 @@ export interface NewListing {
   readonly rooms: number;
   readonly areaM2: number;
   /** Only `active` is reachable from publication; the rest are lifecycle. */
+  /** Copied at publish time; editing the account default never rewrites it. */
+  readonly contactMethod: ContactMethod;
+  readonly contactValue: string;
   readonly status: "active";
   readonly publishedAt: Date;
   readonly expiresAt: Date;

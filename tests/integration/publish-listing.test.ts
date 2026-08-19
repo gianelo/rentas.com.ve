@@ -62,6 +62,8 @@ function draft(overrides: Partial<NewListing> = {}): NewListing {
     priceUsd: 520,
     rooms: 2,
     areaM2: 78,
+    contactMethod: "whatsapp",
+    contactValue: "04121234567",
     status: "active",
     publishedAt,
     expiresAt: new Date(publishedAt.getTime() + 30 * 86_400_000),

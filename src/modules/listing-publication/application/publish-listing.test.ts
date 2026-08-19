@@ -132,6 +132,8 @@ function request(overrides: Record<string, unknown> = {}) {
     zoneId: ZONE,
     rooms: 2,
     areaM2: 78,
+    contactMethod: "whatsapp" as const,
+    contactValue: "04121234567",
     photos: submittedPhotos(1),
     ...overrides,
   };

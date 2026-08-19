@@ -72,6 +72,8 @@ describe("photo rules belong to step 2", () => {
       zoneId: "chacao",
       rooms: "2",
       areaM2: "78",
+      contactMethod: "whatsapp",
+      contactValue: "04121234567",
     });
 
     const reported = validatePublishableListing(draft, [{ id: "chacao", cityId: "dc" }]).filter(

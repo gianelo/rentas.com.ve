@@ -20,6 +20,26 @@ import type { AdapterAccountType } from "next-auth/adapters";
 // exactly one provider (Google OAuth) — no magic-link email provider, no
 // WebAuthn/passkeys — so neither table has a caller.
 
+/**
+ * How a publisher wants to be reached, and the value itself.
+ *
+ * **The design draws this and never asks for it.** Artboard 2b renders "Ver
+ * WhatsApp del dueño" and "El contacto se muestra a usuarios registrados",
+ * and no form in the whole system collects a contact — the same shape of gap
+ * as `habitaciones`/`metros²` and `baños`/`puesto` before it. Recorded here
+ * rather than discovered when the reveal button has nothing to reveal.
+ *
+ * It is a METHOD plus a VALUE, not a phone number (founder, 2026-08-18):
+ * "el valor que quiera mostrar la persona. Sea email, WhatsApp o número de
+ * teléfono." A column called `whatsapp` would have forced every publisher who
+ * prefers email to lie in it.
+ *
+ * The button's label must therefore come from the method. "Ver WhatsApp del
+ * dueño" is wrong for someone who chose email, and a label that names the
+ * wrong channel is a promise the product does not keep.
+ */
+export type ContactMethod = "whatsapp" | "telefono" | "email";
+
 export const users = pgTable("user", {
   id: text("id")
     .primaryKey()
@@ -34,6 +54,12 @@ export const users = pgTable("user", {
   // column happens to exist — capturing an avatar is a product decision about
   // holding third-party personal data, not a schema convenience.
   image: text("image"),
+  // The publisher's DEFAULT contact, nullable because a fresh Google account
+  // has none and publishing is where it is first asked for. `/mi-cuenta`,
+  // where this would be edited, does not exist yet and is owed a design — it
+  // is a convenience, never a precondition for publishing.
+  contactMethod: text("contact_method").$type<ContactMethod>(),
+  contactValue: text("contact_value"),
 });
 
 export const accounts = pgTable(
@@ -160,6 +186,13 @@ export const listings = pgTable(
     // active | expired | hidden. Search shows `active` only (tasks.md
     // 5.5/5.6); `hidden` is the auto-hide state from reports (Phase 8).
     status: text("status").$type<"active" | "expired" | "hidden">().notNull(),
+    // **Copied at publish time, not referenced.** Editing the account default
+    // later must not rewrite adverts somebody has already seen: a tenant who
+    // wrote to a number needs that advert to keep saying the number they
+    // wrote to. NOT NULL, because a listing whose contact cannot be revealed
+    // is a listing the product has no purpose for.
+    contactMethod: text("contact_method").$type<ContactMethod>().notNull(),
+    contactValue: text("contact_value").notNull(),
     publishedAt: timestamp("published_at", { mode: "date", withTimezone: true }).notNull(),
     // 30 days from publication (SISTEMA.md screen 3: "Tu aviso queda activo
     // 30 días"). Stored rather than derived so the reminder job (Phase 7)

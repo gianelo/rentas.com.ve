@@ -60,8 +60,8 @@ beforeAll(async () => {
   ]);
   await client.query(
     `INSERT INTO "listing" (id, publisher_id, publisher_type, city_id, zone_id, title,
-       description, price_usd, rooms, area_m2, status, published_at, expires_at)
-     VALUES ($1,$2,'owner',$3,$4,'Título','x',450,2,78,'active',now(),now() + interval '30 days')`,
+       description, price_usd, rooms, area_m2, contact_method, contact_value, status, published_at, expires_at)
+     VALUES ($1,$2,'owner',$3,$4,'Título','x',450,2,78,'whatsapp','04121234567','active',now(),now() + interval '30 days')`,
     [LISTING, PUBLISHER, CITY, ZONE],
   );
   await client.query(
