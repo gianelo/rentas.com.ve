@@ -46,7 +46,20 @@ export default defineConfig({
           // `pnpm start`; locally the default builds too, so a bare
           // `playwright test` still works from a clean checkout.
           command: process.env.PLAYWRIGHT_WEB_COMMAND ?? "pnpm build && pnpm start",
-          url: "http://localhost:3000",
+          // `port`, not `url`, and the difference is what a readiness probe
+          // is allowed to mean. With `url` Playwright polls that address and
+          // only calls the server ready on a non-5xx response -- so readiness
+          // silently depended on the ROOT PAGE RENDERING. That held while `/`
+          // was a static heading; the moment the root became the search it
+          // began querying the database, which on this fallback path points
+          // at a deliberately unroutable host, and every poll for three
+          // minutes got a 500. The server was up the whole time and the job
+          // died with "Timed out waiting 180000ms from config.webServer".
+          //
+          // `port` waits for the socket to accept connections, which is the
+          // actual question: is the server listening. Whether a given page
+          // renders is a test's job, and a test says which page and why.
+          port: 3000,
           reuseExistingServer: !process.env.CI,
           timeout: 180_000,
         },

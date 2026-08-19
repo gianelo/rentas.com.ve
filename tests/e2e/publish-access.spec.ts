@@ -14,7 +14,31 @@ import { expect, test } from "@playwright/test";
  * measurement.
  */
 
+/**
+ * True only when the suite is pointed at a real deployment. Without a
+ * `VERCEL_AUTOMATION_BYPASS_SECRET` to get past Vercel's SSO wall, the suite
+ * falls back to a production build served locally against a DELIBERATELY
+ * unroutable database -- the same fake `DATABASE_URL` the build job carries,
+ * so a change that breaks the pooled-endpoint guard fails in CI instead of at
+ * deploy time.
+ *
+ * That fallback can prove the auth read paths, which never reach the
+ * database when no session cookie is present. It cannot prove anything that
+ * reads the catalogue.
+ */
+const againstADeployment = Boolean(process.env.PLAYWRIGHT_BASE_URL);
+
 test("the root IS the search, not a landing page that links to it", async ({ page }) => {
+  // Skipped rather than weakened. The alternative was asserting something
+  // the fallback CAN answer -- that `/` responds at all -- and an assertion
+  // that passes against a 500 is worse than an absent one, because it
+  // reports the read path as covered. What this needs is the bypass secret
+  // set on the repository, and then it runs everywhere.
+  test.skip(
+    !againstADeployment,
+    "needs a real database: the local fallback build points at an unroutable host",
+  );
+
   const response = await page.goto("/");
 
   expect(response?.status()).toBe(200);
