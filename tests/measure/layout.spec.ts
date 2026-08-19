@@ -246,3 +246,37 @@ test.describe("publish column measurement (3.9)", () => {
     expect(Math.abs(title.x - field.x)).toBeLessThanOrEqual(20);
   });
 });
+
+/**
+ * Artboard 2a's two metadata sentences (5.7). The city and the age are in the
+ * DOM at every width — a crawler with no viewport should read the fuller one
+ * — and only 1280 shows them. Markup tests cannot tell those apart; this can.
+ */
+test.describe("result row metadata (5.7)", () => {
+  test("5.7: the phone row hides city and age", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 900 });
+    await page.goto("/measure");
+
+    const meta = page.getByTestId("result-row").first().locator("p");
+    const visible = await meta.innerText();
+    const inDom = await meta.innerHTML();
+
+    console.log(`[5.7] 360px visible: ${JSON.stringify(visible)}`);
+    // Present, and not shown. Removing it from the DOM instead would cost the
+    // indexable sentence D11 wants.
+    expect(inDom).toContain("Distrito Capital");
+    expect(visible).not.toContain("Distrito Capital");
+    expect(visible).not.toContain("hace 2 días");
+  });
+
+  test("5.7: at 1280 the same row reads the fuller sentence", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/measure");
+
+    const visible = await page.getByTestId("result-row").first().locator("p").innerText();
+
+    console.log(`[5.7] 1280px visible: ${JSON.stringify(visible)}`);
+    expect(visible).toContain("Distrito Capital");
+    expect(visible).toContain("hace 2 días");
+  });
+});
