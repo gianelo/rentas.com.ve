@@ -63,3 +63,33 @@
   line-height: 1.4;
   color: var(--soft);
 }
+
+/* The whole row is the target, but only the title carries the link: a row
+   wrapped in an anchor makes every word of metadata sound like a destination
+   to a screen reader. */
+.link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* City and age exist in the DOM at every width and are shown only at 1280,
+   where artboard 2a puts them. Hidden rather than absent so a crawler with no
+   viewport still reads the fuller sentence. */
+.wide {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .wide {
+    display: inline;
+  }
+}

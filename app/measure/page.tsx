@@ -36,6 +36,8 @@ export default function MeasureHarnessPage() {
     <Container>
       <div data-testid="row-slot-long">
         <ResultRow
+          city="Distrito Capital"
+          ageLabel="hace 2 días"
           priceUsd={380}
           title="Apartamento amplio en La Castellana, 3 habitaciones con puesto de estacionamiento y línea blanca incluida"
           zone="La Castellana"
