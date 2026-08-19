@@ -45,12 +45,21 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       .orderBy(asc(zonesTable.name)),
   ]);
 
-  // `buildSearchCriteria` returns null without a city, and D5 is why: there
-  // is no "search everywhere". A visitor who has not chosen one is asked to,
-  // rather than shown a mixed list that quietly crosses cities.
+  // **The first city when the URL names none**, which is what artboard 2a
+  // draws: its sidebar shows Distrito Capital already chosen.
+  //
+  // The first version showed nothing until a city was picked, reasoning that
+  // a default would answer D5's question on the visitor's behalf. That was
+  // wrong in practice: both cities are visible as chips either way, so
+  // nothing is hidden — and what the caution actually bought was a landing
+  // page whose first impression is an empty column, which reads as broken
+  // rather than as an invitation. D5 is about never MIXING cities, and a
+  // named default does not mix anything.
+  const selectedCity = params.city ?? cities[0]?.id;
+
   const criteria = buildSearchCriteria(
     {
-      city: params.city,
+      city: selectedCity,
       zone: params.zone,
       minPrice: params.minPrice,
       maxPrice: params.maxPrice,
@@ -71,7 +80,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             cities={cities}
             zones={zones}
             values={{
-              city: params.city,
+              city: selectedCity,
               zone: params.zone,
               minPrice: params.minPrice,
               maxPrice: params.maxPrice,
@@ -82,7 +91,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       >
         <h1 className={styles.count} data-testid="result-count">
           {criteria === null
-            ? "Elegí una ciudad para ver los alquileres."
+            ? "Todavía no hay ciudades cargadas."
             : results.length === 1
               ? "1 propiedad activa"
               : `${results.length} propiedades activas`}
