@@ -271,3 +271,59 @@ export const listingPhotoHashes = pgTable("listing_photo_hash", {
   hash: bit64("hash").notNull(),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });
+
+// contact_reveal_event (tasks.md 6.1, design.md D6) — the north-star metric's
+// single source of truth. Append-only: one row per reveal ACTION, repeats
+// included. The unique `(tenant, listing)` figure is not a second table, it is
+// `contact_reveal_unique_pair`, a VIEW created by hand in the same migration
+// (drizzle has no schema-level view builder in this version, so the CREATE
+// VIEW lives in the .sql file; see drizzle-contact-reveal.ts for the drift
+// risk that creates).
+//
+// **`city_id` is copied here, not joined.** A listing can be edited, expired,
+// hidden or removed; a metric a JOIN can erase is not a metric. Same reason
+// `publisher_id` is stored rather than reached through `listing`.
+//
+// **No ON DELETE CASCADE anywhere in this table, and that is the decision
+// most likely to be "fixed" by mistake.** Cascading from `listing` or `user`
+// would silently delete the go/pivot evidence exactly when a listing is taken
+// down or an account is closed — the deletions most correlated with the
+// months a reveal happened. `restrict` makes the conflict loud instead: an
+// account erasure request will fail here until someone decides between
+// anonymising these rows and dropping them, which is the open question
+// design.md already records under "Retention for contact_reveal_event".
+export const contactRevealEvents = pgTable(
+  "contact_reveal_event",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    listingId: text("listing_id")
+      .notNull()
+      .references(() => listings.id, { onDelete: "restrict" }),
+    publisherId: text("publisher_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    tenantUserId: text("tenant_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    cityId: text("city_id")
+      .notNull()
+      .references(() => cities.id, { onDelete: "restrict" }),
+    revealedAt: timestamp("revealed_at", { mode: "date", withTimezone: true }).notNull(),
+  },
+  (event) => [
+    // Supplies the view's `DISTINCT ON` ordering and its window partition in
+    // one index, so the unique-pair count needs no sort step (design.md D6,
+    // query table). There is deliberately NO unique constraint on
+    // (tenant_user_id, listing_id): a repeat reveal must insert, not conflict.
+    index("contact_reveal_pair_idx").on(
+      event.tenantUserId,
+      event.listingId,
+      event.revealedAt,
+      event.id,
+    ),
+    index("contact_reveal_city_idx").on(event.cityId, event.revealedAt),
+    index("contact_reveal_listing_idx").on(event.listingId, event.revealedAt),
+  ],
+);

@@ -231,13 +231,13 @@ The lesson is not "grant another exception". It is that **a screen with N form f
 
 ## Phase 6: Contact Reveal (PR6)
 
-- [ ] 6.1 Migration: `contact_reveal_event` table + `contact_reveal_unique_pair` VIEW (raw SQL, D6)
-- [ ] 6.2 Hand-declare TS result type for the view query (flag as drift risk in code comment)
-- [ ] 6.3 RED: anonymous visitor sees hidden/locked placeholder, no contact value
-- [ ] 6.4 RED: reveal creates exactly one event; repeat reveal by same tenant creates a second, non-deduplicated event
-- [ ] 6.5 GREEN: `RevealContactUseCase` — single insert, session-gated
-- [ ] 6.6 RED: integration — after N repeat reveals of one pair, unique-pair view returns 1 row, `reveal_count=N`, `first_revealed_at`=earliest; raw event table still holds N rows
-- [ ] 6.7 GREEN: view query wrapper
+- [x] 6.1 Migration: `contact_reveal_event` table + `contact_reveal_unique_pair` VIEW (raw SQL, D6) — the table is append-only and **all four foreign keys are `ON DELETE restrict`, deliberately**. Cascading would delete the go/pivot evidence at exactly the moment a listing is taken down or an account closed. The cost is real and is the point: an account-erasure request now fails loudly until someone decides between anonymising and dropping these rows, which is design.md's own open question made visible instead of silently resolved the wrong way
+- [x] 6.2 Hand-declare TS result type for the view query (flag as drift risk in code comment) — **the drift risk, recorded above `UniquePairRow`**: `drizzle-kit` neither creates nor diffs a view, and `db.execute` returns untyped rows, so the TS type is a hand declaration the compiler cannot check. Drift does not crash — a renamed column arrives as `undefined`, `Number(undefined)` is `NaN` — so the failure mode is a go/pivot report reading `NaN` unique pairs. The integration test is the only thing pinning it. `pgView` was considered and rejected: `DISTINCT ON` plus a window `count(*)` still needs an `.as(sql\`…\`)` escape hatch, which moves the unchecked string rather than removing it
+- [x] 6.3 RED: anonymous visitor sees hidden/locked placeholder, no contact value
+- [x] 6.4 RED: reveal creates exactly one event; repeat reveal by same tenant creates a second, non-deduplicated event
+- [x] 6.5 GREEN: `RevealContactUseCase` — single insert, session-gated — session read **before** the listing is touched, mutation-checked: moving the gate after the read turns exactly that ordering test red
+- [x] 6.6 RED: integration — after N repeat reveals of one pair, unique-pair view returns 1 row, `reveal_count=N`, `first_revealed_at`=earliest; raw event table still holds N rows — proven against real Postgres 18. **Verified independently rather than on report**: recreating the view without `DISTINCT ON` turns four tests red, including the one whose assertion the agent had itself tightened from `toBeGreaterThanOrEqual` to `toBeGreaterThan` after discovering the loose form passed against the broken view
+- [x] 6.7 GREEN: view query wrapper
 - [ ] 6.8 Reveal UI: locked placeholder, reveal button, sign-in redirect
 - [ ] 6.9 RED: an account exceeding the reveal window is throttled and further reveals stop — the catalog must not be drainable by one registered account
 - [ ] 6.10 GREEN: per-account reveal rate limit (threshold from the design's open question; loose enough for a genuine tenant comparing listings)
