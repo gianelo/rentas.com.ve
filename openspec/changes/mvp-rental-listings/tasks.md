@@ -220,13 +220,13 @@ The lesson is not "grant another exception". It is that **a screen with N form f
 
 ## Phase 5: Listing Search (PR5)
 
-- [ ] 5.0 RED: a submitted `zone` that does not belong to the submitted `city` is ignored, not treated as a meaningful filter. **Found while building the cascading select in PR2b:** a GET form submits whatever its controls currently hold, so picking a new city without touching the zone sends the previous city's zone. Nothing is written, so D5's database constraint is not involved and cannot help — this one has to be handled where the query parameters are read, and the component cannot prevent it because it does not control what the browser posts
-- [ ] 5.1 RED: `ListingSearchPort.search(criteria)` — missing/nullable `cityId` rejected (D5)
-- [ ] 5.2 GREEN: search port signature with required non-nullable `cityId`
-- [ ] 5.3 RED: integration — Maracaibo search excludes Distrito Capital listings (no-filter, wide-price-range, colliding-zone-name scenarios)
-- [ ] 5.4 GREEN: Drizzle search query — city/zone/price/characteristics filters
-- [ ] 5.5 RED: expired and auto-hidden listings excluded from search
-- [ ] 5.6 GREEN: active-only status filter
+- [x] 5.0 RED: a submitted `zone` that does not belong to the submitted `city` is ignored, not treated as a meaningful filter. **Found while building the cascading select in PR2b:** a GET form submits whatever its controls currently hold, so picking a new city without touching the zone sends the previous city's zone. Nothing is written, so D5's database constraint is not involved and cannot help — this one has to be handled where the query parameters are read, and the component cannot prevent it because it does not control what the browser posts — **the subtle one.** A GET form posts whatever its controls hold, so a stale city/zone pair reaches the server whenever someone changes the city without touching the zone. The zone is dropped by comparing it against the SUBMITTED city, not against the caller's list. **Open and unbuilt**: the drop is silent, so the 5.7 UI has no way to say "mostrando toda la ciudad" — a `droppedZone` flag is the obvious fix, left for whoever builds the reader
+- [x] 5.1 RED: `ListingSearchPort.search(criteria)` — missing/nullable `cityId` rejected (D5)
+- [x] 5.2 GREEN: search port signature with required non-nullable `cityId` — `search(criteria)` is the only method; there is no `searchAll` and no sentinel. **Stated at its real strength**: this holds while the interface has one method and nothing stops an adapter from ignoring `cityId` once inside, which is why the integration test exists. Mutation-checked: making `cityId` optional fails `tsc` with three unused-`@ts-expect-error` errors, so CI enforces it
+- [x] 5.3 RED: integration — Maracaibo search excludes Distrito Capital listings (no-filter, wide-price-range, colliding-zone-name scenarios)
+- [x] 5.4 GREEN: Drizzle search query — city/zone/price/characteristics filters — `city_id` and `status = 'active'` are appended before any caller-supplied filter, and `listing_city_status_idx` is `(city_id, status)`, so the pair every query starts with is also its access path
+- [x] 5.5 RED: expired and auto-hidden listings excluded from search
+- [x] 5.6 GREEN: active-only status filter — mutation-checked at the SQL level: deleting the predicate removes `status` from the generated `WHERE`
 - [ ] 5.7 Search results UI showing `publisher_type` per result
 
 ## Phase 6: Contact Reveal (PR6)
