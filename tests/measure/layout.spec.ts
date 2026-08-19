@@ -280,3 +280,49 @@ test.describe("result row metadata (5.7)", () => {
     expect(visible).toContain("hace 2 días");
   });
 });
+
+/**
+ * Artboard 2a's filters (5.7). The city and rooms controls are the ones a
+ * thumb has to hit on a phone and a pointer at 1280, and the design gives
+ * each width a different minimum. Markup cannot tell those apart.
+ */
+test.describe("search filters (5.7)", () => {
+  test("5.7: every filter control is a real 44px target at 360px", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 1200 });
+    await page.goto("/measure");
+
+    const boxes = await page
+      .getByTestId("search-filters-harness")
+      .locator("span, select, input[type='text']")
+      .filter({ hasNot: page.locator("script") })
+      .evaluateAll((nodes) =>
+        nodes
+          .map((n) => n.getBoundingClientRect())
+          .filter((r) => r.width > 0 && r.height > 0)
+          .map((r) => Math.round(r.height)),
+      );
+
+    const controls = boxes.filter((h) => h >= 20);
+    console.log(`[5.7] 360px filter control heights: ${JSON.stringify(controls)}`);
+    // Declared in CSS is not rendered: a flex parent or a later shorthand can
+    // shrink these silently, and nobody notices until a thumb misses.
+    expect(Math.min(...controls)).toBeGreaterThanOrEqual(44);
+  });
+
+  test("5.7: the filter column never overflows a 360px screen", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 1200 });
+    await page.goto("/measure");
+
+    const overflow = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+
+    console.log(
+      `[5.7] 360px scrollWidth=${overflow.scrollWidth} clientWidth=${overflow.clientWidth}`,
+    );
+    // Four room chips and two price inputs in a row is the likeliest way this
+    // breaks, and a sideways-scrolling filter panel is one nobody finishes.
+    expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
+  });
+});

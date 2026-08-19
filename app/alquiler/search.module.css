@@ -1,0 +1,30 @@
+/* Artboard 2a's results column. */
+
+.count {
+  margin: 0 0 12px;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--soft);
+}
+
+.results {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.empty {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--bg);
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  line-height: 1.55;
+  color: var(--ink);
+}
