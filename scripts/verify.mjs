@@ -130,11 +130,13 @@ async function runE2E() {
       PLAYWRIGHT_BASE_URL: "http://localhost:3000",
     });
   } finally {
-    try {
-      process.kill(-server.pid, "SIGKILL");
-    } catch {
-      /* already gone */
-    }
+    // `server.kill()`, never `process.kill(-server.pid)`. The negative form
+    // signals a process GROUP, and when the child does not end up leading
+    // its own group that group is this script's -- so verify killed itself
+    // between the last gate and the summary. It printed no table and exited
+    // 0 whatever had failed, which is the one thing this file exists to
+    // prevent. The port sweep below still catches any orphan.
+    server.kill("SIGKILL");
     execSync("lsof -ti:3000 | xargs kill -9 || true", { shell: true, stdio: "ignore" });
   }
 }
