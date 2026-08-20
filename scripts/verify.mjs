@@ -108,7 +108,13 @@ function ensurePostgres() {
  * and naming its address makes the spec run.
  */
 async function runE2E() {
-  execSync("lsof -ti:3000 | xargs kill -9 || true", { shell: true, stdio: "ignore" });
+  // `-sTCP:LISTEN` is the whole fix. Without it `lsof -ti:3000` reports every
+  // process that has TOUCHED the port, clients included — and this script is
+  // one, because it polls the server with `fetch` below. So `xargs kill -9`
+  // killed verify itself, between the last gate and the summary: no table,
+  // and exit 0 no matter what had failed. Twice diagnosed wrongly before
+  // this: the process-group kill was a real bug but not this one.
+  execSync("lsof -ti:3000 -sTCP:LISTEN | xargs kill -9 || true", { shell: true, stdio: "ignore" });
 
   const server = spawn("pnpm", ["start"], { detached: true, stdio: "ignore" });
   try {
@@ -137,7 +143,10 @@ async function runE2E() {
     // 0 whatever had failed, which is the one thing this file exists to
     // prevent. The port sweep below still catches any orphan.
     server.kill("SIGKILL");
-    execSync("lsof -ti:3000 | xargs kill -9 || true", { shell: true, stdio: "ignore" });
+    execSync("lsof -ti:3000 -sTCP:LISTEN | xargs kill -9 || true", {
+      shell: true,
+      stdio: "ignore",
+    });
   }
 }
 
