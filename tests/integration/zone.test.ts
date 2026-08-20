@@ -70,8 +70,8 @@ function listingValues(publisherId: string, zoneId: string, cityId: string) {
 const INSERT_LISTING = `
   INSERT INTO "listing"
     (id, publisher_id, publisher_type, city_id, zone_id, title, description,
-     price_usd, rooms, area_m2, contact_method, contact_value, status, published_at, expires_at)
-  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'whatsapp','04121234567',$11,$12,$13)
+     price_usd, rooms, area_m2, bathrooms, contact_method, contact_value, status, published_at, expires_at)
+  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,2,'whatsapp','04121234567',$11,$12,$13)
 `;
 
 describe("D5 city isolation — listing(zone_id, city_id) -> zone(id, city_id)", () => {
@@ -139,8 +139,8 @@ describe("D5 city isolation — listing(zone_id, city_id) -> zone(id, city_id)",
       client.query(
         `INSERT INTO "listing"
            (id, publisher_id, city_id, zone_id, title, description,
-            price_usd, rooms, area_m2, contact_method, contact_value, status, published_at, expires_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'whatsapp','04121234567',$10,$11,$12)`,
+            price_usd, rooms, area_m2, bathrooms, contact_method, contact_value, status, published_at, expires_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,2,'whatsapp','04121234567',$10,$11,$12)`,
         [
           randomUUID(),
           publisherId,

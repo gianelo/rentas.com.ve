@@ -258,7 +258,7 @@ export function PublishForm({
 
         <Field
           name="parkingSpots"
-          label="Estacionamientos"
+          label="Garaje"
           help="Si no tiene, dejalo vacío."
           value={values.parkingSpots}
           error={errors.get("parkingSpots")}

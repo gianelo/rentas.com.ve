@@ -158,7 +158,7 @@ export const PUBLISH_VIOLATION_COPY: Record<PublishViolation, ViolationCopy> = {
   // names zero as a real answer rather than a way to skip the question.
   "parkingSpots.invalid": {
     field: "parkingSpots",
-    message: () => "Los estacionamientos, en números enteros. Si no tiene, poné 0.",
+    message: () => "Un número entero. Si no tiene, poné 0.",
   },
   // The reveal button's whole purpose. A listing without a contact is a dead
   // end wearing a button.
