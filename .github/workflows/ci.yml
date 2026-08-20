@@ -377,10 +377,24 @@ jobs:
           done
           exit $fail
 
-      - name: No preview deployment resolved
-        if: needs.preview.outputs.url == ''
+      # Warns on the MISSING SECRET too, not only on a missing preview. The
+      # old condition looked at the preview URL alone, so the run that had a
+      # published preview and no bypass secret -- which is every run today --
+      # fell back to the DB-less local build and said nothing at all. The
+      # specs that need a catalogue skipped themselves and the job reported
+      # green. Whichever half is absent, the read path went unverified, and
+      # this says which half so it is one action to fix rather than a hunt.
+      - name: E2E ran without a live deployment
+        if: env.PLAYWRIGHT_BASE_URL == ''
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET != '' && needs.preview.outputs.url || '' }}
         run: |
-          echo "::warning title=E2E/crawlability skipped::no Vercel preview deployment was published for this commit, so it was not verified against a live preview."
+          if [ -z "${{ needs.preview.outputs.url }}" ]; then
+            cause="no Vercel preview deployment was published for this commit"
+          else
+            cause="VERCEL_AUTOMATION_BYPASS_SECRET is not set on this repository, so the preview's SSO wall cannot be passed"
+          fi
+          echo "::warning title=Read path not verified::$cause. The suite fell back to a production build served locally against an unroutable database, so every spec that reads the catalogue skipped itself."
 
   budget:
     if: github.event_name == 'pull_request'
