@@ -54,8 +54,8 @@ const REVEALS = [
 async function insertListing(id: string) {
   await pool.query(
     `INSERT INTO "listing" (id, publisher_id, publisher_type, city_id, zone_id, title,
-       description, price_usd, rooms, area_m2, contact_method, contact_value, status, published_at, expires_at)
-     VALUES ($1,$2,'owner',$3,$4,'Título','x',450,2,78,'whatsapp','04121234567','active',now(),now() + interval '30 days')`,
+       description, price_usd, rooms, area_m2, bathrooms, contact_method, contact_value, status, published_at, expires_at)
+     VALUES ($1,$2,'owner',$3,$4,'Título','x',450,2,78,2,'whatsapp','04121234567','active',now(),now() + interval '30 days')`,
     [id, PUBLISHER, CITY, ZONE],
   );
 }

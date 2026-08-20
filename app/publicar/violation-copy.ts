@@ -35,6 +35,8 @@ export type PublishField =
   | "zoneId"
   | "rooms"
   | "areaM2"
+  | "bathrooms"
+  | "parkingSpots"
   | "photos"
   | "contactMethod"
   | "contactValue";
@@ -141,6 +143,22 @@ export const PUBLISH_VIOLATION_COPY: Record<PublishViolation, ViolationCopy> = {
   "areaM2.invalid": {
     field: "areaM2",
     message: () => "Los metros cuadrados, en números enteros. Por ejemplo: 78.",
+  },
+  "bathrooms.required": {
+    field: "bathrooms",
+    message: () => `${REQUIRED}. ¿Cuántos baños tiene?`,
+  },
+  "bathrooms.invalid": {
+    field: "bathrooms",
+    message: () => "Un número entero de baños. Contá el de servicio si lo tiene.",
+  },
+  // No `parkingSpots.required` exists, and that is deliberate: the field is
+  // optional and defaults to 0. This copy only fires when somebody typed
+  // something that is not a whole number -- so it says what shape to use and
+  // names zero as a real answer rather than a way to skip the question.
+  "parkingSpots.invalid": {
+    field: "parkingSpots",
+    message: () => "Un número entero. Si no tiene, poné 0.",
   },
   // The reveal button's whole purpose. A listing without a contact is a dead
   // end wearing a button.

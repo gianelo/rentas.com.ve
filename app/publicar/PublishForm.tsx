@@ -55,6 +55,8 @@ export interface PublishFormValues {
   readonly zoneId?: string;
   readonly rooms?: string;
   readonly areaM2?: string;
+  readonly bathrooms?: string;
+  readonly parkingSpots?: string;
   readonly contactMethod?: string;
   readonly contactValue?: string;
   readonly description?: string;
@@ -227,6 +229,39 @@ export function PublishForm({
           label="Metros cuadrados"
           value={values.areaM2}
           error={errors.get("areaM2")}
+        >
+          {(attributes) => <input {...attributes} type="text" inputMode="numeric" />}
+        </Field>
+      </FieldRow>
+
+      {/* Artboard 2b's stat strip draws four cells -- `2 HAB | 2 BAÑOS | 78 M²
+            | 1 PUESTO` -- and until now only two of them had a column behind
+            them. Like `habitaciones` and `metros²` above, the design RENDERS
+            these and never collects them; surfaced before building, and the
+            founder chose this shape (2026-08-20).
+
+            The two are deliberately asymmetric. `baños` is required, because
+            a blank cell beside three numbers reads as broken rather than as
+            absent. `puesto` defaults to 0 and says so in its help text, so
+            nobody has to type a zero to publish an anexo without parking --
+            and 0 is stored as the fact it is, not as a missing value. */}
+      <FieldRow>
+        <Field
+          name="bathrooms"
+          label="Baños"
+          help="Contá el de servicio si lo tiene."
+          value={values.bathrooms}
+          error={errors.get("bathrooms")}
+        >
+          {(attributes) => <input {...attributes} type="text" inputMode="numeric" />}
+        </Field>
+
+        <Field
+          name="parkingSpots"
+          label="Garaje"
+          help="Si no tiene, dejalo vacío."
+          value={values.parkingSpots}
+          error={errors.get("parkingSpots")}
         >
           {(attributes) => <input {...attributes} type="text" inputMode="numeric" />}
         </Field>

@@ -62,6 +62,8 @@ function draft(overrides: Partial<NewListing> = {}): NewListing {
     priceUsd: 520,
     rooms: 2,
     areaM2: 78,
+    bathrooms: 2,
+    parkingSpots: 1,
     contactMethod: "whatsapp",
     contactValue: "04121234567",
     status: "active",

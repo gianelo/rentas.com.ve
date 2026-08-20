@@ -50,6 +50,13 @@
       "when": 1787105409327,
       "tag": "0006_superb_nicolaos",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787185963068,
+      "tag": "0007_add_bathrooms_parking",
+      "breakpoints": true
     }
   ]
 }

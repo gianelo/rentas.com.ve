@@ -47,6 +47,8 @@ const VALUE_KEYS = [
   "zoneId",
   "rooms",
   "areaM2",
+  "bathrooms",
+  "parkingSpots",
   "description",
 ] as const;
 

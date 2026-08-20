@@ -35,6 +35,13 @@ export interface NewListing {
   readonly priceUsd: number;
   readonly rooms: number;
   readonly areaM2: number;
+  readonly bathrooms: number;
+  /**
+   * Required HERE even though the draft may omit it: by this layer the form's
+   * default has already been applied, and a row without it renders a blank
+   * cell in artboard 2b's four-cell strip.
+   */
+  readonly parkingSpots: number;
   /** Only `active` is reachable from publication; the rest are lifecycle. */
   /** Copied at publish time; editing the account default never rewrites it. */
   readonly contactMethod: ContactMethod;

@@ -86,6 +86,18 @@ describe("PublishForm", () => {
     expect(markup).toMatch(/metros/i);
   });
 
+  it("asks for bathrooms and parking, which artboard 2b renders and no artboard collects", () => {
+    const markup = render();
+
+    expect(markup).toContain('name="bathrooms"');
+    expect(markup).toContain('name="parkingSpots"');
+    // The parking help text carries the whole rule: a publisher must never
+    // have to type a zero to say their anexo has no puesto. If this sentence
+    // disappears the field silently becomes friction on the scarce side of
+    // the marketplace, and nothing else in the suite would notice.
+    expect(markup).toMatch(/si no tiene, dejalo vac/i);
+  });
+
   it("orders the fields the way the design lists them", () => {
     const markup = render();
     const order = [
@@ -96,6 +108,8 @@ describe("PublishForm", () => {
       "zoneId",
       "rooms",
       "areaM2",
+      "bathrooms",
+      "parkingSpots",
       "contactMethod",
       "contactValue",
     ];

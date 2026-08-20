@@ -67,6 +67,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
   readonly priceUsd: number;
   readonly rooms: number;
   readonly areaM2: number;
+  readonly bathrooms: number;
+  readonly parkingSpots: number;
 }> = [
   {
     city: "Distrito Capital",
@@ -78,6 +80,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     priceUsd: 520,
     rooms: 2,
     areaM2: 78,
+    bathrooms: 2,
+    parkingSpots: 1,
   },
   {
     city: "Distrito Capital",
@@ -89,6 +93,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     priceUsd: 320,
     rooms: 1,
     areaM2: 38,
+    bathrooms: 1,
+    parkingSpots: 0,
   },
   {
     city: "Distrito Capital",
@@ -100,6 +106,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     priceUsd: 900,
     rooms: 3,
     areaM2: 145,
+    bathrooms: 3,
+    parkingSpots: 2,
   },
   {
     city: "Distrito Capital",
@@ -111,6 +119,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     priceUsd: 610,
     rooms: 2,
     areaM2: 84,
+    bathrooms: 2,
+    parkingSpots: 1,
   },
   {
     city: "Distrito Capital",
@@ -122,6 +132,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     priceUsd: 430,
     rooms: 1,
     areaM2: 52,
+    bathrooms: 1,
+    parkingSpots: 1,
   },
   {
     city: "Distrito Capital",
@@ -133,6 +145,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     priceUsd: 750,
     rooms: 2,
     areaM2: 96,
+    bathrooms: 2,
+    parkingSpots: 1,
   },
   {
     city: "Maracaibo",
@@ -144,6 +158,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     priceUsd: 480,
     rooms: 3,
     areaM2: 120,
+    bathrooms: 3,
+    parkingSpots: 2,
   },
   {
     city: "Maracaibo",
@@ -155,6 +171,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     priceUsd: 250,
     rooms: 1,
     areaM2: 34,
+    bathrooms: 1,
+    parkingSpots: 0,
   },
   {
     city: "Maracaibo",
@@ -166,6 +184,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     priceUsd: 690,
     rooms: 2,
     areaM2: 92,
+    bathrooms: 2,
+    parkingSpots: 1,
   },
   {
     city: "Maracaibo",
@@ -177,6 +197,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     priceUsd: 380,
     rooms: 2,
     areaM2: 68,
+    bathrooms: 2,
+    parkingSpots: 1,
   },
 ];
 
@@ -332,6 +354,8 @@ export async function seed(database?: SeedDatabase): Promise<void> {
         priceUsd: listing.priceUsd,
         rooms: listing.rooms,
         areaM2: listing.areaM2,
+        bathrooms: listing.bathrooms,
+        parkingSpots: listing.parkingSpots,
         // Seeded listings are demo data, so the contact is deliberately
         // UNUSABLE. Inventing a plausible number would put a contact into
         // the product that nobody owns, and the reveal button would hand a
