@@ -19,6 +19,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "node scripts/deploy-migrate.mjs && next build",
     "start": "next start",
     "lint": "biome check .",
     "lint:tokens": "node scripts/lint-tokens.mjs",
@@ -29,6 +30,7 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "playwright test",
     "test:measure": "playwright test --config=playwright.measure.config.ts",
+    "verify": "node scripts/verify.mjs",
     "budget:bundle": "tsx scripts/budget-bundle.ts",
     "budget:lighthouse": "[ -n \"$PREVIEW_BASE_URL\" ] || { echo 'budget:lighthouse: PREVIEW_BASE_URL is not set -- this gate asserts against a deployed preview, see .github/workflows/ci.yml budget job' >&2; exit 1; }; lhci autorun --collect.url=\"$PREVIEW_BASE_URL/\"",
     "db:generate": "drizzle-kit generate",
