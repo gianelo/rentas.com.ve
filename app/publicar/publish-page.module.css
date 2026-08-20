@@ -1,13 +1,16 @@
 /* Screen 3 chrome, artboard 2c. The bar spans the full width while its
-   contents stay inside the 1100px container the whole product uses; the form
-   column below is 600px, centred, at every width wide enough for it. */
+   contents stay inside the container the whole product uses; the form column
+   below is centred at every width wide enough for it. Both widths come from
+   --container-max and --form-max now rather than the 1100px/600px literals
+   that used to be written here, so they move with the viewport scale
+   together instead of one of them staying behind. */
 
 .bar {
   border-block-end: 1px solid var(--line);
 }
 
 .barInner {
-  max-inline-size: 1100px;
+  max-inline-size: var(--container-max);
   margin-inline: auto;
   min-block-size: var(--brandbar-h);
   display: flex;

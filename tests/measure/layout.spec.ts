@@ -326,3 +326,90 @@ test.describe("search filters (5.7)", () => {
     expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
   });
 });
+
+/**
+ * Viewport scale (founder, 2026-08-20: "la veo muy pequeña reducida… 1080p,
+ * 1440p y 4k").
+ *
+ * The design is drawn at 360 and 1280 and says nothing above that, so
+ * everything held its 1280 size while the viewport grew: the 1100px
+ * container was 57% of a 1080p screen, 43% of 1440p and 29% of 4K. A single
+ * `--scale` multiplier now steps at each of the three named screens.
+ *
+ * Measured here rather than asserted from the stylesheet, because the
+ * defect this found was invisible in CSS: `app/search.module.css` still
+ * carried a 1100px literal, so at 1440p the brand bar rendered 1100px wide
+ * against a 1375px container and the wordmark sat inset from the listings
+ * it belongs to. Only rendered geometry says that.
+ */
+test.describe("viewport scale (1080p, 1440p, 4K)", () => {
+  const STEPS = [
+    { label: "1280 base", width: 1280, scale: 1 },
+    { label: "1080p", width: 1920, scale: 1.1 },
+    { label: "1440p", width: 2560, scale: 1.25 },
+    { label: "4K", width: 3840, scale: 1.5 },
+  ];
+
+  for (const { label, width, scale } of STEPS) {
+    test(`${label}: the scale step is ${scale} and the bar tracks the container`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/");
+
+      const measured = await page.evaluate(() => {
+        const find = (needle: string) =>
+          [...document.querySelectorAll("div")].find((element) =>
+            element.className.includes(needle),
+          );
+        const container = find("Container_container");
+        const bar = find("barInner");
+        return {
+          scale: Number.parseFloat(
+            getComputedStyle(document.documentElement).getPropertyValue("--scale"),
+          ),
+          container: container ? Math.round(container.getBoundingClientRect().width) : 0,
+          bar: bar ? Math.round(bar.getBoundingClientRect().width) : 0,
+          overflows: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+        };
+      });
+
+      console.log(
+        `[scale] ${label} (${width}px): --scale ${measured.scale}, container ${measured.container}px, bar ${measured.bar}px`,
+      );
+
+      expect(measured.scale).toBe(scale);
+      expect(measured.container).toBe(Math.round(1100 * scale));
+      // The defect that shipped: these two disagreed by 275px at 1440p.
+      expect(measured.bar).toBe(measured.container);
+      expect(measured.overflows).toBe(false);
+    });
+  }
+
+  test("interactive targets only ever grow — 36px desktop stays a floor", async ({ page }) => {
+    const heights: number[] = [];
+
+    for (const { width } of STEPS) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/");
+      const smallest = await page.evaluate(() =>
+        Math.min(
+          ...[...document.querySelectorAll("a[class], button, input, select")]
+            .map((element) => element.getBoundingClientRect().height)
+            .filter((height) => height > 4),
+        ),
+      );
+      heights.push(Math.round(smallest));
+    }
+
+    console.log(`[scale] smallest interactive target per step: ${heights.join(", ")}px`);
+
+    // SISTEMA.md's desktop floor. A multiplier below 1 anywhere would breach
+    // it silently, which is why --scale is documented as never scaling down.
+    for (const height of heights) expect(height).toBeGreaterThanOrEqual(36);
+    // Monotonic: a later step must never be smaller than an earlier one.
+    for (let index = 1; index < heights.length; index += 1) {
+      expect(heights[index]).toBeGreaterThanOrEqual(heights[index - 1] as number);
+    }
+  });
+});

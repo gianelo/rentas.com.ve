@@ -17,7 +17,13 @@
 
 @media (min-width: 768px) {
   .container {
-    max-width: 1100px;
+    /* `--container-max` rather than the 1100px literal that used to be here.
+       The number is still SISTEMA.md's; what changed is that it now rides
+       the viewport scale, so the container grows with the text inside it
+       instead of holding 1100px while a 4K screen leaves 1370px empty on
+       each side. Measured before the change: 57% of a 1080p viewport, 43%
+       of 1440p, 29% of 4K. */
+    max-width: var(--container-max);
     padding-inline: 0;
   }
 }

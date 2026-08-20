@@ -164,21 +164,23 @@ if (skipSlow) {
   console.log("\n\x1b[33m--fast: measure, build, budget and e2e were NOT run.\x1b[0m");
   console.log("They are the four gates that need a browser or a build. Do not push on --fast.");
 } else {
-  // Before the production build, because its dev server overwrites `.next`.
-  results.push(run("measure", "pnpm test:measure"));
-  // **`rm -rf` is the load-bearing half, and ordering alone was not enough.**
-  // `next dev` and `next build` write DIFFERENT artefacts into the same
-  // directory, and building over a development `.next` produces a server that
-  // starts, serves every route as 500, and says only
-  // `TypeError: a[d] is not a function`.
+  // **Order, take two.** The first version ran measure -> build -> budget,
+  // reasoning that the dev server writes `.next` so the build should follow
+  // it. It does write `.next` — and it KEEPS writing after its step returns,
+  // because `playwright.measure.config.ts` starts a Next dev server that
+  // outlives the run. So `budget` found `.next/static/development` and
+  // refused, and e2e had no production build to serve.
   //
-  // Found by this script's own first run, and the detail worth keeping is
-  // which gate stayed quiet: `budget` reported PASS against that build. It
-  // measured a bundle that could not serve a single page.
+  // Refusing was correct: that guard exists because `budget:bundle` once
+  // reported 1,854,100 bytes off a dev build. What was wrong was this file
+  // handing it a directory something else still owned.
+  //
+  // Measure goes LAST now. Nothing follows it, so it can clobber `.next`
+  // freely, and the production build serves budget and e2e undisturbed.
   results.push(run("build", "rm -rf .next && pnpm build"));
-  // Both read the build above rather than making their own.
   results.push(run("budget", "pnpm budget:bundle"));
   results.push(await runE2E());
+  results.push(run("measure", "pnpm test:measure"));
 }
 
 const failed = results.filter((result) => !result.ok);

@@ -12,7 +12,12 @@
      fields floating inside it. A markup test cannot see that; only a browser
      can. */
   inline-size: 100%;
-  max-width: 600px;
+  /* `--form-max`, not 600px. The width still comes from SISTEMA.md; it now
+     rides the viewport scale so the form grows with its own type. D14 is
+     untouched by that: what it forbids is a form whose labels drift away
+     from their fields, and characters-per-line is exactly what stays fixed
+     when both the width and the text scale by the same multiplier. */
+  max-width: var(--form-max);
   margin-inline: auto;
 
   /* It stacks what it holds, so the heading, the form and anything else a

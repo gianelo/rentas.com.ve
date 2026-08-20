@@ -95,7 +95,13 @@ const ZERO_PATTERN = /^0(\.0+)?(px|%|em|rem)?$/;
 
 // Matches one CSS declaration and captures its property name and raw value.
 const DECLARATION_PATTERN = new RegExp(
-  `\\b(${[...COLOUR_PROPERTIES, ...SHORTHAND_COLOUR_PROPERTIES, "border-radius", "font-size", "width", "height"].join("|")})\\s*:\\s*([^;]+);`,
+  // `max-width` and `max-inline-size` come BEFORE `width` in the alternation
+  // on purpose. Regex alternation takes the first branch that matches, and
+  // `\bwidth` finds a word boundary inside `max-width` — so with `width`
+  // listed first, `max-width: 1100px` was read as a `width` declaration,
+  // checked against the thumbnail dimensions, and passed. That is precisely
+  // how the structural-width rule below shipped inert.
+  `\\b(${[...COLOUR_PROPERTIES, ...SHORTHAND_COLOUR_PROPERTIES, "border-radius", "font-size", "max-width", "max-inline-size", "width", "height"].join("|")})\\s*:\\s*([^;]+);`,
   "g",
 );
 
@@ -129,7 +135,7 @@ function isZero(value) {
  *   split...) that SISTEMA.md specifies as a literal on purpose and that
  *   tokens.css does not tokenize.
  */
-function classifyViolation(property, rawValue, thumbnailDimensions) {
+function classifyViolation(property, rawValue, thumbnailDimensions, structuralWidths) {
   const value = rawValue.trim();
 
   if (COLOUR_PROPERTIES.has(property) || SHORTHAND_COLOUR_PROPERTIES.has(property)) {
@@ -151,6 +157,25 @@ function classifyViolation(property, rawValue, thumbnailDimensions) {
   }
   if (property === "font-size") {
     return value.startsWith("var(") ? null : "type size literal";
+  }
+  if (property === "max-width" || property === "max-inline-size") {
+    // **The fifth rule, added 2026-08-20 after this exact defect shipped.**
+    // 1100px and 600px were allowed literals for as long as they never
+    // moved — SISTEMA.md states them, and D16's four categories are colour,
+    // radius, thumbnail and type. The moment they started riding --scale
+    // they became second copies of a number that must agree, and one of
+    // them silently stopped agreeing: at 1440p the search bar held 1100px
+    // while the results container held 1375px, so the wordmark sat inset
+    // from the listings it belongs to.
+    //
+    // Nothing caught it. It was found by measuring a screenshot. This rule
+    // is what a gate for it looks like.
+    if (isZero(value) || value.startsWith("var(") || value === "100%" || value === "none") {
+      return null;
+    }
+    return structuralWidths.has(value)
+      ? `structural width literal (matches src/styles/tokens.css's --container-max/--form-max — use the custom property, not the value, or it will stop scaling with the viewport)`
+      : null;
   }
   if (property === "width" || property === "height") {
     if (isZero(value)) return null;
@@ -183,7 +208,7 @@ function collectFiles(root) {
   return files;
 }
 
-function findViolations(filePath, thumbnailDimensions) {
+function findViolations(filePath, thumbnailDimensions, structuralWidths) {
   const content = readFileSync(filePath, "utf-8");
   const lines = content.split("\n");
   /** @type {{ file: string, line: number, rule: string, snippet: string }[]} */
@@ -194,7 +219,7 @@ function findViolations(filePath, thumbnailDimensions) {
     let match = DECLARATION_PATTERN.exec(lineText);
     while (match) {
       const [, property, rawValue] = match;
-      const rule = classifyViolation(property, rawValue, thumbnailDimensions);
+      const rule = classifyViolation(property, rawValue, thumbnailDimensions, structuralWidths);
       if (rule) {
         violations.push({
           file: relative(process.cwd(), filePath),
@@ -331,6 +356,21 @@ function checkThemeContract(cssText) {
   return issues;
 }
 
+/**
+ * The base widths behind --container-max and --form-max, read from their own
+ * `calc(Npx * var(--scale))` declarations rather than repeated here. A rule
+ * that hard-coded 1100 and 600 would be the very duplication it exists to
+ * forbid.
+ */
+function getStructuralWidthValues(cssText) {
+  const widths = new Set();
+  for (const name of ["--container-max", "--form-max"]) {
+    const match = cssText.match(new RegExp(`${name}:\\s*calc\\(\\s*(\\d+px)`));
+    if (match) widths.add(match[1]);
+  }
+  return widths;
+}
+
 function getThumbnailDimensionValues(cssText) {
   if (cssText === null) return new Set();
   const layoutBlock = extractBlock(cssText, LAYOUT_SELECTOR);
@@ -347,6 +387,7 @@ function getThumbnailDimensionValues(cssText) {
 function main() {
   const tokensCss = readTokensCss();
   const thumbnailDimensions = getThumbnailDimensionValues(tokensCss);
+  const structuralWidths = getStructuralWidthValues(tokensCss);
   const themeContractIssues = checkThemeContract(tokensCss);
 
   const files = SCAN_ROOTS.flatMap((root) => collectFiles(root));
@@ -360,7 +401,9 @@ function main() {
     console.log(`lint:tokens: ${files.length} component style file(s) scanned.`);
   }
 
-  const styleViolations = files.flatMap((file) => findViolations(file, thumbnailDimensions));
+  const styleViolations = files.flatMap((file) =>
+    findViolations(file, thumbnailDimensions, structuralWidths),
+  );
 
   if (styleViolations.length === 0 && themeContractIssues.length === 0) {
     console.log(

@@ -36,7 +36,13 @@
 }
 
 .barInner {
-  max-inline-size: 1100px;
+  /* `--container-max`, not the literal it used to be. The literal was
+     defensible while 1100px never moved; the moment the container started
+     riding --scale it became a second copy of a number that must agree, and
+     it silently stopped agreeing: at 1440p this bar measured 1100px while
+     the results below it measured 1375px, so the wordmark sat inset from
+     the listings it belongs to. Found by measuring, not by a gate. */
+  max-inline-size: var(--container-max);
   margin-inline: auto;
   min-block-size: var(--brandbar-h);
   display: flex;

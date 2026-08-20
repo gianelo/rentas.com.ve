@@ -40,8 +40,44 @@
      control: 36px en escritorio, 44px en móvil"). Not part of the
      shipped reference tokens.css — added here because PR1b-b's buttons
      need it and D16 forbids inlining a size the token set doesn't name. */
-  --target-min: 44px;
-  --target-min-desktop: 36px;
+  /* ---------- viewport scale (founder, 2026-08-20) ----------
+
+     **The design is drawn at 360 and 1280 and says nothing above that.**
+     Measured on the founder's own screen before deciding anything: the
+     1100px container is 57% of a 1080p viewport, 43% of 1440p and 29% of
+     4K — and everything inside it stays the size it was at 1280, which is
+     what "se ve muy pequeña" actually describes.
+
+     Two different complaints hide in that sentence and they have opposite
+     fixes. Widening the container fills the empty margin but makes nothing
+     bigger: 15px text is still 15px text on a 4K panel. Scaling the system
+     makes everything bigger, which is the one that matches what was seen.
+
+     Scaling is also the ONLY correction available to the publish form.
+     SISTEMA.md fixes it at 600px in one column and design.md D14 says why —
+     a wide form loses the relationship between a label and its field — so
+     widening it is forbidden by the design itself. Under a multiplier the
+     form grows while its characters-per-line stays put, which is the part
+     D14 actually protects.
+
+     One multiplier rather than a redeclared value per token, because the
+     failure mode of the second is two sizes scaling by different amounts
+     and a layout that only comes apart on a screen nobody here owns.
+
+     Three steps, because three screens were named. The floor is 1: nothing
+     ever scales DOWN, which is what keeps --target-min a real 44px minimum
+     rather than an accident of arithmetic. */
+  --scale: 1;
+
+  /* Structural widths, tokenized here for the first time. Both were literals
+     inside their own stylesheets (Container 1100px, FormShell 600px), which
+     was defensible while they never changed and is not any more: they have
+     to move with --scale, and a literal cannot. */
+  --container-max: calc(1100px * var(--scale));
+  --form-max: calc(600px * var(--scale));
+
+  --target-min: calc(44px * var(--scale));
+  --target-min-desktop: calc(36px * var(--scale));
 
   /* Badge and metadata typography (SISTEMA.md "Badge / etiqueta",
      "Metadato"). Fixed across all layout/theme sets in the design
@@ -50,17 +86,17 @@
      [data-layout] block. Added for the same reason as --target-min: D16
      forbids a type-size literal, and the shipped subset did not carry
      these values yet. */
-  --badge-fs: 11px;
+  --badge-fs: calc(11px * var(--scale));
   /* Small monospaced metadata — the step label and the "4 de 6" counter.
      Artboard 2g sets 11px against --meta-fs's 12px, and the two are used in
      different places, so they are different tokens rather than one rounded. */
-  --meta-fs-sm: 11px;
+  --meta-fs-sm: calc(11px * var(--scale));
   /* The photo thumbnail's corner. Artboard 2g draws 6px here rather than the
      card radius: a 12px round on a 64x48 image eats the image. */
   --r-thumb: 6px;
   --badge-fw: 700;
   --badge-ls: 0.06em;
-  --meta-fs: 12px;
+  --meta-fs: calc(12px * var(--scale));
   --meta-fw: 600;
 
   /* Page title and brand wordmark (SISTEMA.md "Tipografía" — "Título de
@@ -79,8 +115,8 @@
      (design/reference/sistema/pantallas-compacto-menta.html). Not --fp,
      which happens to share the value but means "price" — two meanings on one
      token is how a price change silently resizes every text input. */
-  --control-fs: 15px;
-  --title-fs: 20px;
+  --control-fs: calc(15px * var(--scale));
+  --title-fs: calc(20px * var(--scale));
   --title-fw: 700;
   --title-lh: 1.25;
   /* The brand is the word "rentas." set in the display face — SISTEMA.md
@@ -93,8 +129,8 @@
      mobile, "barra 56px" on desktop). Structural, but tokenized because
      every screen in the system carries this bar and a literal would drift
      between them. */
-  --brandbar-h: 48px;
-  --brandbar-h-desktop: 56px;
+  --brandbar-h: calc(48px * var(--scale));
+  --brandbar-h-desktop: calc(56px * var(--scale));
 
   /* Redrawn by the founder from menta's own palette (2026-08-18), replacing
      an amber theme that shared nothing with it. `--surface` is menta's
@@ -121,18 +157,24 @@
 
 /* ---------- data-layout: compacto (shipped structure) ---------- */
 [data-layout="compacto"] {
-  --tw: 44px;
-  --th: 34px;
-  --twd: 64px;
-  --thd: 48px;
-  --gap: 8px;
-  --rowpad: 7px 12px;
-  --fp: 15px;
-  --fpb: 26px;
+  /* Every SIZE here rides --scale; the weights below do not, because 700 is
+     not a dimension. --rowpad keeps its two components in proportion rather
+     than scaling one, or the row's vertical and horizontal rhythm drift
+     apart as the screen grows. */
+  --tw: calc(44px * var(--scale));
+  --th: calc(34px * var(--scale));
+  --twd: calc(64px * var(--scale));
+  --thd: calc(48px * var(--scale));
+  --gap: calc(8px * var(--scale));
+  --rowpad: calc(7px * var(--scale)) calc(12px * var(--scale));
+  --fp: calc(15px * var(--scale));
+  --fpb: calc(26px * var(--scale));
   --fpw: 700;
-  --ft: 13px;
+  --ft: calc(13px * var(--scale));
   --ftw: 400;
-  --tclamp: 36px;
+  /* Scales with --ft deliberately: it clamps the title to two lines, and a
+     fixed clamp against growing text would show three. */
+  --tclamp: calc(36px * var(--scale));
   --disp: var(--mono);
   /* New in the 2026-08-18 design update. Metadata — counts, file sizes, step
      labels — is monospaced so numbers line up in a column. It is declared
@@ -200,3 +242,31 @@
 
    Dark mode is a theme, and choosing a theme is the founder's decision:
    `data-theme="oscuro"` already exists and is one attribute away. */
+
+/* ---------- viewport steps (founder, 2026-08-20) ----------
+
+   1080p, 1440p and 4K, the three screens named. The multipliers are
+   deliberately modest: this scales a system that was drawn at 1280, and
+   the failure mode of an eager number is a 4K screen showing four listings
+   where it should show ten.
+
+   The last step is 3400px rather than 3840px so an OS-scaled 4K panel — the
+   common case, where the CSS viewport reports well under its pixel count —
+   still lands on the step meant for it rather than one below. */
+@media (min-width: 1920px) {
+  :root {
+    --scale: 1.1;
+  }
+}
+
+@media (min-width: 2560px) {
+  :root {
+    --scale: 1.25;
+  }
+}
+
+@media (min-width: 3400px) {
+  :root {
+    --scale: 1.5;
+  }
+}
