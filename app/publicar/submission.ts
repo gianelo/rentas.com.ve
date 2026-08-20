@@ -34,6 +34,8 @@ const VALUE_KEYS = [
   "zoneId",
   "rooms",
   "areaM2",
+  "bathrooms",
+  "parkingSpots",
   "contactMethod",
   "contactValue",
   "description",
@@ -68,6 +70,12 @@ export function toDraft(values: PublishFormValues): DraftListing {
     zoneId: values.zoneId,
     rooms: number(values.rooms),
     areaM2: number(values.areaM2),
+    bathrooms: number(values.bathrooms),
+    // **`?? 0`, and only here.** `readValues` drops empty strings, so a
+    // publisher who leaves the field alone arrives as `undefined` -- and for
+    // this one field that means "no parking", which is an answer. Every other
+    // number stays `undefined` so the validator can ask for it.
+    parkingSpots: number(values.parkingSpots) ?? 0,
     contactMethod: values.contactMethod as DraftListing["contactMethod"],
     contactValue: values.contactValue,
     // Step 2's business. Declared so the validator sees a complete draft and

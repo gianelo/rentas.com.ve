@@ -132,6 +132,8 @@ function request(overrides: Record<string, unknown> = {}) {
     zoneId: ZONE,
     rooms: 2,
     areaM2: 78,
+    bathrooms: 2,
+    parkingSpots: 1,
     contactMethod: "whatsapp" as const,
     contactValue: "04121234567",
     photos: submittedPhotos(1),
@@ -158,6 +160,20 @@ describe("publishListing", () => {
       status: "active",
       publishedAt: NOW,
     });
+  });
+
+  it("stores zero parking when the draft never mentioned it", async () => {
+    const dependencies = deps();
+
+    await publishListing(request({ parkingSpots: undefined }), dependencies);
+
+    // The one field read through `??` instead of `present()`. Every other
+    // column throws when it arrives undefined, because a missing value there
+    // means the validator stopped covering it -- but "no parking" is a real
+    // answer, so a draft that omits it is complete, and the row still gets
+    // the number artboard 2b's strip has to render.
+    expect(dependencies.listings.saved[0]?.parkingSpots).toBe(0);
+    expect(dependencies.listings.saved[0]?.bathrooms).toBe(2);
   });
 
   it("expires the listing 30 days after publication", async () => {

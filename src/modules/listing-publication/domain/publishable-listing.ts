@@ -36,6 +36,14 @@ export interface DraftListing {
   readonly photoCount?: number;
   readonly rooms?: number;
   readonly areaM2?: number;
+  readonly bathrooms?: number;
+  /**
+   * Optional on the DRAFT, never on the row. The form supplies 0 when the
+   * publisher leaves it alone, so `undefined` here means "the caller never
+   * asked", not "the property has no parking" -- and only the second is a
+   * fact worth storing.
+   */
+  readonly parkingSpots?: number;
 }
 
 /** A curated zone, scoped to its city. Free-text zones do not exist (D5). */
@@ -67,6 +75,9 @@ export type PublishViolation =
   | "rooms.invalid"
   | "areaM2.required"
   | "areaM2.invalid"
+  | "bathrooms.required"
+  | "bathrooms.invalid"
+  | "parkingSpots.invalid"
   | "photos.required"
   | "contactMethod.required"
   | "contactMethod.invalid"
@@ -157,6 +168,15 @@ function isWholePositiveNumber(value: number): boolean {
 }
 
 /**
+ * Separate from the one above because ZERO IS A REAL ANSWER for parking and
+ * a wrong one everywhere else. Reusing `isWholePositiveNumber` would refuse
+ * "no parking", and defaulting a missing value to 0 would silently claim it.
+ */
+function isWholeNonNegativeNumber(value: number): boolean {
+  return Number.isInteger(value) && value >= 0;
+}
+
+/**
  * Returns EVERY violation, never throwing and never stopping at the first.
  * The form shows per-field errors, and a fail-fast validator cannot fill
  * that screen: a publisher who left three fields empty would fix one,
@@ -242,6 +262,29 @@ export function validatePublishableListing(
     violations.push("areaM2.required");
   } else if (!isWholePositiveNumber(draft.areaM2)) {
     violations.push("areaM2.invalid");
+  }
+
+  // Artboard 2b's stat strip reads `2 HAB | 2 BAÑOS | 78 M² | 1 PUESTO`, and
+  // the four cells are drawn identically -- there is no empty state for one
+  // of them. That is what decides the shape of these two rules.
+  //
+  // Bathrooms is required and positive: a home has at least one, and a blank
+  // cell in a strip whose neighbours carry numbers reads as broken rather
+  // than as absent.
+  if (draft.bathrooms === undefined) {
+    violations.push("bathrooms.required");
+  } else if (!isWholePositiveNumber(draft.bathrooms)) {
+    violations.push("bathrooms.invalid");
+  }
+
+  // Parking is the one field where zero is a fact rather than a gap: an
+  // anexo with no puesto is a normal listing, and saying so is information a
+  // tenant filters on. So there is no `parkingSpots.required` -- the form
+  // sends 0 by default, and `undefined` is caught downstream by `present()`
+  // rather than here, because a caller that omitted it entirely has a bug
+  // the publisher cannot fix by editing a field.
+  if (draft.parkingSpots !== undefined && !isWholeNonNegativeNumber(draft.parkingSpots)) {
+    violations.push("parkingSpots.invalid");
   }
 
   // The contact is what the whole product exists to deliver: a tenant finds

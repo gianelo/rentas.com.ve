@@ -183,6 +183,18 @@ export const listings = pgTable(
     priceUsd: integer("price_usd").notNull(),
     rooms: integer("rooms").notNull(),
     areaM2: integer("area_m2").notNull(),
+    // Artboard 2b's stat strip: `2 HAB | 2 BAÑOS | 78 M² | 1 PUESTO`. Both
+    // are NOT NULL because the strip draws four identical cells and has no
+    // empty state for one of them.
+    bathrooms: integer("bathrooms").notNull(),
+    // **Defaulted to 0 in the database as well as the form**, and the two
+    // serve different callers: the form so a publisher never has to type a
+    // zero to say "no parking", the column so the broker bulk import
+    // (Phase 9) cannot produce a row the detail page renders blank.
+    //
+    // Zero is a FACT here, not a missing value -- an anexo with no puesto is
+    // an ordinary listing, and saying so is something a tenant filters on.
+    parkingSpots: integer("parking_spots").notNull().default(0),
     // active | expired | hidden. Search shows `active` only (tasks.md
     // 5.5/5.6); `hidden` is the auto-hide state from reports (Phase 8).
     status: text("status").$type<"active" | "expired" | "hidden">().notNull(),

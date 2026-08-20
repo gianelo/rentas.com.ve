@@ -53,6 +53,8 @@ function draft(overrides: Partial<DraftListing> = {}): DraftListing {
     photoCount: 1,
     rooms: 2,
     areaM2: 78,
+    bathrooms: 2,
+    parkingSpots: 1,
     ...overrides,
   };
 }
@@ -146,6 +148,62 @@ describe("validatePublishableListing", () => {
       // on purpose: `area_m2` already carries the size, and a zero here reads
       // as "unknown" everywhere it is rendered.
       expect(validatePublishableListing(draft({ rooms: 1 }), ZONES)).toEqual([]);
+    });
+  });
+
+  /**
+   * Artboard 2b draws a four-cell stat strip -- `2 HAB | 2 BAÑOS | 78 M² |
+   * 1 PUESTO` -- and two of the cells had no column behind them until now.
+   *
+   * The two fields are deliberately ASYMMETRIC, and that asymmetry is the
+   * only thing worth testing here: for bathrooms an absent value is a gap,
+   * for parking it is an answer.
+   */
+  describe("bathrooms and parking — the same strip, opposite rules", () => {
+    it("refuses a draft with no bathroom count", () => {
+      // A blank cell beside three numbers reads as broken rather than as
+      // absent, so the strip has no empty state to fall back on.
+      expect(validatePublishableListing(draft({ bathrooms: undefined }), ZONES)).toContain(
+        "bathrooms.required",
+      );
+    });
+
+    it.each([
+      ["negative", -1],
+      ["zero", 0],
+      ["fractional", 1.5],
+      ["not a number", Number.NaN],
+    ])("rejects a %s bathroom count", (_label, bathrooms) => {
+      // Zero is refused here and accepted for parking two tests below. That
+      // is the whole distinction: a home has a bathroom, and a listing
+      // claiming none is a typo rather than a property.
+      expect(validatePublishableListing(draft({ bathrooms }), ZONES)).toContain(
+        "bathrooms.invalid",
+      );
+    });
+
+    it("accepts a listing with no parking, stated as zero", () => {
+      // An anexo without a puesto is an ordinary listing, and zero is the
+      // FACT that says so -- not a missing value dressed as one.
+      expect(validatePublishableListing(draft({ parkingSpots: 0 }), ZONES)).toEqual([]);
+    });
+
+    it("does not require parking at all", () => {
+      // No `parkingSpots.required` code exists. A publisher who never touched
+      // the field has still produced a publishable listing, which is what
+      // keeps the extra field from becoming extra friction on the one side of
+      // this marketplace that is scarce.
+      expect(validatePublishableListing(draft({ parkingSpots: undefined }), ZONES)).toEqual([]);
+    });
+
+    it.each([
+      ["negative", -1],
+      ["fractional", 1.5],
+      ["infinite", Number.POSITIVE_INFINITY],
+    ])("rejects a %s parking count", (_label, parkingSpots) => {
+      expect(validatePublishableListing(draft({ parkingSpots }), ZONES)).toContain(
+        "parkingSpots.invalid",
+      );
     });
   });
 

@@ -56,6 +56,8 @@ export class DrizzleListingRepository implements ListingRepositoryPort {
         priceUsd: listing.priceUsd,
         rooms: listing.rooms,
         areaM2: listing.areaM2,
+        bathrooms: listing.bathrooms,
+        parkingSpots: listing.parkingSpots,
         contactMethod: listing.contactMethod,
         contactValue: listing.contactValue,
         status: listing.status,

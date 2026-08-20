@@ -33,6 +33,9 @@ const EVERY_VIOLATION: readonly PublishViolation[] = [
       zoneId: "zone-unknown",
       rooms: 0,
       areaM2: 0,
+      // `bathrooms` omitted, not zeroed, so this one draft raises BOTH
+      // `bathrooms.required` and -- through the next fixture -- `.invalid`.
+      parkingSpots: -1,
       photoCount: 99,
     },
     [{ id: "zone-chacao", cityId: "city-capital" }],
@@ -43,6 +46,11 @@ const EVERY_VIOLATION: readonly PublishViolation[] = [
   // an entry in the map — which is the point. A code nothing can produce is
   // copy nobody will ever read.
   ...validatePublishableListing({ description: "x".repeat(MAX_DESCRIPTION_CHARACTERS + 1) }, []),
+  // Same reasoning, for `bathrooms`: a draft cannot omit the field and hold
+  // an invalid value at once, so reaching `bathrooms.invalid` costs its own
+  // fixture. That cost is the guard working -- it is what stops copy being
+  // written for a code nothing can raise.
+  ...validatePublishableListing({ bathrooms: 0 }, []),
   // A fourth and fifth draft for the contact's invalid shapes: a method
   // outside the three offered, and a value the chosen method refuses. The
   // drafts above reach both `required` codes but neither `invalid` one.
@@ -68,7 +76,12 @@ describe("publish violation copy", () => {
     const written = Object.keys(PUBLISH_VIOLATION_COPY).sort();
 
     expect(written).toEqual(reachable);
-    expect(reachable).toHaveLength(22);
+    // 25, up from 22 when `bathrooms` and `parkingSpots` arrived. The number
+    // is asserted rather than derived: `written` and `reachable` are both
+    // computed from the code, so a rule DELETED from the domain would empty
+    // one and match the other. This line is what notices a rule going
+    // missing, which is why it is worth updating by hand.
+    expect(reachable).toHaveLength(25);
   });
 
   it("gives every code a real sentence, not a placeholder", () => {

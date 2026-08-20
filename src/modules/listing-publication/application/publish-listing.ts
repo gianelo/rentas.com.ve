@@ -136,6 +136,12 @@ export async function publishListing(
     priceUsd: present(request.priceUsd, "priceUsd"),
     rooms: present(request.rooms, "rooms"),
     areaM2: present(request.areaM2, "areaM2"),
+    bathrooms: present(request.bathrooms, "bathrooms"),
+    // The ONE field read through `??` rather than `present`, and the reason
+    // is that its absence is answerable and every other field's is not. Zero
+    // parking is a fact the domain deliberately does not require anyone to
+    // state, so a draft that omits it is complete rather than broken.
+    parkingSpots: request.parkingSpots ?? 0,
     contactMethod: present(request.contactMethod, "contactMethod"),
     contactValue: present(request.contactValue, "contactValue"),
     status: "active",
