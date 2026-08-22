@@ -1529,6 +1529,623 @@ Se listan **todos** los casos detectados (94).
 | Edificaciones identificadas individualmente | 12 |
 | **Total de elementos sub-parroquiales** | **779** |
 
+# Índice de topónimos
+
+Índice alfabético de **cómo se busca** cada zona. Un mismo topónimo puede aparecer con varias etiquetas y en varias parroquias: acá se ven todas juntas.
+
+**Este índice no crea zonas.** Cada topónimo se extrae del nombre que la fuente ya publica, quitándole únicamente la palabra de categoría (`Barrio`, `Sector`, `Urbanización`, `Conjunto Residencial`, `Parcelamiento`, `Caserío`, `Casco Central de`, `Centro de`, `Zona Industrial`, `Oficina Postal Telegráfica`). Cuando un nombre entierra un segundo topónimo — por ejemplo *«Barrio Tierra Negra del Sector **Bella Vista**»* — también se indexa el enterrado.
+
+Las *Edificaciones identificadas individualmente* quedan fuera del índice: no son zonas.
+
+| Topónimo | Dónde aparece |
+|---|---|
+| **05 de Julio** | **Urimare** → *Sector 05 de Julio* |
+| **10 de Marzo** | **Carlos Soublette** → *10 de Marzo*<br>**Maiquetía** → *Urbanización 10 de Marzo* |
+| **13 de Febrero** | **Maiquetía** → *Sector 13 de Febrero* |
+| **1ra. Colina de Mamo** | **Catia La Mar** → *Sector 1ra. Colina de Mamo* |
+| **27 de Julio** | **Caraballeda** → *Sector 27 de Julio* |
+| **6ta y 7ma Loma Las Tunitas** | **Catia La Mar** → *Sector 6ta y 7ma Loma Las Tunitas* |
+| **Aeropuerto** | **Urimare** → *Barrio Aeropuerto* |
+| **Aeropuerto Internacional Simón Bolívar** | **Urimare** → *Aeropuerto Internacional Simón Bolívar* |
+| **Aeropuerto Nacional Simón Bolívar** | **Urimare** → *Aeropuerto Nacional Simón Bolívar* |
+| **Aguacatal** | **Carayaca** → *Aguacatal* · *Sector Aguacatal* |
+| **Aguarito** | **Carayaca** → *Sector Aguarito* |
+| **Álamo** | **Macuto** → *Urbanización Álamo* |
+| **Alcabala Vieja** | **Carlos Soublette** → *Sector Alcabala Vieja* |
+| **Alto Paraíso** | **Carayaca** → *Sector Alto Paraíso* |
+| **Altos de Caoma** | **Carayaca** → *Altos de Caoma* |
+| **Anare** | **Naiguatá** → *Anare* · *Sector Anare* |
+| **Antiguo Carmen de Uría** | **Naiguatá** → *Antiguo Carmen de Uría* |
+| **Aquí Esta** | **Carlos Soublette** → *Barrio Aquí Esta* |
+| **Aquí Esta Parte Alta** | **Carlos Soublette** → *Barrio Aquí Esta Parte Alta* |
+| **Arbolito** | **Carayaca** → *Sector Arbolito* |
+| **Armando Reverón** | **Maiquetía** → *Sector Armando Reverón* |
+| **Arrecife** | **Catia La Mar** → *Sector Arrecife* |
+| **Atanacio Girardot** | **Carlos Soublette** → *Sector Atanacio Girardot* |
+| **Atlántida** | **Catia La Mar** → *Urbanización Atlántida* |
+| **Azúcar** | **Macuto** → *Azúcar* |
+| **Ballaja** | **La Guaira** → *Sector Ballaja* |
+| **Balneario** | **Catia La Mar** → *Sector Balneario* |
+| **Barrio Nuevo** | **Carayaca** → *Sector Barrio Nuevo* |
+| **Bella Vista** | **Catia La Mar** → *Sector Bella Vista*<br>**Macuto** → *Sector Bella Vista*<br>**Naiguatá** → *Bella Vista* |
+| **Belo Horizonte** | **Urimare** → *Conjunto Residencial Belo Horizonte* |
+| **Blanquita de Pérez** | **Caraballeda** → *Sector Blanquita de Pérez* |
+| **Bloques de Pariata** | **Carlos Soublette** → *Bloques de Pariata* |
+| **Bolívar** | **La Guaira** → *Barrio Bolívar* |
+| **Boquerón** | **Urimare** → *Boquerón* |
+| **Borde Solo** | **Naiguatá** → *Borde Solo* |
+| **Bosques de Oshun** | **Carayaca** → *Bosques de Oshun* |
+| **Boulevard La Marina** | **Catia La Mar** → *Boulevard La Marina* |
+| **Brisas del Aeropuerto** | **Urimare** → *Brisas del Aeropuerto* · *Sector Brisas del Aeropuerto* |
+| **Brisas del Mar** | **Macuto** → *Conjunto Residencial Brisas del Mar* |
+| **Buena Vista** | **Carlos Soublette** → *Buena Vista*<br>**Catia La Mar** → *Sector Buena Vista*<br>**Maiquetía** → *Sector Buena Vista* |
+| **Cagüita** | **Carayaca** → *Cagüita* · *Sector Cagüita* |
+| **Camarón** | **Naiguatá** → *Camarón* |
+| **Cambural** | **Carayaca** → *Cambural* · *Sector Cambural* |
+| **Caminos de Maisanta** | **Carayaca** → *Caminos de Maisanta* |
+| **Campo Elías** | **Catia La Mar** → *Sector Campo Elías* |
+| **Camuri** | **Caraballeda** → *Sector Camuri* |
+| **Camuri Chico** | **Macuto** → *Camuri Chico* · *Sector Camuri Chico* |
+| **Camuri Grande** | **Naiguatá** → *Camurí Grande* · *Sector Camuri Grande* |
+| **Camuri Grande Parte Oeste** | **Naiguatá** → *Sector Camuri Grande Parte Oeste* |
+| **Cañafístola** | **Caruao** → *Cañafístola* |
+| **Canaima** | **Carlos Soublette** → *Canaima* · *Sector Canaima* |
+| **Canaima I** | **Carlos Soublette** → *Sector Canaima I* |
+| **Canaima II** | **Carlos Soublette** → *Sector Canaima II* |
+| **Caño Amarillo** | **Caruao** → *Caño Amarillo* |
+| **Caoma** | **Carayaca** → *Caoma* · *Sector Caoma* |
+| **Caraballeda** | **Caraballeda** → *Casco Central de Caraballeda* |
+| **Caraballeda (Módulo)** | **Caraballeda** → *Oficina Postal Telegráfica Caraballeda (Módulo)* |
+| **Carayaca** | **Carayaca** → *Oficina Postal Telegráfica Carayaca* |
+| **Care** | **Naiguatá** → *Sector Care* |
+| **Cariaco** | **La Guaira** → *Cariaco* |
+| **Caribe** | **Caraballeda** → *Sector Caribe* · *Urbanización Caribe* |
+| **Carmen Arriba** | **Naiguatá** → *Carmen Arriba* |
+| **Carmen de Uria** | **Naiguatá** → *Sector Carmen de Uria* |
+| **Caruao** | **Caruao** → *Sector Caruao* |
+| **Castillo San Carlos** | **La Guaira** → *Sector Castillo San Carlos* |
+| **Casupales** | **Caruao** → *Casupales* |
+| **Catamare** | **Catia La Mar** → *Catamare* · *Sector Catamare* |
+| **Cataure** | **Carayaca** → *Sector Cataure* |
+| **Catia La Mar** | **Urimare** → *Catia La Mar* |
+| **Cementerio Viejo** | **Carlos Soublette** → *Sector Cementerio Viejo* |
+| **Centro Carayaca** | **Carayaca** → *Centro Carayaca* |
+| **Centro Catia La Mar** | **Catia La Mar** → *Centro Catia La Mar* |
+| **Centro Postal José María Vargas CPI** | **Urimare** → *Centro Postal José María Vargas CPI* |
+| **Centro Sabana** | **Caruao** → *Centro Sabana* |
+| **Cerro Caído** | **La Guaira** → *Sector Cerro Caído* |
+| **Cerro de Jesús Parte Alta** | **Maiquetía** → *Sector Cerro de Jesús Parte Alta* |
+| **Cerro de Jesús Parte Baja** | **Maiquetía** → *Sector Cerro de Jesús Parte Baja* |
+| **Cerro de Las Ánimas** | **Maiquetía** → *Sector Cerro de Las Ánimas* |
+| **Cerro Grande** | **Caraballeda** → *Sector Cerro Grande* |
+| **Chacón** | **La Guaira** → *Chacón* |
+| **Chichiriviche** | **Carayaca** → *Sector Chichiriviche* |
+| **Chichiriviche de la Costa** | **Carayaca** → *Chichiriviche de la Costa* |
+| **Chuparal** | **Carayaca** → *Chuparal* |
+| **Chuspa** | **Caruao** → *Chuspa* · *Sector Chuspa* |
+| **Círculo Militar de Mamo** | **Catia La Mar** → *Círculo Militar de Mamo* |
+| **Ciudad Caribia** | **Carayaca** → *Ciudad Caribia* |
+| **Ciudad Chávez** | **Urimare** → *Ciudad Chávez* |
+| **Club Residencial Caribe** | **Caraballeda** → *Club Residencial Caribe* |
+| **Cocuizal** | **Naiguatá** → *Sector Cocuizal* |
+| **Codazzi** | **Carayaca** → *Sector Codazzi* |
+| **Cohete** | **Carayaca** → *Sector Cohete* |
+| **Colinas 13 de Febrero** | **Maiquetía** → *Sector Colinas 13 de Febrero* |
+| **Colinas de Ezequiel Zamora** | **Catia La Mar** → *Sector Colinas de Ezequiel Zamora* |
+| **Colinas de La Sabana** | **Caruao** → *Colinas de La Sabana* |
+| **Colinas de Mamo** | **Catia La Mar** → *Sector Colinas de Mamo* |
+| **Colinas de Marina** | **Catia La Mar** → *Sector Colinas de Marina* |
+| **Colinas de Piache** | **Catia La Mar** → *Sector Colinas de Piache* |
+| **Colinas de Taguao** | **Urimare** → *Sector Colinas de Taguao* |
+| **Colinas del Balneario** | **Catia La Mar** → *Sector Colinas del Balneario* |
+| **Colinas Dr. José Gregorio Hernández** | **Catia La Mar** → *Sector Colinas Dr. José Gregorio Hernández* |
+| **Colinas Pariata** | **Carlos Soublette** → *Sector Colinas Pariata* |
+| **Colorado** | **La Guaira** → *Sector Colorado*<br>**Macuto** → *Colorado* |
+| **Comando de la Infantería de Marina** | **Catia La Mar** → *Comando de la Infantería de Marina* |
+| **Comunidad de Taguao** | **Urimare** → *Sector Comunidad de Taguao* |
+| **Comunidad Vargas** | **Carlos Soublette** → *Sector Comunidad Vargas* |
+| **Corapal** | **Caraballeda** → *Barrio Corapal* |
+| **Corapal Parte Alta** | **Caraballeda** → *Sector Corapal Parte Alta* |
+| **Corapalito** | **Caraballeda** → *Comunidad Corapalito* |
+| **Corozal** | **Maiquetía** → *Corozal* |
+| **Corralito** | **Carayaca** → *Corralito* · *Sector Corralito* |
+| **Cruz Verde** | **Carayaca** → *Sector Cruz Verde* |
+| **Cuarta Loma** | **Catia La Mar** → *Sector Cuarta Loma* |
+| **Cueva de Uría** | **Naiguatá** → *Cueva de Uría* |
+| **Curiana** | **Carayaca** → *Curiana* |
+| **Curucuti** | **Carlos Soublette** → *Sector Curucuti*<br>**Maiquetía** → *Curucuti* |
+| **Curva de la Pantaleta** | **Catia La Mar** → *Curva de la Pantaleta* |
+| **Curva de Uria** | **Naiguatá** → *Sector Curva de Uria* |
+| **Descansadero** | **Naiguatá** → *Descansadero* |
+| **Distribuidor El Trébol** | **Urimare** → *Distribuidor El Trébol* |
+| **Distribuidor Macuto** | **Macuto** → *Distribuidor Macuto* |
+| **Dos Cerritos** | **Carlos Soublette** → *Sector Dos Cerritos* |
+| **Dos Hermanas** | **Carayaca** → *Dos Hermanas* |
+| **Dr. José Gregorio Hernández** | **Catia La Mar** → *Sector Dr. José Gregorio Hernández* |
+| **El Aguilón** | **Naiguatá** → *El Aguilón* |
+| **El Arbolito** | **Carayaca** → *El Arbolito* · *Sector El Arbolito* |
+| **El Arenal** | **Carayaca** → *Sector El Arenal* |
+| **El Bajón** | **Carayaca** → *El Bajón* |
+| **El Balneario** | **Catia La Mar** → *Urbanización El Balneario* |
+| **El Banqueo** | **Carayaca** → *El Banqueo* |
+| **El Barranco** | **Urimare** → *El Barranco* |
+| **El Cabo Blanco** | **Maiquetía** → *Sector El Cabo Blanco* |
+| **El Caimito** | **Caraballeda** → *El Caimito* · *Sector El Caimito*<br>**Carayaca** → *Sector El Caimito* |
+| **El Callao** | **Caraballeda** → *Sector El Callao* |
+| **El Calvario** | **Carlos Soublette** → *Sector El Calvario* |
+| **El Cambural** | **Carayaca** → *Sector El Cambural* |
+| **El Campito** | **Urimare** → *Sector El Campito* |
+| **El Cantón II** | **Maiquetía** → *Sector El Cantón II* |
+| **El Cardonal** | **La Guaira** → *Sector El Cardonal* |
+| **El Carmelo** | **Macuto** → *El Carmelo* |
+| **El Casquillo** | **Urimare** → *El Casquillo* |
+| **El Cedrito** | **Carayaca** → *El Cedrito* |
+| **El Cementerio** | **Caraballeda** → *Sector El Cementerio* |
+| **El Cojo** | **Macuto** → *El Cojo* · *Sector El Cojo* |
+| **El Colorado** | **Naiguatá** → *Sector El Colorado* |
+| **El Corozo** | **Carlos Soublette** → *El Corozo* · *Sector El Corozo*<br>**Naiguatá** → *Sector El Corozo* |
+| **El Corozo Norte** | **Naiguatá** → *El Corozo Norte* |
+| **El Corozo Sur** | **Naiguatá** → *El Corozo Sur* |
+| **El Cuatro** | **Carayaca** → *Sector El Cuatro* |
+| **El Cují** | **Carlos Soublette** → *Sector El Cují* |
+| **El Cura** | **Caruao** → *El Cura* |
+| **El Cusucy** | **Naiguatá** → *Sector El Cusucy* |
+| **El Cusuy** | **Naiguatá** → *El Cusuy* |
+| **El Desagüe** | **Catia La Mar** → *Sector El Desagüe* |
+| **El Desvío** | **Maiquetía** → *Sector El Desvío* |
+| **El Edén** | **Naiguatá** → *El Edén* |
+| **El Espirche** | **La Guaira** → *Sector El Espirche* |
+| **El Estanque** | **Naiguatá** → *Sector El Estanque* |
+| **El Fraile** | **Carayaca** → *El Fraile* |
+| **El Guamacho** | **Caraballeda** → *Sector El Guamacho*<br>**La Guaira** → *Sector El Guamacho* |
+| **El Guaramo** | **Carayaca** → *El Guaramo* · *Sector El Guáramo* |
+| **El Guarapo** | **Carlos Soublette** → *El Guarapo*<br>**Maiquetía** → *El Guarapo* |
+| **El Guarataro** | **La Guaira** → *Sector El Guarataro* |
+| **El Güire** | **Carayaca** → *Sector El Güire* |
+| **El Hondón** | **Carayaca** → *Sector El Hondón* |
+| **El Hordón** | **Carayaca** → *El Hordón* |
+| **El Humboldt** | **Macuto** → *El Humboldt* |
+| **El Infiernito** | **Maiquetía** → *El Infiernito* |
+| **El Jabillo** | **Carlos Soublette** → *Sector El Jabillo*<br>**Maiquetía** → *Sector El Jabillo* |
+| **El Latin** | **Urimare** → *Sector El Latin* |
+| **El Limón** | **Carayaca** → *El Limón* · *Sector El Limón* |
+| **El Mamonal** | **Carlos Soublette** → *El Mamonal* |
+| **El Naranjal** | **Naiguatá** → *El Naranjal* |
+| **El Oasis** | **Urimare** → *El Oasis* |
+| **El Onoto** | **Urimare** → *El Onoto* |
+| **El Palmar** | **Maiquetía** → *El Palmar* |
+| **El Palmar Este** | **Caraballeda** → *El Palmar Este* |
+| **El Palmar Oeste** | **Caraballeda** → *El Palmar Oeste* |
+| **El Pantano** | **Naiguatá** → *El Pantano* |
+| **El Pardillo** | **Carayaca** → *Sector El Pardillo* |
+| **El Paulino Asentamiento Campesino** | **Carayaca** → *Sector El Paulino Asentamiento Campesino* |
+| **El Peñón** | **Maiquetía** → *El Peñón* |
+| **El Perú** | **Naiguatá** → *El Perú* |
+| **El Piache** | **Catia La Mar** → *El Piache* |
+| **El Picure** | **Carayaca** → *El Picure* |
+| **El Pinar** | **Carayaca** → *El Pinar* |
+| **El Plateo** | **Naiguatá** → *El Plateo* |
+| **El Playón** | **Macuto** → *Sector El Playón* |
+| **El Portachuelo** | **Carayaca** → *El Portachuelo* · *Sector El Portachuelo* |
+| **El Pozo** | **Carayaca** → *El Pozo* · *Sector El Pozo* |
+| **El Raizudo** | **Carayaca** → *El Raizudo* |
+| **El Respiro** | **Catia La Mar** → *El Respiro* |
+| **El Respiro Parte Alta** | **Catia La Mar** → *Sector El Respiro Parte Alta* |
+| **El Respiro Parte Baja** | **Catia La Mar** → *Sector El Respiro Parte Baja* |
+| **El Rincón** | **Maiquetía** → *Barrio El Rincón* · *El Rincón* |
+| **El Sapo** | **Carayaca** → *El Sapo* |
+| **El Silencio** | **Carayaca** → *Sector El Silencio* |
+| **El Teleférico** | **Macuto** → *El Teleférico* · *Sector El Teleférico* |
+| **El Teleférico Parte Baja** | **Macuto** → *Sector El Teleférico Parte Baja* |
+| **El Tigre** | **Carayaca** → *El Tigre* · *Sector El Tigre* |
+| **El Tigrillo** | **Naiguatá** → *El Tigrillo* · *Sector El Tigrillo* |
+| **El Topo** | **Carayaca** → *El Topo* · *Sector El Topo* |
+| **El Trébol** | **Carlos Soublette** → *Sector El Trébol*<br>**Urimare** → *El Trébol* |
+| **El Vigía** | **Carayaca** → *Sector El Vigía*<br>**Naiguatá** → *Sector El Vigía* |
+| **El Vigía I** | **Naiguatá** → *Sector El Vigía I* |
+| **El Zapatero** | **Naiguatá** → *El Zapatero* |
+| **El Zinc** | **Naiguatá** → *El Zinc* |
+| **Escuela Naval** | **Catia La Mar** → *Escuela Naval* |
+| **Esperanza Iberia** | **Carayaca** → *Sector Esperanza Iberia* |
+| **Esperanza III** | **Carayaca** → *Sector Esperanza III* |
+| **Estrella** | **Carlos Soublette** → *Sector Estrella* |
+| **Ezequiel Zamora** | **Catia La Mar** → *Ezequiel Zamora* · *Sector Ezequiel Zamora*<br>**Urimare** → *Barrio Ezequiel Zamora* |
+| **Falla de Uría** | **Naiguatá** → *Falla de Uría* |
+| **Farallón** | **Carayaca** → *Farallón* |
+| **Fila del Ávila** | **Macuto** → *Fila del Ávila* |
+| **Filadelfia** | **Naiguatá** → *Filadelfia* |
+| **Finca El Deslave** | **Caraballeda** → *Finca El Deslave* |
+| **Finca La Morelia** | **Carayaca** → *Finca La Morelia* |
+| **Finca Mi Refugio** | **Carayaca** → *Finca Mi Refugio* |
+| **Francisco Fajardo** | **Caraballeda** → *Urbanización Francisco Fajardo* |
+| **Galipán** | **Macuto** → *Sector Galipán* |
+| **Gato Negro** | **Maiquetía** → *Gato Negro* |
+| **Geremba** | **Carayaca** → *Geremba* |
+| **Girigire** | **Maiquetía** → *Sector Girigire* |
+| **Girigire Parte Baja** | **Maiquetía** → *Sector Girigire Parte Baja* |
+| **GMVV Brisas de Maiquetía** | **Urimare** → *GMVV Brisas de Maiquetía* |
+| **Gonzálo Inojosa** | **Caraballeda** → *Sector Gonzálo Inojosa* |
+| **Granja Roraima I** | **Catia La Mar** → *Sector Granja Roraima I* |
+| **Guamacho** | **Caraballeda** → *Guamacho* |
+| **Guanape** | **La Guaira** → *Sector Guanape* |
+| **Guanape II** | **La Guaira** → *Guanape II* |
+| **Guaracarumbo** | **Urimare** → *Guaracarumbo* · *Sector Guaracarumbo* |
+| **Guare** | **Carayaca** → *Guare* · *Sector Guaré* |
+| **Guaricuay** | **Carayaca** → *Guaricuay* |
+| **Guasca** | **Carayaca** → *Guasca* · *Sector Guasca* |
+| **Guayabal** | **Carlos Soublette** → *Guayabal* |
+| **Hacienda Bucaral** | **Carayaca** → *Hacienda Bucaral* |
+| **Hacienda Cabetón** | **Caruao** → *Hacienda Cabetón* |
+| **Hacienda Cocuizal** | **Naiguatá** → *Hacienda Cocuizal* |
+| **Hacienda Las Llanadas** | **Carayaca** → *Hacienda Las Llanadas* |
+| **Hacienda Vega Grande** | **Caruao** → *Hacienda Vega Grande* |
+| **Hato Santa Rita** | **Maiquetía** → *Hato Santa Rita* |
+| **Héroes de Tacoa** | **Catia La Mar** → *Héroes de Tacoa* · *Sector Héroes de Tacoa* |
+| **Huerto Familiar** | **Catia La Mar** → *Sector Huerto Familiar* |
+| **I Guanape** | **La Guaira** → *Sector I Guanape* |
+| **I La Trinidad** | **Carlos Soublette** → *Sector I La Trinidad* |
+| **II Parte Alta de Guanape** | **La Guaira** → *Sector II Parte Alta de Guanape* |
+| **II Parte Baja de Guanape** | **La Guaira** → *Sector II Parte Baja de Guanape* |
+| **Independencia** | **Caraballeda** → *Barrio Independencia* |
+| **Jardín Botánico** | **Caraballeda** → *Sector Jardín Botánico* |
+| **José Gregorio Hernández** | **Macuto** → *Sector José Gregorio Hernández* |
+| **José María Vargas** | **Carlos Soublette** → *Urbanización José María Vargas*<br>**Maiquetía** → *Sector José María Vargas* |
+| **Kilómetro 25 vía el Junquito** | **Carayaca** → *Sector Kilómetro 25 vía el Junquito* |
+| **La Alegría** | **Carayaca** → *La Alegría* · *Sector La Alegría* |
+| **La Atlántida** | **Catia La Mar** → *La Atlántida* |
+| **La Aviación** | **Urimare** → *La Aviación* · *Sector La Aviación* |
+| **La Bejuquera** | **Caruao** → *La Bejuquera* |
+| **La Bloquera Parte Baja** | **Carlos Soublette** → *Sector La Bloquera Parte Baja* |
+| **La Bonanza** | **Carlos Soublette** → *Sector La Bonanza* |
+| **La Cabreria** | **La Guaira** → *Barrio La Cabreria* |
+| **La California** | **Carayaca** → *Sector La California* |
+| **La Capilla** | **Catia La Mar** → *La Capilla* · *Sector La Capilla* |
+| **La Cervecería** | **Maiquetía** → *Sector La Cervecería* |
+| **La Clemencia** | **Naiguatá** → *La Clemencia* |
+| **La Concha** | **Naiguatá** → *La Concha* |
+| **La Cortada** | **Naiguatá** → *La Cortada* |
+| **La Esperanza** | **Catia La Mar** → *La Esperanza* · *Sector La Esperanza* |
+| **La Esperanza II** | **Catia La Mar** → *Sector La Esperanza II* |
+| **La Felicidad** | **Caraballeda** → *Sector La Felicidad* |
+| **La Fila del Indio** | **Naiguatá** → *La Fila del Indio* |
+| **La Florida** | **Carayaca** → *La Florida*<br>**Maiquetía** → *Sector La Florida* |
+| **La Fundación** | **Carayaca** → *La Fundación*<br>**Urimare** → *Sector La Fundación* |
+| **La Guaira** | **La Guaira** → *Casco de La Guaira* · *Oficina Postal Telegráfica La Guaira* |
+| **La Guzmania** | **Macuto** → *Sector La Guzmania* |
+| **La Hondonada** | **Naiguatá** → *La Hondonada* |
+| **La Horquitla** | **Urimare** → *La Horquitla* |
+| **La Ideal** | **Carlos Soublette** → *Sector La Ideal* |
+| **La Iguana** | **Catia La Mar** → *Sector La Iguana* |
+| **La Jungla** | **Catia La Mar** → *La Jungla* · *Sector La Jungla* |
+| **La Laguna** | **Carayaca** → *La Laguna* |
+| **La Lagunita** | **Naiguatá** → *La Lagunita* |
+| **La Libertad** | **Carlos Soublette** → *Sector La Libertad* |
+| **La Línea** | **Maiquetía** → *Sector La Línea* |
+| **La Llanada** | **Carayaca** → *Sector La Llanada*<br>**Carlos Soublette** → *La Llanada* |
+| **La Lucha** | **Urimare** → *La Lucha* · *Sector La Lucha* |
+| **La Macanilla** | **Carayaca** → *La Macanilla* · *Sector La Macanilla* |
+| **La Marina** | **Catia La Mar** → *Sector La Marina* |
+| **La Marisela** | **Carayaca** → *Sector La Marisela* |
+| **La Media Laguna** | **Carayaca** → *La Media Laguna* |
+| **La Media Legua** | **Carayaca** → *Sector La Media Legua* |
+| **La Montaña** | **Carayaca** → *La Montaña*<br>**Macuto** → *La Montaña* |
+| **La Montañita** | **Naiguatá** → *La Montañita* |
+| **La Moraleja** | **Carayaca** → *Sector La Moraleja* |
+| **La Niebla** | **El Junko** → *La Niebla* |
+| **La Páez** | **Catia La Mar** → *La Páez* |
+| **La Pedrera** | **Carlos Soublette** → *Sector La Pedrera*<br>**Urimare** → *La Pedrera* |
+| **La Pedrera Parte Baja** | **Carlos Soublette** → *Sector La Pedrera Parte Baja* |
+| **La Peña** | **Carayaca** → *La Peña* · *Sector La Peña* |
+| **La Peñita** | **Carayaca** → *La Peñita* · *Sector La Peñita* |
+| **La Peñita II** | **Carayaca** → *Sector La Peñita II* |
+| **La Pichona** | **Catia La Mar** → *Sector La Pichona* |
+| **La Planada (Canaima)** | **Carlos Soublette** → *Sector La Planada (Canaima)* |
+| **La Planicie** | **Macuto** → *La Planicie*<br>**Naiguatá** → *La Planicie* |
+| **La Planta** | **Naiguatá** → *La Planta* · *Sector La Planta* |
+| **La Pradera** | **Carlos Soublette** → *Barrio La Pradera* |
+| **La Redoma** | **Maiquetía** → *Sector La Redoma* |
+| **La Rochela** | **Carlos Soublette** → *Sector La Rochela*<br>**El Junko** → *La Rochela* |
+| **La Roraima** | **Catia La Mar** → *La Roraima* · *Sector La Roraima* |
+| **La Sabana** | **Caruao** → *La Sabana* |
+| **La Soublette** | **Catia La Mar** → *La Soublette* |
+| **La Tanquilla** | **Naiguatá** → *La Tanquilla* |
+| **La Toma** | **Caraballeda** → *Sector La Toma* |
+| **La Torre** | **Urimare** → *Comunidad La Torre* |
+| **La Tropical** | **Carlos Soublette** → *Sector La Tropical* |
+| **La Tropicana** | **Carlos Soublette** → *Sector La Tropicana* |
+| **La Urbina** | **Carayaca** → *La Urbina* · *Sector La Urbina* |
+| **La Vega** | **Naiguatá** → *La Vega* |
+| **La Veguita** | **Macuto** → *Sector La Veguita*<br>**Urimare** → *La Veguita* |
+| **La Venta** | **Maiquetía** → *La Venta* |
+| **La Virgen** | **Caraballeda** → *La Virgen* |
+| **La Virginia** | **Caruao** → *La Virginia* · *Sector La Virginia* |
+| **La Zanja** | **Urimare** → *La Zanja* |
+| **La Zorra** | **Catia La Mar** → *La Zorra* · *Sector La Zorra* |
+| **Laguna Suites** | **Caraballeda** → *Laguna Suites* |
+| **Lagunita** | **Macuto** → *Lagunita* |
+| **Las 15 Letras** | **Macuto** → *Sector Las 15 Letras* |
+| **Las Adjuntas** | **Carayaca** → *Las Adjuntas* · *Sector Las Adjuntas* |
+| **Las Angustias** | **Catia La Mar** → *Las Angustias* |
+| **Las Antiguas** | **Catia La Mar** → *Sector Las Antiguas* |
+| **Las Canoítas** | **Urimare** → *Las Canoítas* |
+| **Las Carolinas** | **Caruao** → *Sector Las Carolinas* |
+| **Las Casitas** | **Caruao** → *Las Casitas*<br>**Catia La Mar** → *Urbanización Las Casitas* |
+| **Las Casitas de Chuspa** | **Caruao** → *Las Casitas de Chuspa* |
+| **Las Cicatrices** | **Naiguatá** → *Las Cicatrices* |
+| **Las Colinas** | **Catia La Mar** → *Las Colinas* |
+| **Las Conchitas** | **Carayaca** → *Las Conchitas* |
+| **Las Corujas** | **Caruao** → *Las Corujas* |
+| **Las Flores** | **Carayaca** → *Sector Las Flores*<br>**La Guaira** → *Sector Las Flores* |
+| **Las Flores Parte Baja** | **La Guaira** → *Sector Las Flores Parte Baja* |
+| **Las Granjas** | **Carayaca** → *Las Granjas* |
+| **Las Lapas** | **Carayaca** → *Las Lapas* · *Sector Las Lapas* |
+| **Las Lluvias Parte Alta** | **Carlos Soublette** → *Sector Las Lluvias Parte Alta* |
+| **Las Lluvias Parte Baja** | **Carlos Soublette** → *Sector Las Lluvias Parte Baja* |
+| **Las Pailas** | **Urimare** → *Las Pailas* |
+| **Las Petacas** | **Carayaca** → *Las Petacas* · *Sector Las Petacas* |
+| **Las Salinas** | **Carayaca** → *Las Salinas*<br>**Catia La Mar** → *Sector Las Salinas*<br>**Urimare** → *Sector Las Salinas* |
+| **Las Torres** | **Catia La Mar** → *Sector Las Torres*<br>**Naiguatá** → *Las Torres* |
+| **Las Tucacas** | **Naiguatá** → *Sector Las Tucacas* |
+| **Las Tunitas** | **Catia La Mar** → *Las Tunitas* · *Sector Las Tunitas* |
+| **Las Tunitas Sector B** | **Catia La Mar** → *Sector Las Tunitas Sector B* |
+| **Las Vegas** | **Urimare** → *Sector Las Vegas* |
+| **Las Veguitas** | **Urimare** → *Sector Las Veguitas* |
+| **Limoncito** | **Carayaca** → *Limoncito* |
+| **Línea Vieja** | **Maiquetía** → *Sector Línea Vieja* |
+| **Litoral Central** | **Caraballeda** → *Litoral Central* |
+| **Llano** | **Naiguatá** → *Llano* |
+| **Llano Adentro** | **La Guaira** → *Sector Llano Adentro* |
+| **Llano de La Cruz** | **Caraballeda** → *Llano de La Cruz* |
+| **Loma de Caballo** | **Macuto** → *Loma de Caballo* |
+| **Loma del Medio** | **Caraballeda** → *Loma del Medio*<br>**Carayaca** → *Loma del Medio* |
+| **Loma Larga** | **Caraballeda** → *Sector Loma Larga*<br>**Carayaca** → *Loma Larga*<br>**Urimare** → *Loma Larga* |
+| **Lomas de San Francisco** | **Carayaca** → *Sector Lomas de San Francisco* |
+| **Lomas La Chivera** | **Maiquetía** → *Sector Lomas La Chivera* |
+| **Lomas La Colorada** | **Maiquetía** → *Sector Lomas La Colorada* |
+| **Longa España** | **Carayaca** → *Sector Longa España*<br>**Naiguatá** → *Sector Longa España* · *Urbanización Longa España* |
+| **Lorenzo González** | **Carlos Soublette** → *Sector Lorenzo González* |
+| **Los Aguacates** | **Caraballeda** → *Los Aguacates* |
+| **Los Araguatos** | **Naiguatá** → *Los Araguatos* |
+| **Los Asientos** | **Macuto** → *Los Asientos* |
+| **Los Bancos** | **Naiguatá** → *Sector Los Bancos* |
+| **Los Baños Parte Baja** | **Maiquetía** → *Sector Los Baños Parte Baja* |
+| **Los Caballos** | **Naiguatá** → *Sector Los Caballos* |
+| **Los Cafeces** | **Caruao** → *Los Cafeces* |
+| **Los Calzones** | **Caruao** → *Los Calzones* |
+| **Los Caracas** | **Caruao** → *Sector Los Caracas*<br>**Naiguatá** → *Los Caracas* · *Sector Los Caracas* |
+| **Los Cazadores** | **Caruao** → *Los Cazadores* |
+| **Los Cedritos** | **Carayaca** → *Los Cedritos* |
+| **Los Cedros** | **Carayaca** → *Los Cedros* · *Sector Los Cedros* |
+| **Los Charos** | **Carlos Soublette** → *Los Charos* |
+| **Los Claveles Parte Alta** | **Maiquetía** → *Sector Los Claveles Parte Alta* |
+| **Los Claveles Parte Baja** | **Maiquetía** → *Sector Los Claveles Parte Baja* |
+| **Los Cocoteros** | **Maiquetía** → *Sector Los Cocoteros* |
+| **Los Corales** | **Caraballeda** → *Los Corales* · *Urbanización Los Corales* |
+| **Los Desgarros** | **Caraballeda** → *Los Desgarros* |
+| **Los Desmontes** | **Caraballeda** → *Los Desmontes* |
+| **Los Hornitos** | **Carlos Soublette** → *Sector Los Hornitos* |
+| **Los Mangos** | **Maiquetía** → *Sector Los Mangos* |
+| **Los Mollejones** | **Carayaca** → *Los Mollejones* |
+| **Los Naranjos** | **Macuto** → *Los Naranjos* |
+| **Los Negros** | **Caruao** → *Sector Los Negros* |
+| **Los Olivos** | **Catia La Mar** → *Los Olivos* · *Sector Los Olivos* |
+| **Los Petacas** | **Carayaca** → *Sector Los Petacas* |
+| **Los Pinos** | **Carayaca** → *Sector Los Pinos* |
+| **Los Pozuelos** | **Carayaca** → *Sector Los Pozuelos* |
+| **Los Próceres** | **Urimare** → *Sector Los Próceres* |
+| **Los Rastrojos** | **Carayaca** → *Los Rastrojos* · *Sector Los Rastrojos* |
+| **Los Riítos** | **Carayaca** → *Los Riítos* |
+| **Los Tres Palos** | **Carayaca** → *Los Tres Palos* · *Sector Los Tres Palos* |
+| **Los Túneles** | **Urimare** → *Los Túneles* |
+| **Los Valleros** | **Urimare** → *Los Valleros* |
+| **Ls Subida de Maticuará** | **Catia La Mar** → *Ls Subida de Maticuará* |
+| **Macanillal** | **Naiguatá** → *Macanillal* |
+| **Macundamar** | **Caraballeda** → *Sector Macundamar* |
+| **Macuto** | **Macuto** → *Casco Central de Macuto* · *Sector Macuto* |
+| **Macuto Mar** | **Macuto** → *Conjunto Residencial Macuto Mar* |
+| **Maiquetía** | **Maiquetía** → *Casco Central de Maiquetía* · *Oficina Postal Telegráfica Maiquetía* |
+| **Malarmo** | **Naiguatá** → *Malarmo* |
+| **Mamo** | **Catia La Mar** → *Mamo* · *Sector Mamo* |
+| **Mamo I** | **Catia La Mar** → *Sector Mamo I* |
+| **Mano Peluda** | **Carlos Soublette** → *Mano Peluda* |
+| **Mañonga** | **Carlos Soublette** → *Mañonga* · *Sector Mañonga* |
+| **Manuelita Sáez** | **Catia La Mar** → *Sector Manuelita Sáez* |
+| **Manzanillo** | **Carayaca** → *Manzanillo* |
+| **Mapurite** | **Maiquetía** → *Sector Mapurite* |
+| **Marapa** | **Catia La Mar** → *Barrio Marapa* · *Conjunto Residencial Marapa* · *Marapa* |
+| **Marapa Marina** | **Catia La Mar** → *Conjunto Residencial Marapa Marina* · *Marapa Marina* |
+| **Marboro** | **Carlos Soublette** → *Barrio Marboro* |
+| **Mare** | **Maiquetía** → *Sector Mare*<br>**Urimare** → *Mare* |
+| **Mare Abajo** | **Carlos Soublette** → *Sector Mare Abajo* |
+| **Mare Punta Gorda** | **Maiquetía** → *Sector Mare Punta Gorda* |
+| **María Isabel** | **Naiguatá** → *María Isabel* · *Sector María Isabel* |
+| **Marina** | **Catia La Mar** → *Sector Marina* · *Urbanización Marina* |
+| **Marina Grande** | **Urimare** → *Sector Marina Grande* |
+| **Marlboro** | **Urimare** → *Marlboro* |
+| **Martín Vegas** | **Urimare** → *Urbanización Martín Vegas* |
+| **Mata de Palo** | **Maiquetía** → *Sector Mata de Palo* |
+| **Mayita** | **Carayaca** → *Sector Mayita* |
+| **Media Legua Asentamiento Campesino** | **Carayaca** → *Sector Media Legua Asentamiento Campesino* |
+| **Miguel Ángel Figueredo** | **Carayaca** → *Sector Miguel Ángel Figueredo* |
+| **Miguelena** | **Naiguatá** → *Miguelena* |
+| **Militar San Francisco II** | **Catia La Mar** → *Urbanización Militar San Francisco II* |
+| **Miquilena** | **Naiguatá** → *Sector Miquilena* |
+| **Mirabal** | **Catia La Mar** → *Mirabal* · *Sector Mirabal* |
+| **Monterrey Parte Alta** | **Carlos Soublette** → *Sector Monterrey Parte Alta* |
+| **Monterrey Parte Baja** | **Carlos Soublette** → *Sector Monterrey Parte Baja* |
+| **Montesano** | **Urimare** → *Montesano* |
+| **Montesano Norte** | **Carlos Soublette** → *Sector Montesano Norte* |
+| **Montesano Sur** | **Carlos Soublette** → *Sector Montesano Sur* |
+| **Morrocoy** | **Maiquetía** → *Sector Morrocoy* |
+| **Naicure** | **Carayaca** → *Sector Naicure* |
+| **Naiguatá** | **Naiguatá** → *Casco Central de Naiguatá* · *Oficina Postal Telegráfica Naiguatá* |
+| **Naranjal** | **Carayaca** → *Naranjal* · *Sector Naranjal* |
+| **Navarrete** | **Maiquetía** → *Sector Navarrete* |
+| **Negro Primero** | **Catia La Mar** → *Negro Primero* · *Sector Negro Primero* |
+| **Nuevo Mundo** | **Macuto** → *Sector Nuevo Mundo* |
+| **Nuevo Mundo Parte Oeste** | **Macuto** → *Sector Nuevo Mundo Parte Oeste* |
+| **Oasis Camuri** | **Naiguatá** → *Conjunto Residencial Oasis Camuri* |
+| **Oficina Postal Internacional Telegráfica Internacional José María** | **Urimare** → *Oficina Postal Internacional Telegráfica Internacional José María* |
+| **Olivos de Zamora** | **Catia La Mar** → *Sector Olivos de Zamora* |
+| **Oricao** | **Carayaca** → *Oricao* · *Sector Oricao* |
+| **Oritapo** | **Caruao** → *Oritapo* · *Sector Oritapo* |
+| **Osma** | **Caruao** → *Osma* · *Sector Osma* |
+| **Páez** | **Catia La Mar** → *Sector Páez* · *Urbanización Páez* |
+| **Palma Real** | **Caraballeda** → *Palma Real* |
+| **Palmar Este** | **Caraballeda** → *Sector Palmar Este* |
+| **Palmar Oeste** | **Caraballeda** → *Sector Palmar Oeste* |
+| **Palo de Agua** | **Caraballeda** → *Palo de Agua*<br>**Carayaca** → *Sector Palo de Agua* |
+| **Palo e Vaca** | **Carayaca** → *Sector Palo e Vaca* |
+| **Pañueleta** | **Carayaca** → *Sector Pañueleta* |
+| **Parador Turístico Catia La Mar** | **Catia La Mar** → *Parador Turístico Catia La Mar* |
+| **Paraíso Azul** | **Carayaca** → *Sector Paraíso Azul* |
+| **Pariata** | **Carlos Soublette** → *Pariata*<br>**Maiquetía** → *Sector Pariata* |
+| **Paseo La Marina** | **Catia La Mar** → *Sector Paseo La Marina* |
+| **Paso Caballo** | **Carayaca** → *Sector Paso Caballo* |
+| **Paso El Cura** | **Caruao** → *Paso El Cura* |
+| **Patio de Honor** | **Catia La Mar** → *Patio de Honor* |
+| **Pedro García** | **Carlos Soublette** → *Sector Pedro García*<br>**Maiquetía** → *Sector Pedro García*<br>**Urimare** → *Pedro García* |
+| **Pericoco** | **Carayaca** → *Pericoco* · *Sector Pericoco* |
+| **Perro Seco** | **Maiquetía** → *Sector Perro Seco* |
+| **Petaquire** | **Carayaca** → *Petaquire* · *Sector Petaquire* |
+| **Petaquirito** | **Carayaca** → *Petaquirito* · *Sector Petaquirito* |
+| **Petit Médina** | **Urimare** → *Sector Petit Médina* |
+| **Piache I** | **Catia La Mar** → *Sector Piache I* |
+| **Piache II** | **Catia La Mar** → *Sector Piache II* |
+| **Piache III** | **Catia La Mar** → *Sector Piache III* |
+| **Piar** | **Urimare** → *Comunidad Piar* |
+| **Picacho de Galipán** | **Macuto** → *Sector Picacho de Galipán* |
+| **Picure** | **Catia La Mar** → *Comunidad Picure* · *Picure* · *Sector Picure*<br>**Urimare** → *Sector Picure* |
+| **Piedra Azul** | **Maiquetía** → *Sector Piedra Azul* |
+| **Piedra de Moler** | **Carayaca** → *Sector Piedra de Moler*<br>**Maiquetía** → *Sector Piedra de Moler* |
+| **Piedras Blancas** | **Carlos Soublette** → *Sector Piedras Blancas* |
+| **Plan de Los Indios** | **Caraballeda** → *Plan de Los Indios* |
+| **Plan de Taller** | **Maiquetía** → *Sector Plan de Taller* |
+| **Planta de Mamo** | **Carayaca** → *Planta de Mamo* |
+| **Playa Grande** | **Urimare** → *Playa Grande* · *Sector Playa Grande* |
+| **Playa Verde** | **Urimare** → *Playa Verde* · *Sector Playa Verde* |
+| **plaza Ali Primera** | **Carlos Soublette** → *plaza Ali Primera* |
+| **Plaza Bolívar** | **Caruao** → *Plaza Bolívar*<br>**Urimare** → *Plaza Bolívar* |
+| **Plaza Bolívar de Care** | **Naiguatá** → *Plaza Bolívar de Care* |
+| **Plaza Bulevar** | **Caruao** → *Plaza Bulevar* |
+| **Plaza Divino Niño** | **Caruao** → *Plaza Divino Niño* |
+| **Plaza El Tambor** | **Caruao** → *Plaza El Tambor* |
+| **Plaza José Antonio Páez** | **Catia La Mar** → *Plaza José Antonio Páez* |
+| **Plaza Los Leones** | **Macuto** → *Plaza Los Leones* |
+| **Plaza Mayor de Catia La Mar** | **Catia La Mar** → *Plaza Mayor de Catia La Mar* |
+| **Plazoleta El Carmen** | **La Guaira** → *Sector Plazoleta El Carmen* |
+| **Portachuelo** | **Carayaca** → *Sector Portachuelo*<br>**Caruao** → *Sector Portachuelo* |
+| **Pozo Escondido** | **Caruao** → *Pozo Escondido* |
+| **Pozo La Danta** | **Naiguatá** → *Pozo La Danta* |
+| **Prefectura de Vargas** | **La Guaira** → *Prefectura de Vargas* |
+| **Prolongación 10 de Marzo** | **Carlos Soublette** → *Sector Prolongación 10 de Marzo* |
+| **Prolongación Soublette II** | **Catia La Mar** → *Prolongación Soublette II* |
+| **Prolongación Soublette III** | **Catia La Mar** → *Prolongación Soublette III* |
+| **Pueblo Arriba** | **Naiguatá** → *Sector Pueblo Arriba* |
+| **Puente de Jesús** | **La Guaira** → *Sector Puente de Jesús* |
+| **Puerto Carayaca** | **Carayaca** → *Puerto Carayaca* · *Sector Puerto Carayaca* |
+| **Puerto Cruz** | **Carayaca** → *Puerto Cruz* · *Sector Puerto Cruz* |
+| **Puerto de La Guaira** | **Maiquetía** → *Puerto de La Guaira* |
+| **Puerto Maya** | **Carayaca** → *Sector Puerto Maya* |
+| **Puerto Viejo** | **Urimare** → *Sector Puerto Viejo* |
+| **Punta Araya** | **Maiquetía** → *Punta Araya* |
+| **Punta Brisas** | **Macuto** → *Sector Punta Brisas* |
+| **Punta Calera** | **Urimare** → *Punta Calera* |
+| **Punta Care** | **Caruao** → *Sector Punta Care*<br>**Naiguatá** → *Punta Care* · *Sector Punta Care* |
+| **Punta Colorado** | **Carayaca** → *Punta Colorado* |
+| **Punta de Mulatos** | **La Guaira** → *Punta de Mulatos* · *Sector Punta de Mulatos* |
+| **Punta de Mulatos Parte Alta** | **La Guaira** → *Sector Punta de Mulatos Parte Alta* |
+| **Punta de Mulatos Parte Baja** | **La Guaira** → *Sector Punta de Mulatos Parte Baja* |
+| **Punta de Mulatos Parte Media** | **La Guaira** → *Sector Punta de Mulatos Parte Media* |
+| **Quebrada de Cariaco** | **La Guaira** → *Sector Quebrada de Cariaco* |
+| **Quebrada de Germán** | **La Guaira** → *Sector Quebrada de Germán* |
+| **Quebrada Seca** | **Caraballeda** → *Quebrada Seca* · *Sector Quebrada Seca*<br>**Caruao** → *Quebrada Seca*<br>**Naiguatá** → *Sector Quebrada Seca* |
+| **Quenepe** | **Maiquetía** → *Quenepe* |
+| **Quenepe Parte Alta** | **Maiquetía** → *Sector Quenepe Parte Alta* |
+| **Quenepe Sector I** | **Maiquetía** → *Sector Quenepe Sector I* |
+| **Río Arriba** | **Carayaca** → *Río Arriba* · *Sector Río Arriba* |
+| **Río Grande** | **Maiquetía** → *Río Grande* |
+| **Rómulo Gallegos** | **Catia La Mar** → *Urbanización Rómulo Gallegos* |
+| **Roraima II** | **Catia La Mar** → *Sector Roraima II* |
+| **Rosario** | **Caraballeda** → *Rosario* |
+| **Salto de Uría** | **Naiguatá** → *Salto de Uría* |
+| **San Antonio** | **Naiguatá** → *Sector San Antonio* |
+| **San Antonio de Galipán** | **Macuto** → *San Antonio de Galipán* · *Sector San Antonio de Galipán* |
+| **San Antonio de Las Flores Parte Alta** | **Maiquetía** → *Sector San Antonio de Las Flores Parte Alta* |
+| **San Antonio de Las Flores Parte Baja** | **Maiquetía** → *Sector San Antonio de Las Flores Parte Baja* |
+| **San Francisco** | **Naiguatá** → *Sector San Francisco* |
+| **San Jorge** | **Caruao** → *San Jorge* |
+| **San José** | **Maiquetía** → *San José*<br>**Naiguatá** → *San José* |
+| **San José de Galipán** | **Macuto** → *San José de Galipán* · *Sector San José de Galipán* |
+| **San Juan de Dios** | **La Guaira** → *San Juan de Dios* |
+| **San Juilán** | **Caraballeda** → *San Juilán* |
+| **San Julián** | **Caraballeda** → *San Julián* · *Sector San Julián* |
+| **San Miguel** | **Carayaca** → *San Miguel* · *Sector San Miguel* |
+| **San Nicolás** | **Maiquetía** → *Sector San Nicolás* |
+| **San Rafael (Canaima)** | **Carlos Soublette** → *Sector San Rafael (Canaima)* |
+| **San Rafael de Los Molinos** | **Carayaca** → *San Rafael de los Molinos* · *Sector San Rafael de Los Molinos* |
+| **San Remo** | **Catia La Mar** → *San Remo* · *Sector San Remo* |
+| **San Sebastián** | **Maiquetía** → *Sector San Sebastián* |
+| **San Simón** | **Caruao** → *San Simón* |
+| **Santa Ana** | **Maiquetía** → *Sector Santa Ana* |
+| **Santa Cruz** | **Catia La Mar** → *Barrio Santa Cruz* · *Sector Santa Cruz* |
+| **Santa Eduvigis** | **Urimare** → *Barrio Santa Eduvigis* · *Santa Eduvigis* · *Sector Santa Eduvigis* |
+| **Santa Rosa** | **Carayaca** → *Santa Rosa* · *Sector Santa Rosa* |
+| **Simetaca** | **Carlos Soublette** → *Sector Simetaca* |
+| **Solidaridad Vargas** | **Urimare** → *Solidaridad Vargas* |
+| **Sorocaima** | **Maiquetía** → *Sector Sorocaima* |
+| **Sotavento I** | **Urimare** → *Conjunto Residencial Sotavento I* · *Sotavento I* |
+| **Sotavento II** | **Urimare** → *Conjunto Residencial Sotavento II* · *Sotavento II* |
+| **Soublette** | **Catia La Mar** → *Urbanización Soublette* |
+| **Steelband** | **Naiguatá** → *Steelband* |
+| **Subida de Algarín** | **Maiquetía** → *Sector Subida de Algarín* |
+| **Tabacal** | **Carlos Soublette** → *Tabacal* |
+| **Tachigual** | **Caraballeda** → *Sector Tachigual* |
+| **Tacoa** | **Catia La Mar** → *Sector Tacoa* · *Tacoa* |
+| **Taguao** | **Carayaca** → *Taguao*<br>**Catia La Mar** → *Sector Taguao*<br>**Urimare** → *Sector Taguao* |
+| **Tamanaco** | **Carayaca** → *Sector Tamanaco* |
+| **Tanaguarena** | **Caraballeda** → *Sector Tanaguarena* · *Tanaguarena* · *Urbanización Tanaguarena* |
+| **Tanaguarenita** | **Caraballeda** → *Tanaguarenita* |
+| **Tarma** | **Carayaca** → *Sector Tarma* |
+| **Tarma Abajo** | **Carayaca** → *Sector Tarma Abajo* · *Tarma Abajo* |
+| **Tarmas** | **Carayaca** → *Tarmas* |
+| **Tejerías** | **Carayaca** → *Sector Tejerías* |
+| **Templón** | **Carayaca** → *Sector Templón* |
+| **Terrazas de Alto Picure** | **Catia La Mar** → *Terrazas de Alto Picure* |
+| **Terrazas de Camuri Chico** | **Caraballeda** → *Terrazas de Camuri Chico* |
+| **Tibrón Grande** | **El Junko** → *Tibrón Grande* |
+| **Tibroncito** | **Carayaca** → *Sector Tibroncito* · *Tibroncito* |
+| **Tiburón Grande** | **Carayaca** → *Sector Tiburón Grande* |
+| **Tigre** | **Carayaca** → *Tigre* |
+| **Tirima** | **Carayaca** → *Sector Tirima* · *Tirima* |
+| **Todasana** | **Caruao** → *Todasana* |
+| **Topo Infiernito** | **Maiquetía** → *Sector Topo Infiernito* |
+| **Tropical II** | **Carlos Soublette** → *Sector Tropical II* |
+| **Urama** | **Caruao** → *Urama* |
+| **Uria** | **Naiguatá** → *Sector Uria* |
+| **Uricagua** | **Carayaca** → *Uricagua* |
+| **Valle del Pino** | **Caraballeda** → *Sector Valle del Pino* |
+| **Valle La Cruz** | **Catia La Mar** → *Sector Valle La Cruz* · *Valle La Cruz* |
+| **Valle Verde** | **Carayaca** → *Sector Valle Verde* |
+| **Vargas** | **Macuto** → *Vargas* |
+| **Vargas (Módulo Aeropuerto Nacional e Internacional)** | **Urimare** → *Vargas (Módulo Aeropuerto Nacional e Internacional)* |
+| **Ventilador** | **Caruao** → *Ventilador* |
+| **Vía Eterna** | **Catia La Mar** → *Sector Vía Eterna* |
+| **Vilachá** | **Maiquetía** → *Sector Vilachá* |
+| **Villa Croacia** | **Catia La Mar** → *Sector Villa Croacia* |
+| **Villa Eterna** | **Catia La Mar** → *Sector Villa Eterna* |
+| **Villa Mar** | **Carayaca** → *Sector Villa Mar* |
+| **Vista Al Aeropuerto** | **Urimare** → *Sector Vista Al Aeropuerto* |
+| **Vista Al Mar** | **Catia La Mar** → *Sector Vista Al Mar* · *Vista al Mar* |
+| **Vista Caribe** | **Urimare** → *Conjunto Residencial Vista Caribe* · *Urbanización Vista Caribe* |
+| **Vuelta del Mamonal** | **Urimare** → *Vuelta del Mamonal* |
+| **Vuelta La Osa** | **Caruao** → *Vuelta La Osa* |
+| **Vueltas Coloradas** | **Maiquetía** → *Vueltas Coloradas* |
+| **Week-End** | **Urimare** → *Sector Week-End* · *Week-End* |
+| **Yagrumal** | **Carayaca** → *Yagrumal* |
+| **Zapateral** | **Carayaca** → *Sector Zapateral* · *Zapateral* |
+| **Zig Zag** | **Carlos Soublette** → *Zig Zag* |
+
 # Fuentes
 
 ### 1. Fuentes oficiales

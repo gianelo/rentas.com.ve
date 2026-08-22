@@ -1,5 +1,10 @@
 import { createHash } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import { readTerritoryDocuments } from "../../modules/listing-catalogue/infrastructure/territorio-files";
+import {
+  buildTerritoryRows,
+  territoryId,
+} from "../../modules/listing-catalogue/infrastructure/territorio-import";
 // TYPE-ONLY, and it has to stay that way. `./client` calls
 // `getPooledDatabaseUrl()` at module scope, so a value import would make
 // merely *importing* this file throw when DATABASE_URL is unset — before
@@ -12,7 +17,7 @@ import { and, eq } from "drizzle-orm";
 // as a hard failure that local runs hid, because a local `.env` supplies
 // DATABASE_URL and CI supplies only TEST_DATABASE_URL.
 import type { db } from "./client";
-import { cities, listings, users, zones } from "./schema";
+import { cities, listings, type PropertyType, users, zones } from "./schema";
 
 /**
  * PROVISIONAL taxonomy (tasks.md 2.3). The founder has not supplied the
@@ -59,9 +64,17 @@ export const PROVISIONAL_TAXONOMY: ReadonlyArray<{
  * and a seed of all-owners would let that regression ship unnoticed.
  */
 const SEEDED_LISTINGS: ReadonlyArray<{
-  readonly city: string;
-  readonly zone: string;
+  /**
+   * **Camino completo, no nombre.** Referenciar una zona por su nombre elige
+   * el lugar equivocado: en la taxonomia real "Tierra Negra" existe en
+   * Cabimas antes que en Maracaibo, "Altamira" tiene 13 coincidencias y la
+   * primera es un barrio de Santa Rosalia, y "Los Palos Grandes" cae en un
+   * conjunto residencial de Caricuao. El camino
+   * `area/municipio/parroquia/categoria/nombre` es unico por construccion.
+   */
+  readonly path: string;
   readonly publisherType: "owner" | "broker";
+  readonly propertyType: PropertyType;
   readonly title: string;
   readonly description: string;
   readonly priceUsd: number;
@@ -69,10 +82,15 @@ const SEEDED_LISTINGS: ReadonlyArray<{
   readonly areaM2: number;
   readonly bathrooms: number;
   readonly parkingSpots: number;
+  readonly hasPowerPlant?: boolean;
+  readonly hasRegularWater?: boolean;
+  readonly isFurnished?: boolean;
+  readonly hasSecurity?: boolean;
+  readonly hasAppliances?: boolean;
 }> = [
   {
-    city: "Distrito Capital",
-    zone: "Chacao",
+    path: "Caracas/Chacao/Chacao/urbanizacion/Urbanización Chacao",
+    propertyType: "apartamento",
     publisherType: "owner",
     title: "Apartamento 2 habitaciones con puesto de estacionamiento",
     description:
@@ -84,8 +102,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     parkingSpots: 1,
   },
   {
-    city: "Distrito Capital",
-    zone: "Altamira",
+    path: "Caracas/Chacao/Chacao/urbanizacion/Urbanización Altamira",
+    propertyType: "habitacion",
     publisherType: "owner",
     title: "Estudio en Altamira, ideal para una persona",
     description:
@@ -97,8 +115,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     parkingSpots: 0,
   },
   {
-    city: "Distrito Capital",
-    zone: "La Castellana",
+    path: "Caracas/Chacao/Chacao/urbanizacion/Urbanización La Castellana",
+    propertyType: "apartamento",
     publisherType: "broker",
     title: "Apartamento amplio en La Castellana, 3 habitaciones",
     description:
@@ -110,8 +128,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     parkingSpots: 2,
   },
   {
-    city: "Distrito Capital",
-    zone: "Los Palos Grandes",
+    path: "Caracas/Chacao/Chacao/urbanizacion/Urbanización Los Palos Grandes",
+    propertyType: "apartamento",
     publisherType: "owner",
     title: "Apto amoblado cerca del metro, edificio con vigilancia",
     description:
@@ -123,8 +141,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     parkingSpots: 1,
   },
   {
-    city: "Distrito Capital",
-    zone: "El Rosal",
+    path: "Caracas/Chacao/Chacao/urbanizacion/Urbanización El Rosal",
+    propertyType: "apartamento",
     publisherType: "broker",
     title: "Apartamento 1 habitación en El Rosal, edificio remodelado",
     description:
@@ -136,8 +154,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     parkingSpots: 1,
   },
   {
-    city: "Distrito Capital",
-    zone: "Las Mercedes",
+    path: "Caracas/Chacao/Chacao/urbanizacion/Urbanización Las Mercedes",
+    propertyType: "anexo",
     publisherType: "broker",
     title: "Apartamento 2 habitaciones en Las Mercedes con maletero",
     description:
@@ -149,8 +167,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     parkingSpots: 1,
   },
   {
-    city: "Maracaibo",
-    zone: "Tierra Negra",
+    path: "Maracaibo/Maracaibo/Olegario Villalobos/sector/Sector Tierra Negra",
+    propertyType: "apartamento",
     publisherType: "owner",
     title: "Apartamento 3 habitaciones en Tierra Negra, con planta",
     description:
@@ -162,8 +180,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     parkingSpots: 2,
   },
   {
-    city: "Maracaibo",
-    zone: "Bella Vista",
+    path: "Maracaibo/Maracaibo/Olegario Villalobos/sector/Sector Bella Vista",
+    propertyType: "apartamento",
     publisherType: "owner",
     title: "Estudio amoblado en Bella Vista, línea blanca incluida",
     description:
@@ -175,8 +193,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     parkingSpots: 0,
   },
   {
-    city: "Maracaibo",
-    zone: "La Lago",
+    path: "Maracaibo/Maracaibo/Olegario Villalobos/sector/Sector Cecilio Acosta",
+    propertyType: "apartamento",
     publisherType: "broker",
     title: "Apartamento 2 habitaciones en La Lago, vista al lago",
     description:
@@ -188,8 +206,8 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     parkingSpots: 1,
   },
   {
-    city: "Maracaibo",
-    zone: "Indio Mara",
+    path: "Maracaibo/Maracaibo/Chiquinquirá/sector/Sector Indio Mara",
+    propertyType: "casa",
     publisherType: "owner",
     title: "Apartamento 2 habitaciones en Indio Mara, agua regular",
     description:
@@ -283,23 +301,40 @@ export async function seed(database?: SeedDatabase): Promise<void> {
   // Resolved here, not as a default parameter: the real client must not be
   // loaded at all when a handle was supplied (see the import note above).
   const target: SeedDatabase = database ?? (await import("./client")).db;
-  for (const { city, zones: zoneNames } of PROVISIONAL_TAXONOMY) {
-    const [cityRow] = await target
+  // **El arbol territorial, generado y no transcrito.** 5.705 lugares bajo 81
+  // parroquias y 10 municipios, leidos de docs/territorio/ por el parser de
+  // listing-catalogue. Los ids salen del camino completo, asi que una segunda
+  // corrida produce exactamente las mismas filas y el upsert es un no-op real
+  // -- que es lo que la idempotencia de la 2.3 pide de verdad.
+  const {
+    areas,
+    zones: zoneRows,
+    unmappedMunicipalities,
+  } = buildTerritoryRows(readTerritoryDocuments());
+
+  if (unmappedMunicipalities.length > 0) {
+    // Ruidoso a proposito. Un municipio sin area no se puede insertar sin
+    // inventarle una, y un area inventada rompe el aislamiento de D5 sin que
+    // nada se queje. Preferimos que la siembra falle a que la busqueda mienta.
+    throw new Error(`seed: municipios sin area en AREAS: ${unmappedMunicipalities.join(", ")}`);
+  }
+
+  for (const area of areas) {
+    await target
       .insert(cities)
-      .values({ name: city })
-      .onConflictDoUpdate({ target: cities.name, set: { name: city } })
-      .returning({ id: cities.id });
+      .values({ id: area.id, name: area.name })
+      .onConflictDoUpdate({ target: cities.name, set: { name: area.name } });
+  }
 
-    if (!cityRow) {
-      throw new Error(`seed: upsert for city "${city}" returned no row`);
-    }
-
-    for (const zoneName of zoneNames) {
-      await target
-        .insert(zones)
-        .values({ cityId: cityRow.id, name: zoneName })
-        .onConflictDoNothing({ target: [zones.cityId, zones.name] });
-    }
+  // En lotes porque son casi 5.800 filas y un insert por fila son 5.800 viajes
+  // de red contra Neon, que es HTTP. El tamano es conservador: Postgres tiene
+  // un tope de parametros por sentencia y cada fila lleva ocho.
+  const BATCH = 500;
+  for (let i = 0; i < zoneRows.length; i += BATCH) {
+    await target
+      .insert(zones)
+      .values(zoneRows.slice(i, i + BATCH))
+      .onConflictDoNothing({ target: zones.id });
   }
 
   const publisherIds = new Map<string, string>();
@@ -321,11 +356,14 @@ export async function seed(database?: SeedDatabase): Promise<void> {
   const expiresAt = new Date(publishedAt.getTime() + THIRTY_DAYS_MS);
 
   for (const listing of SEEDED_LISTINGS) {
+    // Resuelto por ID derivado del camino, no por nombre. Buscar por nombre
+    // elige el lugar equivocado: "Tierra Negra" existe en Cabimas antes que en
+    // Maracaibo, y "Altamira" tiene 13 coincidencias en el corpus.
+    const zoneId = territoryId(listing.path);
     const [zoneRow] = await target
       .select({ id: zones.id, cityId: zones.cityId })
       .from(zones)
-      .innerJoin(cities, eq(zones.cityId, cities.id))
-      .where(and(eq(cities.name, listing.city), eq(zones.name, listing.zone)))
+      .where(eq(zones.id, zoneId))
       .limit(1);
 
     // A listing whose zone is missing from the taxonomy is a seed bug, not
@@ -333,7 +371,9 @@ export async function seed(database?: SeedDatabase): Promise<void> {
     // anyway, and a silent skip would show up later as a city that renders
     // fewer results than it should for no visible reason.
     if (!zoneRow) {
-      throw new Error(`seed: zone "${listing.zone}" not found in city "${listing.city}"`);
+      // Nombra el camino exacto que falta. Un seed que sigue de largo deja un
+      // catalogo incompleto que nadie nota hasta que un visitante busca ahi.
+      throw new Error(`seed: no existe la zona "${listing.path}" en la taxonomia`);
     }
 
     const publisherId = publisherIds.get(listing.publisherType);
@@ -344,9 +384,10 @@ export async function seed(database?: SeedDatabase): Promise<void> {
     await target
       .insert(listings)
       .values({
-        id: stableId(`listing:${listing.city}:${listing.zone}:${listing.title}`),
+        id: stableId(`listing:${listing.path}:${listing.title}`),
         publisherId,
         publisherType: listing.publisherType,
+        propertyType: listing.propertyType,
         cityId: zoneRow.cityId,
         zoneId: zoneRow.id,
         title: listing.title,
@@ -356,6 +397,11 @@ export async function seed(database?: SeedDatabase): Promise<void> {
         areaM2: listing.areaM2,
         bathrooms: listing.bathrooms,
         parkingSpots: listing.parkingSpots,
+        hasPowerPlant: listing.hasPowerPlant ?? false,
+        hasRegularWater: listing.hasRegularWater ?? false,
+        isFurnished: listing.isFurnished ?? false,
+        hasSecurity: listing.hasSecurity ?? false,
+        hasAppliances: listing.hasAppliances ?? false,
         // Seeded listings are demo data, so the contact is deliberately
         // UNUSABLE. Inventing a plausible number would put a contact into
         // the product that nobody owns, and the reveal button would hand a

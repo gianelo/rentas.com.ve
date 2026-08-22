@@ -2056,6 +2056,1043 @@ Se listan **todos** los casos detectados (84).
 | Edificaciones identificadas individualmente | 9 |
 | **Total de elementos sub-parroquiales** | **1272** |
 
+# Índice de topónimos
+
+Índice alfabético de **cómo se busca** cada zona. Un mismo topónimo puede aparecer con varias etiquetas y en varias parroquias: acá se ven todas juntas.
+
+**Este índice no crea zonas.** Cada topónimo se extrae del nombre que la fuente ya publica, quitándole únicamente la palabra de categoría (`Barrio`, `Sector`, `Urbanización`, `Conjunto Residencial`, `Parcelamiento`, `Caserío`, `Casco Central de`, `Centro de`, `Zona Industrial`, `Oficina Postal Telegráfica`). Cuando un nombre entierra un segundo topónimo — por ejemplo *«Barrio Tierra Negra del Sector **Bella Vista**»* — también se indexa el enterrado.
+
+Las *Edificaciones identificadas individualmente* quedan fuera del índice: no son zonas.
+
+| Topónimo | Dónde aparece |
+|---|---|
+| **05 de Julio** | **Coquivacoa** → *Sector 05 de Julio*<br>**Olegario Villalobos** → *Sector 05 de Julio* |
+| **05 de Julio I** | **Cecilio Acosta** → *Barrio 05 de Julio I* |
+| **05 de Julio II** | **Cecilio Acosta** → *Barrio 05 de Julio II* |
+| **05 de Julio Norte II** | **Olegario Villalobos** → *Sector 05 de Julio Norte II* |
+| **05 de Julio Norte III** | **Olegario Villalobos** → *Sector 05 de Julio Norte III* |
+| **1 (Urb. Fundación Maracaibo)** | **Cristo de Aranza** → *Sector 1 (Urb. Fundación Maracaibo)* |
+| **10 de San Jacinto** | **Juana de Ávila** → *Sector 10 de San Jacinto* |
+| **11 de Febrero** | **Cecilio Acosta** → *Barrio 11 de Febrero* |
+| **12 de Febrero** | **Venancio Pulgar** → *Barrio 12 de Febrero* |
+| **12 de Marzo** | **Venancio Pulgar** → *Barrio 12 de Marzo del Sector Nora Herrera* |
+| **12 de Marzo I** | **Venancio Pulgar** → *Barrio 12 de Marzo I* |
+| **12 de Marzo II** | **Venancio Pulgar** → *Barrio 12 de Marzo II* |
+| **12 de Octubre** | **Cacique Mara** → *Barrio 12 de Octubre* |
+| **13 de San Jacinto** | **Juana de Ávila** → *Sector 13 de San Jacinto* |
+| **14 de Julio** | **Francisco Eugenio Bustamante** → *Barrio 14 de Julio* |
+| **14 de Mayo** | **Venancio Pulgar** → *Barrio 14 de Mayo* |
+| **14 de Noviembre** | **Raúl Leoni** → *Barrio 14 de Noviembre* |
+| **14 de San Jacinto** | **Juana de Ávila** → *Sector 14 de San Jacinto* |
+| **15 de Marzo** | **Antonio Borjas Romero** → *Barrio 15 de Marzo* |
+| **15 de San Jacinto** | **Juana de Ávila** → *Sector 15 de San Jacinto* |
+| **16 de Noviembre** | **Luis Hurtado Higuera** → *Barrio 16 de Noviembre* |
+| **16 de San Jacinto** | **Juana de Ávila** → *Sector 16 de San Jacinto* |
+| **17 de San Jacinto** | **Juana de Ávila** → *Sector 17 de San Jacinto* |
+| **18** | **Juana de Ávila** → *Sector 18* |
+| **18 de Octubre** | **Coquivacoa** → *18 de Octubre* · *Barrio 18 de Octubre* · *Barrio 18 de Octubre del Sector El Valle* · *Barrio 18 de Octubre del Sector Granadillo* · *Barrio 18 de Octubre del Sector La Salina* · *Barrio 18 de Octubre del Sector Norte Independiente* · *Barrio 18 de Octubre del Sector Pueblo Aparte* · *Barrio 18 de Octubre del Sector los Tres Caminos*<br>**Olegario Villalobos** → *Barrio 18 de Octubre del Sector Bella Vista* · *Barrio 18 de Octubre del Sector Olegario Villalobos* |
+| **18 de Octubre Monte Claro** | **Coquivacoa** → *Barrio 18 de Octubre Monte Claro* |
+| **18 de Octubre Sector 9** | **Coquivacoa** → *Barrio 18 de Octubre Sector 9* |
+| **18 de Octubre Sector El Valle** | **Coquivacoa** → *18 de Octubre Sector El Valle* |
+| **18 de Octubre Sector La Salina** | **Coquivacoa** → *18 de Octubre Sector La Salina* |
+| **18 de Octubre Sector Los Tres Caminos** | **Coquivacoa** → *18 de Octubre Sector Los Tres Caminos* |
+| **18 de Octubre Sector Norte Independencia** | **Coquivacoa** → *18 de Octubre Sector Norte Independencia* |
+| **18 de Octubre Sector Pueblo Aparte** | **Coquivacoa** → *18 de Octubre Sector Pueblo Aparte* |
+| **19 de Abril** | **Francisco Eugenio Bustamante** → *Barrio 19 de Abril* |
+| **1ro de Agosto** | **Francisco Eugenio Bustamante** → *Sector 1ro de Agosto* |
+| **1ro de Agosto I** | **Francisco Eugenio Bustamante** → *Parcelamiento 1ro de Agosto I* |
+| **1ro de Agosto II** | **Francisco Eugenio Bustamante** → *Parcelamiento 1ro de Agosto II* |
+| **1ro de Mayo** | **Chiquinquirá** → *Sector 1ro de Mayo* |
+| **2 de San Jacinto** | **Juana de Ávila** → *Sector 2 de San Jacinto* |
+| **2 (Urb. Fundación Maracaibo)** | **Cristo de Aranza** → *Sector 2 (Urb. Fundación Maracaibo)* |
+| **23 de Enero I** | **Cristo de Aranza** → *Barrio 23 de Enero I* |
+| **23 de Enero II** | **Cristo de Aranza** → *Barrio 23 de Enero II* |
+| **23 de Enero III** | **Cristo de Aranza** → *Barrio 23 de Enero III* |
+| **23 de Febrero** | **Luis Hurtado Higuera** → *Barrio Integración Comunal del Sector 23 de Febrero* · *Sector 23 de Febrero* |
+| **23 de Marzo** | **Idelfonso Vásquez** → *Barrio 23 de Marzo* |
+| **24 de Noviembre** | **Raúl Leoni** → *Barrio 24 de Noviembre* |
+| **24 de Septiembre** | **Idelfonso Vásquez** → *Barrio 24 de Septiembre del Sector Los Planazos* |
+| **3 de San Jacinto** | **Juana de Ávila** → *Sector 3 de San Jacinto* |
+| **4 de San Jacinto** | **Juana de Ávila** → *Sector 4 de San Jacinto* |
+| **5 de Julio (Sur)** | **Bolívar** → *5 de Julio (Sur)* |
+| **5 de San Jacinto** | **Juana de Ávila** → *Sector 5 de San Jacinto* |
+| **6 de Enero** | **Luis Hurtado Higuera** → *Barrio Integración Comunal del Sector 6 de Enero* |
+| **7 de San Jacinto** | **Juana de Ávila** → *Sector 7 de San Jacinto* |
+| **8 de San Jacinto** | **Juana de Ávila** → *Sector 8 de San Jacinto* |
+| **Acuarelas del Sol** | **Coquivacoa** → *Acuarelas del Sol* · *Conjunto Residencial Acuarelas del Sol* |
+| **Agua Canto** | **Coquivacoa** → *Conjunto Residencial Agua Canto* |
+| **Agua Marina** | **Coquivacoa** → *Conjunto Residencial Agua Marina* |
+| **Ajonjolí** | **Idelfonso Vásquez** → *Barrio Ajonjolí* |
+| **Ala Blanca** | **Juana de Ávila** → *Conjunto Residencial Ala Blanca* |
+| **Alberto Carnavallis** | **Raúl Leoni** → *Barrio Alberto Carnavallis* |
+| **Alberto González** | **Idelfonso Vásquez** → *Sector Alberto González* |
+| **Alfredo Sadel** | **Cecilio Acosta** → *Barrio Alfredo Sadel* |
+| **Alma Bolivariana** | **Venancio Pulgar** → *Barrio Alma Bolivariana* |
+| **Alta Vista** | **Cacique Mara** → *Parcelamiento Alta Vista* |
+| **Altamira** | **Raúl Leoni** → *Barrio Altamira* · *Urbanización Altamira* |
+| **Altamira Norte** | **Cristo de Aranza** → *Altamira Norte* · *Barrio Altamira Norte* |
+| **Altamira Sur** | **Cristo de Aranza** → *Altamira Sur* · *Barrio Altamira Sur del Sector Hato Viejo* |
+| **Altamira Sur de Sector Vista Hermosa** | **Cristo de Aranza** → *Barrio Altamira Sur de Sector Vista Hermosa* |
+| **Altamira Sur II** | **Cristo de Aranza** → *Barrio Altamira Sur II* |
+| **Alto Alegre** | **Manuel Dagnino** → *Urbanización Alto Alegre* |
+| **Alto de Jalísco** | **Coquivacoa** → *Sector Alto de Jalísco* |
+| **Alto de La Venega** | **Francisco Eugenio Bustamante** → *Sector Alto de La Venega* |
+| **Alto del Milagro** | **Coquivacoa** → *Barrio Alto del Milagro* |
+| **Altos de Jalisco I** | **Coquivacoa** → *Barrio Altos de Jalisco I* |
+| **Altos de Jalisco II** | **Coquivacoa** → *Barrio Altos de Jalisco II* |
+| **Altos de Jalisco III** | **Coquivacoa** → *Barrio Altos de Jalisco III* |
+| **Altos de Jalisco Sector 1** | **Coquivacoa** → *Altos de Jalisco Sector 1* |
+| **Altos de Jalisco Sector 2** | **Coquivacoa** → *Altos de Jalisco Sector 2* |
+| **Altos de Jalisco Sector 3** | **Coquivacoa** → *Altos de Jalisco Sector 3* |
+| **Altos de la Vanega** | **Manuel Dagnino** → *Barrio Altos de la Vanega* |
+| **Altos de la Venega** | **Manuel Dagnino** → *Barrio Altos de la Venega* |
+| **Altos de Maracaibo** | **Francisco Eugenio Bustamante** → *Urbanización Altos de Maracaibo* |
+| **Altos de Milagro Norte** | **Coquivacoa** → *Barrio Altos de Milagro Norte* |
+| **Altos de Milagro Sector Norte** | **Coquivacoa** → *Altos de Milagro Sector Norte* |
+| **Altos del Pilar** | **Olegario Villalobos** → *Urbanización Altos del Pilar* |
+| **Altos del Sol Amado** | **Francisco Eugenio Bustamante** → *Urbanización Altos del Sol Amado* |
+| **Amalwin** | **Luis Hurtado Higuera** → *Amalwin* · *Barrio Amalwin* · *Parcelamiento Amalwin* |
+| **Amazonia** | **Coquivacoa** → *Conjunto Residencial Amazonia* |
+| **Ana María Campos** | **Francisco Eugenio Bustamante** → *Urbanización Ana María Campos*<br>**Raúl Leoni** → *Barrio Ana María Campos* |
+| **Ancón Alto** | **Venancio Pulgar** → *Barrio Ancón Alto* |
+| **Andrade Labarca** | **Raúl Leoni** → *Barrio Andrade Labarca* |
+| **Andrés Blanco** | **Cecilio Acosta** → *Barrio Andrés Blanco del Sector Mata Palo* |
+| **Andrés Eloy Blanco** | **Cecilio Acosta** → *Parcelamiento La Unión del Sector Andrés Eloy Blanco* · *Sector Andrés Eloy Blanco* |
+| **Andrés Eloy Blanco Sector I** | **Cecilio Acosta** → *Barrio Andrés Eloy Blanco Sector I* |
+| **Andrés Eloy Blanco Sector II** | **Cecilio Acosta** → *Barrio Andrés Eloy Blanco Sector II* |
+| **Andrés Eloy Blanco Sector III** | **Cecilio Acosta** → *Barrio Andrés Eloy Blanco Sector III* |
+| **Aníbal Ospino** | **Antonio Borjas Romero** → *Barrio Aníbal Ospino* |
+| **Antiguo Matadero** | **San Isidro** → *Barrio Antiguo Matadero* |
+| **Antonio Borjas Romero** | **Raúl Leoni** → *Barrio Antonio Borjas Romero* |
+| **Antonio José de Sucre** | **Antonio Borjas Romero** → *Barrio El Samide del Sector Antonio José de Sucre* · *Sector Antonio José de Sucre* |
+| **Aravane** | **Coquivacoa** → *Conjunto Residencial Aravane* |
+| **Arca De Noe** | **San Isidro** → *Barrio Arca De Noe* |
+| **Arcoiris** | **Raúl Leoni** → *Parcelamiento Arcoiris* |
+| **Arenales** | **Cacique Mara** → *Conjunto Residencial Arenales* |
+| **Arismendi** | **Cacique Mara** → *Barrio San Fernando del Sector Arismendi*<br>**Cecilio Acosta** → *Parcelamiento Arísmendi* |
+| **Armando Molero** | **Venancio Pulgar** → *Barrio Armando Molero* |
+| **Armando Reverón** | **Venancio Pulgar** → *Barrio Armando Reverón* |
+| **Asociaco** | **Francisco Eugenio Bustamante** → *Parcelamiento Asociaco* |
+| **Ávila** | **Cacique Mara** → *Conjunto Residencial Ávila* |
+| **Ayacucho** | **Raúl Leoni** → *Barrio Ayacucho* |
+| **Bahía** | **Coquivacoa** → *Conjunto Residencial Bahía* |
+| **Bajo Seco** | **Caracciolo Parra Pérez** → *Barrio Bajo Seco* |
+| **Balmiro León I** | **Idelfonso Vásquez** → *Barrio Balmiro León I* |
+| **Balmiro León II** | **Idelfonso Vásquez** → *Barrio Balmiro León II* |
+| **Baralt** | **Chiquinquirá** → *Sector Baralt* |
+| **Barrios Las Tarabas** | **Juana de Ávila** → *Barrios Las Tarabas* |
+| **Bayona** | **Coquivacoa** → *Conjunto Residencial Bayona* |
+| **Bayona II** | **Coquivacoa** → *Conjunto Residencial Bayona II* |
+| **Bella Esperanza** | **Idelfonso Vásquez** → *Barrio Bella Esperanza* |
+| **Bella Vista** | **Coquivacoa** → *Oficina Postal Telegráfica Bella Vista*<br>**Olegario Villalobos** → *Barrio 18 de Octubre del Sector Bella Vista* · *Barrio Bella Vista del Sector Costa Verde* · *Barrio Tierra Negra del Sector Bella Vista* · *Sector Bella Vista* |
+| **Bellas Artes** | **Olegario Villalobos** → *Sector Bellas Artes* |
+| **Bello Monte** | **Coquivacoa** → *Bello Monte*<br>**Idelfonso Vásquez** → *Sector Bello Monte*<br>**Manuel Dagnino** → *Barrio Bello Monte* · *Sector Bello Monte* |
+| **Bello Monte II** | **Manuel Dagnino** → *Barrio Bello Monte II* |
+| **Bello Monte Sector Sanatorio** | **Manuel Dagnino** → *Barrio Bello Monte Sector Sanatorio* |
+| **Belloso** | **Bolívar** → *Barrio Santa Bárbara del Sector Belloso* · *Sector Belloso* |
+| **Beto Morillo** | **Venancio Pulgar** → *Barrio Beto Morillo* |
+| **Bicentenario** | **Idelfonso Vásquez** → *Sector Bicentenario* |
+| **Bicentenario del Libertador** | **Venancio Pulgar** → *Barrio Bicentenario del Libertador* |
+| **Bicentenario Girardot** | **Luis Hurtado Higuera** → *Barrio Integración Comunal del Sector Bicentenario Girardot* · *Sector Bicentenario Girardot* |
+| **Bicentenario Sector II** | **Francisco Eugenio Bustamante** → *Barrio Bicentenario Sector II* |
+| **Bicentenario Sector III** | **Francisco Eugenio Bustamante** → *Barrio Bicentenario Sector III* |
+| **Bicentenario Sector IV** | **Francisco Eugenio Bustamante** → *Barrio Bicentenario Sector IV* |
+| **Blanca Aurora** | **Coquivacoa** → *Urbanización Blanca Aurora* |
+| **Blanco** | **Idelfonso Vásquez** → *Barrio Blanco* · *Barrio Blanco del Sector TerepaimaI* · *Barrio Blanco del Sector TerepaimaII*<br>**Raúl Leoni** → *Barrio Blanco* |
+| **Blanco II** | **Venancio Pulgar** → *Barrio Blanco II* |
+| **Bloques de La Trinidad** | **Juana de Ávila** → *Bloques de La Trinidad* |
+| **Bolívar** | **Bolívar** → *Centro de Bolívar* · *Sector Bolívar* |
+| **Bolivita** | **Francisco Eugenio Bustamante** → *Barrio Bolivita* |
+| **Bosques Majicos** | **Cecilio Acosta** → *Conjunto Residencial Bosques Majicos* |
+| **Brisas de La Venega** | **Francisco Eugenio Bustamante** → *Barrio Brisas de La Venega* |
+| **Brisas del Norte** | **Idelfonso Vásquez** → *Barrio Brisas del Norte* |
+| **Brisas del Sur** | **Manuel Dagnino** → *Barrio Brisas del Sur* |
+| **Brisas del Sur I** | **Manuel Dagnino** → *Barrio Brisas del Sur I* |
+| **Brisas del Sur II** | **Manuel Dagnino** → *Barrio Brisas del Sur II* |
+| **Brisas del Sur III** | **Manuel Dagnino** → *Barrio Brisas del Sur III* |
+| **Buena Vista** | **Cacique Mara** → *Barrio Buena Vista* |
+| **Buenos Aires** | **Manuel Dagnino** → *Barrio San Pedro I del Sector Buenos Aires* · *Sector Buenos Aires* |
+| **C.C. Lago** | **Coquivacoa** → *C.C. Lago* |
+| **Cabeza de Toro** | **Raúl Leoni** → *Barrio Cabeza de Toro* |
+| **Cabo Norte Villas** | **Coquivacoa** → *Conjunto Residencial Cabo Norte Villas* |
+| **Calendario** | **Antonio Borjas Romero** → *Barrio Calendario* |
+| **Calendario de San José de La Montaña** | **Antonio Borjas Romero** → *Barrio Calendario de San José de La Montaña* |
+| **Calendario Sector Santa Rosa** | **Antonio Borjas Romero** → *Barrio Calendario Sector Santa Rosa* |
+| **Campo Alegre** | **Cristo de Aranza** → *Barrio Campo Alegre* · *Campo Alegre* · *Sector Campo Alegre* |
+| **Campo Elías** | **Venancio Pulgar** → *Sector Campo Elías* |
+| **Campo Verde** | **Raúl Leoni** → *Conjunto Residencial Campo Verde* |
+| **Cañada Honda** | **Cacique Mara** → *Barrio Cañada Honda* |
+| **Cañada La Negra** | **Chiquinquirá** → *Sector Cañada La Negra* |
+| **Cañada Santa Lucía** | **Olegario Villalobos** → *Barrio Cerro Marín del Sector Cañada Santa Lucía* · *Sector Cañada Santa Lucía* |
+| **Cañada Virginia** | **Olegario Villalobos** → *Sector Cañada Virginia* |
+| **Canaima** | **Juana de Ávila** → *Conjunto Residencial Canaima* · *Sector Canaima* |
+| **Canchancha** | **Raúl Leoni** → *Barrio Canchancha* |
+| **Canta Claro** | **Coquivacoa** → *Canta Claro* · *Sector Canta Claro* · *Urbanización Canta Claro* |
+| **Capitán Chico** | **Olegario Villalobos** → *Barrio Capitán Chico* |
+| **Cardón La Estrella** | **Francisco Eugenio Bustamante** → *Barrio Cardón La Estrella* |
+| **Cardonal Norte** | **Idelfonso Vásquez** → *Barrio Cardonal Norte* |
+| **Cardonal Sur** | **Luis Hurtado Higuera** → *Barrio Cardonal Sur* |
+| **Caribe** | **Idelfonso Vásquez** → *Barrio Caribe* |
+| **Carlos Andrés Pérez** | **Antonio Borjas Romero** → *Barrio El Samide del Sector Carlos Andrés Pérez* · *Sector Carlos Andrés Pérez*<br>**Venancio Pulgar** → *Barrio El Samide del Sector Carlos Andrés Pérez* |
+| **Carmelo Urdaneta** | **Raúl Leoni** → *Barrio Carmelo Urdaneta*<br>**Venancio Pulgar** → *Sector Carmelo Urdaneta* |
+| **Carmen Hernández** | **Francisco Eugenio Bustamante** → *Barrio Carmen Hernández* |
+| **Carolinas** | **Olegario Villalobos** → *Sector Carolinas* |
+| **Cassianito** | **Antonio Borjas Romero** → *Barrio Cassianito* |
+| **Cassianito Lossada I Etapa** | **Antonio Borjas Romero** → *Barrio Cassianito Lossada I Etapa* |
+| **Cassianito Lossada II Etapa** | **Antonio Borjas Romero** → *Barrio Cassianito Lossada II Etapa* |
+| **Cassianito Lossada III Etapa** | **Antonio Borjas Romero** → *Barrio Cassianito Lossada III Etapa* |
+| **Catatumbo** | **Idelfonso Vásquez** → *Barrio Catatumbo* |
+| **Cecilia Coello** | **Venancio Pulgar** → *Barrio Cecilia Coello* |
+| **Cecilio Acosta** | **Cecilio Acosta** → *Barrio Cecilio Acosta*<br>**Olegario Villalobos** → *Barrio Tierra Negra del Sector Cecilio Acosta* · *Sector Cecilio Acosta* |
+| **Central** | **Bolívar** → *Casco Central* |
+| **Centro Juana de Ávila** | **Juana de Ávila** → *Centro Juana de Ávila* |
+| **Centro Santa Lucía** | **Santa Lucía** → *Centro Santa Lucía* |
+| **Cerro de Marín** | **Olegario Villalobos** → *Sector Cerro de Marín* |
+| **Cerro del Vigía** | **Coquivacoa** → *Sector Cerro del Vigía* |
+| **Cerro El Ávila** | **Idelfonso Vásquez** → *Barrio Cerro El Ávila* |
+| **Cerro El Ávila I** | **Idelfonso Vásquez** → *Barrio Cerro El Ávila I* |
+| **Cerro El Ávila II** | **Idelfonso Vásquez** → *Barrio Cerro El Ávila II* |
+| **Cerro Marín** | **Olegario Villalobos** → *Barrio Cerro Marín del Sector Cañada Santa Lucía* · *Barrio Cerro Marín del Sector Mirador del Lago* · *Barrio Cerro Marín del Sector Mota Blanca* |
+| **Cerro Pelao** | **Cristo de Aranza** → *Barrio Cerro Pelao* · *Cerro Pelao* |
+| **Cerros del Vigía** | **Santa Lucía** → *Cerros del Vigía* |
+| **Chachachá** | **Juana de Ávila** → *Barrio Chachachá* |
+| **Chino Julio** | **Idelfonso Vásquez** → *Barrio Chino Julio* |
+| **Chiquinquira** | **Venancio Pulgar** → *Barrio Chiquinquira* |
+| **Chiva Negra** | **San Isidro** → *Barrio Chiva Negra* |
+| **Chocolate** | **Cristo de Aranza** → *Barrio Chocolate* |
+| **Ciudad 2000** | **Coquivacoa** → *Conjunto Residencial Ciudad 2000* |
+| **Ciudad Pérdida** | **San Isidro** → *Barrio Ciudad Pérdida* |
+| **Ciudadela Faría** | **Idelfonso Vásquez** → *Urbanización Ciudadela Faría* |
+| **Colinas de Gonzaga** | **Cacique Mara** → *Barrio Colinas de Gonzaga* |
+| **Colinas del Amparo** | **Raúl Leoni** → *Parcelamiento Colinas del Amparo* |
+| **Colinas del Country Club II** | **Luis Hurtado Higuera** → *Barrio Integración Comunal del Sector Colinas del Country Club II* |
+| **Colinas del Sur** | **Manuel Dagnino** → *Parcelamiento Colinas del Sur* |
+| **Colonia Bella Vista** | **Olegario Villalobos** → *Sector Colonia Bella Vista* |
+| **Combinado La Victoria** | **Caracciolo Parra Pérez** → *Conjunto Residencial Combinado La Victoria* |
+| **Comunidad Lago y Sol** | **Coquivacoa** → *Sector Comunidad Lago y Sol* |
+| **CONJ RES, SAN MIGUEL** | **Francisco Eugenio Bustamante** → *CONJ RES, SAN MIGUEL* |
+| **conjunto res. Araguaney** | **Cecilio Acosta** → *conjunto res. Araguaney* |
+| **conjunto Residencial Las Pirámides** | **Cristo de Aranza** → *conjunto Residencial Las Pirámides* |
+| **Corea** | **Cristo de Aranza** → *Barrio Pomona II del Sector Corea* |
+| **Corito** | **Cristo de Aranza** → *Corito* |
+| **Corito II** | **Cristo de Aranza** → *Barrio Corito II* |
+| **Corito III** | **Cristo de Aranza** → *Barrio Corito III* |
+| **Corito IV** | **Cristo de Aranza** → *Barrio Corito IV* |
+| **Costa Brava** | **Coquivacoa** → *Conjunto Residencial Costa Brava* |
+| **Costa Marina Villa** | **Juana de Ávila** → *Conjunto Residencial Costa Marina Villa* |
+| **Costa Verde** | **Olegario Villalobos** → *Barrio Bella Vista del Sector Costa Verde* · *Sector Costa Verde* |
+| **Cotorrera** | **Olegario Villalobos** → *Sector Cotorrera* |
+| **Creole** | **Olegario Villalobos** → *Sector Creole* · *Urbanización Creole* |
+| **Cuarire** | **Idelfonso Vásquez** → *Barrio Cuarire* |
+| **Cuatricentenario** | **Francisco Eugenio Bustamante** → *Barrio Cuatricentenario* |
+| **Cuatricentenario II Etapa** | **Francisco Eugenio Bustamante** → *Urbanización Cuatricentenario II Etapa* |
+| **Cuatricentenario Sector I** | **Francisco Eugenio Bustamante** → *Urbanización Cuatricentenario Sector I* |
+| **Cuatricentenario Sector II** | **Francisco Eugenio Bustamante** → *Urbanización Cuatricentenario Sector II* |
+| **Cujicito I** | **Idelfonso Vásquez** → *Barrio Cujicito I* |
+| **Cujicito II** | **Idelfonso Vásquez** → *Barrio Cujicito II* |
+| **Cumbres de Los Pinos** | **Manuel Dagnino** → *Barrio Los Pinos del Sector Cumbres de Los Pinos* |
+| **Cumbres de Maracaibo** | **Raúl Leoni** → *Sector Cumbres de Maracaibo* · *Urbanización Cumbres de Maracaibo* |
+| **Cumbres Los Pinos** | **Manuel Dagnino** → *Barrio Cumbres Los Pinos* |
+| **Curva del Muerto** | **San Isidro** → *Sector Curva del Muerto* |
+| **Danilo Anderson** | **Cristo de Aranza** → *Barrio Danilo Anderson* · *Danilo Anderson* |
+| **Delicias Bambi** | **Juana de Ávila** → *Sector Delicias Bambi* |
+| **Día de La Raza** | **Cristo de Aranza** → *Barrio Día de La Raza* |
+| **Día de Las Madres** | **Francisco Eugenio Bustamante** → *Barrio Día de Las Madres* |
+| **Distribuidor Caña Honda** | **Cecilio Acosta** → *Distribuidor Caña Honda* |
+| **Distribuidor El Pesebre** | **Cristo de Aranza** → *Distribuidor El Pesebre* |
+| **Distribuidor Fernández Morán** | **Cacique Mara** → *Distribuidor Fernández Morán* |
+| **Distribuidor Juan Pablo II** | **Chiquinquirá** → *Distribuidor Juan Pablo II* |
+| **Distribuidor La Vanega** | **Luis Hurtado Higuera** → *Distribuidor La Vanega* |
+| **Distribuidor Las Delicias** | **Chiquinquirá** → *Distribuidor Las Delicias* |
+| **Distribuidor Lossada** | **Chiquinquirá** → *Distribuidor Lossada* |
+| **Distribuidor Pomona** | **Cristo de Aranza** → *Distribuidor Pomona* |
+| **Distribuidor Ricardo Aguirre** | **Chiquinquirá** → *Distribuidor Ricardo Aguirre* |
+| **Distribuidor Sabaneta** | **Cristo de Aranza** → *Distribuidor Sabaneta*<br>**Manuel Dagnino** → *Distribuidor Sabaneta* |
+| **Distribuidor Santa Clara II** | **Cristo de Aranza** → *Distribuidor Santa Clara II* |
+| **Divino Niño Norte** | **Francisco Eugenio Bustamante** → *Barrio Las Marías del Sector Divino Niño Norte* · *Sector Divino Niño Norte* |
+| **Domingo de Ramos** | **Antonio Borjas Romero** → *Barrio Los Caobos del Sector Domingo de Ramos* · *Sector Domingo de Ramos* |
+| **Don Bosco** | **Luis Hurtado Higuera** → *Barrio Integración Comunal del Sector Don Bosco*<br>**Olegario Villalobos** → *Barrio Don Bosco* · *Barrio Don Bosco del Sector San Bartolo* · *Sector Don Bosco* |
+| **Don Jorge** | **Francisco Eugenio Bustamante** → *Sector Don Jorge* |
+| **Doña Josefa Ramírez** | **Cristo de Aranza** → *Barrio Doña Josefa Ramírez* |
+| **Dos Caminos** | **Coquivacoa** → *Sector Dos Caminos* |
+| **Dunas Del Mar** | **Coquivacoa** → *Conjunto Residencial Dunas Del Mar* |
+| **Dunas Del Sur** | **Manuel Dagnino** → *Urbanización Dunas Del Sur* |
+| **Edf. Don mario** | **Cecilio Acosta** → *Edf. Don mario* |
+| **Édgar Ramón Uzcátegui** | **Cristo de Aranza** → *Barrio Édgar Ramón Uzcátegui* |
+| **Edgar Uzcátegui** | **Cristo de Aranza** → *Barrio Edgar Uzcátegui* · *Sector Edgar Uzcátegui* |
+| **El Amparo** | **Cacique Mara** → *Barrio El Amparo del Sector Los Postes Negros* · *Barrio El Amparo del Sector San Juan II* · *El Amparo*<br>**Raúl Leoni** → *Urbanización El Amparo* |
+| **El Amparo III** | **Cacique Mara** → *Barrio El Amparo III* |
+| **El Amparo IV** | **Cacique Mara** → *Barrio El Amparo IV* |
+| **El Amparo V** | **Cacique Mara** → *Barrio El Amparo V* |
+| **El Araguaney** | **Cecilio Acosta** → *Conjunto Residencial El Araguaney* |
+| **El Blanco** | **Venancio Pulgar** → *Sector El Blanco* |
+| **El Bosque** | **Juana de Ávila** → *Conjunto Residencial El Bosque* |
+| **El Calvario** | **Manuel Dagnino** → *Barrio El Calvario* |
+| **El Camino al Dorado** | **Coquivacoa** → *Urbanización El Camino al Dorado* |
+| **El Cardonal** | **Idelfonso Vásquez** → *Barrio El Cardonal*<br>**Luis Hurtado Higuera** → *Sector El Cardonal* |
+| **El Cardonal Norte** | **Idelfonso Vásquez** → *Barrio El Cardonal Norte* |
+| **El Carmen** | **San Isidro** → *Barrio El Carmen* |
+| **El Castillo** | **Antonio Borjas Romero** → *Barrio La Gracia de Dios del Sector El Castillo* · *Sector El Castillo* |
+| **El Cerro** | **Cacique Mara** → *Barrio El Cerro* |
+| **El Chaparral** | **Luis Hurtado Higuera** → *El Chaparral* |
+| **El Chaparral II** | **Luis Hurtado Higuera** → *Barrio El Chaparral II* |
+| **El Colibrí** | **Antonio Borjas Romero** → *Conjunto Residencial El Colibrí* |
+| **El Cucharón** | **Francisco Eugenio Bustamante** → *Sector El Cucharón* |
+| **El Cují** | **Idelfonso Vásquez** → *Conjunto Residencial El Cují*<br>**Raúl Leoni** → *Barrio El Cují* |
+| **El Curarire** | **San Isidro** → *Barrio El Curarire* |
+| **El Desespero** | **Coquivacoa** → *Sector El Desespero* |
+| **El Despertar** | **Francisco Eugenio Bustamante** → *Barrio El Despertar* |
+| **El Doral** | **Coquivacoa** → *Sector El Doral* · *Urb. El Doral* |
+| **El Doral Norte** | **Coquivacoa** → *El Doral Norte* · *Urbanización El Doral Norte* |
+| **El Eclipse** | **Francisco Eugenio Bustamante** → *Barrio El Eclipse* |
+| **El Edén** | **Francisco Eugenio Bustamante** → *Barrio El Edén* · *Barrio El Rosario del Sector El Edén* · *Sector El Edén* |
+| **El Empedrado** | **Antonio Borjas Romero** → *Barrio El Samide del Sector El Empedrado* · *Sector El Empedrado* |
+| **El Encanto** | **Juana de Ávila** → *Conjunto Residencial El Encanto* |
+| **El Éxito** | **Venancio Pulgar** → *Barrio El Éxito* |
+| **El Félix** | **Venancio Pulgar** → *Sector El Félix* |
+| **El Gaitero** | **Luis Hurtado Higuera** → *Barrio El Gaitero* |
+| **El Gallinero** | **Francisco Eugenio Bustamante** → *Sector El Gallinero* |
+| **El Gardón** | **Francisco Eugenio Bustamante** → *Sector El Gardón* |
+| **El Guacamayo** | **Juana de Ávila** → *Sector El Guacamayo* |
+| **El Guayabal** | **Cecilio Acosta** → *Conjunto Residencial El Guayabal* · *Urbanización El Guayabal* |
+| **El Indio** | **Raúl Leoni** → *Barrio El Indio* |
+| **El Jaguey del Cují** | **Raúl Leoni** → *Barrio El Jaguey del Cují* |
+| **El Jagüey Sabana** | **San Isidro** → *Barrio El Jagüey Sabana* |
+| **El Jasmín** | **Raúl Leoni** → *Urbanización El Jasmín* |
+| **El Jazmín** | **Raúl Leoni** → *Barrio El Jazmín* |
+| **El Mamón** | **Idelfonso Vásquez** → *Barrio El Mamón* |
+| **El Marite** | **Antonio Borjas Romero** → *Barrio El Marite* |
+| **El Milagro I** | **Santa Lucía** → *Barrio El Milagro I* |
+| **El Morichal** | **San Isidro** → *Barrio El Morichal* |
+| **El Mostazal** | **Antonio Borjas Romero** → *Sector El Mostazal* |
+| **El Museo** | **Luis Hurtado Higuera** → *Barrio El Museo* |
+| **El Naranjal** | **Juana de Ávila** → *Urbanización El Naranjal* |
+| **El Nazareno** | **Cacique Mara** → *Conjunto Residencial El Nazareno* |
+| **El Níspero** | **Antonio Borjas Romero** → *Barrio El Níspero* · *Barrio El Níspero del Sector Santa Ana* |
+| **El Pajal** | **Manuel Dagnino** → *Sector El Pajal* |
+| **El Pajar** | **Manuel Dagnino** → *Barrio El Pajar del Sector Santa Clara* |
+| **El Palmar** | **Francisco Eugenio Bustamante** → *Parcelamiento El Palmar* |
+| **El Palmeral** | **Cecilio Acosta** → *Conjunto Residencial El Palmeral* |
+| **El Palotal** | **San Isidro** → *Barrio El Palotal* |
+| **El Paraíso** | **Chiquinquirá** → *Barrio El Paraíso* |
+| **El Parque** | **Francisco Eugenio Bustamante** → *Parcelamiento El Parque*<br>**Olegario Villalobos** → *Conjunto Residencial El Parque* |
+| **El Pilar** | **Olegario Villalobos** → *Sector El Pilar* |
+| **El Pilarcito** | **Olegario Villalobos** → *Sector El Pilarcito* |
+| **El Pinar** | **Manuel Dagnino** → *Conjunto Residencial El Pinar* · *El Pinar* · *Urbanización El Pinar* |
+| **El Poligono** | **San Isidro** → *Barrio El Poligono* |
+| **El Poniente** | **Cristo de Aranza** → *Barrio El Poniente* |
+| **El Portal** | **Coquivacoa** → *Sector El Portal* |
+| **El Portal I** | **Coquivacoa** → *Urbanización El Portal I* |
+| **El Portal II** | **Coquivacoa** → *Urbanización El Portal II* |
+| **El Portal Sector 1** | **Coquivacoa** → *Urb. El Portal Sector 1* |
+| **El Portón** | **Olegario Villalobos** → *Barrio El Portón* · *Conjunto Residencial El Portón* · *Sector El Portón* |
+| **El Potente** | **San Isidro** → *Barrio El Potente* |
+| **El Prado** | **Raúl Leoni** → *Urbanización El Prado* |
+| **El Pricipio** | **San Isidro** → *Barrio El Pricipio* |
+| **El Progreso** | **Cristo de Aranza** → *Barrio El Progreso* · *El Progreso*<br>**Francisco Eugenio Bustamante** → *Urbanización El Progreso* |
+| **El Quemado** | **Venancio Pulgar** → *Sector El Quemado* |
+| **El Recreo** | **Francisco Eugenio Bustamante** → *Parcelamiento El Recreo* |
+| **El Relleno** | **Coquivacoa** → *Barrio El Relleno* · *Sector El Relleno* |
+| **El Rincón del Mangle** | **Coquivacoa** → *Barrio Santa Rosa de Aguas del Sector El Rincón del Mangle* |
+| **El Rosal** | **Coquivacoa** → *Sector El Rosal*<br>**Olegario Villalobos** → *Conjunto Residencial El Rosal* |
+| **El Rosario** | **Francisco Eugenio Bustamante** → *Barrio El Rosario* · *Barrio El Rosario del Sector El Edén*<br>**Idelfonso Vásquez** → *Barrio El Rosario* |
+| **El Saladillo** | **Bolívar** → *Sector El Saladillo*<br>**Chiquinquirá** → *El Saladillo* · *Sector El Saladillo* |
+| **El Samide** | **Antonio Borjas Romero** → *Barrio El Samide del Sector Antonio José de Sucre* · *Barrio El Samide del Sector Carlos Andrés Pérez* · *Barrio El Samide del Sector El Empedrado* · *Barrio El Samide del Sector José Páez* · *Barrio El Samide del Sector Mery Sánchez Ugas* · *Barrio El Samide del Sector Nora Herrera* · *Barrio El Samide del Sector Rafael Urdaneta II*<br>**Venancio Pulgar** → *Barrio El Samide del Sector Carlos Andrés Pérez* |
+| **El Samide IV** | **Antonio Borjas Romero** → *Barrio El Samide IV* |
+| **El Sierra Nevada** | **San Isidro** → *Barrio El Sierra Nevada* |
+| **El Sitio** | **Venancio Pulgar** → *Barrio El Sitio* |
+| **El Sitio I** | **Venancio Pulgar** → *Barrio El Sitio I* |
+| **El Sitio II** | **Venancio Pulgar** → *Barrio El Sitio II* |
+| **El Socorro** | **Cecilio Acosta** → *Barrio El Socorro del Sector Royal* |
+| **El Socorro I** | **Cacique Mara** → *Barrio El Socorro I* |
+| **El Socorro II** | **Cacique Mara** → *Barrio El Socorro II* |
+| **El Valle** | **Coquivacoa** → *Barrio 18 de Octubre del Sector El Valle* · *Barrio El Valle*<br>**Francisco Eugenio Bustamante** → *Parcelamiento El Valle* |
+| **El Varillal** | **Cecilio Acosta** → *Conjunto Residencial El Varillal* |
+| **El Vivero** | **Cecilio Acosta** → *Sector El Vivero* · *Urbanización Rafael Urdaneta II del Sector El Vivero* |
+| **Enerbal** | **Raúl Leoni** → *Urbanización Enerbal* |
+| **Enigma Goajira** | **Venancio Pulgar** → *Barrio Enigma Goajira* |
+| **Esteban** | **Raúl Leoni** → *Sector Esteban* |
+| **Estrella de Belén** | **Cecilio Acosta** → *Barrio Estrella de Belén* |
+| **Estrella del Lago** | **Antonio Borjas Romero** → *Barrio Estrella del Lago* |
+| **Estrella Del Valle** | **Francisco Eugenio Bustamante** → *Barrio Estrella Del Valle* |
+| **Etnia-Goajira** | **Venancio Pulgar** → *Barrio Etnia-Goajira* |
+| **Etnia Guajira II** | **Idelfonso Vásquez** → *Barrio Etnia Guajira II* |
+| **Europa** | **Olegario Villalobos** → *Conjunto Residencial Europa* |
+| **Ezequiel Zamora** | **Francisco Eugenio Bustamante** → *Barrio Ezequiel Zamora*<br>**Idelfonso Vásquez** → *Barrio Ezequiel Zamora* |
+| **F.A.C** | **Cecilio Acosta** → *Urbanización F.A.C* |
+| **Facultad Experimental de Ciencias (F.E.C.), LUZ** | **Chiquinquirá** → *Facultad Experimental de Ciencias (F.E.C.), LUZ* |
+| **Fe y Alegría** | **Antonio Borjas Romero** → *Sector Fe y Alegría* |
+| **Fisher Godoy** | **Francisco Eugenio Bustamante** → *Sector Fisher Godoy* |
+| **Flamingos** | **Francisco Eugenio Bustamante** → *Parcelamiento Flamingos* |
+| **Flor del Campo** | **Idelfonso Vásquez** → *Barrio Flor del Campo* |
+| **Francisco de Miranda 3° Etapa** | **Raúl Leoni** → *Urbanización Francisco de Miranda 3° Etapa* |
+| **Francisco de Miranda I** | **Raúl Leoni** → *Barrio Francisco de Miranda I* |
+| **Francisco de Miranda II** | **Raúl Leoni** → *Barrio Francisco de Miranda II* |
+| **Francisco de Miranda III** | **Raúl Leoni** → *Barrio Francisco de Miranda III* |
+| **Freddy Hernández** | **Cristo de Aranza** → *Barrio La Rinconada del Sector Freddy Hernández* |
+| **Fundación Maracaibo** | **Cristo de Aranza** → *Sector Fundación Maracaibo* · *Urbanización Fundación Maracaibo* |
+| **Fundación Maracaibo II** | **Cristo de Aranza** → *Sector Fundación Maracaibo II* |
+| **Fundación Mendoza** | **Cristo de Aranza** → *Urbanización Fundación Mendoza* |
+| **Gabaldón** | **Olegario Villalobos** → *Sector Gabaldón* · *Urbanización Gabaldón* |
+| **Gallo Verde** | **Cecilio Acosta** → *Barrio Gallo Verde del Sector Santa Teresita* · *Conjunto Residencial Gallo Verde* |
+| **Gallo Verde I** | **Cecilio Acosta** → *Barrio Gallo Verde I* |
+| **Gallo Verde II** | **Cecilio Acosta** → *Barrio Gallo Verde II* |
+| **Gilcón** | **Raúl Leoni** → *Urbanización Gilcón* |
+| **Gonzaga** | **Olegario Villalobos** → *Sector Gonzaga* |
+| **Granadillo** | **Coquivacoa** → *Barrio 18 de Octubre del Sector Granadillo* |
+| **Guaicaipuro** | **Venancio Pulgar** → *Barrio Guaicaipuro* |
+| **Guanipa Matos** | **Venancio Pulgar** → *Barrio Guanipa Matos* |
+| **Guareira** | **Idelfonso Vásquez** → *Sector Guareira* |
+| **Guayabal** | **Cecilio Acosta** → *Sector Guayabal* |
+| **Guicaipuro I** | **Venancio Pulgar** → *Barrio Guicaipuro I* |
+| **Guicaipuro II** | **Venancio Pulgar** → *Barrio Guicaipuro II* |
+| **Gustavo Zing** | **Cristo de Aranza** → *Sector Gustavo Zing* |
+| **Hático II Sector 1** | **Cristo de Aranza** → *Parcelamiento Hático II Sector 1* |
+| **Hático II Sector 2** | **Cristo de Aranza** → *Parcelamiento Hático II Sector 2* |
+| **Hato El Cardón** | **Francisco Eugenio Bustamante** → *Barrio Hato El Cardón* |
+| **Hato Escondido** | **Venancio Pulgar** → *Barrio Hato Escondido* |
+| **Hato Grande** | **Antonio Borjas Romero** → *Barrio Hato Grande* |
+| **Hato Verde** | **Francisco Eugenio Bustamante** → *Parcelamiento Hato Verde* |
+| **Hato Viejo** | **Cristo de Aranza** → *Barrio Altamira Sur del Sector Hato Viejo* · *Sector Hato Viejo* |
+| **I** | **Cecilio Acosta** → *Barrio Los Claveles del Sector I* |
+| **I de Agosto Sector I** | **Francisco Eugenio Bustamante** → *Barrio I de Agosto Sector I* |
+| **I de Agosto Sector II** | **Francisco Eugenio Bustamante** → *Barrio I de Agosto Sector II* |
+| **Ignacio Mara** | **Idelfonso Vásquez** → *Sector Ignacio Mara* |
+| **II** | **Cecilio Acosta** → *Barrio Los Claveles del Sector II*<br>**Luis Hurtado Higuera** → *Zona Industrial II* |
+| **Imataca** | **Cacique Mara** → *Conjunto Residencial Imataca* |
+| **Indio Mara** | **Chiquinquirá** → *Indio Mara* · *Sector Indio Mara*<br>**Idelfonso Vásquez** → *Barrio Indio Mara* |
+| **Integración Comunal** | **Luis Hurtado Higuera** → *Barrio Integración Comunal* · *Barrio Integración Comunal del Sector 23 de Febrero* · *Barrio Integración Comunal del Sector 6 de Enero* · *Barrio Integración Comunal del Sector Bicentenario Girardot* · *Barrio Integración Comunal del Sector Colinas del Country Club II* · *Barrio Integración Comunal del Sector Don Bosco* · *Barrio Integración Comunal del Sector La Industria* · *Barrio Integración Comunal del Sector Ramón Leal* · *Barrio Integración Comunal del Sector San Benito* · *Barrio Integración Comunal del Sector Villa Venecia* · *Barrio Integración Comunal del Sector Yet-Set* |
+| **Iragorri** | **Venancio Pulgar** → *Iragorri* |
+| **Irama** | **Coquivacoa** → *Sector Irama* · *Urbanización Irama* |
+| **Irragorri** | **Venancio Pulgar** → *Sector Irragorri* |
+| **Isla Akiechi Weimei** | **Coquivacoa** → *Isla Akiechi Weimei* |
+| **Isla Dorada** | **Coquivacoa** → *Conjunto Residencial Isla Dorada* |
+| **Isla Santorini** | **Olegario Villalobos** → *Conjunto Residencial Isla Santorini* |
+| **Islas Doradas** | **Raúl Leoni** → *Urbanización Islas Doradas* |
+| **IV** | **Cecilio Acosta** → *Barrio Los Claveles del Sector IV* |
+| **Ixora Rojas** | **Cecilio Acosta** → *Barrio Ixora Rojas* |
+| **Jagüesito** | **Idelfonso Vásquez** → *Sector Jagüesito* |
+| **Jesús de Nazareth** | **Idelfonso Vásquez** → *Sector Jesús de Nazareth* |
+| **Jesús de Nazareth I** | **Idelfonso Vásquez** → *Barrio Jesús de Nazareth I* |
+| **Jesús de Nazareth II** | **Idelfonso Vásquez** → *Barrio Jesús de Nazareth II* |
+| **Jorge Hernandez** | **Cacique Mara** → *Barrio Jorge Hernandez* |
+| **José Ali Lebrún** | **Antonio Borjas Romero** → *Barrio José Ali Lebrún* |
+| **José Ali Lebrún I** | **Antonio Borjas Romero** → *Barrio José Ali Lebrún I* |
+| **José Ali Lebrún II** | **Antonio Borjas Romero** → *Barrio José Ali Lebrún II* |
+| **José Félix Ribas I** | **Venancio Pulgar** → *Barrio José Félix Ribas I* |
+| **José Félix Ribas II** | **Venancio Pulgar** → *Barrio José Félix Ribas II* |
+| **José Félix Ribas IV** | **Venancio Pulgar** → *Barrio José Félix Ribas IV* |
+| **Jose Gregorio Hernandez** | **Luis Hurtado Higuera** → *Barrio Jose Gregorio Hernandez* |
+| **José Gregorio Hernández I** | **Luis Hurtado Higuera** → *Barrio José Gregorio Hernández I* |
+| **José Gregorio Hernández II** | **Luis Hurtado Higuera** → *Barrio José Gregorio Hernández II* |
+| **José Páez** | **Antonio Borjas Romero** → *Barrio El Samide del Sector José Páez* · *Sector José Páez* |
+| **José R. Yépez** | **Olegario Villalobos** → *Barrio Tierra Negra del Sector José R. Yépez* · *Sector José R. Yépez* |
+| **Juana de Ávila** | **Juana de Ávila** → *Urbanización Juana de Ávila* |
+| **Julio León Colina** | **Antonio Borjas Romero** → *Barrio Julio León Colina*<br>**Venancio Pulgar** → *Barrio Julio León Colina* |
+| **Kennedy I** | **Manuel Dagnino** → *Barrio San Pedro del Sector Kennedy I* |
+| **Kennedy II** | **Manuel Dagnino** → *Barrio San Pedro del Sector Kennedy II* · *Sector Kennedy II* |
+| **La Arreaga** | **Cristo de Aranza** → *Barrio La Arreaga* · *La Arreaga* · *Parcelamiento La Arreaga* |
+| **La Arreaga I** | **Cristo de Aranza** → *Barrio La Arreaga I* |
+| **La Arreaga II** | **Cristo de Aranza** → *Barrio La Arreaga II* |
+| **La Asunción** | **Cristo de Aranza** → *Sector La Asunción* |
+| **La Batea** | **Venancio Pulgar** → *Sector La Batea* |
+| **La Brecha** | **Manuel Dagnino** → *Barrio La Brecha* |
+| **La California** | **Juana de Ávila** → *Conjunto Residencial La California* · *Sector La California* |
+| **La California I** | **Juana de Ávila** → *Urbanización La California I* |
+| **La Candelaria** | **Juana de Ávila** → *Urbanización La Candelaria* |
+| **La Caridad** | **Olegario Villalobos** → *Barrio Tierra Negra del Sector La Caridad* |
+| **La Cascada** | **Raúl Leoni** → *Conjunto Residencial La Cascada* |
+| **La Ceiba** | **Venancio Pulgar** → *Barrio La Ceiba* · *La Ceiba* |
+| **La Ceiba Colorada** | **Venancio Pulgar** → *Sector La Ceiba Colorada* |
+| **La Chamarreta** | **Francisco Eugenio Bustamante** → *Urbanización La Chamarreta del Sector Simón Rodríguez* |
+| **La Chamarreta I** | **Francisco Eugenio Bustamante** → *Urbanización La Chamarreta I* |
+| **La Chamarreta II** | **Francisco Eugenio Bustamante** → *Urbanización La Chamarreta II* |
+| **La Chamarreta IV** | **Francisco Eugenio Bustamante** → *Urbanización La Chamarreta IV* |
+| **La Chinita** | **Cristo de Aranza** → *Barrio La Chinita* · *La Chinita*<br>**Venancio Pulgar** → *Barrio La Chinita* |
+| **La Ciega** | **Bolívar** → *Sector La Ciega* |
+| **La Cima** | **Coquivacoa** → *Conjunto Residencial La Cima* |
+| **La Colina de Gonzaga** | **Cacique Mara** → *Barrio La Colina de Gonzaga* |
+| **La Conquista** | **Cacique Mara** → *Barrio La Pastora del Sector La Conquista*<br>**Venancio Pulgar** → *Barrio La Conquista* |
+| **La Consolación** | **Coquivacoa** → *Sector La Consolación*<br>**Santa Lucía** → *Barrio La Consolación* · *La Consolación* |
+| **La Consolación (Sector Occidental)** | **Bolívar** → *La Consolación (Sector Occidental)* |
+| **La Cruz** | **Venancio Pulgar** → *Sector La Cruz* |
+| **La Curva** | **Raúl Leoni** → *Urbanización La Curva* |
+| **La Democracia** | **Francisco Eugenio Bustamante** → *Barrio San Benito del Sector La Democracia* |
+| **La Entrada** | **Manuel Dagnino** → *Barrio Los Pinos del Sector La Entrada* |
+| **La Esperanza** | **Idelfonso Vásquez** → *Conjunto Residencial La Esperanza* |
+| **La Estrella** | **Olegario Villalobos** → *Sector La Estrella* · *Urbanización La Estrella* |
+| **La Floresta** | **Raúl Leoni** → *Sector La Floresta* · *Urbanización La Floresta* |
+| **La Floresta I** | **Raúl Leoni** → *Urbanización La Floresta I* |
+| **La Floresta II** | **Raúl Leoni** → *Urbanización La Floresta II* |
+| **La Floresta III** | **Raúl Leoni** → *Urbanización La Floresta III* |
+| **La Florida** | **Cacique Mara** → *Sector La Florida*<br>**Cecilio Acosta** → *Conjunto Residencial La Florida*<br>**Raúl Leoni** → *Conjunto Residencial La Florida* · *Parcelamiento La Florida* · *Sector La Florida* |
+| **La Fortaleza** | **Cristo de Aranza** → *Barrio Pomona del Sector La Fortaleza* · *Sector La Fortaleza* |
+| **La Frontera** | **Manuel Dagnino** → *Barrio La Frontera* |
+| **La Garrapata** | **Venancio Pulgar** → *La Garrapata* |
+| **La Gracia de Dios** | **Antonio Borjas Romero** → *Barrio La Gracia de Dios del Sector El Castillo* |
+| **La Guaireña** | **Juana de Ávila** → *Sector La Guaireña* |
+| **La Guajira I** | **Idelfonso Vásquez** → *Barrio La Guajira I* |
+| **La Guajirita II** | **Idelfonso Vásquez** → *Barrio La Guajirita II* |
+| **La Guireña** | **Juana de Ávila** → *Urbanización La Guireña* |
+| **La Industria** | **Luis Hurtado Higuera** → *Barrio Integración Comunal del Sector La Industria* |
+| **La Lago I** | **Olegario Villalobos** → *Sector La Lago I* |
+| **La Lago II** | **Olegario Villalobos** → *Sector La Lago II* |
+| **La Lago III** | **Olegario Villalobos** → *Sector La Lago III* |
+| **La Laguna** | **Juana de Ávila** → *Conjunto Residencial La Laguna* |
+| **La Libertad** | **Manuel Dagnino** → *Sector La Libertad* |
+| **La Lucha** | **Coquivacoa** → *Barrio La Lucha* · *La Lucha*<br>**San Isidro** → *Barrio La Lucha* |
+| **La Luchita** | **San Isidro** → *Barrio La Luchita* |
+| **La Macandona** | **Raúl Leoni** → *Sector La Macandona* |
+| **La Misión** | **Manuel Dagnino** → *Barrio La Misión* · *Barrio La Misión del Sector La Sonrisa* · *Barrio La Misión del Sector Santa Ana* · *Conjunto Residencial La Misión* |
+| **La Montañita** | **Francisco Eugenio Bustamante** → *Urbanización La Montañita* |
+| **La Muchachera** | **Olegario Villalobos** → *Conjunto Residencial La Muchachera* |
+| **La Pajarera** | **Olegario Villalobos** → *Conjunto Residencial La Pajarera* |
+| **La Paragua** | **Coquivacoa** → *Conjunto Residencial La Paragua* |
+| **La Paraguita** | **Olegario Villalobos** → *Conjunto Residencial La Paraguita* |
+| **La Pastora** | **Cacique Mara** → *Barrio La Pastora del Sector La Conquista* · *Barrio La Pastora del Sector Madre Rafols* · *Sector La Pastora*<br>**Cecilio Acosta** → *Barrio La Pastora* |
+| **La Paz** | **Cecilio Acosta** → *Urbanización La Paz del Sector Niños Castores* |
+| **La Paz I** | **Cecilio Acosta** → *Urbanización La Paz I* |
+| **La Paz II** | **Cecilio Acosta** → *Urbanización La Paz II* |
+| **La Pecera** | **Caracciolo Parra Pérez** → *Conjunto Residencial La Pecera* |
+| **La Piedra Loft** | **Chiquinquirá** → *Conjunto Residencial La Piedra Loft* |
+| **La Pionera** | **Francisco Eugenio Bustamante** → *Urbanización La Pionera* |
+| **La Pomona** | **Cristo de Aranza** → *Barrio La Pomona* · *Urbanización La Pomona* |
+| **La Pomona I** | **Cristo de Aranza** → *Conjunto Residencial La Pomona I* |
+| **La Ranchería** | **Cristo de Aranza** → *La Ranchería* |
+| **La Ranchería I** | **Cristo de Aranza** → *Barrio La Ranchería I* |
+| **La Ranchería II** | **Cristo de Aranza** → *Barrio La Ranchería II* |
+| **La Rancherías** | **Cristo de Aranza** → *Barrio La Rancherías* |
+| **La Resistencia** | **Idelfonso Vásquez** → *Barrio La Resistencia* |
+| **La Revancha I** | **Antonio Borjas Romero** → *Barrio La Revancha I* |
+| **La Revancha II** | **Antonio Borjas Romero** → *Barrio La Revancha II* |
+| **La Rinconada** | **Antonio Borjas Romero** → *Barrio La Rinconada*<br>**Cristo de Aranza** → *Barrio La Rinconada del Sector Freddy Hernández* |
+| **La Rinconada Sector Fe y Alegría** | **Antonio Borjas Romero** → *Barrio La Rinconada Sector Fe y Alegría* |
+| **La Rosaleda** | **Raúl Leoni** → *Sector La Rosaleda* |
+| **La Rosita** | **Venancio Pulgar** → *Barrio La Rosita* |
+| **La Rotaria I Etapa** | **Raúl Leoni** → *Urbanización La Rotaria I Etapa* |
+| **La Rotaria II Etapa** | **Raúl Leoni** → *Urbanización La Rotaria II Etapa* |
+| **La Rotaria III Etapa** | **Raúl Leoni** → *Urbanización La Rotaria III Etapa* |
+| **La Rotaria IV Etapa** | **Raúl Leoni** → *Urbanización La Rotaria IV Etapa* |
+| **La Rotaria V Etapa** | **Raúl Leoni** → *Urbanización La Rotaria V Etapa* |
+| **La Salina** | **Coquivacoa** → *Barrio 18 de Octubre del Sector La Salina* · *Barrio La Salina* |
+| **La Sonrisa** | **Manuel Dagnino** → *Barrio La Misión del Sector La Sonrisa* · *Sector La Sonrisa* |
+| **La Trinidad** | **Juana de Ávila** → *La Trinidad* · *Urbanización La Trinidad* |
+| **La Unión** | **Cecilio Acosta** → *Parcelamiento La Unión* · *Parcelamiento La Unión del Sector Andrés Eloy Blanco*<br>**Coquivacoa** → *Sector La Unión* |
+| **La Victoria** | **Caracciolo Parra Pérez** → *Barrio La Victoria* |
+| **La Victoria I** | **Caracciolo Parra Pérez** → *Urbanización La Victoria I* |
+| **La Victoria I Etapa** | **Caracciolo Parra Pérez** → *Sector La Victoria I Etapa* |
+| **La Victoria II** | **Caracciolo Parra Pérez** → *Urbanización La Victoria II* |
+| **La Victoria II Etapa** | **Caracciolo Parra Pérez** → *Sector La Victoria II Etapa* |
+| **La Victoria III** | **Caracciolo Parra Pérez** → *Urbanización La Victoria III* |
+| **La Virginia** | **Olegario Villalobos** → *Urbanización La Virginia* |
+| **Lago Azul** | **Manuel Dagnino** → *Sector Lago Azul* |
+| **Lago Azul I** | **Manuel Dagnino** → *Urbanización Lago Azul I* |
+| **Lago Azul II** | **Manuel Dagnino** → *Urbanización Lago Azul II* |
+| **Lago Country** | **Coquivacoa** → *Conjunto Residencial Lago Country* |
+| **Lago Mar Beach** | **Juana de Ávila** → *Sector Lago Mar Beach* · *Urbanización Lago Mar Beach* |
+| **Lago Park** | **Olegario Villalobos** → *Conjunto Residencial Lago Park* |
+| **Lago y Sol** | **Coquivacoa** → *Barrio Lago y Sol* · *Lago y Sol* · *Parcelamiento Lago y Sol* |
+| **Lagomar** | **Raúl Leoni** → *Urbanización Lagomar* |
+| **Laguito Norte** | **Coquivacoa** → *Conjunto Residencial Laguito Norte* |
+| **Lajas Blancas** | **Francisco Eugenio Bustamante** → *Conjunto Residencial Lajas Blancas* |
+| **Las Amalias** | **Caracciolo Parra Pérez** → *Urbanización Las Amalias* |
+| **Las Américas** | **Bolívar** → *Sector Las Américas*<br>**Chiquinquirá** → *Sector Las Américas* |
+| **Las Aves** | **Coquivacoa** → *Conjunto Residencial Las Aves* |
+| **Las Banderas** | **Cristo de Aranza** → *Barrio Las Banderas* |
+| **Las Cabrias** | **Idelfonso Vásquez** → *Barrio Las Cabrias* |
+| **Las Camelias** | **Coquivacoa** → *Urbanización Las Camelias* |
+| **Las Carmelias** | **Coquivacoa** → *Urb. Las Carmelias* |
+| **Las Corubas** | **Juana de Ávila** → *Barrio Las Corubas* |
+| **Las Delicias** | **Olegario Villalobos** → *Barrio Tierra Negra del Sector Las Delicias* · *Sector Las Delicias* |
+| **Las Dunas** | **Coquivacoa** → *Conjunto Residencial Las Dunas* |
+| **Las Lajas Blancas** | **Francisco Eugenio Bustamante** → *Conjunto Residencial Las Lajas Blancas* |
+| **Las Lomas** | **Raúl Leoni** → *Urbanización Las Lomas* |
+| **Las Malvinas** | **Manuel Dagnino** → *Barrio Las Malvinas* · *Sector Las Malvinas* |
+| **Las Mansiones** | **Coquivacoa** → *Conjunto Residencial Las Mansiones* |
+| **Las Marías** | **Francisco Eugenio Bustamante** → *Barrio Las Marías del Sector Divino Niño Norte* |
+| **Las Marías Sector I** | **Francisco Eugenio Bustamante** → *Barrio Las Marías Sector I* |
+| **Las Mercedes** | **Olegario Villalobos** → *Sector Las Mercedes*<br>**Raúl Leoni** → *Urbanización Las Mercedes* |
+| **Las Naciones** | **Olegario Villalobos** → *Conjunto Residencial Las Naciones* |
+| **Las Palmas** | **Cecilio Acosta** → *Conjunto Residencial Las Palmas* |
+| **Las Palmeras** | **Cecilio Acosta** → *Conjunto Residencial Las Palmeras* |
+| **Las Peonías** | **Idelfonso Vásquez** → *Barrio Las Peonías* |
+| **Las Piedras** | **Venancio Pulgar** → *Las Piedras* |
+| **Las Praderas** | **Francisco Eugenio Bustamante** → *Parcelamiento Las Praderas* |
+| **Las Rosaledas** | **Raúl Leoni** → *Urbanización Las Rosaledas* |
+| **Las Taparitas** | **Francisco Eugenio Bustamante** → *Barrio Las Taparitas* |
+| **Las Tarabas** | **Idelfonso Vásquez** → *Barrio Las Tarabas* |
+| **Las Terrazas** | **Manuel Dagnino** → *Sector Las Terrazas* |
+| **Las Tres S** | **San Isidro** → *Las Tres S* |
+| **Las Trinitarias** | **Juana de Ávila** → *Conjunto Residencial Las Trinitarias* |
+| **Las Trinitarias I** | **Francisco Eugenio Bustamante** → *Barrio Las Trinitarias I* |
+| **Las Trinitarias II** | **Francisco Eugenio Bustamante** → *Barrio Las Trinitarias II* |
+| **Las Tunas** | **Raúl Leoni** → *Conjunto Residencial Las Tunas* |
+| **Las Vegas** | **Cecilio Acosta** → *Conjunto Residencial Las Vegas* |
+| **Las Veritas** | **Bolívar** → *Las Veritas* · *Sector Las Veritas* |
+| **Las Vistas** | **Idelfonso Vásquez** → *Conjunto Residencial Las Vistas* |
+| **Las Viviendas** | **Idelfonso Vásquez** → *Sector Las Viviendas* |
+| **Leonardo Ruiz Pineda** | **Coquivacoa** → *Barrio Leonardo Ruiz Pineda* · *Leonardo Ruiz Pineda* |
+| **Libertad** | **Manuel Dagnino** → *Barrio Libertad* |
+| **Libertador** | **Antonio Borjas Romero** → *Barrio Libertador* |
+| **Liceo Undón Pérez** | **Olegario Villalobos** → *Sector Liceo Undón Pérez* |
+| **Lila Perozo de Zambrano** | **Luis Hurtado Higuera** → *Barrio Lila Perozo de Zambrano* |
+| **Lilia Perozo de Zambrano I** | **Luis Hurtado Higuera** → *Barrio Lilia Perozo de Zambrano I* |
+| **Lilia Perozo de Zambrano II** | **Luis Hurtado Higuera** → *Barrio Lilia Perozo de Zambrano II* |
+| **Llano Alto** | **Juana de Ávila** → *Conjunto Residencial Llano Alto* |
+| **Lo De Dorian** | **San Isidro** → *Sector Lo De Dorian* |
+| **Loma Linda** | **Juana de Ávila** → *Conjunto Residencial Loma Linda* |
+| **Lomas de La Misión** | **Manuel Dagnino** → *Sector Lomas de La Misión* · *Urbanización Lomas de La Misión* |
+| **Lomas de Maracaibo** | **Raúl Leoni** → *Urbanización Lomas de Maracaibo* |
+| **Lomas de Sabaneta** | **Manuel Dagnino** → *Urbanización Lomas de Sabaneta* |
+| **Lomas del Valle** | **Raúl Leoni** → *Barrio Lomas del Valle* |
+| **Lomas del Valle I** | **Raúl Leoni** → *Sector Lomas del Valle I* |
+| **Lomas del Valle II** | **Raúl Leoni** → *Sector Lomas del Valle II* |
+| **Los Aceitunos** | **Raúl Leoni** → *Urbanización Los Aceitunos* |
+| **Los Almendros** | **Cecilio Acosta** → *Conjunto Residencial Los Almendros* |
+| **Los Altos** | **Francisco Eugenio Bustamante** → *Barrio Los Altos* · *Parcelamiento Los Altos*<br>**Manuel Dagnino** → *Urbanización Los Altos* |
+| **Los Altos I** | **Francisco Eugenio Bustamante** → *Barrio Los Altos I* |
+| **Los Altos II** | **Francisco Eugenio Bustamante** → *Barrio Los Altos II* |
+| **Los Altos III** | **Francisco Eugenio Bustamante** → *Barrio Los Altos III* |
+| **Los Andes** | **Cecilio Acosta** → *Barrio Los Andes*<br>**Manuel Dagnino** → *Barrio Los Andes del Sector Nora Herrera* · *Sector Los Andes* |
+| **Los Andes I** | **Manuel Dagnino** → *Barrio Los Andes I* |
+| **Los Andes II** | **Manuel Dagnino** → *Barrio Los Andes II* |
+| **Los Andes III** | **Manuel Dagnino** → *Barrio Los Andes III* |
+| **Los Apóstoles** | **Francisco Eugenio Bustamante** → *Sector Los Apóstoles* · *Urbanización Los Apóstoles* |
+| **Los Caobos** | **Antonio Borjas Romero** → *Barrio Los Caobos* · *Barrio Los Caobos del Sector Domingo de Ramos* · *Sector Los Caobos* |
+| **Los Chaguaramos** | **Juana de Ávila** → *Conjunto Residencial Los Chaguaramos* |
+| **Los Chamucos** | **San Isidro** → *Parcelamiento Los Chamucos* |
+| **Los Claveles** | **Cecilio Acosta** → *Barrio Los Claveles del Sector I* · *Barrio Los Claveles del Sector II* · *Barrio Los Claveles del Sector IV* · *Barrio Los Claveles del Sector Los Isleños* · *Barrio Los Claveles del Sector Los Lirios* · *Barrio Los Claveles del Sector Mi Chinita* · *Barrio Los Claveles del Sector V* · *Los Claveles* · *Sector Los Claveles* |
+| **Los Compatriotas** | **Idelfonso Vásquez** → *Urbanización Los Compatriotas* |
+| **Los Continentes** | **Francisco Eugenio Bustamante** → *Conjunto Residencial Los Continentes* |
+| **Los Conucos** | **Idelfonso Vásquez** → *Sector Los Conucos* |
+| **Los Coquitos** | **Venancio Pulgar** → *Los Coquitos* · *Sector Los Coquitos* |
+| **Los Cuchis** | **Idelfonso Vásquez** → *Barrio Los Cuchis* |
+| **Los Cujicitos** | **Idelfonso Vásquez** → *Barrio Los Cujicitos* |
+| **Los Domínguez** | **Antonio Borjas Romero** → *Barrio Los Domínguez* |
+| **Los Estanques** | **Manuel Dagnino** → *Sector Los Estanques* |
+| **Los Estanques I** | **Manuel Dagnino** → *Barrio Los Estanques I* |
+| **Los Eucaliptos** | **Coquivacoa** → *Conjunto Residencial Los Eucaliptos* |
+| **Los Filuos Norte** | **Venancio Pulgar** → *Barrio Los Filuos Norte* |
+| **Los Flamingos** | **Francisco Eugenio Bustamante** → *Barrio Los Flamingos* |
+| **Los Geránios** | **San Isidro** → *Barrio Los Geránios* |
+| **Los Háticos** | **Cristo de Aranza** → *Barrio Los Háticos* · *Urbanización Los Háticos* |
+| **Los Haticos II** | **Cristo de Aranza** → *Los Haticos II* |
+| **Los Haticos II (Sector 1)** | **Cristo de Aranza** → *Los Haticos II (Sector 1)* |
+| **Los Haticos II (Sector 2)** | **Cristo de Aranza** → *Los Haticos II (Sector 2)* |
+| **Los Isleños** | **Cecilio Acosta** → *Barrio Los Claveles del Sector Los Isleños* |
+| **Los Jardines** | **Juana de Ávila** → *Conjunto Residencial Los Jardines* |
+| **Los Lirios** | **Cecilio Acosta** → *Barrio Los Claveles del Sector Los Lirios* |
+| **Los Manglares** | **Coquivacoa** → *Barrio Los Manglares* |
+| **Los Mangos I** | **Idelfonso Vásquez** → *Sector Los Mangos I* · *Urbanización Los Mangos I* |
+| **Los Mangos II** | **Idelfonso Vásquez** → *Sector Los Mangos II* · *Urbanización Los Mangos II* |
+| **Los Mangos III** | **Idelfonso Vásquez** → *Sector Los Mangos III* · *Urbanización Los Mangos III* |
+| **Los Mangos IV** | **Idelfonso Vásquez** → *Urbanización Los Mangos IV* |
+| **Los Modines** | **Raúl Leoni** → *Parcelamiento Los Modines* |
+| **Los Naranjos** | **Coquivacoa** → *Conjunto Residencial Los Naranjos*<br>**Raúl Leoni** → *Sector Los Naranjos* · *Urbanización Los Naranjos* |
+| **Los Olivos** | **Caracciolo Parra Pérez** → *Barrio Los Olivos* · *Urbanización Los Olivos*<br>**Idelfonso Vásquez** → *Barrio Los Olivos* |
+| **Los Olivos I** | **Caracciolo Parra Pérez** → *Barrio Los Olivos I* |
+| **Los Olivos II** | **Caracciolo Parra Pérez** → *Barrio Los Olivos II* |
+| **Los Olivos VI** | **Caracciolo Parra Pérez** → *Barrio Los Olivos VI* |
+| **Los Panazos** | **Idelfonso Vásquez** → *Sector Los Panazos* |
+| **Los Pinos** | **Caracciolo Parra Pérez** → *Barrio Los Pinos* · *Urbanización Los Pinos*<br>**Manuel Dagnino** → *Barrio Los Pinos* · *Barrio Los Pinos del Sector Cumbres de Los Pinos* · *Barrio Los Pinos del Sector La Entrada* · *Barrio Los Pinos del Sector Pedro Iturbe* · *Sector Los Pinos* |
+| **Los Planazos** | **Idelfonso Vásquez** → *Barrio 24 de Septiembre del Sector Los Planazos* · *Barrio Los Planazos*<br>**Raúl Leoni** → *Barrio Los Planazos* |
+| **Los Postes Negros** | **Cacique Mara** → *Barrio El Amparo del Sector Los Postes Negros* · *Sector Los Postes Negros* |
+| **Los Pozos** | **Venancio Pulgar** → *Los Pozos* · *Sector Los Pozos* |
+| **Los Reyes Magos** | **Coquivacoa** → *Barrio Los Reyes Magos* · *Los Reyes Magos* |
+| **Los Ríos** | **Antonio Borjas Romero** → *Barrio Los Ríos* · *Barrio Los Ríos del Sector Santa Rosa* · *Sector Los Ríos* |
+| **Los Ríos Luis Negrón** | **Antonio Borjas Romero** → *Barrio Los Ríos Luis Negrón* |
+| **Los Robles** | **Luis Hurtado Higuera** → *Barrio Los Robles* · *Los Robles* |
+| **Los Robles I** | **Luis Hurtado Higuera** → *Barrio Los Robles I* |
+| **Los Robles II** | **Luis Hurtado Higuera** → *Barrio Los Robles II* |
+| **Los Tres Caminos** | **Coquivacoa** → *Barrio 18 de Octubre del Sector los Tres Caminos* · *Sector Los Tres Caminos* |
+| **Los Tres Locos** | **Venancio Pulgar** → *Sector Los Tres Locos* |
+| **Luis Ángel García** | **Antonio Borjas Romero** → *Barrio Luis Ángel García* · *Sector Luis Ángel García* |
+| **Luis Negrón** | **Antonio Borjas Romero** → *Sector Luis Negrón* |
+| **Lusinchi** | **Venancio Pulgar** → *Barrio Lusinchi* |
+| **Madre Rafols** | **Cacique Mara** → *Barrio La Pastora del Sector Madre Rafols* |
+| **Maisanta** | **Idelfonso Vásquez** → *Barrio Maisanta* |
+| **Manantial de Luz I** | **Antonio Borjas Romero** → *Barrio Manantial de Luz I* |
+| **Manantial de Luz II** | **Antonio Borjas Romero** → *Barrio Manantial de Luz II* |
+| **Manfuey** | **Idelfonso Vásquez** → *Manfuey* |
+| **Manglares Capitán Chico** | **Coquivacoa** → *Sector Manglares Capitán Chico* |
+| **Manzana de Oro** | **Chiquinquirá** → *Barrio Manzana de Oro* |
+| **Maparo** | **Cacique Mara** → *Sector Maparo* |
+| **Mara Norte I** | **Juana de Ávila** → *Urbanización Mara Norte I* |
+| **Mara Norte II** | **Juana de Ávila** → *Urbanización Mara Norte II* |
+| **Mara Norte III** | **Juana de Ávila** → *Urbanización Mara Norte III* |
+| **Maracaibo** | **Bolívar** → *Casco Central de Maracaibo* · *Oficina Postal Telegráfica Maracaibo*<br>**Olegario Villalobos** → *Urbanización Maracaibo* |
+| **Maracaibo Antañon** | **Cecilio Acosta** → *Barrio Maracaibo Antañon* · *Sector Maracaibo Antañón* |
+| **Maracaibo I** | **Cristo de Aranza** → *Urbanización Maracaibo I* |
+| **Maracaibo I Etapa** | **Olegario Villalobos** → *Urbanización Maracaibo I Etapa* |
+| **Maracaibo II** | **Cristo de Aranza** → *Urbanización Maracaibo II* |
+| **Maracaibo II Etapa** | **Olegario Villalobos** → *Urbanización Maracaibo II Etapa* |
+| **Marcial Hernández** | **Antonio Borjas Romero** → *Barrio Marcial Hernández* |
+| **Maria Angelica de Lusinchi** | **Luis Hurtado Higuera** → *Barrio Maria Angelica de Lusinchi* |
+| **María Angélica de Lusinchi I** | **Luis Hurtado Higuera** → *Barrio María Angélica de Lusinchi I* |
+| **María Angélica de Lusinchi II** | **Luis Hurtado Higuera** → *Barrio María Angélica de Lusinchi II* |
+| **María Angélica de Lusinchi III** | **Luis Hurtado Higuera** → *Barrio María Angélica de Lusinchi III* |
+| **María Concepción Palacios I** | **Manuel Dagnino** → *Barrio María Concepción Palacios I* |
+| **María Concepción Palacios II** | **Manuel Dagnino** → *Barrio María Concepción Palacios II* |
+| **Martín** | **Coquivacoa** → *Conjunto Residencial Martín* |
+| **Mata Palo** | **Cecilio Acosta** → *Barrio Andrés Blanco del Sector Mata Palo* |
+| **Mato Grande** | **Antonio Borjas Romero** → *Sector Mato Grande* |
+| **Meru Sánchez Ugas** | **Antonio Borjas Romero** → *Sector Meru Sánchez Ugas* |
+| **Mery Sánchez Ugas** | **Antonio Borjas Romero** → *Barrio El Samide del Sector Mery Sánchez Ugas* |
+| **Mi Chinita** | **Cecilio Acosta** → *Barrio Los Claveles del Sector Mi Chinita* · *Sector Mi Chinita* |
+| **Mi Esperanza** | **Luis Hurtado Higuera** → *Barrio Mi Esperanza* · *Mi Esperanza*<br>**Venancio Pulgar** → *Barrio Mi Esperanza* |
+| **Mi Triunfo** | **Manuel Dagnino** → *Barrio Mi Triunfo* · *Mi Triunfo* · *Sector Mi Triunfo* |
+| **Mira Heres** | **Antonio Borjas Romero** → *Barrio Mira Heres* |
+| **Mirador del Lago** | **Olegario Villalobos** → *Barrio Cerro Marín del Sector Mirador del Lago* · *Sector Mirador del Lago* |
+| **Miraflores** | **Antonio Borjas Romero** → *Barrio Miraflores* |
+| **Miranda La Florida** | **Cacique Mara** → *Barrio San Fernando del Sector Miranda La Florida* |
+| **Mirtha Fonseca** | **Idelfonso Vásquez** → *Barrio Mirtha Fonseca* |
+| **Modelo** | **Venancio Pulgar** → *Barrio Modelo* |
+| **Monte Bello** | **Coquivacoa** → *Urbanización Monte Bello* |
+| **Monte Claro** | **Coquivacoa** → *Sector Monte Claro*<br>**Juana de Ávila** → *Urbanización Monte Claro* |
+| **Monte Santo** | **Cacique Mara** → *Barrio Monte Santo*<br>**Raúl Leoni** → *Sector Monte Santo* |
+| **Monte Santo 2** | **Cacique Mara** → *Monte Santo 2* |
+| **Monte Santo I** | **Cacique Mara** → *Parcelamiento Monte Santo I* |
+| **Monte Santo II** | **Cacique Mara** → *Parcelamiento Monte Santo II* |
+| **Mota Blanca** | **Olegario Villalobos** → *Barrio Cerro Marín del Sector Mota Blanca* · *Sector Mota Blanca* |
+| **MotoCross** | **Idelfonso Vásquez** → *Barrio MotoCross* |
+| **Nectario Andrade La Barca** | **Idelfonso Vásquez** → *Barrio Nectario Andrade La Barca* |
+| **Nelsón Mora I** | **Antonio Borjas Romero** → *Barrio Nelsón Mora I* |
+| **Nelsón Mora II** | **Antonio Borjas Romero** → *Barrio Nelsón Mora II* |
+| **Niños Castores** | **Cecilio Acosta** → *Sector Niños Castores* · *Urbanización La Paz del Sector Niños Castores* |
+| **Nora Herrera** | **Antonio Borjas Romero** → *Barrio El Samide del Sector Nora Herrera* · *Sector Nora Herrera*<br>**Manuel Dagnino** → *Barrio Los Andes del Sector Nora Herrera* · *Sector Nora Herrera*<br>**Venancio Pulgar** → *Barrio 12 de Marzo del Sector Nora Herrera* |
+| **Norte** | **Coquivacoa** → *Barrio Teotiste de Gallegos del Sector Norte*<br>**Idelfonso Vásquez** → *Zona Industrial Norte* |
+| **Norte Independiente** | **Coquivacoa** → *Barrio 18 de Octubre del Sector Norte Independiente* |
+| **Núcleo Parque Las Palmeras** | **Cecilio Acosta** → *Barrio Núcleo Parque Las Palmeras* |
+| **Nuestra Señora del Carmen** | **Cecilio Acosta** → *Conjunto Residencial Nuestra Señora del Carmen* |
+| **Nueva Delicias** | **Chiquinquirá** → *Sector Nueva Delicias* |
+| **Nueva Democracia** | **Idelfonso Vásquez** → *Urbanización Nueva Democracia* |
+| **Nueva Esparta** | **Antonio Borjas Romero** → *Sector Nueva Esparta* |
+| **Nueva Esperanza** | **Antonio Borjas Romero** → *Barrio Nueva Esperanza* |
+| **Nueva Independencia** | **Francisco Eugenio Bustamante** → *Barrio Nueva Independencia*<br>**Raúl Leoni** → *Barrio Nueva Independencia* |
+| **Nueva Venezuela** | **Cacique Mara** → *Barrio Nueva Venezuela* |
+| **Nueva Via** | **Chiquinquirá** → *Barrio Nueva Vía* · *Nueva Via* · *Sector Nueva Vía* |
+| **Nuevas Delicias** | **Chiquinquirá** → *Sector Nuevas Delicias* |
+| **Nuevo** | **Cristo de Aranza** → *Barrio Nuevo*<br>**Juana de Ávila** → *Barrio Nuevo*<br>**Olegario Villalobos** → *Barrio Nuevo* |
+| **Nuevo Amanecer** | **Cacique Mara** → *Parcelamiento Nuevo Amanecer* |
+| **Nuevo Horizonte** | **Venancio Pulgar** → *Barrio Nuevo Horizonte* |
+| **Nuevo Mundo** | **Coquivacoa** → *Barrio Nuevo Mundo* · *Nuevo Mundo*<br>**Olegario Villalobos** → *Barrio Nuevo Mundo* |
+| **Nuevo Renacer** | **Cacique Mara** → *Barrio Nuevo Renacer* |
+| **Oasis Country** | **Juana de Ávila** → *Conjunto Residencial Oasis Country* |
+| **Oasis Country II** | **Coquivacoa** → *Conjunto Residencial Oasis Country II* |
+| **Oasis Country III** | **Coquivacoa** → *Conjunto Residencial Oasis Country III* |
+| **Obrero** | **Venancio Pulgar** → *Barrio Obrero* · *Urbanización Obrero* |
+| **Olegario Villalobos** | **Olegario Villalobos** → *Barrio 18 de Octubre del Sector Olegario Villalobos* |
+| **Oswaldo Álvarez Paz** | **San Isidro** → *Barrio Oswaldo Álvarez Paz* |
+| **Padre de la Patria** | **Cecilio Acosta** → *Barrio Padre de la Patria* · *Sector Padre de la Patria* |
+| **Palaima** | **Venancio Pulgar** → *Oficina Postal Telegráfica Palaima* |
+| **Palermo** | **Manuel Dagnino** → *Sector Palermo* |
+| **Palermo Norte** | **Caracciolo Parra Pérez** → *Urbanización Palermo Norte* |
+| **Palma Dorada Country Village** | **Juana de Ávila** → *Palma Dorada Country Village* |
+| **Palo Negro I** | **Idelfonso Vásquez** → *Barrio Palo Negro I* |
+| **Palo Negro II** | **Idelfonso Vásquez** → *Barrio Palo Negro II* |
+| **Panamericano** | **Caracciolo Parra Pérez** → *Barrio Panamericano* |
+| **Panamericano I** | **Caracciolo Parra Pérez** → *Barrio Panamericano I* |
+| **Panamericano II** | **Caracciolo Parra Pérez** → *Barrio Panamericano II* |
+| **Panamericano III** | **Caracciolo Parra Pérez** → *Barrio Panamericano III* |
+| **Panamericano IV** | **Caracciolo Parra Pérez** → *Barrio Panamericano IV* |
+| **Panamericano V** | **Caracciolo Parra Pérez** → *Barrio Panamericano V* |
+| **Panamericano VII** | **Caracciolo Parra Pérez** → *Barrio Panamericano VII* |
+| **Paragua** | **Coquivacoa** → *Sector Paragua* |
+| **Paraíso Norte** | **Idelfonso Vásquez** → *Barrio Paraíso Norte*<br>**Venancio Pulgar** → *Barrio Paraíso Norte* |
+| **Parque La Colina** | **Cecilio Acosta** → *Conjunto Residencial Parque La Colina* |
+| **Parque Las Islas** | **Idelfonso Vásquez** → *Conjunto Residencial Parque Las Islas* |
+| **Parque Residencial La Vega** | **Cecilio Acosta** → *Parque Residencial La Vega* |
+| **Pedregal** | **Raúl Leoni** → *Barrio Pedregal* |
+| **Pedro** | **Manuel Dagnino** → *Sector Pedro* |
+| **Pedro Iturbe** | **Manuel Dagnino** → *Barrio Los Pinos del Sector Pedro Iturbe* |
+| **Picola** | **Juana de Ávila** → *Urbanización Picola* |
+| **Piedra del Sol** | **Francisco Eugenio Bustamante** → *Urbanización Piedra del Sol* |
+| **Pilar** | **Olegario Villalobos** → *Urbanización Pilar* |
+| **Pilarcitos** | **Olegario Villalobos** → *Urbanización Pilarcitos* |
+| **Pinto Salinas** | **Venancio Pulgar** → *Barrio Pinto Salinas* |
+| **Plaza 19 de Abril** | **Olegario Villalobos** → *Plaza 19 de Abril* |
+| **Plaza Baralt** | **Bolívar** → *Plaza Baralt* |
+| **Plaza Bolívar** | **Bolívar** → *Plaza Bolívar* |
+| **Plaza de la República** | **Santa Lucía** → *Plaza de la República* |
+| **Plaza de las Banderas** | **Cristo de Aranza** → *Plaza de las Banderas* |
+| **Plaza de Toro** | **Raúl Leoni** → *Barrio Plaza de Toro* |
+| **Plaza La República** | **Coquivacoa** → *Sector Plaza La República* |
+| **Plaza Rafael Urdaneta** | **Bolívar** → *Sector Plaza Rafael Urdaneta* |
+| **Pomona** | **Cristo de Aranza** → *Barrio Pomona del Sector La Fortaleza* · *Pomona* |
+| **Pomona II** | **Cristo de Aranza** → *Barrio Pomona II* · *Barrio Pomona II del Sector Corea* |
+| **Pomona III** | **Cristo de Aranza** → *Barrio Pomona III* |
+| **Pomona IV** | **Cristo de Aranza** → *Barrio Pomona IV* |
+| **Pomona V** | **Cristo de Aranza** → *Barrio Pomona V* |
+| **Pomona VI** | **Cristo de Aranza** → *Barrio Pomona VI* |
+| **Portal del Lago** | **Juana de Ávila** → *Conjunto Residencial Portal del Lago* · *Urbanización Portal del Lago* |
+| **Pradera Alta** | **Francisco Eugenio Bustamante** → *Barrio Pradera Alta* |
+| **Pradera Baja** | **Francisco Eugenio Bustamante** → *Barrio Pradera Baja* |
+| **Pravia** | **Cristo de Aranza** → *Barrio Pravia* |
+| **Primero de Mayo Sector 1** | **Chiquinquirá** → *Barrio Primero de Mayo Sector 1* |
+| **Primero de Mayo Sector 2** | **Chiquinquirá** → *Barrio Primero de Mayo Sector 2* |
+| **Primero de Mayo Sector Cañada La Negra** | **Chiquinquirá** → *Barrio Primero de Mayo Sector Cañada La Negra* |
+| **Proyecto de Villa Victoria II** | **Caracciolo Parra Pérez** → *Proyecto de Villa Victoria II* |
+| **Pueblo Aparte** | **Coquivacoa** → *Barrio 18 de Octubre del Sector Pueblo Aparte* |
+| **Pueblo Nuevo** | **Olegario Villalobos** → *Barrio Pueblo Nuevo* |
+| **Puerta del Este** | **Juana de Ávila** → *Conjunto Residencial Puerta del Este* |
+| **Puerta del Sol** | **Juana de Ávila** → *Conjunto Residencial Puerta del Sol* |
+| **Puerto Caballo** | **Idelfonso Vásquez** → *Barrio Puerto Caballo*<br>**Raúl Leoni** → *Barrio Puerto Caballo* |
+| **Puerto Cabello** | **Venancio Pulgar** → *Barrio Samide del Sector Puerto Cabello* · *Sector Puerto Cabello* |
+| **Puerto Rico I** | **Cacique Mara** → *Barrio Puerto Rico I* |
+| **Puerto Rico II** | **Cacique Mara** → *Barrio Puerto Rico II* |
+| **Puerto Rico III** | **Cacique Mara** → *Barrio Puerto Rico III* |
+| **Puerto Rico IV** | **Cacique Mara** → *Barrio Puerto Rico IV* |
+| **Punta Araya** | **Coquivacoa** → *Conjunto Residencial Punta Araya* |
+| **Punta Arena** | **Juana de Ávila** → *Conjunto Residencial Punta Arena* |
+| **Punta Caimito** | **San Isidro** → *Barrio Punta Caimito* |
+| **Puntica de Piedra** | **Coquivacoa** → *Barrio Puntica de Piedra* · *Puntica de Piedra* |
+| **Puntica de Piedra Norte** | **Coquivacoa** → *Barrio Puntica de Piedra Norte* |
+| **Rafael Urdaneta** | **Caracciolo Parra Pérez** → *Barrio Rafael Urdaneta* · *Sector Rafael Urdaneta*<br>**Cecilio Acosta** → *Barrio Rafael Urdaneta* · *Urbanización Rafael Urdaneta*<br>**San Isidro** → *Parcelamiento Rafael Urdaneta* |
+| **Rafael Urdaneta I** | **Cecilio Acosta** → *Urbanización Rafael Urdaneta I* |
+| **Rafael Urdaneta II** | **Antonio Borjas Romero** → *Barrio El Samide del Sector Rafael Urdaneta II* · *Sector Rafael Urdaneta II*<br>**Cecilio Acosta** → *Urbanización Rafael Urdaneta II del Sector El Vivero* |
+| **Rafito Villalobos** | **Idelfonso Vásquez** → *Barrio Rafito Villalobos* |
+| **Ramón Leal** | **Luis Hurtado Higuera** → *Barrio Integración Comunal del Sector Ramón Leal* · *Sector Ramón Leal* |
+| **Raúl Leoni** | **Raúl Leoni** → *Barrio Raúl Leoni* · *Urbanización Raúl Leoni*<br>**Venancio Pulgar** → *Barrio Raúl Leoni* |
+| **Raúl Leoni I** | **Venancio Pulgar** → *Barrio Raúl Leoni I* |
+| **Raúl Leoni I Etapa** | **Francisco Eugenio Bustamante** → *Urbanización Raúl Leoni I Etapa* |
+| **Raúl Leoni II** | **Venancio Pulgar** → *Barrio Raúl Leoni II* |
+| **Raúl Leoni II Etapa** | **Francisco Eugenio Bustamante** → *Urbanización Raúl Leoni II Etapa* |
+| **Raúl Leoni III** | **Antonio Borjas Romero** → *Barrio Raúl Leoni III* |
+| **res. el cafetal** | **Cecilio Acosta** → *res. el cafetal* |
+| **Res. el guayabal** | **Cecilio Acosta** → *Res. el guayabal* |
+| **Res. La California** | **Juana de Ávila** → *Res. La California* |
+| **res. las palmeras** | **Cecilio Acosta** → *res. las palmeras* |
+| **Rescidencial Vista Bella** | **Cacique Mara** → *Conjunto Rescidencial Vista Bella* |
+| **residencial Claret** | **Olegario Villalobos** → *Conjunto residencial Claret* |
+| **Residencias California** | **Juana de Ávila** → *Urbanización Residencias California* |
+| **Rey de Reyes** | **Francisco Eugenio Bustamante** → *Barrio Rey de Reyes* |
+| **Ricardo Aguirre** | **Cristo de Aranza** → *Barrio Ricardo Aguirre* · *Ricardo Aguirre* |
+| **Ricauter** | **Olegario Villalobos** → *Urbanización Ricauter* |
+| **Richmond** | **Manuel Dagnino** → *Urbanización Richmond* |
+| **Rincón de Mangle** | **Coquivacoa** → *Conjunto Residencial Rincón de Mangle* |
+| **Río Piedra** | **Cristo de Aranza** → *Conjunto Residencial Río Piedra* |
+| **Ritchmond** | **Manuel Dagnino** → *Urbanizacion Ritchmond* |
+| **Rixamar** | **Cristo de Aranza** → *Barrio Rixamar* |
+| **Robinson Ferreira** | **Manuel Dagnino** → *Barrio Robinson Ferreira* |
+| **Robinson Medina** | **Luis Hurtado Higuera** → *Barrio Robinson Medina* |
+| **Rómulo Bentancourt** | **Cristo de Aranza** → *Barrio Rómulo Bentancourt* |
+| **Rómulo Betancourt** | **Cristo de Aranza** → *Barrio Rómulo Betancourt* |
+| **Rómulo Gallegos** | **Coquivacoa** → *Barrio Rómulo Gallegos* · *Rómulo Gallegos*<br>**Raúl Leoni** → *Urbanización Rómulo Gallegos* |
+| **Romulo Gallegos Sector El Doral** | **Coquivacoa** → *Romulo Gallegos Sector El Doral* |
+| **Rosal Sur** | **Coquivacoa** → *Urbanización Rosal Sur* |
+| **Royal** | **Cecilio Acosta** → *Barrio El Socorro del Sector Royal* · *Barrio Royal* · *Sector Royal* |
+| **Sabaneta** | **Cecilio Acosta** → *Sector Sabaneta* |
+| **Saint Thomas** | **Juana de Ávila** → *Conjunto Residencial Saint Thomas* |
+| **Salina Rica** | **Idelfonso Vásquez** → *Sector Salina Rica* |
+| **Samide** | **Venancio Pulgar** → *Barrio Samide del Sector Puerto Cabello* |
+| **San Agustín** | **Chiquinquirá** → *Barrio San Agustín*<br>**Francisco Eugenio Bustamante** → *Parcelamiento San Agustín* · *Sector San Agustín*<br>**Idelfonso Vásquez** → *Sector San Agustín* |
+| **San Agustín II** | **Francisco Eugenio Bustamante** → *Sector San Agustín II*<br>**Idelfonso Vásquez** → *Barrio San Agustín II* |
+| **San Antonio** | **Antonio Borjas Romero** → *Barrio San Antonio* · *Sector San Antonio*<br>**Idelfonso Vásquez** → *Sector San Antonio* |
+| **San Bartolo** | **Olegario Villalobos** → *Barrio Don Bosco del Sector San Bartolo* · *Sector San Bartolo* |
+| **San Benito** | **Francisco Eugenio Bustamante** → *Barrio San Benito del Sector La Democracia*<br>**Luis Hurtado Higuera** → *Barrio Integración Comunal del Sector San Benito* · *Sector San Benito* |
+| **San Benito de Palermo** | **Manuel Dagnino** → *Barrio San Benito de Palermo* · *Sector San Benito de Palermo* |
+| **San Benito del Palermo** | **Manuel Dagnino** → *Barrio San Benito del Palermo* |
+| **San Benito II** | **Antonio Borjas Romero** → *Barrio San Benito II* |
+| **San Esteban** | **Antonio Borjas Romero** → *Sector San Esteban* |
+| **San Fernando** | **Cacique Mara** → *Barrio San Fernando* · *Barrio San Fernando del Sector Arismendi* · *Barrio San Fernando del Sector Miranda La Florida* |
+| **San Francisco** | **Luis Hurtado Higuera** → *Oficina Postal Telegráfica San Francisco* |
+| **San Isidro** | **Antonio Borjas Romero** → *Barrio San Isidro* · *Sector San Isidro* |
+| **San Jacinto** | **Juana de Ávila** → *San Jacinto* · *Urb San Jacinto* |
+| **San Jacinto Sector 10** | **Juana de Ávila** → *Urbanización San Jacinto Sector 10* |
+| **San Jacinto Sector 12** | **Juana de Ávila** → *Urbanización San Jacinto Sector 12* |
+| **San Jacinto Sector 13** | **Juana de Ávila** → *Urbanización San Jacinto Sector 13* |
+| **San Jacinto Sector 14** | **Juana de Ávila** → *Urbanización San Jacinto Sector 14* |
+| **San Jacinto Sector 15** | **Juana de Ávila** → *Urbanización San Jacinto Sector 15* |
+| **San Jacinto Sector 16** | **Juana de Ávila** → *Urbanización San Jacinto Sector 16* |
+| **San Jacinto Sector 17** | **Juana de Ávila** → *Urbanización San Jacinto Sector 17* |
+| **San Jacinto Sector 18** | **Juana de Ávila** → *Urbanización San Jacinto Sector 18* |
+| **San Jacinto Sector 2** | **Juana de Ávila** → *Urbanización San Jacinto Sector 2* |
+| **San Jacinto Sector 3** | **Juana de Ávila** → *Urbanización San Jacinto Sector 3* |
+| **San Jacinto Sector 4** | **Juana de Ávila** → *Urbanización San Jacinto Sector 4* |
+| **San Jacinto Sector 5** | **Juana de Ávila** → *Urbanización San Jacinto Sector 5* |
+| **San Jacinto Sector 7** | **Juana de Ávila** → *Urbanización San Jacinto Sector 7* |
+| **San Jacinto Sector 8** | **Juana de Ávila** → *Urbanización San Jacinto Sector 8* |
+| **San Jacinto Sector 9** | **Juana de Ávila** → *Urbanización San Jacinto Sector 9* |
+| **San Jacinto Zona Central** | **Juana de Ávila** → *Urbanización San Jacinto Zona Central* |
+| **San Javier** | **Luis Hurtado Higuera** → *Barrio San Javier* · *Sector San Javier* |
+| **San José** | **Bolívar** → *San José* · *Sector San José*<br>**Chiquinquirá** → *Sector San José* |
+| **San José de La Montaña** | **Antonio Borjas Romero** → *Sector San José de La Montaña* |
+| **San José I** | **Cacique Mara** → *Barrio San José I* |
+| **San José II** | **Cacique Mara** → *Barrio San José II* |
+| **San José III** | **Cacique Mara** → *Barrio San José III* |
+| **San José IV** | **Cacique Mara** → *Barrio San José IV* |
+| **San José V** | **Cacique Mara** → *Barrio San José V* |
+| **San José VI** | **Cacique Mara** → *Barrio San José VI* |
+| **San Juan** | **Cristo de Aranza** → *Barrio San Juan*<br>**Idelfonso Vásquez** → *Barrio San Juan* |
+| **San Juan II** | **Cacique Mara** → *Barrio El Amparo del Sector San Juan II* |
+| **San Luis** | **Raúl Leoni** → *Conjunto Residencial San Luis* |
+| **San Marcos** | **Venancio Pulgar** → *Sector San Marcos* |
+| **San Martín** | **Cacique Mara** → *Barrio San Martín* |
+| **San Martín de Porras** | **Manuel Dagnino** → *Parcelamiento San Martín de Porras* |
+| **San Matías** | **Antonio Borjas Romero** → *Sector San Matías* |
+| **San Miguel** | **Francisco Eugenio Bustamante** → *Barrio San Miguel* · *Urbanización San Miguel* |
+| **San Pedro** | **Manuel Dagnino** → *Barrio San Pedro* · *Barrio San Pedro del Sector Kennedy I* · *Barrio San Pedro del Sector Kennedy II*<br>**Venancio Pulgar** → *Sector San Pedro* |
+| **San Pedro I** | **Manuel Dagnino** → *Barrio San Pedro I del Sector Buenos Aires* |
+| **San Rafael** | **Cristo de Aranza** → *Barrio San Rafael* · *San Rafael*<br>**Francisco Eugenio Bustamante** → *Sector San Rafael* · *Urbanización San Rafael* |
+| **San Roque** | **Olegario Villalobos** → *Sector San Roque* |
+| **San Sebastian** | **Manuel Dagnino** → *Barrio San Sebastian*<br>**San Isidro** → *Barrio San Sebastian* |
+| **San Tarcino** | **Raúl Leoni** → *Urbanización San Tarcino* |
+| **San Trinio** | **Cristo de Aranza** → *San Trinio* |
+| **San Trino** | **Cristo de Aranza** → *Barrio San Trino* |
+| **Sanatorio** | **Manuel Dagnino** → *Conjunto Residencial Sanatorio* · *Sector Sanatorio* · *Urbanización Sanatorio* |
+| **Santa Ana** | **Antonio Borjas Romero** → *Barrio El Níspero del Sector Santa Ana* · *Sector Santa Ana*<br>**Manuel Dagnino** → *Barrio La Misión del Sector Santa Ana* · *Sector Santa Ana*<br>**Raúl Leoni** → *Urbanización Santa Ana* |
+| **Santa Bárbara** | **Bolívar** → *Barrio Santa Bárbara del Sector Belloso* · *Santa Bárbara* |
+| **Santa Bárbara Nº 2** | **Bolívar** → *Barrio Santa Bárbara Nº 2* |
+| **Santa Bárbara Nº 3** | **Bolívar** → *Barrio Santa Bárbara Nº 3* |
+| **Santa Bárbara Nº 4** | **Bolívar** → *Barrio Santa Bárbara Nº 4* |
+| **Santa Clara** | **Cristo de Aranza** → *Santa Clara* · *Sector Santa Clara*<br>**Manuel Dagnino** → *Barrio El Pajar del Sector Santa Clara* · *Sector Santa Clara* |
+| **Santa Clara I** | **Cristo de Aranza** → *Barrio Santa Clara I* |
+| **Santa Clara II** | **Cristo de Aranza** → *Barrio Santa Clara II* |
+| **Santa Clara Norte** | **Cecilio Acosta** → *Barrio Santa Clara Norte* · *Sector Santa Clara Norte* |
+| **Santa Eduvigis** | **Raúl Leoni** → *Urbanización Santa Eduvigis* |
+| **Santa Fe I** | **Raúl Leoni** → *Urbanización Santa Fe I* |
+| **Santa Fe II** | **Raúl Leoni** → *Urbanización Santa Fe II* |
+| **Santa Inés del Sur** | **Manuel Dagnino** → *Barrio Santa Inés del Sur* |
+| **Santa Isabel** | **Raúl Leoni** → *Sector Santa Isabel* · *Urbanización Santa Isabel* |
+| **Santa Lucía Sector I** | **Santa Lucía** → *Barrio Santa Lucía Sector I* |
+| **Santa Lucía Sector V** | **Santa Lucía** → *Barrio Santa Lucía Sector V* |
+| **Santa Lucía Sector VI** | **Santa Lucía** → *Barrio Santa Lucía Sector VI* |
+| **Santa María** | **Chiquinquirá** → *Urbanización Santa María* |
+| **Santa Rita** | **Olegario Villalobos** → *Sector Santa Rita* |
+| **Santa Rosa** | **Antonio Borjas Romero** → *Barrio Los Ríos del Sector Santa Rosa* · *Sector Santa Rosa*<br>**Idelfonso Vásquez** → *Sector Santa Rosa* |
+| **Santa Rosa de Agua** | **Coquivacoa** → *Barrio Santa Rosa de Agua* |
+| **Santa Rosa de Agua I** | **Coquivacoa** → *Barrio Santa Rosa de Agua I* |
+| **Santa Rosa de Agua II** | **Coquivacoa** → *Barrio Santa Rosa de Agua II* |
+| **Santa Rosa de Agua Sector 1** | **Coquivacoa** → *Santa Rosa de Agua Sector 1* |
+| **Santa Rosa de Agua Sector 2** | **Coquivacoa** → *Santa Rosa de Agua Sector 2* |
+| **Santa Rosa de Agua Sector Los Pescadores** | **Coquivacoa** → *Barrio Santa Rosa de Agua Sector Los Pescadores* |
+| **Santa Rosa de Aguas** | **Coquivacoa** → *Barrio Santa Rosa de Aguas del Sector El Rincón del Mangle* |
+| **Santa Rosa de Tierra** | **Coquivacoa** → *Barrio Santa Rosa de Tierra* · *Santa Rosa de Tierra* |
+| **Santa Rosa de Tierra Sector Coquivacoa Norte** | **Coquivacoa** → *Barrio Santa Rosa de Tierra Sector Coquivacoa Norte* · *Santa Rosa de Tierra Sector Coquivacoa Norte* |
+| **Santa Rosa de Tierra Sector Los Pescadores** | **Coquivacoa** → *Santa Rosa de Tierra Sector Los Pescadores* |
+| **Santa Rosa I** | **San Isidro** → *Barrio Santa Rosa I* |
+| **Santa Rosa II** | **San Isidro** → *Barrio Santa Rosa II* |
+| **Santa Rosalía** | **Chiquinquirá** → *Sector Santa Rosalía* |
+| **Santa Teresita** | **Cecilio Acosta** → *Barrio Gallo Verde del Sector Santa Teresita* · *Sector Santa Teresita* |
+| **Santo Domingo** | **Cristo de Aranza** → *Barrio Santo Domingo* |
+| **Santo Domingo I** | **Cristo de Aranza** → *Barrio Santo Domingo I* |
+| **Sebastopol** | **Chiquinquirá** → *Barrio Sebastopol* |
+| **Sibucara** | **Francisco Eugenio Bustamante** → *Sector Sibucara* |
+| **Silvester Manzanilla** | **Venancio Pulgar** → *Barrio Silvester Manzanilla* |
+| **Simón Bolívar** | **Francisco Eugenio Bustamante** → *Barrio Simón Bolívar* |
+| **Simón Rodríguez** | **Cristo de Aranza** → *Sector Simón Rodríguez*<br>**Francisco Eugenio Bustamante** → *Urbanización La Chamarreta del Sector Simón Rodríguez* |
+| **Sobre La Misma Tierra** | **Venancio Pulgar** → *Barrio Sobre La Misma Tierra* |
+| **Sucre** | **Cacique Mara** → *Urbanización Sucre*<br>**Chiquinquirá** → *Urbanización Sucre* |
+| **Tamanaco** | **Manuel Dagnino** → *Parcelamiento Tamanaco* · *Sector Tamanaco* |
+| **Teotiste de Gallegos** | **Coquivacoa** → *Barrio Teotiste de Gallegos* · *Barrio Teotiste de Gallegos del Sector Norte* |
+| **Teotiste de Gallegos Norte** | **Coquivacoa** → *Teotiste de Gallegos Norte* |
+| **Teotiste de Gallegos Sector 1** | **Coquivacoa** → *Teotiste de Gallegos Sector 1* |
+| **Terepaima** | **Raúl Leoni** → *Barrio Terepaima* |
+| **Terepaima III** | **Idelfonso Vásquez** → *Sector Terepaima III* |
+| **TerepaimaI** | **Idelfonso Vásquez** → *Barrio Blanco del Sector TerepaimaI* |
+| **TerepaimaII** | **Idelfonso Vásquez** → *Barrio Blanco del Sector TerepaimaII* |
+| **Terraza Del Lago** | **Cacique Mara** → *Urbanización Terraza Del Lago* |
+| **Terrazas de Maracaibo** | **Cacique Mara** → *Conjunto Residencial Terrazas de Maracaibo* |
+| **Terrazas de Sabaneta** | **Cecilio Acosta** → *Barrio Terrazas de Sabaneta*<br>**Manuel Dagnino** → *Conjunto Residencial Terrazas de Sabaneta* |
+| **Terrazas de San Benito** | **Idelfonso Vásquez** → *Sector Terrazas de San Benito* |
+| **Terrazas de Toledo** | **Idelfonso Vásquez** → *Sector Terrazas de Toledo* |
+| **Tía Lola** | **Cecilio Acosta** → *Conjunto Residencial Tía Lola* |
+| **Tierra Negra** | **Olegario Villalobos** → *Barrio Tierra Negra del Sector Bella Vista* · *Barrio Tierra Negra del Sector Cecilio Acosta* · *Barrio Tierra Negra del Sector José R. Yépez* · *Barrio Tierra Negra del Sector La Caridad* · *Barrio Tierra Negra del Sector Las Delicias* · *Sector Tierra Negra* |
+| **Tierra Norte** | **Coquivacoa** → *Conjunto Residencial Tierra Norte* |
+| **Tierras del Sol Etapa II** | **Raúl Leoni** → *Conjunto Residencial Tierras del Sol Etapa II* |
+| **Torito Fernández** | **Antonio Borjas Romero** → *Barrio Torito Fernández* · *Sector Torito Fernández* |
+| **Tres Bocas** | **Idelfonso Vásquez** → *Sector Tres Bocas* |
+| **Tú y Yo** | **Idelfonso Vásquez** → *Sector Tú y Yo* |
+| **Undón Pérez** | **Caracciolo Parra Pérez** → *Barrio Undón Pérez* |
+| **Universitario** | **Chiquinquirá** → *Sector Universitario* |
+| **URB LA ROSALEDA** | **Raúl Leoni** → *URB LA ROSALEDA* |
+| **Urdaneta** | **Cecilio Acosta** → *Urbanización Urdaneta* |
+| **Urgüinaona** | **Olegario Villalobos** → *Sector Urgüinaona* |
+| **V** | **Cecilio Acosta** → *Barrio Los Claveles del Sector V* |
+| **V El Milagro** | **Santa Lucía** → *Barrio Valle Frío del Sector V El Milagro* |
+| **Valle Claro** | **Raúl Leoni** → *Conjunto Residencial Valle Claro* · *Sector Valle Claro* · *Urbanización Valle Claro* |
+| **Valle Frío** | **Santa Lucía** → *Barrio Valle Frío del Sector V El Milagro* · *Valle Frío* |
+| **Valle Frío Parte Alta** | **Coquivacoa** → *Barrio Valle Frío Parte Alta* |
+| **Valle Frío Sector I** | **Coquivacoa** → *Barrio Valle Frío Sector I* |
+| **Valle Frío Sector II** | **Coquivacoa** → *Barrio Valle Frío Sector II* |
+| **Valle Frío Sector III** | **Coquivacoa** → *Barrio Valle Frío Sector III* |
+| **Valle Frío Sector IV** | **Santa Lucía** → *Barrio Valle Frío Sector IV* |
+| **Valle Lucha** | **Coquivacoa** → *Barrio Valle Lucha* |
+| **Valmore Rodríguez** | **Idelfonso Vásquez** → *Barrio Valmore Rodríguez* · *Parcelamiento Valmore Rodríguez* |
+| **Venezuela** | **Cacique Mara** → *Barrio Venezuela*<br>**Raúl Leoni** → *Barrio Venezuela* |
+| **Vía Aitara** | **Coquivacoa** → *Conjunto Residencial Vía Aitara* |
+| **Viento Norte** | **Juana de Ávila** → *Conjunto Residencial Viento Norte*<br>**Olegario Villalobos** → *Urbanización Viento Norte* |
+| **Villa Aeropuerto** | **Luis Hurtado Higuera** → *Villa Aeropuerto* |
+| **Villa Ala Blanca** | **Juana de Ávila** → *Urbanización Villa Ala Blanca* |
+| **Villa Altana** | **Coquivacoa** → *Conjunto Residencial Villa Altana* |
+| **Villa Alto Del Monte Bello II** | **Coquivacoa** → *Conjunto Residencial Villa Alto Del Monte Bello II* |
+| **Villa Amigos** | **Coquivacoa** → *Conjunto Residencial Villa Amigos* |
+| **Villa Antañona** | **Coquivacoa** → *Conjunto Residencial Villa Antañona* |
+| **Villa Arena** | **Juana de Ávila** → *Conjunto Residencial Villa Arena* |
+| **Villa Baralt** | **Francisco Eugenio Bustamante** → *Urbanización Villa Baralt* |
+| **Villa Bolivariana** | **Chiquinquirá** → *Conjunto Residencial Villa Bolivariana* |
+| **Villa Bonita** | **Francisco Eugenio Bustamante** → *Sector Villa Bonita* |
+| **Villa Campo** | **Juana de Ávila** → *Conjunto Residencial Villa Campo* |
+| **Villa Castillete** | **Coquivacoa** → *Conjunto Residencial Villa Castillete* |
+| **Villa Centenario de Luz III** | **Francisco Eugenio Bustamante** → *Barrio Villa Centenario de Luz III* |
+| **Villa Centenario de Luz IV** | **Francisco Eugenio Bustamante** → *Barrio Villa Centenario de Luz IV* |
+| **Villa Centenario de Luz Sector I** | **Francisco Eugenio Bustamante** → *Barrio Villa Centenario de Luz Sector I* |
+| **Villa Chiquinquira** | **Luis Hurtado Higuera** → *Parcelamiento Villa Chiquinquira* · *Villa Chiquinquirá* |
+| **Villa Corales** | **Juana de Ávila** → *Conjunto Residencial Villa Corales* |
+| **Villa del Mar** | **Juana de Ávila** → *Conjunto Residencial Villa del Mar* |
+| **Villa del Sol** | **Manuel Dagnino** → *Conjunto Residencial Villa del Sol*<br>**Raúl Leoni** → *Urbanización Villa del Sol* |
+| **Villa del Sur** | **Manuel Dagnino** → *Conjunto Residencial Villa del Sur* |
+| **Villa Delicias** | **Juana de Ávila** → *Conjunto Residencial Villa Delicias* · *Sector Villa Delicias* · *Urbanización Villa Delicias* |
+| **Villa Doña Isabel** | **Coquivacoa** → *Conjunto Residencial Villa Doña Isabel* |
+| **Villa Eclipse** | **Francisco Eugenio Bustamante** → *Barrio Villa Eclipse* · *Parcelamiento Villa Eclipse* |
+| **Villa El Carmen** | **San Isidro** → *Barrio Villa El Carmen* |
+| **Villa Esperanza** | **Cristo de Aranza** → *Barrio Villa Esperanza* · *Parcelamiento Villa Esperanza* |
+| **Villa Florencia** | **Coquivacoa** → *Conjunto Residencial Villa Florencia* |
+| **Villa Francia** | **Juana de Ávila** → *Conjunto Residencial Villa Francia* |
+| **Villa Gladis** | **Coquivacoa** → *Conjunto Residencial Villa Gladis* |
+| **Villa Gracias** | **Juana de Ávila** → *Conjunto Residencial Villa Gracias* |
+| **Villa Grecia II** | **Raúl Leoni** → *Conjunto Residencial Villa Grecia II* |
+| **Villa Hermosa** | **Cristo de Aranza** → *Urbanización Villa Hermosa*<br>**Juana de Ávila** → *Conjunto Residencial Villa Hermosa* |
+| **Villa La Milagrosa** | **Coquivacoa** → *Conjunto Residencial Villa La Milagrosa* |
+| **Villa Luna** | **Juana de Ávila** → *Conjunto Residencial Villa Luna* |
+| **Villa Mar** | **Coquivacoa** → *Conjunto Residencial Villa Mar* |
+| **Villa Mariana** | **Idelfonso Vásquez** → *Villa Mariana* |
+| **Villa Mediterráneo** | **Coquivacoa** → *Conjunto Residencial Villa Mediterráneo* |
+| **Villa Mochima** | **Coquivacoa** → *Conjunto Residencial Villa Mochima* |
+| **Villa Monte Bello** | **Coquivacoa** → *Conjunto Residencial Villa Monte Bello* |
+| **Villa Moroy** | **Coquivacoa** → *Conjunto Residencial Villa Moroy* |
+| **Villa Nueva** | **Raúl Leoni** → *Urbanización Villa Nueva* |
+| **Villa Paraíso** | **Juana de Ávila** → *Conjunto Residencial Villa Paraíso* |
+| **Villa Reina** | **Francisco Eugenio Bustamante** → *Barrio Villa Reina* · *Parcelamiento Villa Reina* |
+| **Villa Rosmini** | **Coquivacoa** → *Conjunto Residencial Villa Rosmini* |
+| **Villa San Isidro** | **San Isidro** → *Urbanización Villa San Isidro* |
+| **Villa San José** | **Francisco Eugenio Bustamante** → *Sector Villa San José* |
+| **Villa Valencia** | **Juana de Ávila** → *Conjunto Residencial Villa Valencia* |
+| **Villa Varillal** | **Cecilio Acosta** → *Urbanización Villa Varillal* |
+| **Villa Venecia** | **Luis Hurtado Higuera** → *Barrio Integración Comunal del Sector Villa Venecia* |
+| **Villa Victoria** | **Raúl Leoni** → *Conjunto Residencial Villa Victoria* |
+| **Villas Azul** | **Manuel Dagnino** → *Urbanización Villas Azul* |
+| **Villas Costa Romini** | **Coquivacoa** → *Conjunto Residencial Villas Costa Romini* |
+| **Villas Del Sur** | **Manuel Dagnino** → *Urbanización Villas Del Sur* |
+| **Virgen del Carmen** | **Idelfonso Vásquez** → *Barrio Virgen del Carmen* |
+| **Virginia** | **Olegario Villalobos** → *Sector Virginia* · *Urbanización Virginia* |
+| **Visoca** | **Cacique Mara** → *Conjunto Residencial Visoca* |
+| **Vista al Lago** | **Cristo de Aranza** → *Urbanización Vista al Lago* |
+| **Vista Bella** | **Cacique Mara** → *Conjunto Residencial Vista Bella* |
+| **Vista del Lago** | **Cristo de Aranza** → *Parcelamiento Vista del Lago* · *Urbanización Vista del Lago* |
+| **Vista Hermosa** | **Cristo de Aranza** → *Sector Vista Hermosa* · *Urbanización Vista Hermosa* |
+| **Vollas Colinas del Metro** | **Luis Hurtado Higuera** → *Barrio Vollas Colinas del Metro* |
+| **Yet-Set** | **Luis Hurtado Higuera** → *Barrio Integración Comunal del Sector Yet-Set* · *Sector Yet-Set* |
+| **Zapara** | **Olegario Villalobos** → *Urbanización Zapara* |
+| **Zapara I** | **Coquivacoa** → *Urbanización Zapara I* |
+| **Zapara I y II** | **Coquivacoa** → *Zapara I y II* |
+| **Zapara II** | **Coquivacoa** → *Urbanización Zapara II*<br>**Olegario Villalobos** → *Sector Zapara II* |
+| **Ziruma** | **Juana de Ávila** → *Barrio Ziruma* |
+| **Zona Portuaria** | **Bolívar** → *Sector Zona Portuaria* |
+| **Zona Universitaria** | **Chiquinquirá** → *Zona Universitaria* |
+| **Zona Universitaria Luz** | **Chiquinquirá** → *Zona Universitaria Luz* |
+| **Zulia** | **Antonio Borjas Romero** → *Barrio Zulia* |
+
 # Fuentes
 
 ### 1. Fuentes oficiales

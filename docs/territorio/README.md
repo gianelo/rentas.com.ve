@@ -173,6 +173,52 @@ sub-parroquial.
 
 ---
 
+## Índice de topónimos — cómo buscar una zona
+
+Cada archivo termina con un **Índice de topónimos** antes de la sección *Fuentes*. Es la
+entrada correcta para buscar por nombre de mercado.
+
+Existe porque el nombre que publica la fuente y el nombre por el que la gente busca no
+siempre coinciden:
+
+| La fuente publica | La gente busca |
+|---|---|
+| `Oficina Postal Telegráfica Bella Vista` | Bella Vista |
+| `Barrio Tierra Negra del Sector Bella Vista` | Tierra Negra · Bella Vista |
+| `Casco Central de Catia` | Catia |
+
+El índice extrae el topónimo quitando **solo la palabra de categoría** (`Barrio`,
+`Sector`, `Urbanización`, `Conjunto Residencial`, `Parcelamiento`, `Caserío`,
+`Casco Central de`, `Centro de`, `Zona Industrial`, `Oficina Postal Telegráfica`) e
+indexa también el topónimo enterrado en los nombres compuestos `X del Sector Y`.
+
+**El índice no crea zonas.** Cada topónimo sale de un nombre que la fuente ya publica, y
+la fila muestra en qué parroquia y bajo qué entrada aparece.
+
+### Advertencia: la misma zona puede estar en otra parroquia de la que suponés
+
+Es el error más fácil de cometer con estos archivos.
+
+| Topónimo | Dónde lo buscan | Dónde está de verdad |
+|---|---|---|
+| **Bella Vista** | Coquivacoa (solo la oficina postal) | **Olegario Villalobos** — `Sector Bella Vista` |
+| **La Limpia** | Maracaibo | **San Francisco** — parroquias Domitila Flores y San Francisco |
+| **Coromoto** | Maracaibo | **San Francisco** — `Urbanización Coromoto` |
+
+Usá el índice de topónimos antes de concluir que una zona falta.
+
+### Lo que sí falta, y por qué no se agregó
+
+Topónimos de mercado que **ninguna fuente oficial registra** — nombres coloquiales,
+viales o de referencia. Verificados como ausentes en IPOSTEL para todo el estado Zulia:
+
+- `Grano de Oro` · `Curva de Molina` · `Circunvalación`
+
+Agregarlos exigiría inventarlos. **No se hizo.** Si aparece una fuente que los
+documente, entran.
+
+---
+
 ## Metodología
 
 ### Fuentes, en orden de autoridad

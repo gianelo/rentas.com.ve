@@ -125,6 +125,7 @@ function deps<T extends Partial<PublishListingDependencies>>(overrides: T = {} a
 function request(overrides: Record<string, unknown> = {}) {
   return {
     publisherType: "owner" as const,
+    propertyType: "apartamento" as const,
     title: "Apartamento 2 habitaciones con puesto de estacionamiento",
     description: DESCRIPTION,
     priceUsd: 520,

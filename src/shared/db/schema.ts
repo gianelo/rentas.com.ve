@@ -1,4 +1,5 @@
 import {
+  boolean,
   customType,
   foreignKey,
   index,
@@ -39,6 +40,12 @@ import type { AdapterAccountType } from "next-auth/adapters";
  * wrong channel is a promise the product does not keep.
  */
 export type ContactMethod = "whatsapp" | "telefono" | "email";
+
+/**
+ * Qué se alquila. Lista cerrada de cinco, decidida por el fundador
+ * (2026-08-22). Residencial entero: `local comercial` se evaluó y se descartó.
+ */
+export type PropertyType = "apartamento" | "casa" | "quinta" | "anexo" | "habitacion";
 
 export const users = pgTable("user", {
   id: text("id")
@@ -106,8 +113,32 @@ export const sessions = pgTable("session", {
 // wrong city, and no application-level check could be trusted to catch
 // every case (see the integration test in tests/integration/zone.test.ts).
 //
-// Zones are a curated table maintained by the founder, no free text — see
-// src/shared/db/seed.ts for the current (provisional) taxonomy.
+// Zones are a curated table, no free text — see src/shared/db/seed.ts.
+//
+// **`zone` is now a TREE, and the name stayed on purpose.** It holds the whole
+// official hierarchy — estado → municipio → parroquia → elemento — imported
+// from `docs/territorio/`: 5,705 places under 81 parroquias and 10 municipios.
+// The table was not renamed to `territory` because `listing.zone_id` and the
+// composite foreign key above are what D5 rests on, and renaming a table under
+// a live foreign key buys a better word at the cost of a data migration.
+//
+// **`city` is the ÁREA, and it is the product's invention rather than an
+// official level.** Caracas metropolitana crosses two federal entities —
+// Distrito Capital plus four Miranda municipalities, per Gaceta Oficial 36.906
+// and its repeal in 41.308 — so no level of the INE hierarchy can express it.
+// Keeping it separate is what lets the official data be re-imported later
+// without overwriting a product decision.
+//
+// **Every row carries `city_id`, denormalised, at every depth.** That is not
+// redundancy: it is what keeps `UNIQUE(id, city_id)` meaningful for a
+// parroquia six levels down, and therefore what keeps D5 a database guarantee
+// instead of a query someone has to remember to write.
+//
+// **`UNIQUE(city_id, name)` is GONE, and the data killed it.** In the real
+// taxonomy `Buena Vista` appears 12 times, `San José` 11, `El Carmen` 10,
+// `Los Pinos` and `Santa Ana` 9 each. A barrio is unique inside its parroquia,
+// never inside a city — the constraint was not merely tight, it was
+// unsatisfiable.
 
 export const cities = pgTable("city", {
   id: text("id")
@@ -115,6 +146,35 @@ export const cities = pgTable("city", {
     .$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull().unique(),
 });
+
+/**
+ * Where a place sits in the official hierarchy. `estado`, `municipio` and
+ * `parroquia` come from the INE's DPT; `elemento` is everything below a
+ * parroquia, which no official register enumerates completely.
+ */
+export type ZoneKind = "estado" | "municipio" | "parroquia" | "elemento";
+
+/**
+ * What an `elemento` is, **as its source declared it** — never anything
+ * inferred from its name. `docs/territorio/` states the rule and this column
+ * carries it: "La categoría nunca se dedujo. Un nombre sin prefijo declarado
+ * por la fuente va a Otros." NULL for the three official levels, which have no
+ * category to declare.
+ */
+export type ZoneCategory =
+  | "barrio"
+  | "sector"
+  | "urbanizacion"
+  | "conjunto"
+  | "parcelamiento"
+  | "caserio"
+  | "comunidad"
+  | "localidad"
+  | "edificacion"
+  | "otro";
+
+/** Provenance, kept so a future INE update can be re-imported. */
+export type ZoneSource = "INE" | "IPOSTEL" | "OSM" | "IPOSTEL+OSM";
 
 export const zones = pgTable(
   "zone",
@@ -125,13 +185,53 @@ export const zones = pgTable(
     cityId: text("city_id")
       .notNull()
       .references(() => cities.id, { onDelete: "cascade" }),
+    /**
+     * The official parent. NULL at the top of a city's tree — an `estado` has
+     * no parent inside this table.
+     *
+     * **Self-referencing rather than four tables**, and real data decided it:
+     * the searchable unit is not one level. *Chacao* is a municipio AND a
+     * parroquia; *Altamira* is an urbanización inside that parroquia; *Sabana
+     * Grande* sits in parroquia El Recreo and nobody names the parroquia.
+     * People name places ACROSS levels, so one table per level would force
+     * search to UNION four queries and force `listing` to carry four nullable
+     * foreign keys.
+     */
+    parentId: text("parent_id"),
+    kind: text("kind").$type<ZoneKind>().notNull(),
+    /** NULL for estado/municipio/parroquia. See `ZoneCategory`. */
+    category: text("category").$type<ZoneCategory>(),
     name: text("name").notNull(),
+    /** INE code. Present for the three official levels, absent below them. */
+    ubigeo: text("ubigeo"),
+    /** IPOSTEL postal code, where the source declared one. */
+    postalCode: text("postal_code"),
+    source: text("source").$type<ZoneSource>().notNull(),
   },
   (zone) => [
+    // The constraint D5 rests on. Untouched by the new depth, and that is the
+    // whole reason this table was evolved rather than replaced.
     unique("zone_id_city_id_unique").on(zone.id, zone.cityId),
-    // Keeps the seed idempotent (tasks.md 2.3) and rejects two curated rows
-    // for the same zone name inside one city.
-    unique("zone_city_id_name_unique").on(zone.cityId, zone.name),
+    foreignKey({
+      columns: [zone.parentId],
+      foreignColumns: [zone.id],
+      name: "zone_parent_fk",
+    }),
+    // **Uniqueness moved down a level, because the data moved it.** The old
+    // UNIQUE(city_id, name) is gone: `Buena Vista` appears 12 times in the real
+    // taxonomy, `San José` 11, `El Carmen` 10, `Los Pinos` and `Santa Ana` 9
+    // each. A barrio is unique inside its parroquia, never inside a city — the
+    // old constraint was not merely tight, it was unsatisfiable. This one still
+    // keeps the seed idempotent (tasks.md 2.3), which is what it was for.
+    unique("zone_parent_category_name_unique")
+      .on(zone.parentId, zone.category, zone.name)
+      // NULLS NOT DISTINCT, porque sin eso la restricción no diría nada en los
+      // tres niveles oficiales: su categoría es NULL, y Postgres considera dos
+      // NULL como distintos por omisión. Dos parroquias homónimas bajo un mismo
+      // municipio entrarían sin que nada se queje.
+      .nullsNotDistinct(),
+    index("zone_city_kind_idx").on(zone.cityId, zone.kind),
+    index("zone_parent_idx").on(zone.parentId),
   ],
 );
 
@@ -195,6 +295,50 @@ export const listings = pgTable(
     // Zero is a FACT here, not a missing value -- an anexo with no puesto is
     // an ordinary listing, and saying so is something a tenant filters on.
     parkingSpots: integer("parking_spots").notNull().default(0),
+    /**
+     * Qué es la propiedad. Lista cerrada de cinco, decidida por el fundador
+     * (2026-08-22): apartamento · casa · quinta · anexo · habitación.
+     *
+     * **`local comercial` se propuso y se retiró**, y la retirada es lo que
+     * mantiene limpio el modelo: deja el producto residencial entero, deja
+     * `rooms` NOT NULL sin obligar a nadie a escribir un número que no
+     * significa nada, y deja viva la tira de cuatro celdas de la ficha, cuyo
+     * propio comentario dice que "dibuja cuatro celdas iguales y no tiene
+     * estado vacío para ninguna". No volver a agregarlo sin reabrir las tres.
+     *
+     * **NOT NULL y sin valor por defecto**, igual que `publisher_type` y por
+     * la misma razón: un default convierte "al que se le olvidó" en "todos son
+     * apartamentos", y el tipo es lo que separa un anexo de $150 de un
+     * apartamento de $150 — sin él, el filtro de precio miente.
+     *
+     * Es la tercera vez que este proyecto se topa con el mismo hueco:
+     * `habitaciones`/`metros²`, después `baños`/`puesto` (3.15), ahora
+     * esto. La primera que se agarró ANTES de construir la pantalla.
+     */
+    propertyType: text("property_type").$type<PropertyType>().notNull(),
+    /**
+     * Los cinco atributos de la F6, como columnas y no como tabla.
+     *
+     * **La razón está en la propia F6**: los atributos se combinan con AND
+     * ("piden todos, no cualquiera") y cada uno tiene que informar cuántos de
+     * los resultados actuales lo cumplen. Con columnas eso es
+     * `COUNT(*) FILTER (WHERE amoblado)` — una pasada, indexable. Con una
+     * tabla de atributos es un `GROUP BY … HAVING COUNT(*) = N` en cada
+     * búsqueda: complejidad pagada en cada consulta para ahorrar una migración
+     * que se hace una vez al año.
+     *
+     * **Registran una DECLARACIÓN, no un hecho sobre la propiedad.** `false`
+     * significa "no lo declaró", nunca "no lo tiene" — la ficha lista sólo lo
+     * declarado y jamás afirma una ausencia (F25/R5). Esa asimetría es del
+     * producto y no de la base, y por eso vive escrita acá: quien lea la
+     * columna sin este comentario va a renderizar "No amoblado" y va a estar
+     * diciendo algo que el sistema no sabe.
+     */
+    hasPowerPlant: boolean("has_power_plant").notNull().default(false),
+    hasRegularWater: boolean("has_regular_water").notNull().default(false),
+    isFurnished: boolean("is_furnished").notNull().default(false),
+    hasSecurity: boolean("has_security").notNull().default(false),
+    hasAppliances: boolean("has_appliances").notNull().default(false),
     // active | expired | hidden. Search shows `active` only (tasks.md
     // 5.5/5.6); `hidden` is the auto-hide state from reports (Phase 8).
     status: text("status").$type<"active" | "expired" | "hidden">().notNull(),

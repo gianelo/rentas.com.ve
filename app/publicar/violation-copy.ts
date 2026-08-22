@@ -28,6 +28,7 @@ import {
 
 export type PublishField =
   | "publisherType"
+  | "propertyType"
   | "title"
   | "description"
   | "priceUsd"
@@ -76,6 +77,14 @@ export const PUBLISH_VIOLATION_COPY: Record<PublishViolation, ViolationCopy> = {
   "publisherType.invalid": {
     field: "publisherType",
     message: () => "Elegí una de las dos opciones: dueño o inmobiliaria.",
+  },
+  "propertyType.required": {
+    field: "propertyType",
+    message: () => "Decinos qué vas a alquilar.",
+  },
+  "propertyType.invalid": {
+    field: "propertyType",
+    message: () => "Elegí una de las cinco opciones de la lista.",
   },
   "title.required": {
     field: "title",

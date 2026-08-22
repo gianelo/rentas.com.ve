@@ -49,6 +49,9 @@ export class DrizzleListingRepository implements ListingRepositoryPort {
         // precisely so a missing value fails loudly instead of publishing
         // someone as an owner they never claimed to be.
         publisherType: listing.publisherType,
+        // Misma regla, misma razón: sin default, para que el olvido sea un
+        // error al insertar y no un anexo publicado como apartamento.
+        propertyType: listing.propertyType,
         cityId: listing.cityId,
         zoneId: listing.zoneId,
         title: listing.title,
@@ -58,6 +61,11 @@ export class DrizzleListingRepository implements ListingRepositoryPort {
         areaM2: listing.areaM2,
         bathrooms: listing.bathrooms,
         parkingSpots: listing.parkingSpots,
+        hasPowerPlant: listing.hasPowerPlant,
+        hasRegularWater: listing.hasRegularWater,
+        isFurnished: listing.isFurnished,
+        hasSecurity: listing.hasSecurity,
+        hasAppliances: listing.hasAppliances,
         contactMethod: listing.contactMethod,
         contactValue: listing.contactValue,
         status: listing.status,

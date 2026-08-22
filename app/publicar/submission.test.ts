@@ -65,6 +65,7 @@ describe("photo rules belong to step 2", () => {
   it("reports nothing about photos for an otherwise valid draft", () => {
     const draft = toDraft({
       publisherType: "owner",
+      propertyType: "apartamento",
       title: "Apartamento 2 habitaciones en Chacao",
       description: "x".repeat(140),
       priceUsd: "450",

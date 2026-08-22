@@ -57,6 +57,13 @@
       "when": 1787185963068,
       "tag": "0007_add_bathrooms_parking",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787427058175,
+      "tag": "0008_tiny_rumiko_fujikawa",
+      "breakpoints": true
     }
   ]
 }

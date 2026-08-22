@@ -26,6 +26,7 @@ const EVERY_VIOLATION: readonly PublishViolation[] = [
   ...validatePublishableListing(
     {
       publisherType: "agency" as never,
+      propertyType: "local comercial" as never,
       title: "Un título",
       description: "x".repeat(MIN_DESCRIPTION_CHARACTERS - 1),
       priceUsd: -1,
@@ -81,7 +82,11 @@ describe("publish violation copy", () => {
     // computed from the code, so a rule DELETED from the domain would empty
     // one and match the other. This line is what notices a rule going
     // missing, which is why it is worth updating by hand.
-    expect(reachable).toHaveLength(25);
+    // 27, up from 25 cuando llegaron `propertyType` y sus dos codigos. El
+    // numero se afirma a mano y no se deriva: `written` y `reachable` salen
+    // los dos del codigo, asi que una regla BORRADA del dominio vaciaria una
+    // y haria coincidir la otra. Esta linea es la que nota que falta una.
+    expect(reachable).toHaveLength(27);
   });
 
   it("gives every code a real sentence, not a placeholder", () => {

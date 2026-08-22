@@ -28,6 +28,12 @@ export const STEP_TWO_VIOLATIONS: readonly PublishViolation[] = [
 
 const VALUE_KEYS = [
   "publisherType",
+  "propertyType",
+  "hasPowerPlant",
+  "hasRegularWater",
+  "isFurnished",
+  "hasSecurity",
+  "hasAppliances",
   "title",
   "priceUsd",
   "cityId",
@@ -63,6 +69,15 @@ export function toDraft(values: PublishFormValues): DraftListing {
 
   return {
     publisherType: values.publisherType as DraftListing["publisherType"],
+    propertyType: values.propertyType as DraftListing["propertyType"],
+    // Una casilla marcada llega como "on"; ausente no llega. `false` es la
+    // respuesta correcta para la ausencia — significa "no lo declaro", que es
+    // exactamente lo que paso.
+    hasPowerPlant: values.hasPowerPlant !== undefined,
+    hasRegularWater: values.hasRegularWater !== undefined,
+    isFurnished: values.isFurnished !== undefined,
+    hasSecurity: values.hasSecurity !== undefined,
+    hasAppliances: values.hasAppliances !== undefined,
     title: values.title,
     description: values.description,
     priceUsd: number(values.priceUsd),

@@ -437,6 +437,160 @@ Se listan **todos** los casos detectados (5).
 | Otros | 33 |
 | **Total de elementos sub-parroquiales** | **152** |
 
+# Índice de topónimos
+
+Índice alfabético de **cómo se busca** cada zona. Un mismo topónimo puede aparecer con varias etiquetas y en varias parroquias: acá se ven todas juntas.
+
+**Este índice no crea zonas.** Cada topónimo se extrae del nombre que la fuente ya publica, quitándole únicamente la palabra de categoría (`Barrio`, `Sector`, `Urbanización`, `Conjunto Residencial`, `Parcelamiento`, `Caserío`, `Casco Central de`, `Centro de`, `Zona Industrial`, `Oficina Postal Telegráfica`). Cuando un nombre entierra un segundo topónimo — por ejemplo *«Barrio Tierra Negra del Sector **Bella Vista**»* — también se indexa el enterrado.
+
+Las *Edificaciones identificadas individualmente* quedan fuera del índice: no son zonas.
+
+| Topónimo | Dónde aparece |
+|---|---|
+| **12 de Octubre** | **Germán Ríos Linares** → *Barrio 12 de Octubre* |
+| **1ro de Enero** | **San Benito** → *Barrio 1ro de Enero* |
+| **26 de Julio** | **San Benito** → *Barrio 26 de Julio* |
+| **Agua Clara** | **Punta Gorda** → *Sector Agua Clara* |
+| **Agua Santa** | **Arístides Calvani** → *Agua Santa* · *Sector Agua Santa* |
+| **Algodonal** | **Arístides Calvani** → *Sector Algodonal* |
+| **América** | **Carmen Herrera** → *Urbanización América* |
+| **Ancorima** | **Ambrosio** → *Conjunto Residencial Ancorima* |
+| **Barlovento** | **Jorge Hernández** → *Barrio Barlovento* |
+| **Boyacá** | **Carmen Herrera** → *Urbanización Boyacá* |
+| **Brisas de San José** | **Jorge Hernández** → *Urbanización Brisas de San José* |
+| **Brisas del Lago** | **Punta Gorda** → *Urbanización Brisas del Lago* |
+| **Buena Vista** | **Carmen Herrera** → *Urbanización Buena Vista* |
+| **Cabimas** | **Ambrosio** → *Oficina Postal Telegráfica Cabimas* |
+| **Campo Alegre** | **Germán Ríos Linares** → *Barrio Campo Alegre* |
+| **Campo Blanco** | **Carmen Herrera** → *Urbanización Campo Blanco* |
+| **Campo Elías** | **San Benito** → *Sector Campo Elías* |
+| **Campo Lindo** | **Jorge Hernández** → *Barrio Campo Lindo* |
+| **Campo Staff** | **Carmen Herrera** → *Urbanización Campo Staff* |
+| **Campo Urdaneta** | **La Rosa** → *Urbanización Campo Urdaneta* |
+| **Casa del Aveo** | **Jorge Hernández** → *Casa del Aveo* |
+| **Centro Ambrosio** | **Ambrosio** → *Centro Ambrosio* |
+| **Centro Cívico** | **Ambrosio** → *Centro Cívico* |
+| **Centro Comercial Cabimas Center** | **Ambrosio** → *Centro Comercial Cabimas Center* |
+| **Centro Comercial Clovis** | **Carmen Herrera** → *Centro Comercial Clovis* |
+| **Centro Comercial (sin nombre)** | **Ambrosio** → *Centro Comercial (sin nombre)* |
+| **Centro comercial Tu Center** | **Ambrosio** → *Centro comercial Tu Center* |
+| **Centro Palito Blanco** | **Arístides Calvani** → *Centro Palito Blanco* |
+| **Centro San Benito** | **San Benito** → *Centro San Benito* |
+| **Cienaguita** | **Arístides Calvani** → *Sector Cienaguita* |
+| **Ciudad Sucre** | **Germán Ríos Linares** → *Urbanización Ciudad Sucre* |
+| **Complejo Industrial Doña Eva Calderón** | **Punta Gorda** → *Sector Complejo Industrial Doña Eva Calderón* |
+| **Concordia** | **Carmen Herrera** → *Urbanización Concordia* |
+| **Coritos** | **Jorge Hernández** → *Barrio Coritos* |
+| **Corral de Nava** | **Arístides Calvani** → *Sector Corral de Nava* |
+| **Cumarebo** | **Rómulo Betancourt** → *Barrio Cumarebo* |
+| **Curazaito** | **Arístides Calvani** → *Sector Curazaito* |
+| **Delicias Nuevas** | **Ambrosio** → *Barrio Delicias Nuevas* |
+| **Delicias Viejas** | **Ambrosio** → *Sector Delicias Viejas*<br>**Carmen Herrera** → *Sector Delicias Viejas* |
+| **Distribuidor San Benito** | **San Benito** → *Distribuidor San Benito* |
+| **Dividive** | **Carmen Herrera** → *Sector Dividive* |
+| **Don Bosco** | **Germán Ríos Linares** → *Barrio Don Bosco* |
+| **El Amparo** | **Ambrosio** → *Urbanización El Amparo* |
+| **El Balaustre** | **Arístides Calvani** → *Sector El Balaustre* |
+| **El Campito** | **Carmen Herrera** → *Sector El Campito* |
+| **El Golfito** | **Ambrosio** → *Barrio El Golfito* |
+| **El Hornito** | **Germán Ríos Linares** → *Sector El Hornito* |
+| **El Lucero** | **Jorge Hernández** → *Barrio El Lucero* |
+| **El Martillo** | **La Rosa** → *Sector El Martillo* |
+| **El Pensado** | **Arístides Calvani** → *Sector El Pensado* |
+| **El Porvenir** | **Punta Gorda** → *Sector El Porvenir* |
+| **El Solito** | **Carmen Herrera** → *Urbanización El Solito* |
+| **Farma Plaza** | **Jorge Hernández** → *Farma Plaza* |
+| **Federación** | **San Benito** → *Barrio Federación* |
+| **Francisco de Miranda** | **Germán Ríos Linares** → *Barrio Francisco de Miranda* |
+| **Guabina** | **Carmen Herrera** → *Barrio Guabina* |
+| **H7** | **San Benito** → *Barrio H7* |
+| **Hollywood** | **La Rosa** → *Urbanización Hollywood* |
+| **Inversiones 3G** | **Jorge Hernández** → *Inversiones 3G* |
+| **Inversiones Brimo** | **Jorge Hernández** → *Inversiones Brimo* |
+| **Inversiones Lismas** | **Jorge Hernández** → *Inversiones Lismas* |
+| **Isabelino Palencia** | **Germán Ríos Linares** → *Barrio Isabelino Palencia* |
+| **Kilómetro 22** | **San Benito** → *Sector Kilómetro 22* |
+| **KM 13** | **Arístides Calvani** → *Sector KM 13* |
+| **La Cabilla** | **La Rosa** → *Barrio La Cabilla* |
+| **La Candelaria** | **San Benito** → *La Candelaria* · *Sector La Candelaria* |
+| **La Gran Sabana** | **Ambrosio** → *Conjunto Residencial La Gran Sabana* |
+| **La Guacamaya** | **Arístides Calvani** → *Sector La Guacamaya* |
+| **La Mesa** | **Arístides Calvani** → *Sector La Mesa* |
+| **La Misión** | **Ambrosio** → *Sector La Misión* |
+| **La Montañita** | **La Rosa** → *Barrio La Montañita* |
+| **La Pica Roja** | **Punta Gorda** → *Sector La Pica Roja* |
+| **La Picapica** | **Arístides Calvani** → *Sector La Picapica* |
+| **La Piedrita** | **Arístides Calvani** → *Sector La Piedrita* |
+| **La Rosa** | **Ambrosio** → *Urbanización La Rosa* |
+| **La Sabana** | **Arístides Calvani** → *Sector La Sabana* |
+| **La Vega** | **Punta Gorda** → *La Vega* · *Sector La Vega* |
+| **La Vereda** | **Carmen Herrera** → *Barrio La Vereda* |
+| **La Vuelta** | **San Benito** → *Sector La Vuelta* |
+| **Las 40** | **Ambrosio** → *Urbanización Las 40* |
+| **Las 50** | **Ambrosio** → *Urbanización Las 50* |
+| **Las Acacias** | **Jorge Hernández** → *Urbanización Las Acacias*<br>**Rómulo Betancourt** → *Urbanización Las Acacias* |
+| **Las Cuarenta** | **Ambrosio** → *Sector Las Cuarenta* |
+| **Las Cúpulas** | **La Rosa** → *Urbanización Las Cúpulas* |
+| **Las Palmas** | **Arístides Calvani** → *Sector Las Palmas* |
+| **Las Piedritas** | **Arístides Calvani** → *Las Piedritas* |
+| **Las Salinas PDVSA** | **La Rosa** → *Zona Industrial Las Salinas PDVSA* |
+| **Libertad** | **Jorge Hernández** → *Barrio Libertad* |
+| **Los García** | **Arístides Calvani** → *Sector Los García* |
+| **Los Laureles** | **Germán Ríos Linares** → *Urbanización Los Laureles* |
+| **Los Médanos** | **Rómulo Betancourt** → *Barrio Los Médanos* · *Urbanización Los Médanos* |
+| **Los Nísperos** | **Punta Gorda** → *Barrio Los Nísperos* |
+| **Los Ranchos** | **Jorge Hernández** → *Barrio Los Ranchos* |
+| **Los Rosales** | **Germán Ríos Linares** → *Urbanización Los Rosales* |
+| **Los Vegotes** | **Arístides Calvani** → *Sector Los Vegotes* |
+| **Miraflores** | **Carmen Herrera** → *Urbanización Miraflores* |
+| **Miramar** | **Ambrosio** → *Barrio Miramar* |
+| **Monte Claro** | **Jorge Hernández** → *Barrio Monte Claro* |
+| **Nueva Cabimas** | **Rómulo Betancourt** → *Urbanización Nueva Cabimas* |
+| **Nueva Delicias** | **Ambrosio** → *Sector Nueva Delicias* |
+| **Nuevo Mundo** | **San Benito** → *Barrio Nuevo Mundo* |
+| **Obrero** | **Ambrosio** → *Barrio Obrero* |
+| **Palito Blanco** | **Arístides Calvani** → *Palito Blanco* |
+| **Panamericana** | **Jorge Hernández** → *Urbanización Panamericana* |
+| **Playa Verde** | **Ambrosio** → *Conjunto Residencial Playa Verde* |
+| **Plaza Bolivar** | **Ambrosio** → *Plaza Bolivar* |
+| **Plaza Lago** | **Germán Ríos Linares** → *Urbanización Plaza Lago* |
+| **Punto Fijo** | **Rómulo Betancourt** → *Barrio Punto Fijo* · *Urbanización Punto Fijo* |
+| **R-10** | **Jorge Hernández** → *Sector R-10* |
+| **R-5** | **Jorge Hernández** → *Sector R-5* |
+| **Residencias Camejo** | **Ambrosio** → *Residencias Camejo* |
+| **Residencias Estudiantiles** | **Ambrosio** → *Residencias Estudiantiles*<br>**Carmen Herrera** → *Residencias Estudiantiles* |
+| **Residencias Las Aves** | **Germán Ríos Linares** → *Residencias Las Aves* |
+| **Residencias Piedras Blancas** | **Germán Ríos Linares** → *Residencias Piedras Blancas* |
+| **Residencias Produzca** | **Ambrosio** → *Residencias Produzca* |
+| **Residencias Villa Baleares** | **Ambrosio** → *Residencias Villa Baleares* |
+| **Residencias Villa del Sol** | **Carmen Herrera** → *Residencias Villa del Sol* |
+| **Residencias Villa Nova** | **Carmen Herrera** → *Residencias Villa Nova* |
+| **Residencias Villa Pipina** | **Ambrosio** → *Residencias Villa Pipina* |
+| **Residencias Villa Rosario** | **Germán Ríos Linares** → *Residencias Villa Rosario* |
+| **Residencias Villa Verde** | **Carmen Herrera** → *Residencias Villa Verde* |
+| **Retorno de La Vega** | **Arístides Calvani** → *Retorno de La Vega* |
+| **Roberto Lique** | **Germán Ríos Linares** → *Barrio Roberto Lique* |
+| **Rosa Vieja** | **La Rosa** → *Barrio Rosa Vieja* |
+| **San Benito** | **San Benito** → *Urbanización San Benito* |
+| **San Diego** | **Arístides Calvani** → *Sector San Diego* |
+| **San José** | **San Benito** → *Barrio San José* |
+| **Santa Ana** | **Punta Gorda** → *Sector Santa Ana* |
+| **Santa Cruz** | **Arístides Calvani** → *Sector Santa Cruz* |
+| **Santa Rosa** | **Punta Gorda** → *Sector Santa Rosa*<br>**San Benito** → *Barrio Santa Rosa* |
+| **Sarría** | **San Benito** → *Sector Sarría* |
+| **Sucre** | **Germán Ríos Linares** → *Barrio Sucre* |
+| **SunCars** | **Jorge Hernández** → *SunCars* |
+| **Supermercado Éxito** | **Jorge Hernández** → *Supermercado Éxito* |
+| **Supermercado Socialista** | **Jorge Hernández** → *Supermercado Socialista* |
+| **Tierra Negra** | **Carmen Herrera** → *Barrio Tierra Negra* |
+| **Unión** | **Ambrosio** → *Barrio Unión* |
+| **Valmore Rodríguez** | **La Rosa** → *Sector Valmore Rodríguez* |
+| **Villa Delicia** | **Ambrosio** → *Conjunto Residencial Villa Delicia* |
+| **Villa Feliz** | **San Benito** → *Urbanización Villa Feliz* |
+| **Villa Feliz I** | **Germán Ríos Linares** → *Urbanización Villa Feliz I* |
+| **Villa Feliz II** | **Germán Ríos Linares** → *Urbanización Villa Feliz II* |
+| **Villa Palermo** | **Carmen Herrera** → *Urbanización Villa Palermo* |
+
 # Fuentes
 
 ### 1. Fuentes oficiales

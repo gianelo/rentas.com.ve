@@ -56,9 +56,9 @@ async function insertListing(
   publisherType = "owner",
 ) {
   await pool.query(
-    `INSERT INTO "listing" (id, publisher_id, publisher_type, city_id, zone_id, title,
+    `INSERT INTO "listing" (id, publisher_id, publisher_type, property_type, city_id, zone_id, title,
        description, price_usd, rooms, area_m2, bathrooms, contact_method, contact_value, status, published_at, expires_at)
-     VALUES ($1,$2,$3,$4,$5,'Apartamento','x',$6,$7,$8,2,'whatsapp','04121234567',$9,now(),now() + interval '30 days')`,
+     VALUES ($1,$2,$3,'apartamento',$4,$5,'Apartamento','x',$6,$7,$8,2,'whatsapp','04121234567',$9,now(),now() + interval '30 days')`,
     [id, ANA, publisherType, cityId, zoneId, price, rooms, areaM2, status],
   );
 }
@@ -75,11 +75,10 @@ beforeAll(async () => {
     [MCBO_NORTE, MARACAIBO, "Norte"],
     [DC_CENTRO, DISTRITO, "Centro"],
   ] as const) {
-    await pool.query(`INSERT INTO "zone" (id, city_id, name) VALUES ($1,$2,$3)`, [
-      zone,
-      city,
-      name,
-    ]);
+    await pool.query(
+      `INSERT INTO "zone" (id, city_id, name, kind, source) VALUES ($1,$2,$3,'parroquia','INE')`,
+      [zone, city, name],
+    );
   }
   await pool.query(`INSERT INTO "user" (id, email) VALUES ($1,$2)`, [ANA, `ana-${ANA}@ej.com`]);
 
