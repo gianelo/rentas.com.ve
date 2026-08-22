@@ -1,5 +1,6 @@
 import type { ListingPhotoView } from "@/modules/listing-discovery/application/ports/listing-photos.port";
 import { photoAltText, photoUrl } from "@/modules/listing-discovery/domain/listing-photo-view";
+import { photoNumberOf, photoViewerPath } from "@/modules/listing-discovery/domain/photo-viewer";
 import { MAX_PHOTOS_PER_LISTING } from "@/modules/listing-publication/domain/publishable-listing";
 import styles from "./PhotoStrip.module.css";
 
@@ -11,11 +12,10 @@ export interface PhotoStripProps {
   readonly title: string;
   readonly zone: string;
   /**
-   * A dónde lleva cada foto. Hoy la ficha misma, que es un destino honesto
-   * aunque sea un no-op: **acá va el visor** — `…/foto/<n>` (tarea 16.5), una
-   * URL por foto, compartible e indexable. Es su propia superficie de
-   * navegación y su propia tarea, y meterla acá a medias sería peor que dejar
-   * el enlace en su lugar.
+   * La ruta de la ficha. **Cada foto no lleva acá: lleva a su visor**,
+   * `…/foto/<n>` (tarea 16.5), que cuelga de esta ruta. Una URL por foto,
+   * compartible e indexable — y ésta es la única entrada al visor, así que un
+   * `href` que apuntara todas las fotos al mismo lugar lo dejaría inalcanzable.
    */
   readonly href: string;
 }
@@ -61,7 +61,14 @@ export function PhotoStrip({ photos, publicBaseUrl, title, zone, href }: PhotoSt
           const lead = index === 0;
           return (
             <li className={styles.item} key={frame.strip}>
-              <a className={styles.frame} href={href}>
+              {/* El número sale del dominio y no de un `index + 1` escrito
+                  acá: la traducción entre el `<n>` de la URL (base uno) y
+                  `listing_photo.position` (base cero) es una regla, y una
+                  regla copiada en un componente es la que termina corrida en
+                  uno. Se numera sobre lo que se DIBUJA — igual que el
+                  alternativo — para que "/foto/2" y "Foto 2 de 5" hablen de la
+                  misma fotografía cuando una fila rota quedó salteada. */}
+              <a className={styles.frame} href={photoViewerPath(href, photoNumberOf(index))}>
                 <picture>
                   {/* La derivada de escritorio, elegida por el navegador antes
                       de pedir nada: la principal es la de 640×360 y las demás
