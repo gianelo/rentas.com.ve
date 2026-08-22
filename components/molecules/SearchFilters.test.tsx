@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { SearchFilters } from "./SearchFilters";
+import { type SearchFilterControl, SearchFilters } from "./SearchFilters";
 
 const cities = [
   { id: "dc", name: "Distrito Capital" },
@@ -90,5 +90,142 @@ describe("SearchFilters", () => {
   it("counts results on the action once there are any", () => {
     expect(render({ resultCount: 12 })).toContain("Ver 12 propiedades");
     expect(render()).toContain("Buscar");
+  });
+});
+
+/**
+ * Los grupos y los nombres nuevos (tasks 14.6 a 14.10) son **opcionales**, y
+ * eso no es cortesía: `app/page.tsx` monta este mismo componente con las
+ * props de siempre. Un grupo que aparece solo es una casilla que la página
+ * que lo recibe no sabe leer, y que por lo tanto se destilda al recargar —
+ * lo que en pantalla parece un error del sitio.
+ */
+describe("SearchFilters — lo que dibuja por defecto", () => {
+  it("dibuja los mismos tres grupos de siempre y ni uno más", () => {
+    const markup = render();
+
+    expect(markup).toContain('name="city"');
+    expect(markup).toContain('name="minPrice"');
+    expect(markup).toContain('name="minRooms"');
+    // Los de las tasks 14.7 a 14.9 sólo aparecen si alguien los pide.
+    expect(markup).not.toContain("Cualquier tipo");
+    expect(markup).not.toContain("Sólo de dueños");
+    expect(markup).not.toContain("Planta eléctrica");
+    expect(markup).not.toContain('type="checkbox"');
+  });
+});
+
+describe("SearchFilters — los filtros nuevos (tasks 14.7 a 14.9)", () => {
+  /** Los grupos que la página de resultados pide. */
+  const TODOS: readonly SearchFilterControl[] = [
+    "price",
+    "rooms",
+    "propertyType",
+    "publisherType",
+    "attributes",
+  ];
+
+  it("ofrece los cinco tipos de propiedad, y la opción de no filtrar por tipo", () => {
+    const markup = renderToStaticMarkup(
+      <SearchFilters cities={cities} zones={zones} controls={TODOS} />,
+    );
+
+    expect(markup).toContain("Cualquier tipo");
+    for (const label of ["Apartamento", "Casa", "Quinta", "Anexo", "Habitación"]) {
+      expect(markup).toContain(label);
+    }
+  });
+
+  it("ofrece «sólo de dueños» como una casilla, no como una elección de tres", () => {
+    // F6 es la pregunta que la gente se hace. "Cualquiera" es no marcarla.
+    const markup = renderToStaticMarkup(
+      <SearchFilters cities={cities} zones={zones} controls={TODOS} />,
+    );
+
+    expect(markup).toMatch(/<input[^>]*type="checkbox"[^>]*value="owner"/);
+    expect(markup).toContain("Sólo de dueños");
+  });
+
+  it("ofrece los cinco atributos, y ninguno pide el «no»", () => {
+    const markup = renderToStaticMarkup(
+      <SearchFilters cities={cities} zones={zones} controls={TODOS} />,
+    );
+
+    for (const attribute of [
+      "hasPowerPlant",
+      "hasRegularWater",
+      "isFurnished",
+      "hasSecurity",
+      "hasAppliances",
+    ]) {
+      expect(markup).toContain(`name="${attribute}"`);
+    }
+    // Cada casilla manda "1" y nada más: no existe el valor que pediría los
+    // avisos que declararon que NO, porque `false` significa "no lo declaró".
+    const casillas = markup.match(/<input[^>]*type="checkbox"[^>]*>/g) ?? [];
+    expect(casillas).toHaveLength(6); // los cinco atributos y «sólo de dueños»
+    expect(casillas.filter((tag) => /value="(0|false)"/.test(tag))).toHaveLength(0);
+  });
+
+  it("marca los atributos que la URL trae, para que un enlace llegue filtrado", () => {
+    const markup = renderToStaticMarkup(
+      <SearchFilters
+        cities={cities}
+        zones={zones}
+        controls={TODOS}
+        values={{ attributes: ["hasPowerPlant", "hasSecurity"] }}
+      />,
+    );
+
+    const marcadas = (markup.match(/<input[^>]*type="checkbox"[^>]*>/g) ?? []).filter((tag) =>
+      tag.includes("checked"),
+    );
+
+    expect(marcadas).toHaveLength(2);
+    expect(marcadas.some((tag) => tag.includes('name="hasPowerPlant"'))).toBe(true);
+    expect(marcadas.some((tag) => tag.includes('name="hasSecurity"'))).toBe(true);
+  });
+
+  it("sigue sin JavaScript de cliente con todos los grupos puestos", () => {
+    const markup = renderToStaticMarkup(
+      <SearchFilters cities={cities} zones={zones} controls={TODOS} />,
+    );
+
+    expect(markup).toContain('method="get"');
+    expect(markup).not.toMatch(/onchange|onclick|oninput/i);
+    expect(markup).toContain('type="submit"');
+  });
+});
+
+describe("SearchFilters — cómo se llaman los campos en la URL", () => {
+  it("usa los nombres que le pasan, sin decidir ninguno por su cuenta", () => {
+    // Los cortos son los del fundador (F12). El renombre es del borde de
+    // entrega: lo pasa la página, no lo elige este componente.
+    const markup = renderToStaticMarkup(
+      <SearchFilters
+        cities={cities}
+        zones={zones}
+        controls={["price", "rooms", "propertyType"]}
+        names={{ minPrice: "min", maxPrice: "max", minRooms: "hab", propertyType: "tipo" }}
+      />,
+    );
+
+    expect(markup).toContain('name="min"');
+    expect(markup).toContain('name="max"');
+    expect(markup).toContain('name="hab"');
+    expect(markup).toContain('name="tipo"');
+    expect(markup).not.toContain('name="minPrice"');
+  });
+
+  it("deja el lugar fuera cuando la ruta ya lo afirma", () => {
+    // En `/alquiler/<ciudad>/<zona>` la ciudad y la zona están en la
+    // dirección. Un selector de ciudad ahí manda un parámetro que la página
+    // ignora, y que se ve como un control roto.
+    const markup = renderToStaticMarkup(
+      <SearchFilters cities={cities} zones={zones} controls={["price"]} />,
+    );
+
+    expect(markup).not.toContain('name="city"');
+    expect(markup).not.toContain("Todas las zonas");
   });
 });

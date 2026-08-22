@@ -75,6 +75,59 @@
   color: var(--soft);
 }
 
+/* Las zonas extra de F4. El título nombra la de la ruta, así que si la
+   búsqueda trae más hay que decirlo: una lista con avisos de un sitio que el
+   encabezado no menciona se lee como un error. */
+.alsoIn {
+  margin: 0 0 8px;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  line-height: 1.45;
+  color: var(--soft);
+}
+
+/* Paginación. Enlaces y no botones: son direcciones, y tienen que poder
+   abrirse en otra pestaña y pegarse en un chat. */
+.pages {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-block-start: 24px;
+}
+
+/* 44 px de área táctil (regla transversal 4): errarle a «Siguiente» en un
+   teléfono es quedarse en la misma página sin saber por qué. */
+.pageLink {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+  padding-inline: 12px;
+  border: 1px solid var(--strong);
+  border-radius: var(--rs);
+  background: var(--surface);
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.pageLink:hover {
+  text-decoration: underline;
+}
+
+.pageLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pageStatus {
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  color: var(--soft);
+}
+
 /* Una cuadrícula vacía se lee como una página rota. Decir que no hay nada, y
    qué cambiar, es una respuesta; un hueco blanco no lo es. */
 .empty {
