@@ -9,13 +9,19 @@ import { ContactBlock } from "@/../components/molecules/ContactBlock";
 import { DeclaredFeatures } from "@/../components/molecules/DeclaredFeatures";
 import { PhotoStrip } from "@/../components/molecules/PhotoStrip";
 import { StatStrip } from "@/../components/molecules/StatStrip";
-import { presentContact } from "@/modules/contact-reveal/domain/revealable-contact";
+import { viewListingContact } from "@/modules/contact-reveal/application/view-listing-contact";
+import {
+  DrizzleContactRevealMetrics,
+  DrizzleRevealableListing,
+} from "@/modules/contact-reveal/infrastructure/drizzle-contact-reveal";
+import { nextAuthSessionPort } from "@/modules/identity/infrastructure/session-port";
 import { resolveListingRoute } from "@/modules/listing-discovery/domain/listing-detail-route";
 import { listingIdFromSlug } from "@/modules/listing-discovery/domain/listing-url";
 import { DrizzleListingDetail } from "@/modules/listing-discovery/infrastructure/drizzle-listing-detail";
 import { DrizzleListingPhotos } from "@/modules/listing-discovery/infrastructure/drizzle-listing-photos";
 import { db } from "@/shared/db/client";
 import styles from "./ficha.module.css";
+import { revealListingContact } from "./reveal-actions";
 
 /**
  * **Una consulta por peticion, no dos.** `generateMetadata` y el componente
@@ -87,11 +93,23 @@ export default async function FichaPage({ params }: FichaProps) {
   );
   if (route.kind === "redirect") redirect(route.to);
 
-  const expired = detail.status === "expired";
-  // Sin sesión todavía: la revelación es su propio caso de uso y su propia
-  // tarea. `null` es el visitante anónimo, que es lo que ve quien llega de
-  // Google — y es el estado que el diseño dibuja por defecto.
-  const contact = presentContact({ method: detail.contactMethod, value: "" }, null);
+  // **Al revés de como se lee: sólo `active` habilita el contacto.** Escrito
+  // como "vencido = expired", un cuarto estado que alguien agregue mañana
+  // caería en la rama que MUESTRA el contacto, y ese descuido no falla en
+  // ningún lado. Así, lo desconocido cae en la pantalla que no revela nada.
+  const availability = detail.status === "active" ? "available" : "expired";
+
+  // Los tres estados del bloque salen de acá, no de un `if` en esta página: si
+  // quien mira ya reveló, el caso de uso lee el valor; si no, no lo lee — el
+  // contacto no sale de Postgres para quien no lo reveló.
+  const contact = await viewListingContact(
+    { listingId: detail.id, method: detail.contactMethod, availability },
+    {
+      sessionPort: nextAuthSessionPort,
+      listings: new DrizzleRevealableListing(db),
+      reveals: new DrizzleContactRevealMetrics(db),
+    },
+  );
 
   return (
     <main className={styles.page}>
@@ -168,31 +186,33 @@ export default async function FichaPage({ params }: FichaProps) {
               </div>
 
               <div className={styles.contact}>
-                {expired ? (
-                  <section className={styles.expired} data-testid="expired-notice">
-                    <h2 className={styles.heading}>Aviso vencido</h2>
-                    <p className={styles.text}>
-                      Este aviso venció y no fue renovado. No mostramos el contacto de avisos
-                      vencidos.
-                    </p>
-                    <a className={styles.exit} href={`/alquiler/${ciudad}/${zona}`}>
-                      Ver avisos activos en {detail.zoneName}
-                    </a>
-                  </section>
-                ) : (
-                  <ContactBlock
-                    contact={contact}
-                    publisherType={detail.publisherType}
-                    publisherName={detail.publisherName}
-                    // `callbackUrl` y no `volver`: es el unico parametro que
-                    // app/(auth)/signin lee, y lo pasa a Auth.js como `redirectTo`. Con
-                    // el nombre equivocado se ignoraba EN SILENCIO -- la pantalla se
-                    // dibujaba igual y quien entraba aterrizaba en `/` en vez de volver
-                    // al aviso. Eso rompia la F19, en el paso que el propio documento
-                    // llama el punto de fuga principal del producto.
-                    signInHref={`/signin?callbackUrl=${encodeURIComponent(`/alquiler/${ciudad}/${zona}/${slug}`)}`}
-                  />
-                )}
+                {/* Los tres estados — sin cuenta, con cuenta y vencido — los
+                    dibuja el mismo bloque. Elegir acá cuál va sería decidir dos
+                    veces lo que el dominio ya decidió, y las dos decisiones se
+                    separan en el primer arreglo apurado. */}
+                <ContactBlock
+                  contact={contact}
+                  publisherType={detail.publisherType}
+                  publisherName={detail.publisherName}
+                  listingId={detail.id}
+                  listingTitle={detail.title}
+                  revealAction={revealListingContact}
+                  // `null` mientras `phone_verified_at` no exista (tasks.md
+                  // 16.12): la verificación por WhatsApp es todavía un stub, y
+                  // certificar un número que nadie comprobó sería peor que no
+                  // decir nada.
+                  verifiedAt={null}
+                  expiresAt={detail.expiresAt}
+                  zoneName={detail.zoneName}
+                  zoneHref={`/alquiler/${ciudad}/${zona}`}
+                  // `callbackUrl` y no `volver`: es el unico parametro que
+                  // app/(auth)/signin lee, y lo pasa a Auth.js como `redirectTo`. Con
+                  // el nombre equivocado se ignoraba EN SILENCIO -- la pantalla se
+                  // dibujaba igual y quien entraba aterrizaba en `/` en vez de volver
+                  // al aviso. Eso rompia la F19, en el paso que el propio documento
+                  // llama el punto de fuga principal del producto.
+                  signInHref={`/signin?callbackUrl=${encodeURIComponent(`/alquiler/${ciudad}/${zona}/${slug}`)}`}
+                />
               </div>
             </>
           }

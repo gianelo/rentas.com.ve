@@ -118,27 +118,9 @@
   text-wrap: pretty;
 }
 
-/* Borde punteado, como el diseño dibuja el estado vencido: se distingue de un
-   bloque normal sin depender del color. */
-.expired {
-  padding: 16px;
-  border: 1px dashed var(--strong);
-  border-radius: var(--r);
-}
-
-.exit {
-  margin-top: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--action-h);
-  border-radius: var(--r);
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-size: var(--control-fs);
-  font-weight: var(--meta-fw);
-  text-decoration: none;
-}
+/* El estado vencido vive en `ContactBlock` con los otros dos, y sus reglas se
+   fueron con él: dibujado acá, esta página decidía cuál de los tres estados
+   mostrar — y ésa es la decisión que el dominio ya toma. */
 
 .footer {
   display: flex;

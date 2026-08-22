@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { and, type SQL, sql } from "drizzle-orm";
+import { and, eq, type SQL, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
-import { contactRevealEvents } from "../../../shared/db/schema";
+import { contactRevealEvents, listings } from "../../../shared/db/schema";
 import type {
   ContactRevealEventPort,
   NewContactRevealEvent,
@@ -12,6 +12,10 @@ import type {
   UniquePairFilter,
   UniqueRevealPair,
 } from "../application/ports/contact-reveal-metrics.port";
+import type {
+  RevealableListing,
+  RevealableListingPort,
+} from "../application/ports/revealable-listing.port";
 
 /**
  * The two halves of D6 against real Postgres (tasks.md 6.5, 6.7).
@@ -34,6 +38,40 @@ export class DrizzleContactRevealEvents implements ContactRevealEventPort {
    */
   async record(event: NewContactRevealEvent): Promise<void> {
     await this.db.insert(contactRevealEvents).values({ id: randomUUID(), ...event });
+  }
+}
+
+/**
+ * El único lugar por donde el contacto guardado sale de Postgres.
+ *
+ * **`status = 'active'` va en el WHERE y no en un `if` después de leer.** La
+ * diferencia no es de estilo: filtrando en SQL, el valor de un aviso vencido u
+ * oculto **nunca sale de la base**, así que no hay render, log de consulta ni
+ * payload de componente de servidor que pueda arrastrarlo. Filtrado en
+ * TypeScript, el número ya viajó — y el descarte depende de que cada lector se
+ * acuerde de mirar el estado.
+ *
+ * Devolver `null` cubre inexistente, vencido y oculto por igual, que es lo que
+ * el puerto promete: quien sondea URLs no puede distinguir un aviso dado de
+ * baja de uno que nunca existió.
+ */
+export class DrizzleRevealableListing implements RevealableListingPort {
+  constructor(private readonly db: ContactRevealDatabase) {}
+
+  async findRevealable(listingId: string): Promise<RevealableListing | null> {
+    const rows = await this.db
+      .select({
+        listingId: listings.id,
+        publisherId: listings.publisherId,
+        cityId: listings.cityId,
+        contactMethod: listings.contactMethod,
+        contactValue: listings.contactValue,
+      })
+      .from(listings)
+      .where(and(eq(listings.id, listingId), eq(listings.status, "active")))
+      .limit(1);
+
+    return rows[0] ?? null;
   }
 }
 
