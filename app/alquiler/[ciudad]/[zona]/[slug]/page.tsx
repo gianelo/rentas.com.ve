@@ -117,7 +117,18 @@ export default async function FichaPage({ params }: FichaProps) {
           contact={contact}
           publisherType={detail.publisherType}
           publisherName={detail.publisherName}
-          signInHref={`/signin?volver=${encodeURIComponent(route.kind === "render" ? `/alquiler/${ciudad}/${zona}/${slug}` : "")}`}
+          // `callbackUrl` y no `volver`: es el unico parametro que
+          // app/(auth)/signin lee, y lo pasa a Auth.js como `redirectTo`. Con
+          // el nombre equivocado el parametro se ignoraba EN SILENCIO -- la
+          // pantalla se dibujaba igual, y quien entraba aterrizaba en `/` en
+          // vez de volver al aviso que estaba mirando. Eso rompia la F19, que
+          // es el paso donde el propio documento situa el punto de fuga
+          // principal del producto.
+          //
+          // Sin ternario: `redirect()` ya salio cuatro lineas mas arriba, asi
+          // que aca `route.kind` siempre es "render" y la otra rama estaba
+          // muerta.
+          signInHref={`/signin?callbackUrl=${encodeURIComponent(`/alquiler/${ciudad}/${zona}/${slug}`)}`}
         />
       )}
 
