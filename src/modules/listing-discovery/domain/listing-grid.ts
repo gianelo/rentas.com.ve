@@ -62,7 +62,13 @@ export interface GridCard {
  * es de la superficie, que es exactamente lo que el puerto de fotos dice al
  * devolver un `Record` de claves en vez de cinco campos.
  */
-const REQUIRED_SIZES = ["thumb", "card"] as const;
+/**
+ * Exportado desde la 14.22: el inicio tiene que **contar** las colecciones bajo
+ * el mismo criterio con el que las dibuja, y ese conteo ocurre en SQL. Con la
+ * lista escrita dos veces, el día que aparezca un tercer tamaño obligatorio la
+ * placa diría "Ver los 23" sobre una página de 21 — y nada fallaría.
+ */
+export const REQUIRED_SIZES = ["thumb", "card"] as const;
 
 /**
  * **La regla F9 vive acá: un aviso sin portada no se muestra.**
