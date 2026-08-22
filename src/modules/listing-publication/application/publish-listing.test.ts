@@ -68,8 +68,11 @@ function makeDerive() {
     // the one storage MEASURES, not the one the derivation claims — a stub
     // whose two numbers disagreed is what proved that.
     return {
-      thumbnail: { bytes: new Uint8Array(4_000), byteLength: 4_000 },
-      detail: { bytes: new Uint8Array(120_000), byteLength: 120_000 },
+      thumb: { bytes: new Uint8Array(4000), byteLength: 4000 },
+      card: { bytes: new Uint8Array(12000), byteLength: 12000 },
+      strip: { bytes: new Uint8Array(30000), byteLength: 30000 },
+      detail: { bytes: new Uint8Array(50000), byteLength: 50000 },
+      full: { bytes: new Uint8Array(110000), byteLength: 110000 },
     };
   };
   return { derive, peak: () => peak };
@@ -270,12 +273,18 @@ describe("publishListing", () => {
 
     await publishListing(request(), dependencies);
 
+    const token = photoKey(0).split("/")[2];
     expect(dependencies.listings.saved[0]?.photos[0]).toEqual({
       position: 0,
-      thumbnailKey: `photos/${PUBLISHER}/${photoKey(0).split("/")[2]}/thumbnail.webp`,
-      detailKey: `photos/${PUBLISHER}/${photoKey(0).split("/")[2]}/detail.webp`,
-      thumbnailBytes: 4_000,
-      detailBytes: 120_000,
+      // Las cinco, cada una a su propia clave. Antes eran dos campos planos, y
+      // esa forma congelaba el número de derivadas en el tipo.
+      derivatives: [
+        { name: "thumb", key: `photos/${PUBLISHER}/${token}/thumb.webp`, byteLength: 4000 },
+        { name: "card", key: `photos/${PUBLISHER}/${token}/card.webp`, byteLength: 12000 },
+        { name: "strip", key: `photos/${PUBLISHER}/${token}/strip.webp`, byteLength: 30000 },
+        { name: "detail", key: `photos/${PUBLISHER}/${token}/detail.webp`, byteLength: 50000 },
+        { name: "full", key: `photos/${PUBLISHER}/${token}/full.webp`, byteLength: 110000 },
+      ],
     });
   });
 

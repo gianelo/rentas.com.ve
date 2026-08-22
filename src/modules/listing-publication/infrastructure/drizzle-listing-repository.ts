@@ -2,7 +2,13 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
-import { cities, listingPhotos, listings, zones } from "../../../shared/db/schema";
+import {
+  cities,
+  listingPhotoDerivatives,
+  listingPhotos,
+  listings,
+  zones,
+} from "../../../shared/db/schema";
 import type {
   ListingRepositoryPort,
   NewListing,
@@ -73,18 +79,31 @@ export class DrizzleListingRepository implements ListingRepositoryPort {
         expiresAt: listing.expiresAt,
       });
 
-      await tx.insert(listingPhotos).values(
-        listing.photos.map((photo) => ({
-          id: randomUUID(),
-          listingId: id,
-          position: photo.position,
-          thumbnailKey: photo.thumbnailKey,
-          detailKey: photo.detailKey,
-          thumbnailBytes: photo.thumbnailBytes,
-          detailBytes: photo.detailBytes,
-          createdAt,
+      // Los ids se generan acá y se reusan abajo: las derivadas necesitan
+      // apuntar a su foto, y volver a leerlas de la base para averiguar qué id
+      // les tocó sería un viaje de red por una respuesta que ya tenemos.
+      const photoRows = listing.photos.map((photo) => ({
+        id: randomUUID(),
+        listingId: id,
+        position: photo.position,
+        createdAt,
+      }));
+      await tx.insert(listingPhotos).values(photoRows);
+
+      // Dentro de la MISMA transacción, que es la razón por la que el
+      // repositorio recibe todo junto: una foto sin sus derivadas es una foto
+      // que ninguna pantalla puede dibujar.
+      const derivativeRows = listing.photos.flatMap((photo, index) =>
+        photo.derivatives.map((derivative) => ({
+          photoId: photoRows[index]!.id,
+          name: derivative.name,
+          key: derivative.key,
+          bytes: derivative.byteLength,
         })),
       );
+      if (derivativeRows.length > 0) {
+        await tx.insert(listingPhotoDerivatives).values(derivativeRows);
+      }
     });
 
     return { id };

@@ -18,13 +18,26 @@ export interface DerivedImage {
   readonly byteLength: number;
 }
 
+/** Las cinco derivadas, nombradas por la superficie que las usa. */
+export type DerivativeName = "thumb" | "card" | "strip" | "detail" | "full";
+
 /**
- * Exactly two members, and the source is not one of them (task 3.10). The
- * shape is the guarantee: no field exists for handing the original back.
+ * Cinco miembros, y la fuente no es ninguno (tarea 3.10). La forma ES la
+ * garantía: no existe un campo por el cual devolver el original.
  */
 export interface DerivedPhotoSet {
-  readonly thumbnail: DerivedImage;
+  /**
+   * **Cinco, y cada una nombra la superficie que la usa.** Eran dos, y estaban
+   * dimensionadas para el layout viejo -- la miniatura de una fila medía 44×34.
+   * El diseño nuevo tiene cuatro superficies con anchos distintos más el visor,
+   * y nombrarlas por su uso en vez de por su tamaño es lo que evita que alguien
+   * elija "la de 256" para un lugar donde entra "la de 360".
+   */
+  readonly thumb: DerivedImage;
+  readonly card: DerivedImage;
+  readonly strip: DerivedImage;
   readonly detail: DerivedImage;
+  readonly full: DerivedImage;
 }
 
 export type PhotoDerivationPort = (source: Uint8Array) => Promise<DerivedPhotoSet>;

@@ -70,9 +70,8 @@ async function insertListing(id: string, publisherId: string, status: string) {
 
 async function insertPhoto(id: string, listingId: string, position: number, hash: bigint) {
   await pool.query(
-    `INSERT INTO "listing_photo" (id, listing_id, position, thumbnail_key, detail_key,
-       thumbnail_bytes, detail_bytes, created_at)
-     VALUES ($1,$2,$3,'t','d',4000,120000,now())`,
+    `INSERT INTO "listing_photo" (id, listing_id, position, created_at)
+     VALUES ($1,$2,$3,now())`,
     [id, listingId, position],
   );
   await pool.query(

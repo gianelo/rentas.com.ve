@@ -1,5 +1,5 @@
 import { inspectUploadedPhoto, type UploadViolation } from "../domain/uploaded-photo";
-import type { PhotoDerivationPort } from "./ports/photo-derivation.port";
+import type { DerivativeName, PhotoDerivationPort } from "./ports/photo-derivation.port";
 import type { PhotoStoragePort } from "./ports/photo-storage.port";
 
 /**
@@ -51,12 +51,24 @@ export interface ProcessUploadedPhotoDependencies {
   readonly derive: PhotoDerivationPort;
 }
 
-/** Exactly the four values `listing_photo` stores per photo. */
+/**
+ * Una fila por derivada, con su clave y su tamaño medido.
+ *
+ * **Eran cuatro campos planos para dos derivadas fijas; ahora son cinco filas.**
+ * El cambio no es cosmético: agregar un sexto tamaño mañana ya no toca esta
+ * forma ni el esquema, y los bytes se siguen guardando por derivada porque el
+ * presupuesto de D12 tiene que ser auditable contra filas reales de producción
+ * — `SELECT max(bytes) FROM listing_photo_derivative` es una pregunta que la
+ * suite de tests no puede contestar, porque sólo ve fixtures.
+ */
+export interface ProcessedDerivative {
+  readonly name: DerivativeName;
+  readonly key: string;
+  readonly byteLength: number;
+}
+
 export interface ProcessedPhoto {
-  readonly thumbnailKey: string;
-  readonly detailKey: string;
-  readonly thumbnailBytes: number;
-  readonly detailBytes: number;
+  readonly derivatives: readonly ProcessedDerivative[];
 }
 
 /** Matches `R2PhotoStorage`'s own `INCOMING_PREFIX` and its 16-byte token. */
@@ -139,19 +151,24 @@ export async function processUploadedPhoto(
   }
 
   const base = `${PROMOTED_PREFIX}/${request.publisherId}/${token}`;
-  const [thumbnail, detail] = await Promise.all([
-    storage.put(`${base}/thumbnail.webp`, derivatives.thumbnail.bytes, DERIVATIVE_CONTENT_TYPE),
-    storage.put(`${base}/detail.webp`, derivatives.detail.bytes, DERIVATIVE_CONTENT_TYPE),
-  ]);
+  // Las cinco en paralelo: son cinco PUT independientes contra R2 y hacerlas en
+  // fila multiplicaría por cinco la latencia de publicar una foto, que es el
+  // paso más lento del formulario.
+  const names = Object.keys(derivatives) as DerivativeName[];
+  const stored = await Promise.all(
+    names.map(async (name) => {
+      const put = await storage.put(
+        `${base}/${name}.webp`,
+        derivatives[name].bytes,
+        DERIVATIVE_CONTENT_TYPE,
+      );
+      return { name, key: put.key, byteLength: put.byteLength };
+    }),
+  );
 
-  // Last, and only once both derivatives exist. Deleting first would be a
-  // shorter function and would lose the photo whenever the second PUT failed.
+  // Al final, y sólo cuando las cinco existen. Borrar primero sería una
+  // función más corta y perdería la foto cada vez que un PUT fallara.
   await storage.remove(request.incomingKey);
 
-  return {
-    thumbnailKey: thumbnail.key,
-    detailKey: detail.key,
-    thumbnailBytes: thumbnail.byteLength,
-    detailBytes: detail.byteLength,
-  };
+  return { derivatives: stored };
 }

@@ -1,4 +1,5 @@
 import type { ContactMethod, PropertyType, PublisherType } from "../../domain/publishable-listing";
+import type { DerivativeName } from "./photo-derivation.port";
 
 /**
  * Persistence for a published listing and its photos.
@@ -10,13 +11,22 @@ import type { ContactMethod, PropertyType, PublisherType } from "../../domain/pu
  * Handing the adapter everything at once is what lets it use one transaction.
  */
 
+export interface NewPhotoDerivative {
+  readonly name: DerivativeName;
+  readonly key: string;
+  readonly byteLength: number;
+}
+
 export interface NewListingPhoto {
-  /** Zero-based display order; the publisher chose it and it must survive. */
+  /** Orden de exhibición, base cero: lo eligió quien publica y debe sobrevivir. */
   readonly position: number;
-  readonly thumbnailKey: string;
-  readonly detailKey: string;
-  readonly thumbnailBytes: number;
-  readonly detailBytes: number;
+  /**
+   * **Una lista, no cuatro campos planos.** Eran `thumbnailKey`,
+   * `detailKey` y sus dos tamaños, y esa forma congelaba el número de
+   * derivadas en dos. El diseño nuevo pide cinco, y agregar una sexta mañana
+   * ya no toca ni este tipo ni el esquema.
+   */
+  readonly derivatives: readonly NewPhotoDerivative[];
 }
 
 /**

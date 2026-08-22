@@ -64,9 +64,8 @@ beforeAll(async () => {
     [LISTING, PUBLISHER, CITY, ZONE],
   );
   await client.query(
-    `INSERT INTO "listing_photo" (id, listing_id, position, thumbnail_key, detail_key,
-       thumbnail_bytes, detail_bytes, created_at)
-     VALUES ($1,$2,0,'t','d',4000,120000,now())`,
+    `INSERT INTO "listing_photo" (id, listing_id, position, created_at)
+     VALUES ($1,$2,0,now())`,
     [PHOTO, LISTING],
   );
 });
@@ -142,9 +141,8 @@ describe("listing_photo_hash", () => {
     // to find out what they supposedly copied.
     const photoId = randomUUID();
     await client.query(
-      `INSERT INTO "listing_photo" (id, listing_id, position, thumbnail_key, detail_key,
-         thumbnail_bytes, detail_bytes, created_at)
-       VALUES ($1,$2,1,'t','d',4000,120000,now())`,
+      `INSERT INTO "listing_photo" (id, listing_id, position, created_at)
+     VALUES ($1,$2,1,now())`,
       [photoId, LISTING],
     );
     await client.query(
