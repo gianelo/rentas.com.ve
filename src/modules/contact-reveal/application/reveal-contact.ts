@@ -61,5 +61,8 @@ export async function revealContact(
   // Recorded first, then shown. If the insert fails the tenant sees an error
   // rather than a number the metric never learned about — an under-count is
   // recoverable from the log, a silent uncounted reveal is not.
-  return presentContact(listing.whatsapp, { hasRevealed: true });
+  return presentContact(
+    { method: listing.contactMethod, value: listing.contactValue },
+    { hasRevealed: true },
+  );
 }
