@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><style>
+body{margin:0;background:#e9eae8;font-family:system-ui,sans-serif}
+a{color:#3d3d3d}a:hover{color:#000}
+.rt{--sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,monospace;--disp:var(--mono);--meta:var(--mono);--tw:44px;--th:34px;--twd:64px;--thd:48px;--gap:8px;--rowpad:7px 12px;--fp:15px;--fpb:26px;--fpw:700;--ft:13px;--ftw:400;--tclamp:36px;--r:12px;--rs:999px;--ctl:#F0F5F9;--bg:#F0F5F9;--surface:#FFFFFF;--line:#e1e4e6;--strong:#788189;--ink:#1E2022;--soft:#52616B;--accent:#272343;--accent-ink:#FFFFFF;--tint:#E3F6F5;--warn:#272343;--warn-bg:#BAE8E8;--err:#9c2b20;--err-bg:#fbecea;--thumb:repeating-linear-gradient(135deg,#BAE8E8 0 7px,#E3F6F5 7px 14px)}
+.rt[data-theme="oscuro"]{--ctl:#332E52;--bg:#1B1830;--surface:#272343;--line:#3B3663;--strong:#788e98;--ink:#F0F5F9;--soft:#9BA8B4;--accent:#BAE8E8;--accent-ink:#272343;--tint:#332E52;--warn:#BAE8E8;--warn-bg:#332E52;--err:#F0A39A;--err-bg:#43283A;--thumb:repeating-linear-gradient(135deg,#3B3663 0 7px,#332E52 7px 14px)}
+.thbtn{font:600 12px/1 system-ui,sans-serif;letter-spacing:.02em;padding:0 12px;min-height:36px;border-radius:var(--r);display:flex;align-items:center;gap:7px;background:#fff;color:#1a1a1a;border:1px solid rgba(0,0,0,.2);border-radius:2px;cursor:pointer}
+.thbtn[data-active="1"]{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.sw{width:11px;height:11px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.25) inset}
+.dv-turn{padding:32px 44px 40px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-opt{display:flex;flex-direction:column;gap:10px;margin:0 0 40px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-opt:target .dv-oid{background:#1a1a1a;color:#fff}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}
+.dv-pair{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap}
+.dv-fr{display:flex;flex-direction:column;gap:6px}
+.dv-fcap{font:400 10px ui-monospace,Menlo,monospace;color:rgba(0,0,0,.45)}
+.dv-card{background:#fff;border:1px solid rgba(0,0,0,.14);position:relative;overflow:hidden}
+.dv-note{font:400 10.5px/1.55 ui-monospace,Menlo,monospace;color:rgba(0,0,0,.5);margin:2px 0 0;padding:0;list-style:none;max-width:640px}
+</style></helmet>
+
+<div class="rt" data-theme="{{ tema }}" style="background:#e9eae8">
+
+<div style="position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 44px;background:rgba(255,255,255,.94);border-bottom:1px solid rgba(0,0,0,.12);backdrop-filter:blur(6px)">
+<span style="font:700 13px/1 system-ui,sans-serif;color:#1a1a1a">Menta · Directorio compacto</span>
+<div style="display:flex;gap:8px">
+<button class="thbtn" data-active="{{ esClaro }}" onClick="{{ verClaro }}"><span class="sw" style="background:#FFFFFF"></span>Claro</button>
+<button class="thbtn" data-active="{{ esOscuro }}" onClick="{{ verOscuro }}"><span class="sw" style="background:#272343"></span>Oscuro</button>
+</div>
+<span style="font:400 11px/1.4 system-ui,sans-serif;color:rgba(0,0,0,.5)">El modo oscuro invierte la paleta Menta: el azul profundo pasa a fondo y el menta claro pasa a acento. No introduce ningún color nuevo.</span>
+</div>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Siete pantallas · móvil 360 y escritorio 1280</span></div>
+
+<div class="dv-opt" id="2a">
+<div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Resultados de búsqueda</div>
+<div class="dv-pair">
+
+<div class="dv-fr"><span class="dv-fcap">móvil 360</span>
+<div class="dv-card" style="width:360px">
+<div style="width:360px;background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="display:flex;align-items:center;justify-content:space-between;height:48px;padding:0 16px;border-bottom:1px solid var(--line);box-sizing:border-box"><span style="font-weight:700;font-size:20px;line-height:1.25;font-family:var(--disp);letter-spacing:-.02em">rentas.</span><a href="#2c" style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);color:var(--accent);text-decoration:none;padding:12px 0">Publicar</a></div>
+<div style="display:flex;gap:8px;padding:8px 16px;background:var(--bg);border-bottom:1px solid var(--line);overflow:hidden">
+<span style="flex:none;min-height:32px;border-radius:var(--r);display:flex;align-items:center;padding:0 10px;background:var(--tint);color:var(--accent);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);border:1px solid var(--ink)">Distrito Capital</span>
+<span style="flex:none;min-height:32px;border-radius:var(--r);display:flex;align-items:center;padding:0 10px;background:var(--ctl);color:var(--ink);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);border:1px solid var(--strong)">Zona</span>
+<span style="flex:none;min-height:32px;border-radius:var(--r);display:flex;align-items:center;padding:0 10px;background:var(--ctl);color:var(--ink);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);border:1px solid var(--strong)">Precio</span>
+<span style="flex:none;min-height:32px;border-radius:var(--r);display:flex;align-items:center;padding:0 10px;background:var(--ctl);color:var(--ink);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);border:1px solid var(--strong)">Hab.</span>
+</div>
+<div style="padding:6px 16px;font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">47 propiedades activas</div>
+
+<div style="display:grid;grid-template-columns:var(--tw) 1fr;gap:var(--gap);padding:var(--rowpad);border-top:1px solid var(--line);align-items:start">
+<div style="width:var(--tw);height:var(--th);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div>
+<div style="min-width:0"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$450</span><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);background:var(--ink);color:var(--surface)">Dueño</span></div><a href="#2b" style="display:block;margin-top:2px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none;max-height:var(--tclamp);overflow:hidden">Apartamento 2 habitaciones con puesto de estacionamiento</a><div style="margin-top:2px"><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">Chacao · 2 hab · 78 m²</span></div></div></div>
+
+<div style="display:grid;grid-template-columns:var(--tw) 1fr;gap:var(--gap);padding:var(--rowpad);border-top:1px solid var(--line);align-items:start">
+<div style="width:var(--tw);height:var(--th);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div>
+<div style="min-width:0"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$320</span><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);border:1px solid var(--strong);color:var(--soft)">Inmobiliaria</span></div><a href="#2b" style="display:block;margin-top:2px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none;max-height:var(--tclamp);overflow:hidden">Apto amoblado cerca del metro, edificio con vigilancia</a><div style="margin-top:2px"><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">Los Palos Grandes · 1 hab · 55 m²</span></div></div></div>
+
+<div style="display:grid;grid-template-columns:var(--tw) 1fr;gap:var(--gap);padding:var(--rowpad);border-top:1px solid var(--line);align-items:start">
+<div style="width:var(--tw);height:var(--th);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div>
+<div style="min-width:0"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$680</span><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);border:1px solid var(--strong);color:var(--soft)">Inmobiliaria</span></div><a href="#2b" style="display:block;margin-top:2px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none;max-height:var(--tclamp);overflow:hidden">Apartamento amplio en La Castellana, 3 habitaciones</a><div style="margin-top:2px"><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">La Castellana · 3 hab · 120 m²</span></div></div></div>
+
+<div style="display:grid;grid-template-columns:var(--tw) 1fr;gap:var(--gap);padding:var(--rowpad);border-top:1px solid var(--line);align-items:start">
+<div style="width:var(--tw);height:var(--th);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div>
+<div style="min-width:0"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$275</span><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);background:var(--ink);color:var(--surface)">Dueño</span></div><a href="#2b" style="display:block;margin-top:2px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none;max-height:var(--tclamp);overflow:hidden">Estudio en Altamira, ideal para una persona</a><div style="margin-top:2px"><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">Altamira · 1 hab · 42 m²</span></div></div></div>
+
+<div style="display:grid;grid-template-columns:var(--tw) 1fr;gap:var(--gap);padding:var(--rowpad);border-top:1px solid var(--line);border-bottom:1px solid var(--line);align-items:start">
+<div style="width:var(--tw);height:var(--th);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div>
+<div style="min-width:0"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$540</span><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);background:var(--ink);color:var(--surface)">Dueño</span></div><a href="#2b" style="display:block;margin-top:2px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none;max-height:var(--tclamp);overflow:hidden">Apartamento en El Rosal con línea blanca incluida</a><div style="margin-top:2px"><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">El Rosal · 2 hab · 88 m²</span></div></div></div>
+
+<div style="padding:16px"><a href="#2a" style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:var(--r);background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:15px;line-height:1.2;font-family:var(--sans);text-decoration:none">Ver 12 propiedades</a></div>
+</div>
+<sc-if value="{{ mostrarPliegue }}" hint-placeholder-val="{{ true }}">
+<div style="position:absolute;left:0;right:0;top:640px;border-top:1px dashed var(--accent);pointer-events:none"><span style="position:absolute;right:4px;top:2px;font:400 9px ui-monospace,Menlo,monospace;color:var(--accent);background:var(--surface);padding:1px 3px">640</span></div>
+</sc-if>
+</div></div>
+
+<div class="dv-fr"><span class="dv-fcap">escritorio 1280 · contenedor 1100 · barra lateral 240</span>
+<div class="dv-card" style="width:1280px">
+<div style="width:1280px;background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;justify-content:space-between"><span style="font-weight:700;font-size:20px;line-height:1.25;font-family:var(--disp);letter-spacing:-.02em">rentas.</span><a href="#2c" style="min-height:36px;border-radius:var(--r);display:flex;align-items:center;padding:0 16px;background:var(--tint);color:var(--accent);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);text-decoration:none">Publicar</a></div></div>
+<div style="width:1100px;margin:0 auto;display:grid;grid-template-columns:240px 1fr;gap:32px;padding:24px 0 48px">
+
+<div style="align-self:start;position:sticky;top:24px;display:flex;flex-direction:column;gap:24px">
+<div><span style="display:block;font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft);margin-bottom:8px">Ciudad</span><div style="display:flex;flex-direction:column;gap:4px"><span style="min-height:36px;border-radius:var(--r);display:flex;align-items:center;padding:0 12px;background:var(--tint);color:var(--accent);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">Distrito Capital</span><span style="min-height:36px;border-radius:var(--r);display:flex;align-items:center;padding:0 12px;border:1px solid var(--line);font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans)">Maracaibo</span></div></div>
+<div><span style="display:block;font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft);margin-bottom:8px">Zona</span><div style="display:flex;flex-direction:column;gap:8px">
+<label style="display:flex;align-items:center;gap:8px;min-height:36px;border-radius:var(--r);font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans)"><span style="width:16px;height:16px;border:1px solid var(--accent);background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px">✓</span>Chacao</label>
+<label style="display:flex;align-items:center;gap:8px;min-height:36px;border-radius:var(--r);font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans)"><span style="width:16px;height:16px;border:1px solid var(--strong)"></span>Altamira</label>
+<label style="display:flex;align-items:center;gap:8px;min-height:36px;border-radius:var(--r);font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans)"><span style="width:16px;height:16px;border:1px solid var(--strong)"></span>La Castellana</label>
+<label style="display:flex;align-items:center;gap:8px;min-height:36px;border-radius:var(--r);font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans)"><span style="width:16px;height:16px;border:1px solid var(--strong)"></span>Los Palos Grandes</label>
+<label style="display:flex;align-items:center;gap:8px;min-height:36px;border-radius:var(--r);font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans)"><span style="width:16px;height:16px;border:1px solid var(--strong)"></span>El Rosal</label>
+<label style="display:flex;align-items:center;gap:8px;min-height:36px;border-radius:var(--r);font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans)"><span style="width:16px;height:16px;border:1px solid var(--strong)"></span>Las Mercedes</label>
+</div></div>
+<div><span style="display:block;font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft);margin-bottom:8px">Precio mensual</span><div style="display:flex;gap:8px"><span style="flex:1;min-height:36px;border-radius:var(--r);display:flex;align-items:center;padding:0 8px;border:1px solid var(--strong);font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);font-variant-numeric:tabular-nums">$250</span><span style="flex:1;min-height:36px;border-radius:var(--r);display:flex;align-items:center;padding:0 8px;border:1px solid var(--strong);font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);font-variant-numeric:tabular-nums">$700</span></div></div>
+<div><span style="display:block;font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft);margin-bottom:8px">Habitaciones</span><div style="display:flex;gap:4px"><span style="flex:1;min-height:36px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;border:1px solid var(--strong);font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans)">1</span><span style="flex:1;min-height:36px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;border:1px solid var(--ink);background:var(--tint);color:var(--accent);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">2</span><span style="flex:1;min-height:36px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;border:1px solid var(--strong);font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans)">3</span><span style="flex:1;min-height:36px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;border:1px solid var(--strong);font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans)">4+</span></div></div>
+<a href="#2a" style="min-height:36px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;background:var(--tint);color:var(--accent);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);text-decoration:none">Ver 12 propiedades</a>
+</div>
+
+<div>
+<div style="padding:0 0 12px;font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">47 propiedades activas</div>
+<div style="display:grid;grid-template-columns:var(--twd) 1fr;gap:16px;padding:12px 0;border-top:1px solid var(--line);align-items:start"><div style="width:var(--twd);height:var(--thd);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div><div style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$450</div><a href="#2b" style="display:block;margin-top:4px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none">Apartamento 2 habitaciones con puesto de estacionamiento</a><div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">Chacao · Distrito Capital · 2 hab · 78 m² · hace 2 días</span><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);background:var(--ink);color:var(--surface)">Dueño</span></div></div></div>
+<div style="display:grid;grid-template-columns:var(--twd) 1fr;gap:16px;padding:12px 0;border-top:1px solid var(--line);align-items:start"><div style="width:var(--twd);height:var(--thd);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div><div style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$320</div><a href="#2b" style="display:block;margin-top:4px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none">Apto amoblado cerca del metro, edificio con vigilancia</a><div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">Los Palos Grandes · Distrito Capital · 1 hab · 55 m² · hace 4 días</span><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);border:1px solid var(--strong);color:var(--soft)">Inmobiliaria</span></div></div></div>
+<div style="display:grid;grid-template-columns:var(--twd) 1fr;gap:16px;padding:12px 0;border-top:1px solid var(--line);align-items:start"><div style="width:var(--twd);height:var(--thd);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div><div style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$680</div><a href="#2b" style="display:block;margin-top:4px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none">Apartamento amplio en La Castellana, 3 habitaciones</a><div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">La Castellana · Distrito Capital · 3 hab · 120 m² · hace 3 días</span><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);border:1px solid var(--strong);color:var(--soft)">Inmobiliaria</span></div></div></div>
+<div style="display:grid;grid-template-columns:var(--twd) 1fr;gap:16px;padding:12px 0;border-top:1px solid var(--line);align-items:start"><div style="width:var(--twd);height:var(--thd);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div><div style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$275</div><a href="#2b" style="display:block;margin-top:4px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none">Estudio en Altamira, ideal para una persona</a><div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">Altamira · Distrito Capital · 1 hab · 42 m² · hace 1 semana</span><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);background:var(--ink);color:var(--surface)">Dueño</span></div></div></div>
+<div style="display:grid;grid-template-columns:var(--twd) 1fr;gap:16px;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);align-items:start"><div style="width:var(--twd);height:var(--thd);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div><div style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$540</div><a href="#2b" style="display:block;margin-top:4px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none">Apartamento en El Rosal con línea blanca incluida</a><div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">El Rosal · Distrito Capital · 2 hab · 88 m² · hace 5 días</span><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);background:var(--ink);color:var(--surface)">Dueño</span></div></div></div>
+</div>
+</div>
+</div>
+</div></div>
+
+</div>
+<sc-if value="{{ mostrarNotas }}" hint-placeholder-val="{{ true }}">
+<ul class="dv-note"><li>móvil: barra 49 + chips 50 + conteo 29 + 5 filas de 95 = 604 px, las cinco entran en 640</li><li>fila 96×72 en móvil, 120×90 en escritorio; nunca se vuelve grilla</li><li>badge dueño = relleno invertido · inmobiliaria = borde, sin relleno</li></ul>
+</sc-if>
+</div>
+
+<div class="dv-opt" id="2b">
+<div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Ficha del aviso</div>
+<div class="dv-pair">
+
+<div class="dv-fr"><span class="dv-fcap">móvil 360</span>
+<div class="dv-card" style="width:360px">
+<div style="width:360px;background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="display:flex;align-items:center;justify-content:space-between;height:48px;padding:0 16px;border-bottom:1px solid var(--line);box-sizing:border-box"><a href="#2a" style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);color:var(--accent);text-decoration:none;padding:12px 0">← Resultados</a><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);background:var(--ink);color:var(--surface)">Dueño</span></div>
+<div style="height:180px;background:var(--thumb);border-bottom:1px solid var(--line)"></div>
+<div style="padding:16px 16px 0"><div style="display:flex;align-items:baseline;gap:4px"><span style="font-weight:var(--fpw);font-size:var(--fpb);line-height:1.1;font-family:var(--disp);font-variant-numeric:tabular-nums;letter-spacing:-.02em">$450</span><span style="font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--soft)">/ mes</span></div>
+<h1 style="margin:8px 0 0;font-weight:600;font-size:17px;line-height:1.35;font-family:var(--disp);text-wrap:pretty">Apartamento 2 habitaciones con puesto de estacionamiento</h1>
+<div style="margin-top:4px;font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">Chacao · Distrito Capital</div></div>
+<div style="display:flex;margin:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+<div style="flex:1;padding:12px 8px;border-right:1px solid var(--line);text-align:center"><div style="font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);font-weight:700">2</div><div style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Hab</div></div>
+<div style="flex:1;padding:12px 8px;border-right:1px solid var(--line);text-align:center"><div style="font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);font-weight:700">2</div><div style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Baños</div></div>
+<div style="flex:1;padding:12px 8px;border-right:1px solid var(--line);text-align:center"><div style="font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);font-weight:700">78</div><div style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">m²</div></div>
+<div style="flex:1;padding:12px 8px;text-align:center"><div style="font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);font-weight:700">1</div><div style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Puesto</div></div>
+</div>
+<p style="margin:0 16px;font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);text-wrap:pretty">Edificio con vigilancia 24 horas y planta eléctrica. Piso 6 con ascensor. Cocina con tope de granito. Agua regular. Se pide depósito de dos meses.</p>
+<div style="margin:16px;border:1px dashed var(--strong);border-radius:var(--r);padding:16px;background:var(--bg)">
+<p style="margin:0 0 12px;font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">El contacto se muestra a usuarios registrados</p>
+<a href="#2b" style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:var(--r);background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:15px;line-height:1.2;font-family:var(--sans);text-decoration:none">Ver WhatsApp del dueño</a>
+</div>
+<div style="padding:0 16px 16px"><a href="#2b" style="font-weight:400;font-size:11px;line-height:1.4;font-family:var(--sans);color:var(--soft)">Reportar esta publicación</a></div>
+</div>
+</div></div>
+
+<div class="dv-fr"><span class="dv-fcap">escritorio 1280 · foto 640 + columna 420 fija</span>
+<div class="dv-card" style="width:1280px">
+<div style="width:1280px;background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;justify-content:space-between"><a href="#2a" style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);color:var(--accent);text-decoration:none">← Resultados</a><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);background:var(--ink);color:var(--surface)">Dueño</span></div></div>
+<div style="width:1100px;margin:0 auto;display:grid;grid-template-columns:640px 1fr;gap:32px;padding:24px 0 48px;align-items:start">
+<div>
+<div style="width:640px;height:360px;background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div>
+<div style="display:flex;gap:8px;margin-top:8px"><div style="width:var(--twd);height:var(--thd);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div style="width:var(--twd);height:var(--thd);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div style="width:var(--twd);height:var(--thd);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div></div>
+<p style="margin:24px 0 0;max-width:520px;font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);text-wrap:pretty">Edificio con vigilancia 24 horas y planta eléctrica. Piso 6 con ascensor. Cocina con tope de granito. Agua regular. Se pide depósito de dos meses.</p>
+<div style="margin-top:24px"><a href="#2b" style="font-weight:400;font-size:11px;line-height:1.4;font-family:var(--sans);color:var(--soft)">Reportar esta publicación</a></div>
+</div>
+<div style="position:sticky;top:24px;border:1px solid var(--line);border-radius:var(--r);padding:24px">
+<div style="display:flex;align-items:baseline;gap:4px"><span style="font-weight:var(--fpw);font-size:var(--fpb);line-height:1.1;font-family:var(--disp);font-variant-numeric:tabular-nums;letter-spacing:-.02em">$450</span><span style="font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--soft)">/ mes</span></div>
+<h1 style="margin:8px 0 0;font-weight:600;font-size:17px;line-height:1.35;font-family:var(--disp);text-wrap:pretty">Apartamento 2 habitaciones con puesto de estacionamiento</h1>
+<div style="margin-top:4px;font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">Chacao · Distrito Capital</div>
+<div style="display:flex;margin:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+<div style="flex:1;padding:12px 4px;border-right:1px solid var(--line);text-align:center"><div style="font-weight:700;font-size:15px;line-height:1.4;font-family:var(--sans)">2</div><div style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Hab</div></div>
+<div style="flex:1;padding:12px 4px;border-right:1px solid var(--line);text-align:center"><div style="font-weight:700;font-size:15px;line-height:1.4;font-family:var(--sans)">2</div><div style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Baños</div></div>
+<div style="flex:1;padding:12px 4px;border-right:1px solid var(--line);text-align:center"><div style="font-weight:700;font-size:15px;line-height:1.4;font-family:var(--sans)">78</div><div style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">m²</div></div>
+<div style="flex:1;padding:12px 4px;text-align:center"><div style="font-weight:700;font-size:15px;line-height:1.4;font-family:var(--sans)">1</div><div style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Puesto</div></div>
+</div>
+<div style="border:1px dashed var(--strong);border-radius:var(--r);padding:16px;background:var(--bg)"><p style="margin:0 0 12px;font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">El contacto se muestra a usuarios registrados</p><a href="#2b" style="display:flex;align-items:center;justify-content:center;min-height:36px;border-radius:var(--r);background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:15px;line-height:1.2;font-family:var(--sans);text-decoration:none">Ver WhatsApp del dueño</a></div>
+<p style="margin:12px 0 0;font-weight:400;font-size:11px;line-height:1.5;font-family:var(--sans);color:var(--soft)">Rentas no participa en la negociación. Verificá la propiedad antes de entregar dinero.</p>
+</div>
+</div>
+</div>
+</div></div>
+
+</div>
+<sc-if value="{{ mostrarNotas }}" hint-placeholder-val="{{ true }}">
+<ul class="dv-note"><li>una foto de 180 px en móvil, sin carrusel; la advertencia de negociación acompaña al contacto</li></ul>
+</sc-if>
+</div>
+
+<div class="dv-opt" id="2c">
+<div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>Formulario de publicación · paso 1 de 2</div>
+<div class="dv-pair">
+
+<div class="dv-fr"><span class="dv-fcap">móvil 360</span>
+<div class="dv-card" style="width:360px">
+<div style="width:360px;background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="display:flex;align-items:center;justify-content:space-between;height:48px;padding:0 16px;border-bottom:1px solid var(--line);box-sizing:border-box"><span style="font-weight:700;font-size:20px;line-height:1.25;font-family:var(--disp);letter-spacing:-.02em">rentas.</span><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">Paso 1 de 2</span></div>
+<div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+
+<div style="display:flex;flex-direction:column;gap:8px">
+<span style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">¿Publicás como dueño o inmobiliaria? <span style="color:var(--err)">✱ obligatorio</span></span>
+<div style="display:flex;gap:8px">
+<span style="flex:1;min-height:44px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;gap:8px;border:2px solid var(--accent);background:var(--tint);color:var(--accent);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">✓ Dueño</span>
+<span style="flex:1;min-height:44px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;border:1px solid var(--strong);font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans)">Inmobiliaria</span>
+</div>
+<span style="font-weight:400;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--soft)">Se muestra siempre en tu aviso. No se puede cambiar después.</span>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:8px">
+<label for="p-tit" style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">Título <span style="color:var(--err)">✱ obligatorio</span></label>
+<input id="p-tit" type="text" value="Apartamento 2 habitaciones en Chacao" style="font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);min-height:44px;border-radius:var(--r);padding:0 12px;border:1px solid var(--strong);border-radius:var(--r);background:var(--ctl);color:var(--ink)">
+</div>
+
+<div style="display:flex;flex-direction:column;gap:8px">
+<label for="p-pre" style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">Precio mensual en dólares <span style="color:var(--err)">✱ obligatorio</span></label>
+<input id="p-pre" type="text" value="450" style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums;min-height:44px;border-radius:var(--r);padding:0 12px;border:1px solid var(--strong);border-radius:var(--r);background:var(--ctl);color:var(--ink)">
+<span style="font-weight:400;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--soft)">Solo el número. Todos los precios están en dólares.</span>
+</div>
+
+<div style="display:flex;gap:12px">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px"><label for="p-ciu" style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">Ciudad</label><select id="p-ciu" style="font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);min-height:44px;border-radius:var(--r);padding:0 8px;border:1px solid var(--strong);border-radius:var(--r);background:var(--ctl);color:var(--ink)"><option>Distrito Capital</option><option>Maracaibo</option></select></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px"><label for="p-zon" style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">Zona</label><select id="p-zon" style="font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);min-height:44px;border-radius:var(--r);padding:0 8px;border:1px solid var(--strong);border-radius:var(--r);background:var(--ctl);color:var(--ink)"><option>Chacao</option><option>Altamira</option><option>La Castellana</option><option>Los Palos Grandes</option><option>El Rosal</option><option>Las Mercedes</option></select></div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:8px">
+<label for="p-des" style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">Descripción</label>
+<textarea id="p-des" rows="3" style="font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);padding:12px;border:2px solid var(--err);border-radius:var(--r);background:var(--ctl);color:var(--ink);resize:none">Edificio con vigilancia.</textarea>
+<span style="font-weight:400;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--err)">✱ Mínimo 120 caracteres. Vas 24.</span>
+<span style="font-weight:400;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--soft)">Mínimo 120 caracteres. Mientras más detalle, más contactos recibís.</span>
+</div>
+
+<a href="#2c" style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:var(--r);background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:15px;line-height:1.2;font-family:var(--sans);text-decoration:none">Continuar a las fotos</a>
+<p style="margin:0;font-weight:400;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--soft)">Tu aviso queda activo 30 días. Te avisamos antes de que venza.</p>
+</div>
+</div>
+</div></div>
+
+<div class="dv-fr"><span class="dv-fcap">escritorio 1280 · una columna de 600</span>
+<div class="dv-card" style="width:1280px">
+<div style="width:1280px;background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;justify-content:space-between"><span style="font-weight:700;font-size:20px;line-height:1.25;font-family:var(--disp);letter-spacing:-.02em">rentas.</span><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">Paso 1 de 2</span></div></div>
+<div style="width:600px;margin:0 auto;padding:32px 0 48px;display:flex;flex-direction:column;gap:24px">
+<h1 style="margin:0;font-weight:700;font-size:20px;line-height:1.25;font-family:var(--disp)">Publicar una propiedad</h1>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">¿Publicás como dueño o inmobiliaria? <span style="color:var(--err)">✱ obligatorio</span></span><div style="display:flex;gap:8px"><span style="flex:1;min-height:36px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;gap:8px;border:2px solid var(--accent);background:var(--tint);color:var(--accent);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">✓ Dueño</span><span style="flex:1;min-height:36px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;border:1px solid var(--strong);font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans)">Inmobiliaria</span></div><span style="font-weight:400;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--soft)">Se muestra siempre en tu aviso. No se puede cambiar después.</span></div>
+<div style="display:flex;flex-direction:column;gap:8px"><label for="d-tit" style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">Título <span style="color:var(--err)">✱ obligatorio</span></label><input id="d-tit" type="text" value="Apartamento 2 habitaciones en Chacao" style="font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);min-height:36px;border-radius:var(--r);padding:0 12px;border:1px solid var(--strong);border-radius:var(--r);background:var(--ctl);color:var(--ink)"></div>
+<div style="display:flex;flex-direction:column;gap:8px"><label for="d-pre" style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">Precio mensual en dólares <span style="color:var(--err)">✱ obligatorio</span></label><input id="d-pre" type="text" value="450" style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums;min-height:36px;border-radius:var(--r);padding:0 12px;border:1px solid var(--strong);border-radius:var(--r);background:var(--ctl);color:var(--ink)"><span style="font-weight:400;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--soft)">Solo el número. Todos los precios están en dólares.</span></div>
+<div style="display:flex;gap:12px"><div style="flex:1;display:flex;flex-direction:column;gap:8px"><label for="d-ciu" style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">Ciudad</label><select id="d-ciu" style="font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);min-height:36px;border-radius:var(--r);padding:0 8px;border:1px solid var(--strong);border-radius:var(--r);background:var(--ctl);color:var(--ink)"><option>Distrito Capital</option><option>Maracaibo</option></select></div><div style="flex:1;display:flex;flex-direction:column;gap:8px"><label for="d-zon" style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">Zona</label><select id="d-zon" style="font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);min-height:36px;border-radius:var(--r);padding:0 8px;border:1px solid var(--strong);border-radius:var(--r);background:var(--ctl);color:var(--ink)"><option>Chacao</option><option>Altamira</option><option>La Castellana</option></select></div></div>
+<a href="#2c" style="display:flex;align-items:center;justify-content:center;min-height:36px;border-radius:var(--r);background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:15px;line-height:1.2;font-family:var(--sans);text-decoration:none">Continuar a las fotos</a>
+<p style="margin:0;max-width:520px;font-weight:400;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--soft)">Tu aviso queda activo 30 días. Te avisamos antes de que venza.</p>
+</div>
+</div>
+</div></div>
+
+</div>
+<sc-if value="{{ mostrarNotas }}" hint-placeholder-val="{{ true }}">
+<ul class="dv-note"><li>obligatorio = glifo ✱ + la palabra, no solo color; el error suma borde de 2 px y mensaje propio</li></ul>
+</sc-if>
+</div>
+
+<div class="dv-opt" id="2d">
+<div class="dv-olabel"><a class="dv-oid" href="#2d">2d</a>Página de zona</div>
+<div class="dv-pair">
+
+<div class="dv-fr"><span class="dv-fcap">móvil 360</span>
+<div class="dv-card" style="width:360px">
+<div style="width:360px;background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="display:flex;align-items:center;justify-content:space-between;height:48px;padding:0 16px;border-bottom:1px solid var(--line);box-sizing:border-box"><span style="font-weight:700;font-size:20px;line-height:1.25;font-family:var(--disp);letter-spacing:-.02em">rentas.</span><a href="#2c" style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);color:var(--accent);text-decoration:none;padding:12px 0">Publicar</a></div>
+<div style="padding:16px;background:var(--bg);border-bottom:1px solid var(--line)">
+<div style="font-weight:400;font-size:11px;line-height:1.4;font-family:var(--sans);color:var(--soft)">Inicio › Distrito Capital › Chacao</div>
+<h1 style="margin:8px 0 0;font-weight:700;font-size:20px;line-height:1.25;font-family:var(--disp)">Alquiler en Chacao</h1>
+<p style="margin:8px 0 0;font-weight:400;font-size:11px;line-height:1.5;font-family:var(--meta);color:var(--soft);text-wrap:pretty">12 propiedades activas en Chacao, Distrito Capital. Precios desde $275 hasta $890 mensuales.</p>
+</div>
+<div style="display:grid;grid-template-columns:var(--tw) 1fr;gap:var(--gap);padding:var(--rowpad);border-bottom:1px solid var(--line);align-items:start"><div style="width:var(--tw);height:var(--th);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div style="min-width:0"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$450</span><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);background:var(--ink);color:var(--surface)">Dueño</span></div><a href="#2b" style="display:block;margin-top:2px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none;max-height:var(--tclamp);overflow:hidden">Apartamento 2 habitaciones con puesto de estacionamiento</a><div style="margin-top:2px"><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">Chacao · 2 hab · 78 m²</span></div></div></div>
+<div style="display:grid;grid-template-columns:var(--tw) 1fr;gap:var(--gap);padding:var(--rowpad);border-bottom:1px solid var(--line);align-items:start"><div style="width:var(--tw);height:var(--th);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div style="min-width:0"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$890</span><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);border:1px solid var(--strong);color:var(--soft)">Inmobiliaria</span></div><a href="#2b" style="display:block;margin-top:2px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none;max-height:var(--tclamp);overflow:hidden">Penthouse con terraza y vista abierta en Chacao</a><div style="margin-top:2px"><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">Chacao · 3 hab · 165 m²</span></div></div></div>
+<div style="margin:16px;padding:16px;background:var(--tint);border:1px solid var(--accent);border-radius:var(--r);display:flex;gap:12px;align-items:flex-start">
+<div style="flex:1"><p style="margin:0 0 12px;font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);text-wrap:pretty">Rentas es gratis y sin comisión. Si te sirve, podés colaborar.</p><a href="#2d" style="display:inline-flex;align-items:center;min-height:44px;border-radius:var(--r);padding:0 16px;border:1px solid var(--accent);color:var(--accent);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);text-decoration:none">Colaborar</a></div>
+<button style="flex:none;width:44px;height:44px;background:transparent;border:0;color:var(--soft);font-weight:400;font-size:17px;line-height:1;font-family:var(--sans);cursor:pointer">×</button>
+</div>
+</div>
+</div></div>
+
+<div class="dv-fr"><span class="dv-fcap">escritorio 1280 · encabezado a ancho de lectura</span>
+<div class="dv-card" style="width:1280px">
+<div style="width:1280px;background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;justify-content:space-between"><span style="font-weight:700;font-size:20px;line-height:1.25;font-family:var(--disp);letter-spacing:-.02em">rentas.</span><a href="#2c" style="min-height:36px;border-radius:var(--r);display:flex;align-items:center;padding:0 16px;background:var(--tint);color:var(--accent);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);text-decoration:none">Publicar</a></div></div>
+<div style="background:var(--bg);border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;padding:24px 0"><div style="max-width:520px"><div style="font-weight:400;font-size:11px;line-height:1.4;font-family:var(--sans);color:var(--soft)">Inicio › Distrito Capital › Chacao</div><h1 style="margin:8px 0 0;font-weight:700;font-size:20px;line-height:1.25;font-family:var(--disp)">Alquiler en Chacao</h1><p style="margin:8px 0 0;font-weight:400;font-size:11px;line-height:1.5;font-family:var(--meta);color:var(--soft);text-wrap:pretty">12 propiedades activas en Chacao, Distrito Capital. Precios desde $275 hasta $890 mensuales.</p></div></div></div>
+<div style="width:1100px;margin:0 auto;display:grid;grid-template-columns:240px 1fr;gap:32px;padding:24px 0 48px;align-items:start">
+<div style="position:sticky;top:24px;display:flex;flex-direction:column;gap:12px"><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Zonas cercanas</span><a href="#2d" style="font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);color:var(--ink)">Altamira · 9</a><a href="#2d" style="font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);color:var(--ink)">La Castellana · 7</a><a href="#2d" style="font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);color:var(--ink)">El Rosal · 5</a><a href="#2d" style="font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);color:var(--ink)">Las Mercedes · 8</a></div>
+<div>
+<div style="display:grid;grid-template-columns:var(--twd) 1fr;gap:16px;padding:12px 0;border-top:1px solid var(--line);align-items:start"><div style="width:var(--twd);height:var(--thd);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div><div style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$450</div><a href="#2b" style="display:block;margin-top:4px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none">Apartamento 2 habitaciones con puesto de estacionamiento</a><div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">Chacao · 2 hab · 78 m²</span><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);background:var(--ink);color:var(--surface)">Dueño</span></div></div></div>
+<div style="display:grid;grid-template-columns:var(--twd) 1fr;gap:16px;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);align-items:start"><div style="width:var(--twd);height:var(--thd);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div><div style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$890</div><a href="#2b" style="display:block;margin-top:4px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none">Penthouse con terraza y vista abierta en Chacao</a><div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">Chacao · 3 hab · 165 m²</span><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);border:1px solid var(--strong);color:var(--soft)">Inmobiliaria</span></div></div></div>
+<div style="margin-top:24px;padding:16px;background:var(--tint);border:1px solid var(--accent);border-radius:var(--r);display:flex;align-items:center;justify-content:space-between;gap:16px"><p style="margin:0;max-width:520px;font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans)">Rentas es gratis y sin comisión. Si te sirve, podés colaborar.</p><div style="display:flex;align-items:center;gap:8px"><a href="#2d" style="min-height:36px;border-radius:var(--r);display:flex;align-items:center;padding:0 16px;border:1px solid var(--accent);color:var(--accent);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);text-decoration:none">Colaborar</a><button style="width:36px;height:36px;background:transparent;border:0;color:var(--soft);font-weight:400;font-size:17px;line-height:1;font-family:var(--sans);cursor:pointer">×</button></div></div>
+</div>
+</div>
+</div>
+</div></div>
+
+</div>
+</div>
+
+<div class="dv-opt" id="2e">
+<div class="dv-olabel"><a class="dv-oid" href="#2e">2e</a>Mis publicaciones · los cuatro estados</div>
+<div class="dv-pair">
+
+<div class="dv-fr"><span class="dv-fcap">móvil 360</span>
+<div class="dv-card" style="width:360px">
+<div style="width:360px;background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="display:flex;align-items:center;justify-content:space-between;height:48px;padding:0 16px;border-bottom:1px solid var(--line);box-sizing:border-box"><span style="font-weight:700;font-size:20px;line-height:1.25;font-family:var(--disp);letter-spacing:-.02em">rentas.</span><a href="#2c" style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);color:var(--accent);text-decoration:none;padding:12px 0">Publicar</a></div>
+<h1 style="margin:0;padding:16px;font-weight:700;font-size:20px;line-height:1.25;font-family:var(--disp)">Mis publicaciones</h1>
+
+<div style="display:grid;grid-template-columns:var(--tw) 1fr;gap:var(--gap);padding:var(--rowpad);border-top:1px solid var(--line);align-items:start"><div style="width:var(--tw);height:var(--th);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div style="min-width:0"><div style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$450</div><a href="#2b" style="margin-top:4px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">Apartamento 2 habitaciones con puesto de estacionamiento</a><div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);border:1px solid var(--strong);color:var(--soft)">Activa</span><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">vence en 22 días</span></div></div></div>
+
+<div style="display:grid;grid-template-columns:var(--tw) 1fr;gap:var(--gap);padding:var(--rowpad);border-top:1px solid var(--line);align-items:start"><div style="width:var(--tw);height:var(--th);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div style="min-width:0"><div style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$320</div><a href="#2b" style="margin-top:4px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">Apto amoblado cerca del metro, edificio con vigilancia</a><div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);background:var(--warn-bg);border:1px solid var(--warn);color:var(--warn)">Vence pronto</span><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">en 3 días</span></div><a href="#2e" style="margin-top:12px;display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:var(--r);background:var(--tint);color:var(--accent);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);text-decoration:none">Renovar 30 días</a></div></div>
+
+<div style="display:grid;grid-template-columns:var(--tw) 1fr;gap:var(--gap);padding:var(--rowpad);border-top:1px solid var(--line);align-items:start"><div style="width:var(--tw);height:var(--th);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div style="min-width:0"><div style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums;color:var(--soft)">$680</div><a href="#2b" style="margin-top:4px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--soft);text-decoration:none;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">Apartamento amplio en La Castellana, 3 habitaciones</a><div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);border:1px solid var(--strong);color:var(--soft)">Vencida</span><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">hace 6 días</span></div><a href="#2e" style="margin-top:12px;display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:var(--r);border:1px solid var(--accent);color:var(--accent);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);text-decoration:none">Volver a publicar</a></div></div>
+
+<div style="display:grid;grid-template-columns:var(--tw) 1fr;gap:var(--gap);padding:var(--rowpad);border-top:1px solid var(--line);border-bottom:1px solid var(--line);align-items:start"><div style="width:var(--tw);height:var(--th);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div style="min-width:0"><div style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$275</div><a href="#2b" style="margin-top:4px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">Estudio en Altamira, ideal para una persona</a><div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);background:var(--err-bg);border:1px solid var(--err);color:var(--err)">Oculta</span><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">por reportes</span></div></div></div>
+</div>
+</div></div>
+
+<div class="dv-fr"><span class="dv-fcap">escritorio 1280 · acción en su propia columna</span>
+<div class="dv-card" style="width:1280px">
+<div style="width:1280px;background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;justify-content:space-between"><span style="font-weight:700;font-size:20px;line-height:1.25;font-family:var(--disp);letter-spacing:-.02em">rentas.</span><a href="#2c" style="min-height:36px;border-radius:var(--r);display:flex;align-items:center;padding:0 16px;background:var(--tint);color:var(--accent);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);text-decoration:none">Publicar</a></div></div>
+<div style="width:1100px;margin:0 auto;padding:24px 0 48px">
+<h1 style="margin:0 0 16px;font-weight:700;font-size:20px;line-height:1.25;font-family:var(--disp)">Mis publicaciones</h1>
+<div style="display:grid;grid-template-columns:var(--twd) 1fr 200px;gap:16px;padding:12px 0;border-top:1px solid var(--line);align-items:center"><div style="width:var(--twd);height:var(--thd);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div><div style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$450</div><a href="#2b" style="display:block;margin-top:4px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none">Apartamento 2 habitaciones con puesto de estacionamiento</a><div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);border:1px solid var(--strong);color:var(--soft)">Activa</span><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">vence en 22 días</span></div></div><div></div></div>
+<div style="display:grid;grid-template-columns:var(--twd) 1fr 200px;gap:16px;padding:12px 0;border-top:1px solid var(--line);align-items:center"><div style="width:var(--twd);height:var(--thd);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div><div style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$320</div><a href="#2b" style="display:block;margin-top:4px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none">Apto amoblado cerca del metro, edificio con vigilancia</a><div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);background:var(--warn-bg);border:1px solid var(--warn);color:var(--warn)">Vence pronto</span><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">en 3 días</span></div></div><a href="#2e" style="min-height:36px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;background:var(--tint);color:var(--accent);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);text-decoration:none">Renovar 30 días</a></div>
+<div style="display:grid;grid-template-columns:var(--twd) 1fr 200px;gap:16px;padding:12px 0;border-top:1px solid var(--line);align-items:center"><div style="width:var(--twd);height:var(--thd);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div><div style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums;color:var(--soft)">$680</div><a href="#2b" style="display:block;margin-top:4px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--soft);text-decoration:none">Apartamento amplio en La Castellana, 3 habitaciones</a><div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);border:1px solid var(--strong);color:var(--soft)">Vencida</span><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">hace 6 días</span></div></div><a href="#2e" style="min-height:36px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;border:1px solid var(--accent);color:var(--accent);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);text-decoration:none">Volver a publicar</a></div>
+<div style="display:grid;grid-template-columns:var(--twd) 1fr 200px;gap:16px;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);align-items:center"><div style="width:var(--twd);height:var(--thd);background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div><div><div style="font-weight:var(--fpw);font-size:var(--fp);line-height:1.15;font-family:var(--disp);font-variant-numeric:tabular-nums">$275</div><a href="#2b" style="display:block;margin-top:4px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--ink);text-decoration:none">Estudio en Altamira, ideal para una persona</a><div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:var(--rs);background:var(--err-bg);border:1px solid var(--err);color:var(--err)">Oculta</span><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">por reportes</span></div></div><div></div></div>
+</div>
+</div>
+</div></div>
+
+</div>
+<sc-if value="{{ mostrarNotas }}" hint-placeholder-val="{{ true }}">
+<ul class="dv-note"><li>color solo en los dos estados que piden acción; activa y vencida son neutras</li></ul>
+</sc-if>
+</div>
+
+<div class="dv-opt" id="2f">
+<div class="dv-olabel"><a class="dv-oid" href="#2f">2f</a>Importar cartera · vista previa</div>
+<div class="dv-pair">
+
+<div class="dv-fr"><span class="dv-fcap">escritorio 1280 · tabla completa, sin scroll lateral</span>
+<div class="dv-card" style="width:1280px">
+<div style="width:1280px;background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;justify-content:space-between"><a href="#2e" style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);color:var(--accent);text-decoration:none">← Cancelar</a><span style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">cartera-agosto.csv</span><span style="width:80px"></span></div></div>
+<div style="width:1100px;margin:0 auto;padding:24px 0 48px">
+<div style="display:flex;border:1px solid var(--line);width:360px">
+<div style="flex:1;padding:16px;border-right:1px solid var(--line)"><div style="font-weight:var(--fpw);font-size:var(--fpb);line-height:1.1;font-family:var(--disp);font-variant-numeric:tabular-nums">38</div><div style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Listas</div></div>
+<div style="flex:1;padding:16px"><div style="font-weight:var(--fpw);font-size:var(--fpb);line-height:1.1;font-family:var(--disp);font-variant-numeric:tabular-nums;color:var(--err)">2</div><div style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--err)">Con error</div></div>
+</div>
+<p style="margin:16px 0 24px;max-width:520px;font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans)">Revisá los errores. Si confirmás, se crean las 38 correctas.</p>
+
+<div style="display:grid;grid-template-columns:56px 96px 88px 152px 116px 1fr 280px;border-top:1px solid var(--ink);border-bottom:1px solid var(--line)">
+<div style="padding:8px 12px;font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Fila</div><div style="padding:8px 12px;font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Referencia</div><div style="padding:8px 12px;font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Precio</div><div style="padding:8px 12px;font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Zona</div><div style="padding:8px 12px;font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Habitaciones</div><div style="padding:8px 12px;font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Título</div><div style="padding:8px 12px;font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Problema</div>
+</div>
+
+<div style="display:grid;grid-template-columns:56px 96px 88px 152px 116px 1fr 280px;background:var(--err-bg);border-left:3px solid var(--err);border-bottom:1px solid var(--line)">
+<div style="padding:12px;font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);font-variant-numeric:tabular-nums">7</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">AP-114</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);font-variant-numeric:tabular-nums">420</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">El Rosal</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">2</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">Apartamento en El Rosal</div><div style="padding:12px;font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);color:var(--err)">«El Rosal» no existe en Maracaibo</div>
+</div>
+<div style="display:grid;grid-template-columns:56px 96px 88px 152px 116px 1fr 280px;background:var(--err-bg);border-left:3px solid var(--err);border-bottom:1px solid var(--line)">
+<div style="padding:12px;font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);font-variant-numeric:tabular-nums">23</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">AP-140</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--err)">—</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">Bella Vista</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">2</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">Apartamento 2 habitaciones en Bella Vista</div><div style="padding:12px;font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);color:var(--err)">Falta el precio</div>
+</div>
+
+<div style="display:grid;grid-template-columns:56px 96px 88px 152px 116px 1fr 280px;border-bottom:1px solid var(--line)"><div style="padding:12px;font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);font-variant-numeric:tabular-nums;color:var(--soft)">1</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">AP-101</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);font-variant-numeric:tabular-nums">450</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">Chacao</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">2</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">Apartamento 2 habitaciones con puesto de estacionamiento</div><div style="padding:12px"></div></div>
+<div style="display:grid;grid-template-columns:56px 96px 88px 152px 116px 1fr 280px;border-bottom:1px solid var(--line)"><div style="padding:12px;font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);font-variant-numeric:tabular-nums;color:var(--soft)">2</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">AP-102</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);font-variant-numeric:tabular-nums">320</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">Los Palos Grandes</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">1</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">Apto amoblado cerca del metro, edificio con vigilancia</div><div style="padding:12px"></div></div>
+<div style="display:grid;grid-template-columns:56px 96px 88px 152px 116px 1fr 280px;border-bottom:1px solid var(--line)"><div style="padding:12px;font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);font-variant-numeric:tabular-nums;color:var(--soft)">3</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">AP-103</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);font-variant-numeric:tabular-nums">680</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">La Castellana</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">3</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">Apartamento amplio en La Castellana, 3 habitaciones</div><div style="padding:12px"></div></div>
+<div style="display:grid;grid-template-columns:56px 96px 88px 152px 116px 1fr 280px;border-bottom:1px solid var(--line)"><div style="padding:12px;font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);font-variant-numeric:tabular-nums;color:var(--soft)">4</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">AP-104</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);font-variant-numeric:tabular-nums">275</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">Altamira</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">1</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">Estudio en Altamira, ideal para una persona</div><div style="padding:12px"></div></div>
+<div style="display:grid;grid-template-columns:56px 96px 88px 152px 116px 1fr 280px;border-bottom:1px solid var(--line)"><div style="padding:12px;font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);font-variant-numeric:tabular-nums;color:var(--soft)">5</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">AP-105</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);font-variant-numeric:tabular-nums">540</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">El Rosal</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">2</div><div style="padding:12px;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans)">Apartamento en El Rosal con línea blanca incluida</div><div style="padding:12px"></div></div>
+
+<div style="display:flex;align-items:center;gap:16px;margin-top:24px"><a href="#2f" style="min-height:36px;border-radius:var(--r);display:flex;align-items:center;padding:0 24px;background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:15px;line-height:1.2;font-family:var(--sans);text-decoration:none">Crear las 38 propiedades</a><a href="#2f" style="min-height:36px;border-radius:var(--r);display:flex;align-items:center;padding:0 16px;border:1px solid var(--strong);color:var(--ink);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);text-decoration:none">Corregir el archivo y volver a subir</a></div>
+</div>
+</div>
+</div></div>
+
+<div class="dv-fr"><span class="dv-fcap">móvil 360 · tarjetas, no tabla</span>
+<div class="dv-card" style="width:360px">
+<div style="width:360px;background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="display:flex;align-items:center;justify-content:space-between;height:48px;padding:0 16px;border-bottom:1px solid var(--line);box-sizing:border-box"><a href="#2e" style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);color:var(--accent);text-decoration:none;padding:12px 0">← Cancelar</a><span style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">cartera-agosto.csv</span></div>
+<div style="display:flex;border-bottom:1px solid var(--line)"><div style="flex:1;padding:16px;border-right:1px solid var(--line)"><div style="font-weight:var(--fpw);font-size:var(--fpb);line-height:1.1;font-family:var(--disp);font-variant-numeric:tabular-nums">38</div><div style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Listas</div></div><div style="flex:1;padding:16px"><div style="font-weight:var(--fpw);font-size:var(--fpb);line-height:1.1;font-family:var(--disp);font-variant-numeric:tabular-nums;color:var(--err)">2</div><div style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--err)">Con error</div></div></div>
+<p style="margin:16px;font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans)">Revisá los errores. Si confirmás, se crean las 38 correctas.</p>
+<div style="margin:0 16px 12px;background:var(--err-bg);border:1px solid var(--err);border-left:3px solid var(--err);border-radius:var(--r);padding:12px"><div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--err)">Fila 7</span><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">AP-114</span></div><p style="margin:8px 0 0;font-weight:600;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--err)">«El Rosal» no existe en Maracaibo</p><p style="margin:4px 0 0;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--soft)">420 · El Rosal · 2 hab</p></div>
+<div style="margin:0 16px 12px;background:var(--err-bg);border:1px solid var(--err);border-left:3px solid var(--err);border-radius:var(--r);padding:12px"><div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;color:var(--err)">Fila 23</span><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">AP-140</span></div><p style="margin:8px 0 0;font-weight:600;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--err)">Falta el precio</p><p style="margin:4px 0 0;font-weight:var(--ftw);font-size:var(--ft);line-height:1.35;font-family:var(--sans);color:var(--soft)">Bella Vista · 2 hab</p></div>
+<div style="margin:0 16px 16px;padding:12px;border:1px solid var(--line);background:var(--bg);font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">38 filas listas para crear</div>
+<div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:12px"><a href="#2f" style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:var(--r);background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:15px;line-height:1.2;font-family:var(--sans);text-decoration:none">Crear las 38 propiedades</a><a href="#2f" style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:var(--r);border:1px solid var(--strong);color:var(--ink);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);text-decoration:none">Corregir el archivo y volver a subir</a></div>
+</div>
+</div></div>
+
+</div>
+</div>
+
+<div class="dv-opt" id="2g">
+<div class="dv-olabel"><a class="dv-oid" href="#2g">2g</a>Publicar · paso 2 de 2 · fotos</div>
+<div class="dv-pair">
+
+<div class="dv-fr"><span class="dv-fcap">móvil 360 · vacío</span>
+<div class="dv-card" style="width:360px">
+<div style="width:360px;background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="display:flex;align-items:center;justify-content:space-between;height:48px;padding:0 16px;border-bottom:1px solid var(--line);box-sizing:border-box"><a href="#2c" style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);color:var(--accent);text-decoration:none;padding:12px 0">← Paso 1</a><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">Paso 2 de 2</span></div>
+<div style="padding:16px 16px 12px"><h1 style="margin:0;font-weight:700;font-size:20px;line-height:1.25;font-family:var(--disp)">Fotos</h1><p style="margin:8px 0 0;font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);text-wrap:pretty">Sin fotos casi no se alquila. Con tres o más recibís el doble de mensajes.</p></div>
+
+<div style="margin:0 16px 12px;padding:24px 16px;border:1px dashed var(--strong);border-radius:var(--r);background:var(--bg);display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+<span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">Todavía no hay fotos</span>
+<a href="#2g" style="min-height:44px;border-radius:var(--r);display:flex;align-items:center;padding:0 20px;background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:15px;line-height:1.2;font-family:var(--sans);text-decoration:none">Elegir del teléfono</a>
+<span style="font-weight:400;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--soft)">Hasta 8 fotos · JPG o PNG</span>
+</div>
+
+<div style="margin:0 16px 16px;padding:12px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg)">
+<p style="margin:0;font-weight:600;font-size:12px;line-height:1.5;font-family:var(--sans)">Tienen que ser fotos tuyas, de esta propiedad.</p>
+<p style="margin:6px 0 0;font-weight:400;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--soft)">Publicar fotos tomadas de otro aviso es motivo de baja de la cuenta. Es el reporte más frecuente que recibimos.</p>
+</div>
+
+<div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:12px">
+<span style="min-height:44px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--strong);font-weight:600;font-size:15px;line-height:1.2;font-family:var(--sans);border:1px solid var(--line)">Publicar aviso</span>
+<span style="font-weight:400;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--soft)">Necesitás al menos una foto para publicar.</span>
+</div>
+</div>
+</div></div>
+
+<div class="dv-fr"><span class="dv-fcap">móvil 360 · procesando y con error</span>
+<div class="dv-card" style="width:360px">
+<div style="width:360px;background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="display:flex;align-items:center;justify-content:space-between;height:48px;padding:0 16px;border-bottom:1px solid var(--line);box-sizing:border-box"><a href="#2c" style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);color:var(--accent);text-decoration:none;padding:12px 0">← Paso 1</a><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">Paso 2 de 2</span></div>
+<div style="display:flex;align-items:baseline;justify-content:space-between;padding:12px 16px 8px"><h1 style="margin:0;font-weight:700;font-size:20px;line-height:1.25;font-family:var(--disp)">Fotos</h1><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">4 de 8</span></div>
+
+<div style="padding:0 16px;display:flex;flex-direction:column;gap:8px">
+
+<div style="display:grid;grid-template-columns:64px 1fr 44px;gap:12px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:var(--r)">
+<div style="position:relative;width:64px;height:48px;background:var(--thumb);border:1px solid var(--line);border-radius:var(--rs);border-radius:6px"><span style="position:absolute;left:0;bottom:0;padding:1px 5px;background:var(--ink);color:var(--surface);font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase;border-radius:0 6px 0 6px">Portada</span></div>
+<div style="min-width:0"><div style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">Sala</div><div style="font-weight:400;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--soft);font-variant-numeric:tabular-nums">2,4 MB → 38 KB</div></div>
+<button style="width:44px;height:44px;border-radius:var(--r);background:transparent;border:0;color:var(--soft);font-size:17px;font-family:var(--sans);cursor:pointer">×</button>
+</div>
+
+<div style="display:grid;grid-template-columns:64px 1fr 44px;gap:12px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:var(--r)">
+<div style="width:64px;height:48px;background:var(--thumb);border:1px solid var(--line);border-radius:6px"></div>
+<div style="min-width:0"><div style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">Habitación principal</div><div style="font-weight:400;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--soft);font-variant-numeric:tabular-nums">3,1 MB → 34 KB</div></div>
+<button style="width:44px;height:44px;border-radius:var(--r);background:transparent;border:0;color:var(--soft);font-size:17px;font-family:var(--sans);cursor:pointer">×</button>
+</div>
+
+<div style="display:grid;grid-template-columns:64px 1fr 44px;gap:12px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:var(--r)">
+<div style="width:64px;height:48px;background:var(--thumb);border:1px solid var(--line);border-radius:6px;opacity:.5"></div>
+<div style="min-width:0"><div style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">Cocina</div><div style="margin-top:5px;height:4px;background:var(--line);border-radius:999px;overflow:hidden"><div style="width:62%;height:4px;background:var(--accent)"></div></div><div style="margin-top:4px;font-weight:400;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--soft)">Comprimiendo en tu teléfono…</div></div>
+<button style="width:44px;height:44px;border-radius:var(--r);background:transparent;border:0;color:var(--soft);font-size:17px;font-family:var(--sans);cursor:pointer">×</button>
+</div>
+
+<div style="display:grid;grid-template-columns:64px 1fr 44px;gap:12px;align-items:center;padding:8px;border:1px solid var(--err);border-radius:var(--r);background:var(--err-bg)">
+<div style="width:64px;height:48px;background:var(--thumb);border:1px solid var(--line);border-radius:6px;opacity:.4"></div>
+<div style="min-width:0"><div style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">IMG_0421</div><div style="font-weight:600;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--err)">✱ Es un video, no una foto</div></div>
+<button style="width:44px;height:44px;border-radius:var(--r);background:transparent;border:0;color:var(--err);font-size:17px;font-family:var(--sans);cursor:pointer">×</button>
+</div>
+
+<a href="#2g" style="min-height:44px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--accent);background:var(--tint);color:var(--accent);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);text-decoration:none">+ Agregar más</a>
+</div>
+
+<p style="margin:12px 16px;font-weight:400;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--soft)">Las comprimimos acá antes de subirlas, así gastás menos datos. La primera es la portada: arrastrá para cambiar el orden.</p>
+
+<div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:12px">
+<a href="#2g" style="min-height:44px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:15px;line-height:1.2;font-family:var(--sans);text-decoration:none">Publicar aviso</a>
+<span style="font-weight:400;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--soft)">Se publican las fotos listas. Podés agregar más después desde Mis publicaciones.</span>
+</div>
+</div>
+</div></div>
+
+<div class="dv-fr"><span class="dv-fcap">escritorio 1280 · cuadrícula, columna de 600</span>
+<div class="dv-card" style="width:1280px">
+<div style="width:1280px;background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;justify-content:space-between"><span style="font-weight:700;font-size:20px;line-height:1.25;font-family:var(--disp);letter-spacing:-.02em">rentas.</span><span style="font-weight:400;font-size:11px;line-height:1.45;font-family:var(--meta);color:var(--soft)">Paso 2 de 2</span></div></div>
+<div style="width:600px;margin:0 auto;padding:32px 0 48px;display:flex;flex-direction:column;gap:24px">
+<div><h1 style="margin:0;font-weight:700;font-size:20px;line-height:1.25;font-family:var(--disp)">Fotos</h1><p style="margin:8px 0 0;max-width:520px;font-weight:400;font-size:15px;line-height:1.55;font-family:var(--sans);text-wrap:pretty">Sin fotos casi no se alquila. Con tres o más recibís el doble de mensajes. La primera es la portada.</p></div>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+<div style="position:relative;aspect-ratio:4/3;background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"><span style="position:absolute;left:8px;top:8px;padding:2px 6px;border-radius:var(--rs);background:var(--ink);color:var(--surface);font-weight:700;font-size:10.5px;line-height:1.4;font-family:var(--meta);letter-spacing:.04em;text-transform:uppercase">Portada</span><button style="position:absolute;right:6px;top:6px;width:36px;height:36px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);color:var(--soft);font-size:15px;font-family:var(--sans);cursor:pointer">×</button></div>
+<div style="position:relative;aspect-ratio:4/3;background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"><button style="position:absolute;right:6px;top:6px;width:36px;height:36px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);color:var(--soft);font-size:15px;font-family:var(--sans);cursor:pointer">×</button></div>
+<div style="position:relative;aspect-ratio:4/3;background:var(--thumb);border:1px solid var(--line);border-radius:var(--r);display:flex;align-items:flex-end;padding:8px;box-sizing:border-box"><div style="width:100%;height:4px;background:var(--line);border-radius:999px;overflow:hidden"><div style="width:62%;height:4px;background:var(--accent)"></div></div></div>
+<a href="#2g" style="aspect-ratio:4/3;border:1px dashed var(--strong);border-radius:var(--r);background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--accent);text-decoration:none"><span style="font-size:20px;font-family:var(--sans)">+</span><span style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">Agregar</span></a>
+</div>
+
+<div style="display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;padding:12px;border:1px solid var(--err);border-radius:var(--r);background:var(--err-bg)">
+<div style="width:64px;height:48px;background:var(--thumb);border:1px solid var(--line);border-radius:6px;opacity:.4"></div>
+<div><div style="font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans)">IMG_0421.mov</div><div style="font-weight:600;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--err)">✱ Es un video, no una foto. Solo aceptamos JPG y PNG.</div></div>
+<button style="min-height:36px;border-radius:var(--r);padding:0 16px;background:transparent;border:1px solid var(--err);color:var(--err);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);cursor:pointer">Quitar</button>
+</div>
+
+<div style="padding:16px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg)">
+<p style="margin:0;font-weight:600;font-size:12px;line-height:1.5;font-family:var(--sans)">Tienen que ser fotos tuyas, de esta propiedad.</p>
+<p style="margin:6px 0 0;max-width:520px;font-weight:400;font-size:12px;line-height:1.5;font-family:var(--sans);color:var(--soft)">Publicar fotos tomadas de otro aviso es motivo de baja de la cuenta. Es el reporte más frecuente que recibimos. Las comprimimos en tu navegador antes de subirlas: 2,4 MB pasan a 38 KB.</p>
+</div>
+
+<div style="display:flex;align-items:center;gap:16px"><a href="#2g" style="min-height:36px;border-radius:var(--r);display:flex;align-items:center;padding:0 24px;background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:15px;line-height:1.2;font-family:var(--sans);text-decoration:none">Publicar aviso</a><a href="#2c" style="min-height:36px;border-radius:var(--r);display:flex;align-items:center;padding:0 16px;border:1px solid var(--strong);color:var(--ink);font-weight:600;font-size:12px;line-height:1.4;font-family:var(--sans);text-decoration:none">Volver al paso 1</a></div>
+</div>
+</div>
+</div></div>
+
+</div>
+<sc-if value="{{ mostrarNotas }}" hint-placeholder-val="{{ true }}">
+<ul class="dv-note"><li>el único paso donde el brief permite JS: comprimir en el dispositivo</li><li>el tamaño antes/después es visible: el usuario ve que le cuidan los datos</li><li>el aviso de fotos robadas va acá, donde se comete la falta</li><li>botón deshabilitado sin fotos, con el motivo escrito al lado</li></ul>
+</sc-if>
+</div>
+
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;modo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;claro&quot;,&quot;oscuro&quot;],&quot;default&quot;:&quot;claro&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;mostrarNotas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;mostrarPliegue&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { tema: null, estilo: null };
+  renderVals() {
+    const tema = this.state.tema ?? this.props.modo ?? "claro";
+    const set = t => () => this.setState({ tema: t });
+    return {
+      tema,
+      esClaro: tema === "claro" ? "1" : "0",
+      esOscuro: tema === "oscuro" ? "1" : "0",
+      verClaro: set("claro"), verOscuro: set("oscuro"),
+      mostrarNotas: this.props.mostrarNotas ?? true,
+      mostrarPliegue: this.props.mostrarPliegue ?? true
+    };
+  }
+}
+</script>
+</body>
+</html>
