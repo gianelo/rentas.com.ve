@@ -458,7 +458,26 @@ Se rehace la capa de entrega, que es cerca de un tercio del código. Se conserva
 - [ ] 14.21 **El inicio, en `/`, con cuatro tiras de 5 avisos** (F1): recientes, cada ciudad, y hasta $400. Cada una declara su **total real** ("Ver los 23"), una colección vacía **no se renderiza** — la tira desaparece, no queda un hueco — y una con menos de 5 muestra los que haya sin la placa "Ver todos". Sin ningún aviso activo, el inicio muestra la barra de búsqueda y una invitación a publicar
 - [ ] 14.22 **Las cuatro consultas, con su conteo total.** No es un `LIMIT 5` cuatro veces: cada tira necesita sus 5 filas **y** el total de la colección, y "Ver los 23" tiene que decir 23 de verdad (regla transversal 3). Ni vencidos, ni ocultos, ni pendientes de moderación
 - [ ] 14.23 **La misma propiedad puede salir en dos tiras** — reciente y barata a la vez — y eso es correcto, no un duplicado a deduplicar
-- [ ] 14.24 **Mudar los resultados a `/buscar`** con el esquema de la F12: `?ciudad=…&zona=chacao,altamira&min=…&max=…&hab=…&tipo=dueno&pag=1`. Hoy viven en `/` con parámetros en inglés. **Y el comentario de `app/page.tsx` hay que reescribirlo**: dice que no hay inicio separado "y eso es una decisión antes que una omisión", que ahora es falso y quedaría contradiciendo al código de al lado
+- [x] 14.24 **RESUELTO 2026-08-22: `/buscar` no existe. Toda búsqueda vive en la ruta de su lugar.**
+  >
+  > La F12 escribía `/buscar?ciudad=distrito-capital&zona=chacao,altamira&…`, y el mapa de pantallas dibujaba BUSCAR como una caja propia. Lo destapó el fundador mirando una URL de Airbnb: `/s/Bocagrande/homes?checkin=…` — **el lugar va en la RUTA y los filtros volátiles en la query**, y el prefijo `/s/` no es una palabra legible porque no vale nada; el valor está en *Bocagrande*.
+  >
+  > **La pregunta que eso abre es mejor: ¿hace falta esa ruta?** No. `ListingSearchPort` garantiza a nivel de tipo que toda búsqueda lleva un `cityId` obligatorio y no nulable — "no hay `searchAll` ni un valor comodín que signifique «en todas partes»". Una ciudad es un lugar, así que **toda búsqueda posible ya cae en una ruta de lugar**:
+  >
+  > ```
+  > /alquiler/caracas                        sólo ciudad
+  > /alquiler/caracas?min=250&hab=2          ciudad + filtros
+  > /alquiler/caracas/chacao                 ciudad + una zona   ← indexable
+  > /alquiler/caracas/chacao?min=250         refinada
+  > /alquiler/caracas?zona=chacao,altamira   varias zonas (F4, OR)
+  > ```
+  >
+  > **Lo que se gana, en orden de peso.** (1) Una URL por contenido: con dos rutas los mismos avisos vivían en dos direcciones, que es el contenido duplicado que Google castiga sobre el dominio entero. (2) La regla de indexación queda **mecánica** — con parámetros `noindex`, sin parámetros se indexa — y no una condición que se rompe en silencio. (3) **Borra trabajo**: la página de zona de la Fase 11 (11.5–11.7) deja de ser una pantalla aparte, *es la misma sin filtros*.
+  >
+  > **La ficha anida dentro de su zona**, lo que se lee solo: `/alquiler/caracas/chacao/apto-2-hab-<id>`. La ambigüedad ya está resuelta desde la 11.1 — dos segmentos son una zona, tres son un aviso, y un tercer segmento que no termina en un id hace que `listingIdFromSlug` devuelva `null`.
+  >
+  > **Pendiente de corregir en los documentos del fundador**, no en el código: la F12 y el mapa de pantallas siguen escribiendo `/buscar`.
+- [ ] 14.30 **Reescribir el comentario de `app/page.tsx`**, que dice que no hay inicio separado "y eso es una decisión antes que una omisión". Ahora es falso, y quedaría contradiciendo al código de al lado
 - [ ] 14.25 **La tarjeta de cuadrícula, que reemplaza a `ResultRow`.** Dos columnas de 158 px en móvil, tres de 254 px en escritorio. Conserva lo que la fila ya garantizaba y está probado en `design-contract.test.tsx`: el publicador visible y distinguible **en escala de grises** (relleno contra borde), y el precio antes del título en orden de documento y en peso
 - [ ] 14.26 **La tira del inicio cambia de mecanismo entre anchos**: scroll horizontal con 5 más la placa "Ver todos" en móvil, filas fijas de 5 con el total y una flecha en el encabezado en escritorio. **Un solo componente con puntos de quiebre, nunca dos** — la misma razón que `SearchFilters` ya documenta: dos implementaciones se separan, y una búsqueda filtrada terminaría dando URLs distintas según el ancho
 - [ ] 14.27 **El presupuesto es lo que decide si la cuadrícula sobrevive.** El argumento original de "lista de filas, nunca grilla" era el peso, y el documento del fundador reporta la página de resultados hoy en ~128 KB contra un tope de 150 KB con 20 avisos. Una cuadrícula de fotos de 158 px gasta ese margen. **El inicio tiene su propio techo**: ~80 KB con 20 fotos de 158×118. La 11.17 (`budget-bundle`) y la 11.19 (Lighthouse) son las que van a decir si entra, y hay que mirarlas antes de dar la cuadrícula por buena
