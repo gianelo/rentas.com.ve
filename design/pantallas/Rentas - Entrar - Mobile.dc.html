@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><style>
+body{margin:0;background:#e9eae8;font-family:system-ui,sans-serif}
+a{color:#272343}a:hover{color:#1a1830}
+.mn *,.mn *::before,.mn *::after{box-sizing:border-box}
+.mn{--sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,monospace;--meta:var(--mono);--disp:var(--mono);--r:12px;--rs:999px;--surface:#FFFFFF;--bg:#F0F5F9;--line:#e1e4e6;--rule:#788189;--ink:#1E2022;--soft:#52616B;--accent:#272343;--acc-ink:#FFFFFF;--tint:#E3F6F5;--thumb:repeating-linear-gradient(135deg,#BAE8E8 0 7px,#E3F6F5 7px 14px)}
+.dv-turn{padding:32px 44px 44px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 8px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-sub{margin:0 0 28px;font:400 12px/1.55 system-ui,sans-serif;color:rgba(0,0,0,.55);max-width:780px}
+.dv-pair{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap}
+.dv-opt{display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px;width:360px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-opt:target .dv-oid{background:#1a1a1a;color:#fff}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:600 12px/1.3 system-ui,sans-serif;color:#1a1a1a}
+.dv-desc{margin:-2px 0 4px;font:400 11.5px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.52)}
+.dv-card{background:#fff;border:1px solid rgba(0,0,0,.14);position:relative;overflow:hidden;width:360px}
+.dv-note{font:400 10.5px/1.7 ui-monospace,Menlo,monospace;color:rgba(0,0,0,.5);margin:4px 0 0;padding:0;list-style:none}
+.dv-note b{color:#1a1a1a}
+.g{width:18px;height:18px;flex:none;border-radius:99px;background:conic-gradient(#EA4335 0 25%,#FBBC05 0 50%,#34A853 0 75%,#4285F4 0);position:relative}
+.g::after{content:"";position:absolute;inset:5px;background:#fff;border-radius:99px}
+</style></helmet>
+
+<div class="mn">
+<section class="dv-turn" id="t8">
+<div class="dv-thd"><a class="dv-tid" href="#t8">8</a><span class="dv-tname">Entrar con Google · tres planteos · móvil 360</span></div>
+<p class="dv-sub">El mismo botón resuelve dos puertas distintas: publicar un aviso y ver el WhatsApp de un dueño. Lo que cambia entre las tres propuestas es cuánto interrumpe: una pantalla propia, una hoja que sube sobre lo que estabas viendo, o el primer paso del formulario. En todas, entrar es un solo toque y el motivo se dice antes del botón, no después.</p>
+
+<div class="dv-pair">
+
+<div class="dv-opt" id="8a">
+<div class="dv-olabel"><a class="dv-oid" href="#8a">8a</a>Pantalla propia</div>
+<p class="dv-desc">Página dedicada, con su URL. Es la que sirve para llegar desde un correo o un enlace compartido, y la única que funciona como destino de vuelta después de Google. Cuesta un cambio de pantalla completo.</p>
+<div class="dv-card">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans);min-height:560px;display:flex;flex-direction:column">
+<div style="display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;border-bottom:1px solid var(--line)"><a href="#8a" style="display:flex;align-items:center;min-height:44px;font-family:var(--meta);font-size:11px;color:var(--accent);text-decoration:none">← Volver</a><span style="font-family:var(--mono);font-weight:700;font-size:15px">rentas</span><span style="width:44px"></span></div>
+
+<div style="padding:32px 20px 20px">
+<h1 style="margin:0;font-size:22px;font-weight:700;line-height:1.25;text-wrap:pretty">Entrá para publicar tu propiedad</h1>
+<p style="margin:10px 0 0;font-size:14px;line-height:1.55;color:var(--soft);text-wrap:pretty">Publicar es gratis y no cobramos comisión. Necesitamos una cuenta para que puedas editar tu aviso y renovarlo cuando venza.</p>
+</div>
+
+<div style="padding:0 20px">
+<a href="#8a" style="display:flex;align-items:center;justify-content:center;gap:12px;min-height:52px;border-radius:var(--r);border:1px solid var(--rule);background:var(--surface);text-decoration:none;color:var(--ink)"><span class="g"></span><span style="font-size:15px;font-weight:600">Continuar con Google</span></a>
+<div style="display:flex;align-items:center;gap:12px;margin:16px 0"><span style="flex:1;height:1px;background:var(--line)"></span><span style="font-family:var(--meta);font-size:10px;color:var(--soft)">o con tu correo</span><span style="flex:1;height:1px;background:var(--line)"></span></div>
+<label for="a-mail" style="display:block;font-family:var(--meta);font-weight:700;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft);margin-bottom:6px">Correo</label>
+<input id="a-mail" type="email" value="" placeholder="tucorreo@ejemplo.com" style="width:100%;min-height:50px;padding:0 14px;border-radius:var(--r);border:1px solid var(--rule);background:var(--surface);font-family:var(--sans);font-size:15px;color:var(--ink)">
+<a href="#8c" style="margin-top:10px;display:flex;align-items:center;justify-content:center;min-height:50px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:15px;font-weight:600;text-decoration:none">Enviarme el enlace</a>
+<p style="margin:12px 0 0;font-family:var(--meta);font-size:10.5px;line-height:1.6;color:var(--soft)">Te mandamos un enlace que te deja entrar. No manejamos contraseñas.</p>
+</div>
+
+<div style="margin:28px 20px 0;padding:16px;background:var(--bg);border-radius:var(--r)">
+<span style="display:block;font-family:var(--meta);font-weight:700;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Qué pasa después</span>
+<div style="margin-top:12px;display:flex;flex-direction:column;gap:12px">
+<span style="display:flex;gap:11px;align-items:flex-start"><span style="flex:none;width:20px;height:20px;border-radius:99px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px;font-weight:700">1</span><span style="font-size:13.5px;line-height:1.45">Llenás los datos de la propiedad.</span></span>
+<span style="display:flex;gap:11px;align-items:flex-start"><span style="flex:none;width:20px;height:20px;border-radius:99px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px;font-weight:700">2</span><span style="font-size:13.5px;line-height:1.45">Subís las fotos, que comprimimos en tu teléfono.</span></span>
+<span style="display:flex;gap:11px;align-items:flex-start"><span style="flex:none;width:20px;height:20px;border-radius:99px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px;font-weight:700">3</span><span style="font-size:13.5px;line-height:1.45">Verificás tu teléfono por WhatsApp y el aviso queda activo 30 días.</span></span>
+</div>
+</div>
+
+<div style="margin-top:auto;padding:20px">
+<p style="margin:0;font-family:var(--meta);font-size:10px;line-height:1.7;color:var(--soft)">Al entrar aceptás los <a href="#8a">términos</a> y la <a href="#8a">privacidad</a>. Rentas no participa en el trato: no cobramos comisión, no retenemos pagos y no redactamos contratos.</p>
+</div>
+</div>
+</div>
+<ul class="dv-note"><li>tiene URL propia: sirve de destino de vuelta desde Google</li><li>el título dice para qué, no "Iniciar sesión"</li><li>los tres pasos bajan la ansiedad antes del botón</li></ul>
+</div>
+
+<div class="dv-opt" id="8b">
+<div class="dv-olabel"><a class="dv-oid" href="#8b">8b</a>Hoja sobre el contenido</div>
+<p class="dv-desc">Sube desde abajo sin sacarte de donde estabas: se sigue viendo el aviso detrás. Es la mejor para la puerta del WhatsApp, porque el usuario está a un toque de una decisión y perder el contexto lo hace abandonar.</p>
+<div class="dv-card">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans);min-height:826px;position:relative">
+
+<div style="padding:14px 16px;filter:blur(1.4px);opacity:.5">
+<div style="display:flex;align-items:center;justify-content:space-between;height:40px"><span style="font-family:var(--meta);font-size:11px;color:var(--accent)">← Resultados</span><span style="font-family:var(--meta);font-weight:700;font-size:10px;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:var(--rs);background:var(--ink);color:var(--surface)">Dueño</span></div>
+<div style="margin-top:10px;width:100%;height:180px;background:var(--thumb);border:1px solid var(--line);border-radius:var(--r)"></div>
+<div style="margin-top:12px;font-family:var(--disp);font-weight:700;font-size:26px;font-variant-numeric:tabular-nums">$450</div>
+<div style="margin-top:4px;font-size:15px;line-height:1.35">Apartamento 2 habitaciones con puesto de estacionamiento</div>
+<div style="margin-top:4px;font-family:var(--meta);font-size:11px;color:var(--soft)">Chacao · 2 hab · 78 m²</div>
+</div>
+
+<div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);border-radius:18px 18px 0 0;box-shadow:0 -8px 28px rgba(30,32,34,.16);padding:10px 20px 22px">
+<div style="width:38px;height:4px;border-radius:99px;background:var(--line);margin:0 auto 16px"></div>
+<h2 style="margin:0;font-size:19px;font-weight:700;line-height:1.3;text-wrap:pretty">Entrá para ver el WhatsApp de María F.</h2>
+<p style="margin:8px 0 0;font-size:13.5px;line-height:1.5;color:var(--soft);text-wrap:pretty">Pedimos la cuenta para frenar avisos falsos. Es gratis y es un toque.</p>
+<div style="margin-top:14px;padding:12px 14px;background:var(--bg);border-radius:var(--r);display:flex;align-items:center;gap:11px">
+<span style="flex:none;width:36px;height:36px;border-radius:99px;background:var(--tint);border:1px solid var(--line)"></span>
+<span style="min-width:0"><span style="display:block;font-size:13.5px;font-weight:600">+58 4•• ••• ••••</span><span style="display:block;font-family:var(--meta);font-size:10.5px;color:var(--soft)">teléfono verificado por WhatsApp</span></span>
+</div>
+<a href="#8b" style="margin-top:16px;display:flex;align-items:center;justify-content:center;gap:12px;min-height:52px;border-radius:var(--r);border:1px solid var(--rule);background:var(--surface);text-decoration:none;color:var(--ink)"><span class="g"></span><span style="font-size:15px;font-weight:600">Continuar con Google</span></a>
+<div style="display:flex;align-items:center;gap:12px;margin:14px 0"><span style="flex:1;height:1px;background:var(--line)"></span><span style="font-family:var(--meta);font-size:10px;color:var(--soft)">o con tu correo</span><span style="flex:1;height:1px;background:var(--line)"></span></div>
+<div style="display:flex;gap:8px"><input id="b-mail" type="email" value="" placeholder="tucorreo@ejemplo.com" aria-label="Correo" style="flex:1;min-width:0;min-height:50px;padding:0 14px;border-radius:var(--r);border:1px solid var(--rule);background:var(--surface);font-family:var(--sans);font-size:15px;color:var(--ink)"><a href="#8c" style="flex:none;min-height:50px;display:flex;align-items:center;padding:0 18px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:14px;font-weight:600;text-decoration:none">Enviar</a></div>
+<a href="#8b" style="margin-top:12px;display:flex;align-items:center;justify-content:center;min-height:44px;font-size:13px;color:var(--soft);text-decoration:none">Seguir mirando sin entrar</a>
+<p style="margin:10px 0 0;font-family:var(--meta);font-size:10px;line-height:1.7;color:var(--soft);text-align:center">Volvés a este mismo aviso al terminar.</p>
+</div>
+</div>
+</div>
+<ul class="dv-note"><li>no pierde el contexto: el aviso sigue detrás</li><li>muestra que el teléfono existe y está verificado</li><li>tiene salida sin entrar: no es un muro</li></ul>
+</div>
+
+<div class="dv-pair" style="margin-top:36px">
+
+<div class="dv-opt" id="8c">
+<div class="dv-olabel"><a class="dv-oid" href="#8c">8c</a>Enlace enviado</div>
+<p class="dv-desc">La pantalla que el enlace mágico obliga a tener: entre pedir el enlace y volver, hay una espera fuera del sitio. Si no se explica, el usuario cree que se rompió.</p>
+<div class="dv-card">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans);min-height:560px;display:flex;flex-direction:column">
+<div style="display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;border-bottom:1px solid var(--line)"><a href="#8a" style="display:flex;align-items:center;min-height:44px;font-family:var(--meta);font-size:11px;color:var(--accent);text-decoration:none">← Cambiar correo</a><span style="font-family:var(--mono);font-weight:700;font-size:15px">rentas</span><span style="width:44px"></span></div>
+
+<div style="padding:36px 20px 0;text-align:center">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:99px;background:var(--tint);font-size:22px">✉</span>
+<h1 style="margin:18px 0 0;font-size:21px;font-weight:700;line-height:1.3;text-wrap:pretty">Revisá tu correo</h1>
+<p style="margin:10px 0 0;font-size:14px;line-height:1.55;color:var(--soft);text-wrap:pretty">Le mandamos un enlace a <b style="color:var(--ink)">maria.f@gmail.com</b>. Tocalo y entrás sin escribir nada más.</p>
+</div>
+
+<div style="margin:26px 20px 0;padding:16px;background:var(--bg);border-radius:var(--r)">
+<span style="display:block;font-family:var(--meta);font-weight:700;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Si no llega</span>
+<ul style="margin:10px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:7px">
+<li style="font-size:13.5px;line-height:1.45">Puede tardar hasta dos minutos.</li>
+<li style="font-size:13.5px;line-height:1.45">Mirá en correo no deseado.</li>
+<li style="font-size:13.5px;line-height:1.45">El enlace sirve una sola vez y vence en 15 minutos.</li>
+</ul>
+</div>
+
+<div style="padding:20px">
+<span style="display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:var(--r);border:1px solid var(--line);color:var(--soft);font-size:14px;font-weight:600">Volver a enviar en 0:42</span>
+<a href="#8a" style="margin-top:12px;display:flex;align-items:center;justify-content:center;gap:12px;min-height:48px;border-radius:var(--r);border:1px solid var(--rule);background:var(--surface);text-decoration:none;color:var(--ink)"><span class="g"></span><span style="font-size:14px;font-weight:600">Mejor entro con Google</span></a>
+</div>
+
+<div style="margin-top:auto;padding:0 20px 20px">
+<p style="margin:0;font-family:var(--meta);font-size:10px;line-height:1.7;color:var(--soft)">Abrí el enlace en este mismo teléfono. Si lo abrís en otro, te pedimos el correo de nuevo.</p>
+</div>
+</div>
+</div>
+<ul class="dv-note"><li>el correo se repite en pantalla: se ve el error de tipeo sin volver</li><li>reenviar con cuenta regresiva, no deshabilitado sin explicación</li><li>salida a Google desde acá: nadie queda atrapado esperando</li></ul>
+</div>
+
+</div>
+
+<p style="margin:28px 0 0;font:400 11.5px/1.7 system-ui,sans-serif;color:rgba(0,0,0,.5);max-width:780px">Tres notas sobre el enlace por correo. <b>Google va primero y el correo debajo</b>, porque un toque siempre gana a escribir una dirección en un teclado de teléfono. <b>El enlace mágico obliga a la pantalla <a href="#8c">8c</a></b>: el usuario sale del sitio y vuelve, y sin una pantalla que lo explique parece que se rompió. Y la verificación del teléfono sigue siendo un paso aparte: Google o el correo confirman quién sos, el WhatsApp confirma que el número del aviso funciona.</p>
+
+<div style="margin:36px 0 0;padding:18px 20px;border:1px solid rgba(0,0,0,.16);border-radius:10px;background:#fff;max-width:800px">
+<span style="display:block;font:700 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.06em;text-transform:uppercase;color:rgba(0,0,0,.45)">Rejilla y puntos de quiebre · vale para todas las pantallas</span>
+<p style="margin:10px 0 0;font:400 11.5px/1.7 system-ui,sans-serif;color:rgba(0,0,0,.62)">Todo lo de arriba está dibujado a <b>360</b> de ancho, que es el piso del mercado. Hasta 767 el diseño es fluido con márgenes de 16 y todo lo demás se mantiene. De 768 en adelante manda la versión de escritorio, con su contenedor fijo de 1100 que no se estira en ninguna pantalla más grande.</p>
+<div style="margin-top:12px;display:grid;grid-template-columns:120px 1fr;gap:6px 14px;font:400 11px/1.5 ui-monospace,Menlo,monospace;color:rgba(0,0,0,.6)">
+<span style="color:rgba(0,0,0,.4)">&lt; 768</span><span>versión móvil, fluida con márgenes de 16</span>
+<span style="color:rgba(0,0,0,.4)">768 – 1099</span><span>contenedor fluido, márgenes de 24 · <b style="color:#8a5a00">sin diseñar</b></span>
+<span style="color:rgba(0,0,0,.4)">1100 – ∞</span><span>contenedor fijo en 1100, centrado</span>
+<span style="color:rgba(0,0,0,.4)">1440 · 1920 · 4K</span><span>idéntico a 1280: solo crece el aire lateral</span>
+</div>
+<p style="margin:12px 0 0;font:400 11.5px/1.7 system-ui,sans-serif;color:rgba(0,0,0,.62)"><b>El contenedor no se estira nunca.</b> Lo que escala con el ancho es el número de columnas, no el tamaño de la tarjeta ni el ancho de un campo. En 4K tampoco se sirven fotos al doble de densidad: chocaría con el presupuesto de bytes.</p>
+</div>
+
+</section>
+</div>
+</x-dc>
+</body>
+</html>

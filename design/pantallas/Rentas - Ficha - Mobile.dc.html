@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><style>
+body{margin:0;background:#e9eae8;font-family:system-ui,sans-serif}
+a{color:#272343}a:hover{color:#1a1830}
+.mn *,.mn *::before,.mn *::after{box-sizing:border-box}
+.mn{--sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,monospace;--meta:var(--mono);--disp:var(--mono);--r:12px;--rs:999px;--surface:#FFFFFF;--bg:#F0F5F9;--line:#e1e4e6;--rule:#788189;--ink:#1E2022;--soft:#52616B;--accent:#272343;--acc-ink:#FFFFFF;--tint:#E3F6F5;--thumb:repeating-linear-gradient(135deg,#BAE8E8 0 7px,#E3F6F5 7px 14px)}
+.dv-turn{padding:32px 44px 44px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 8px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-sub{margin:0 0 28px;font:400 12px/1.55 system-ui,sans-serif;color:rgba(0,0,0,.55);max-width:800px}
+.dv-opt{display:flex;flex-direction:column;gap:10px;margin:0 0 40px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-opt:target .dv-oid{background:#1a1a1a;color:#fff}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:600 12px/1.3 system-ui,sans-serif;color:#1a1a1a}
+.dv-desc{margin:-2px 0 4px;font:400 11.5px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.52);max-width:720px}
+.dv-pair{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap}
+.dv-fr{display:flex;flex-direction:column;gap:6px}
+.dv-fcap{font:400 10px ui-monospace,Menlo,monospace;color:rgba(0,0,0,.45)}
+.dv-card{background:#fff;border:1px solid rgba(0,0,0,.14);position:relative;overflow:hidden}
+.dv-note{font:400 10.5px/1.7 ui-monospace,Menlo,monospace;color:rgba(0,0,0,.5);margin:4px 0 0;padding:0;list-style:none;max-width:760px}
+.dv-note b{color:#1a1a1a}
+.warn{color:#8a5a00}
+</style></helmet>
+
+<div class="mn">
+<section class="dv-turn" id="t11" style="border-bottom:1px solid rgba(0,0,0,.1)">
+<div class="dv-thd"><a class="dv-tid" href="#t11">11</a><span class="dv-tname">Visor de fotos · móvil 360</span></div>
+<p class="dv-sub">Tocar cualquier foto abre el visor a pantalla completa. Va sobre gris muy oscuro y neutro, no sobre un color: cualquier tinte compite con la foto y le cambia la temperatura al ojo. Lo importante del planteo: <b>cada foto tiene su propia dirección</b> (<code style="font-family:var(--mono)">/aviso/84512/foto/2</code>), así que anterior y siguiente son enlaces reales, funciona con JavaScript apagado, se comparte una foto concreta y el botón de volver del navegador retrocede una foto. Con JavaScript encima se agregan el deslizar y el precargar la siguiente.</p>
+
+<div class="dv-pair">
+
+<div class="dv-fr"><span class="dv-fcap">visor · foto 2 de 6</span>
+<div class="dv-card" id="11b" style="width:360px">
+<div style="background:#131517;color:#F2F3F3;font-family:var(--sans);min-height:560px;display:flex;flex-direction:column">
+
+<div style="display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 10px;flex:none">
+<a href="#t10" style="width:44px;height:44px;border-radius:99px;display:flex;align-items:center;justify-content:center;color:#F0F5F9;font-size:17px;text-decoration:none">×</a>
+<span style="font-family:var(--meta);font-size:12px;font-variant-numeric:tabular-nums;color:#F0F5F9">2 / 6</span>
+<span style="width:44px"></span>
+</div>
+
+<div style="flex:1;display:flex;align-items:center;position:relative">
+<div style="width:100%;height:270px;background:repeating-linear-gradient(135deg,#2A2D30 0 7px,#232628 7px 14px)"></div>
+<a href="#11b" style="position:absolute;left:0;top:0;bottom:0;width:88px;display:flex;align-items:center;padding-left:10px;text-decoration:none"><span style="width:40px;height:40px;border-radius:99px;background:rgba(19,21,23,.72);display:flex;align-items:center;justify-content:center;color:#F0F5F9;font-size:16px">‹</span></a>
+<a href="#11b" style="position:absolute;right:0;top:0;bottom:0;width:88px;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;text-decoration:none"><span style="width:40px;height:40px;border-radius:99px;background:rgba(19,21,23,.72);display:flex;align-items:center;justify-content:center;color:#F0F5F9;font-size:16px">›</span></a>
+</div>
+
+<div style="flex:none;padding:0 16px 12px">
+<span style="display:block;font-size:14px;font-weight:600">Habitación principal</span>
+<span style="display:block;margin-top:2px;font-family:var(--meta);font-size:10.5px;color:#A2A7A9">Apartamento 2 habitaciones · Chacao</span>
+</div>
+
+<div style="flex:none;display:flex;gap:7px;padding:0 16px 14px;overflow-x:auto;scrollbar-width:none">
+<span style="flex:none;width:52px;height:39px;border-radius:7px;background:repeating-linear-gradient(135deg,#2A2D30 0 7px,#232628 7px 14px);opacity:.5"></span>
+<span style="flex:none;width:52px;height:39px;border-radius:7px;background:repeating-linear-gradient(135deg,#2A2D30 0 7px,#232628 7px 14px);box-shadow:0 0 0 2px #F2F3F3"></span>
+<span style="flex:none;width:52px;height:39px;border-radius:7px;background:repeating-linear-gradient(135deg,#2A2D30 0 7px,#232628 7px 14px);opacity:.5"></span>
+<span style="flex:none;width:52px;height:39px;border-radius:7px;background:repeating-linear-gradient(135deg,#2A2D30 0 7px,#232628 7px 14px);opacity:.5"></span>
+<span style="flex:none;width:52px;height:39px;border-radius:7px;background:repeating-linear-gradient(135deg,#2A2D30 0 7px,#232628 7px 14px);opacity:.5"></span>
+<span style="flex:none;width:52px;height:39px;border-radius:7px;background:repeating-linear-gradient(135deg,#2A2D30 0 7px,#232628 7px 14px);opacity:.5"></span>
+</div>
+
+<div style="flex:none;padding:14px 16px 18px;border-top:1px solid #2A2D30;display:flex;align-items:center;justify-content:space-between;gap:12px">
+<span style="min-width:0"><span style="display:block;font-family:var(--disp);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums">$450</span><span style="display:block;font-family:var(--meta);font-size:10px;color:#A2A7A9">al mes</span></span>
+<a href="#t10" style="flex:none;min-height:44px;display:flex;align-items:center;padding:0 18px;border-radius:var(--r);background:#F2F3F3;color:#131517;font-size:14px;font-weight:600;text-decoration:none">Ver el aviso</a>
+</div>
+</div>
+</div>
+<ul class="dv-note"><li>zonas de toque de 88 px a cada lado, más la flecha visible</li><li>gris neutro: no le cambia la temperatura a la foto</li><li>el precio no desaparece: se sigue decidiendo mientras se mira</li><li>la tira de miniaturas marca dónde estás dentro de las seis</li></ul>
+</div>
+
+<p style="margin:20px 0 0;font:400 11.5px/1.7 system-ui,sans-serif;color:rgba(0,0,0,.5);max-width:800px">Una decisión que conviene fijar: <b>el visor es navegación, no un estado de la ficha</b>. Cada foto es una URL, así que Google puede indexarlas, alguien puede mandar por WhatsApp la foto de la cocina, y el botón de volver del teléfono hace lo que se espera. La alternativa —un visor en JavaScript sobre la misma página— es más suave al deslizar pero rompe las tres cosas.</p>
+</section>
+
+<section class="dv-turn" id="t10">
+<div class="dv-thd"><a class="dv-tid" href="#t10">10</a><span class="dv-tname">Ficha del aviso · móvil 360</span></div>
+<p class="dv-sub">Armada sobre el inventario de contenido. Dos cosas que el inventario deja abiertas y acá se resuelven: el <b>tipo de propiedad</b> va junto a la ubicación, no en la tira de datos, porque es una categoría y no una cifra; y los <b>atributos</b> se dibujan como lista de lo que la propiedad tiene, sin mostrar lo que no tiene, porque en este mercado la ausencia de "planta eléctrica" no significa que no haya, significa que no lo declararon. Los campos marcados <span class="warn">◆</span> todavía no existen en la base.</p>
+
+<div class="dv-pair">
+
+<div class="dv-fr"><span class="dv-fcap">móvil 360</span>
+<div class="dv-card" id="10a" style="width:360px">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans)">
+
+<div style="display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;border-bottom:1px solid var(--line)">
+<a href="#10a" style="display:flex;align-items:center;min-height:44px;font-family:var(--meta);font-size:11px;color:var(--accent);text-decoration:none">← Resultados</a>
+<span style="font-family:var(--meta);font-weight:700;font-size:10px;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:var(--rs);background:var(--ink);color:var(--surface)">Dueño</span>
+</div>
+
+<div style="display:flex;gap:8px;padding:0 16px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x mandatory"><a href="#11b" style="position:relative;flex:none;display:block;width:328px;height:180px;background:var(--thumb);border-radius:var(--r);text-decoration:none;scroll-snap-align:center"><span style="position:absolute;left:10px;bottom:10px;font-family:var(--meta);font-size:9.5px;padding:2px 7px;border-radius:var(--rs);background:var(--surface);color:var(--soft)">Sala</span></a><a href="#11b" style="position:relative;flex:none;display:block;width:328px;height:180px;background:var(--thumb);border-radius:var(--r);text-decoration:none;scroll-snap-align:center"><span style="position:absolute;left:10px;bottom:10px;font-family:var(--meta);font-size:9.5px;padding:2px 7px;border-radius:var(--rs);background:var(--surface);color:var(--soft)">Habitación principal</span></a><a href="#11b" style="position:relative;flex:none;display:block;width:328px;height:180px;background:var(--thumb);border-radius:var(--r);text-decoration:none;scroll-snap-align:center"><span style="position:absolute;left:10px;bottom:10px;font-family:var(--meta);font-size:9.5px;padding:2px 7px;border-radius:var(--rs);background:var(--surface);color:var(--soft)">Cocina</span></a><a href="#11b" style="position:relative;flex:none;display:block;width:328px;height:180px;background:var(--thumb);border-radius:var(--r);text-decoration:none;scroll-snap-align:center"><span style="position:absolute;left:10px;bottom:10px;font-family:var(--meta);font-size:9.5px;padding:2px 7px;border-radius:var(--rs);background:var(--surface);color:var(--soft)">Baño</span></a><a href="#11b" style="position:relative;flex:none;display:block;width:328px;height:180px;background:var(--thumb);border-radius:var(--r);text-decoration:none;scroll-snap-align:center"><span style="position:absolute;left:10px;bottom:10px;font-family:var(--meta);font-size:9.5px;padding:2px 7px;border-radius:var(--rs);background:var(--surface);color:var(--soft)">Estacionamiento</span></a><a href="#11b" style="position:relative;flex:none;display:block;width:328px;height:180px;background:var(--thumb);border-radius:var(--r);text-decoration:none;scroll-snap-align:center"><span style="position:absolute;left:10px;bottom:10px;font-family:var(--meta);font-size:9.5px;padding:2px 7px;border-radius:var(--rs);background:var(--surface);color:var(--soft)">Fachada</span></a></div><div style="display:flex;justify-content:center;gap:5px;padding:10px 0 0"><span style="width:16px;height:5px;border-radius:99px;background:var(--accent)"></span><span style="width:5px;height:5px;border-radius:99px;background:var(--line)"></span><span style="width:5px;height:5px;border-radius:99px;background:var(--line)"></span><span style="width:5px;height:5px;border-radius:99px;background:var(--line)"></span><span style="width:5px;height:5px;border-radius:99px;background:var(--line)"></span><span style="width:5px;height:5px;border-radius:99px;background:var(--line)"></span></div>
+
+<div style="padding:18px 16px 0">
+<div style="font-family:var(--disp);font-weight:700;font-size:30px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em">$450<span style="font-family:var(--sans);font-size:13px;font-weight:400;color:var(--soft);letter-spacing:0"> / mes</span></div>
+<h1 style="margin:10px 0 0;font-size:17px;font-weight:600;line-height:1.35;text-wrap:pretty">Apartamento 2 habitaciones con puesto de estacionamiento</h1>
+<p style="margin:6px 0 0;font-family:var(--meta);font-size:11px;color:var(--soft)">Apartamento · Chacao · Distrito Capital</p>
+</div>
+
+<div style="display:flex;margin:18px 0 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+<div style="flex:1;padding:12px 4px;text-align:center;border-right:1px solid var(--line)"><div style="font-family:var(--disp);font-weight:700;font-size:17px">2</div><div style="font-family:var(--meta);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Hab</div></div>
+<div style="flex:1;padding:12px 4px;text-align:center;border-right:1px solid var(--line)"><div style="font-family:var(--disp);font-weight:700;font-size:17px">2</div><div style="font-family:var(--meta);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Baños</div></div>
+<div style="flex:1;padding:12px 4px;text-align:center;border-right:1px solid var(--line)"><div style="font-family:var(--disp);font-weight:700;font-size:17px">78</div><div style="font-family:var(--meta);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">m²</div></div>
+<div style="flex:1;padding:12px 4px;text-align:center"><div style="font-family:var(--disp);font-weight:700;font-size:17px">1</div><div style="font-family:var(--meta);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Puesto</div></div>
+</div>
+
+<div style="padding:18px 16px 0">
+<span style="display:block;font-family:var(--meta);font-weight:700;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">La propiedad tiene</span>
+<div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:9px 12px">
+<span style="display:flex;align-items:center;gap:8px;font-size:13.5px"><span style="flex:none;width:16px;height:16px;border-radius:4px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px">✓</span>Planta eléctrica</span>
+<span style="display:flex;align-items:center;gap:8px;font-size:13.5px"><span style="flex:none;width:16px;height:16px;border-radius:4px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px">✓</span>Agua regular</span>
+<span style="display:flex;align-items:center;gap:8px;font-size:13.5px"><span style="flex:none;width:16px;height:16px;border-radius:4px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px">✓</span>Vigilancia 24 h</span>
+<span style="display:flex;align-items:center;gap:8px;font-size:13.5px"><span style="flex:none;width:16px;height:16px;border-radius:4px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px">✓</span>Línea blanca</span>
+</div>
+<p style="margin:10px 0 0;font-family:var(--meta);font-size:10.5px;line-height:1.6;color:var(--soft)">Solo se lista lo declarado. No amoblado.</p>
+</div>
+
+<div style="padding:20px 16px 0">
+<span style="display:block;font-family:var(--meta);font-weight:700;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Descripción</span>
+<p style="margin:10px 0 0;font-size:15px;line-height:1.6;text-wrap:pretty">Edificio de 2007, piso 6 con ascensor y vigilancia las 24 horas. Tiene planta eléctrica y tanque propio, así que el agua llega todos los días. La cocina viene con línea blanca incluida. Un puesto de estacionamiento techado. Se piden dos meses de depósito y referencias laborales. A cinco minutos caminando de la plaza Chacao.</p>
+</div>
+
+<div style="margin:20px 16px 0;padding:16px;background:var(--bg);border-radius:var(--r)">
+<div style="display:flex;align-items:center;gap:11px">
+<span style="flex:none;width:40px;height:40px;border-radius:99px;background:var(--tint);border:1px solid var(--line)"></span>
+<span style="min-width:0"><span style="display:block;font-size:14px;font-weight:600">María F.</span><span style="display:block;font-family:var(--meta);font-size:10.5px;color:var(--soft)">publica como dueña · desde 2025</span></span>
+</div>
+<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+<span style="display:block;font-size:14px;font-weight:600">+58 4•• ••• ••••</span>
+<p style="margin:6px 0 12px;font-size:13px;line-height:1.5;color:var(--soft);text-wrap:pretty">Mostramos el WhatsApp a usuarios registrados. Pedimos la cuenta para frenar avisos falsos: es gratis y es un toque.</p>
+<a href="#10c" style="display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:15px;font-weight:600;text-decoration:none">Ver el WhatsApp</a>
+</div>
+</div>
+
+<div style="margin:16px;padding:14px;border:1px solid var(--line);border-radius:var(--r)">
+<p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--soft);text-wrap:pretty">Rentas no participa en la negociación. Visitá la propiedad y verificá quién es el dueño antes de entregar dinero.</p>
+</div>
+
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 16px 20px">
+<a href="#10a" style="display:flex;align-items:center;min-height:44px;font-size:12.5px;color:var(--soft);text-decoration:underline">Reportar este aviso</a>
+<span style="font-family:var(--meta);font-size:10px;color:var(--soft)">ID 84512 · vence 12 sep</span>
+</div>
+</div>
+</div>
+<ul class="dv-note"><li>solo la primera foto se carga con la página: ~40 KB</li><li>las otras cinco se cargan al deslizar · hasta ~240 KB si se recorren todas</li><li>tipo de propiedad junto a la ubicación, no en la tira de cifras</li></ul>
+</div>
+
+</div>
+
+<div class="dv-opt" id="10c">
+<div class="dv-olabel"><a class="dv-oid" href="#10c">10c</a>El bloque de contacto, en sus tres estados</div>
+<p class="dv-desc">Es lo único de la ficha que cambia según quién mira. El teléfono siempre se ve que existe: lo que cambia es si está completo.</p>
+<div class="dv-pair">
+
+<div class="dv-fr"><span class="dv-fcap">sin cuenta</span>
+<div class="dv-card" style="width:328px">
+<div style="padding:18px;background:var(--bg);font-family:var(--sans);color:var(--ink)">
+<div style="display:flex;align-items:center;gap:11px"><span style="flex:none;width:40px;height:40px;border-radius:99px;background:var(--tint);border:1px solid var(--line)"></span><span style="min-width:0"><span style="display:block;font-size:14px;font-weight:600">María F.</span><span style="display:block;font-family:var(--meta);font-size:10.5px;color:var(--soft)">publica como dueña · desde 2025</span></span></div>
+<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+<span style="display:block;font-size:14px;font-weight:600">+58 4•• ••• ••••</span>
+<p style="margin:6px 0 12px;font-size:13px;line-height:1.55;color:var(--soft)">Mostramos el WhatsApp a usuarios registrados. Es gratis y es un toque.</p>
+<a href="#10c" style="display:flex;align-items:center;justify-content:center;min-height:46px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:15px;font-weight:600;text-decoration:none">Ver el WhatsApp</a>
+</div>
+</div>
+</div></div>
+
+<div class="dv-fr"><span class="dv-fcap">con cuenta</span>
+<div class="dv-card" style="width:328px">
+<div style="padding:18px;background:var(--bg);font-family:var(--sans);color:var(--ink)">
+<div style="display:flex;align-items:center;gap:11px"><span style="flex:none;width:40px;height:40px;border-radius:99px;background:var(--tint);border:1px solid var(--line)"></span><span style="min-width:0"><span style="display:block;font-size:14px;font-weight:600">María F.</span><span style="display:block;font-family:var(--meta);font-size:10.5px;color:var(--soft)">publica como dueña · desde 2025</span></span></div>
+<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+<span style="display:flex;align-items:center;gap:8px;font-family:var(--disp);font-size:17px;font-weight:700;font-variant-numeric:tabular-nums">+58 412 555 0134</span>
+<p style="margin:6px 0 12px;font-family:var(--meta);font-size:10.5px;color:var(--soft)">verificado por WhatsApp el 19 ago</p>
+<a href="#10c" style="display:flex;align-items:center;justify-content:center;min-height:46px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:15px;font-weight:600;text-decoration:none">Escribir por WhatsApp</a>
+<a href="#10c" style="margin-top:8px;display:flex;align-items:center;justify-content:center;min-height:44px;font-size:13px;color:var(--soft);text-decoration:none">Copiar el número</a>
+</div>
+</div>
+</div></div>
+
+<div class="dv-fr"><span class="dv-fcap">aviso vencido</span>
+<div class="dv-card" style="width:328px">
+<div style="padding:18px;background:var(--bg);font-family:var(--sans);color:var(--ink)">
+<div style="padding:12px;border:1px dashed var(--rule);border-radius:var(--r);background:var(--surface)">
+<span style="display:block;font-family:var(--meta);font-weight:700;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Aviso vencido</span>
+<p style="margin:8px 0 0;font-size:13px;line-height:1.55;color:var(--soft);text-wrap:pretty">Venció el 12 de septiembre y el dueño no lo renovó. No mostramos el contacto de avisos vencidos.</p>
+</div>
+<a href="#10c" style="margin-top:14px;display:flex;align-items:center;justify-content:center;min-height:46px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:15px;font-weight:600;text-decoration:none">Ver 11 avisos activos en Chacao</a>
+</div>
+</div></div>
+
+</div>
+<ul class="dv-note"><li>el número existe en los tres estados: lo que cambia es si está completo</li><li>al abrirse muestra desde cuándo está verificado, no solo el número</li><li>el aviso vencido no es un callejón: lleva a la zona</li></ul>
+</div>
+
+<p style="margin:0;font:400 11.5px/1.7 system-ui,sans-serif;color:rgba(0,0,0,.5);max-width:800px">Tres cosas del inventario que hay que decidir antes de construir. <b class="warn">◆ Tipo de propiedad</b> no existe en la base: si se agrega, conviene que sea una lista cerrada de cinco valores y que aparezca también como filtro, o queda huérfano. <b class="warn">◆ Los atributos</b> tampoco existen salvo el puesto: son cinco booleanos, y sin ellos esta sección desaparece y la ficha pierde justamente lo que distingue a una propiedad de otra en este mercado. Y el <b>texto alternativo</b> compuesto al renderizar (título + zona + posición) es correcto para SEO y lectores de pantalla, pero conviene que el orden sea "Foto 2 de 6 — Apartamento 2 habitaciones, Chacao" y no al revés: quien navega con lector escucha primero la posición.</p>
+
+<div style="margin:36px 0 0;padding:18px 20px;border:1px solid rgba(0,0,0,.16);border-radius:10px;background:#fff;max-width:800px">
+<span style="display:block;font:700 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.06em;text-transform:uppercase;color:rgba(0,0,0,.45)">Rejilla y puntos de quiebre · vale para todas las pantallas</span>
+<p style="margin:10px 0 0;font:400 11.5px/1.7 system-ui,sans-serif;color:rgba(0,0,0,.62)">Todo lo de arriba está dibujado a <b>360</b> de ancho, que es el piso del mercado. Hasta 767 el diseño es fluido con márgenes de 16 y todo lo demás se mantiene. De 768 en adelante manda la versión de escritorio, con su contenedor fijo de 1100 que no se estira en ninguna pantalla más grande.</p>
+<div style="margin-top:12px;display:grid;grid-template-columns:120px 1fr;gap:6px 14px;font:400 11px/1.5 ui-monospace,Menlo,monospace;color:rgba(0,0,0,.6)">
+<span style="color:rgba(0,0,0,.4)">&lt; 768</span><span>versión móvil, fluida con márgenes de 16</span>
+<span style="color:rgba(0,0,0,.4)">768 – 1099</span><span>contenedor fluido, márgenes de 24 · <b style="color:#8a5a00">sin diseñar</b></span>
+<span style="color:rgba(0,0,0,.4)">1100 – ∞</span><span>contenedor fijo en 1100, centrado</span>
+<span style="color:rgba(0,0,0,.4)">1440 · 1920 · 4K</span><span>idéntico a 1280: solo crece el aire lateral</span>
+</div>
+<p style="margin:12px 0 0;font:400 11.5px/1.7 system-ui,sans-serif;color:rgba(0,0,0,.62)"><b>El contenedor no se estira nunca.</b> Lo que escala con el ancho es el número de columnas, no el tamaño de la tarjeta ni el ancho de un campo. En 4K tampoco se sirven fotos al doble de densidad: chocaría con el presupuesto de bytes.</p>
+</div>
+
+</section>
+</div>
+</x-dc>
+</body>
+</html>
