@@ -87,7 +87,27 @@ export function resolveZoneRoute<C extends RoutableCity, Z extends RoutableZone>
  * la zona y se indexa; con parámetros es una refinada, y las refinadas son
  * combinatorias.
  */
-const FILTER_KEYS = ["min", "max", "hab"] as const;
+export const FILTER_KEYS = [
+  // Los tres originales.
+  "min",
+  "max",
+  "hab",
+  // Zonas EXTRA sobre la que ya afirma la ruta: la query sólo puede ensanchar
+  // la búsqueda, y ensancharla la vuelve otra página.
+  "zona",
+  "tipo",
+  "pub",
+  // Los cinco atributos, con los nombres cortos del fundador (F12).
+  "planta",
+  "agua",
+  "amoblado",
+  "vigilancia",
+  "electro",
+  // **La paginación también.** La página 2 es contenido casi idéntico al de la
+  // 1, y no se pierde nada indexándola: va con `follow`, así que Google llega
+  // igual a cada ficha — y cada ficha está en el sitemap por su cuenta.
+  "pag",
+] as const;
 
 /**
  * Si esta ruta lleva filtros aplicados.

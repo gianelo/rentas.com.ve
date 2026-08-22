@@ -126,3 +126,45 @@ describe("resolveCityRoute", () => {
     expect(resolveCityRoute(CITIES, "   ")).toBeNull();
   });
 });
+
+/**
+ * **Los parámetros que llegaron después, y que nadie agregó acá.**
+ *
+ * `isFilteredZoneRoute` nació con `min`, `max` y `hab`, que eran todos los
+ * filtros que existían. Después llegaron el tipo de propiedad, el publicador,
+ * los cinco atributos, las zonas extra y la paginación — y ninguno marcaba la
+ * ruta como refinada. La consecuencia es silenciosa y cara: cada combinación
+ * se publica como una dirección indexable propia, y las combinaciones son
+ * combinatorias. Eso es contenido duplicado sobre el dominio entero, que es
+ * exactamente lo que la regla mecánica de la 14.24 existe para evitar.
+ */
+describe("isFilteredZoneRoute con los filtros que llegaron después", () => {
+  const NEW_FILTERS = [
+    "zona",
+    "tipo",
+    "pub",
+    "planta",
+    "agua",
+    "amoblado",
+    "vigilancia",
+    "electro",
+    "pag",
+  ];
+
+  for (const key of NEW_FILTERS) {
+    it(`reconoce \`${key}\` como refinamiento`, () => {
+      expect(isFilteredZoneRoute({ [key]: "algo" })).toBe(true);
+    });
+  }
+
+  it("sigue ignorando lo que viene pegado en un enlace compartido", () => {
+    // `utm_source` viaja en cada enlace que alguien pasa por WhatsApp. Contarlo
+    // como filtro sacaría la zona del índice de Google por compartirla.
+    expect(isFilteredZoneRoute({ utm_source: "whatsapp", fbclid: "x" })).toBe(false);
+  });
+
+  it("sigue ignorando un parámetro presente pero vacío", () => {
+    // Es lo que deja un formulario GET cuyo campo nadie llenó.
+    expect(isFilteredZoneRoute({ tipo: "", pag: "   " })).toBe(false);
+  });
+});
