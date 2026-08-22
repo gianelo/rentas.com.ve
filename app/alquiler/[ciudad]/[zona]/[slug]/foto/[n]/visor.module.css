@@ -1,0 +1,292 @@
+/* El visor de fotos (F27, tarea 16.27).
+
+   **La paleta de esta pantalla está deliberadamente FUERA del tema, y eso no
+   es un descuido que arreglar.** Una fotografía se mira sobre gris muy oscuro
+   y neutro: cualquier tinte compite con ella y le cambia la temperatura al
+   ojo. El visor es la única pantalla del producto cuyo contenido ES la
+   imagen, así que es la única que no puede tomar el color del tema — bajo
+   `menta` la foto quedaría sobre blanco.
+
+   Por eso acá no se usa ni un `--bg`, ni un `--ink`, ni un `--surface`: los
+   valores son los `--viewer-*` de src/styles/tokens.css, declarados en
+   `:root` justamente para que cambiar de tema no los repinte. Si alguien
+   viene a "corregirlos" a los tokens del tema, esto es lo que estaría
+   deshaciendo.
+
+   Las medidas y los tipos también salen de tokens (D16): ni un color, ni un
+   radio, ni un tamaño de letra escrito como literal. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  /* La pantalla completa: el visor no es un bloque dentro de la página, ES la
+     página. `dvh` y no `vh` porque en un móvil con la barra del navegador
+     visible `vh` deja la tira de miniaturas debajo del pliegue. */
+  min-height: 100dvh;
+  background: var(--viewer-bg);
+  color: var(--viewer-ink);
+}
+
+/* ---------- La barra superior: cerrar y el contador ---------- */
+
+.bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--viewer-bar-h);
+  padding: 0 10px;
+}
+
+.close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--target-min);
+  height: var(--target-min);
+  border-radius: var(--rs);
+  color: var(--viewer-ink);
+  font-size: var(--viewer-glyph-fs);
+  text-decoration: none;
+}
+
+.counter {
+  font-family: var(--meta);
+  font-size: var(--meta-fs);
+  /* Las cifras del contador no deben cambiar de ancho al pasar de foto: sin
+     esto, "1 / 6" y "4 / 6" mueven el texto un pixel en cada navegación. */
+  font-variant-numeric: tabular-nums;
+  color: var(--viewer-ink);
+}
+
+/* Equilibra la barra para que el contador quede centrado sin posicionarlo. */
+.balance {
+  width: var(--target-min);
+}
+
+/* ---------- La foto y sus dos enlaces ---------- */
+
+.stage {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  /* Sin esto, una foto vertical estira el contenedor y empuja el pie fuera de
+     la pantalla. */
+  min-height: 0;
+}
+
+.photo {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  /* `contain` y no `cover`: acá la foto es el contenido y recortarla sería
+     esconder justo lo que se vino a mirar. */
+  object-fit: contain;
+}
+
+/* **Zonas de toque anchas, no sólo la flecha.** Se navega con el pulgar sobre
+   el borde de la pantalla, y un blanco de 40px pedido a un pulgar en
+   movimiento se falla. La flecha visible marca dónde tocar; el enlace es todo
+   el costado. */
+.previous,
+.next {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  width: var(--viewer-tap-w);
+  text-decoration: none;
+}
+
+.previous {
+  left: 0;
+  padding-left: 10px;
+}
+
+.next {
+  right: 0;
+  justify-content: flex-end;
+  padding-right: 10px;
+}
+
+/* El nombre del control, presente para un lector de pantalla y ausente del
+   dibujo. Va como TEXTO dentro del enlace y no como `aria-label`: un enlace
+   cuyo único contenido es un glifo decorativo se anuncia vacío en cuanto algo
+   ignora el atributo, y "‹" no es un nombre. */
+.srOnly {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--viewer-arrow-size);
+  height: var(--viewer-arrow-size);
+  border-radius: var(--rs);
+  /* El disco es el propio fondo con transparencia: la flecha tiene que leerse
+     sobre una foto clara sin introducir un color que no está en la paleta. */
+  background: var(--viewer-scrim);
+  color: var(--viewer-ink);
+  font-size: var(--viewer-glyph-fs);
+}
+
+/* ---------- El pie de foto ---------- */
+
+.caption {
+  flex: none;
+  padding: 0 16px 12px;
+}
+
+.title {
+  display: block;
+  font-size: var(--viewer-title-fs);
+  font-weight: var(--ficha-title-fw);
+}
+
+.place {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--meta);
+  font-size: var(--viewer-meta-fs);
+  /* El texto tenue es un token, nunca una opacidad. */
+  color: var(--viewer-soft);
+}
+
+/* ---------- La tira de miniaturas: dónde estás dentro de las seis ---------- */
+
+.thumbs {
+  display: flex;
+  flex: none;
+  gap: 7px;
+  padding: 0 16px 14px;
+  overflow-x: auto;
+  /* La barra de scroll tapa el borde de la miniatura y no aporta nada donde se
+     arrastra con el dedo. */
+  scrollbar-width: none;
+  overscroll-behavior-inline: contain;
+}
+
+.thumb,
+.thumbCurrent {
+  flex: none;
+  display: block;
+  border-radius: var(--r-thumb);
+  overflow: hidden;
+}
+
+/* La foto que se está mirando lleva un borde, no una opacidad sobre las
+   demás: la marca tiene que sobrevivir a la escala de grises, y eso es
+   estructura y no color. */
+.thumbCurrent {
+  outline: 2px solid var(--viewer-ink);
+  outline-offset: 0;
+}
+
+.thumb {
+  outline: 1px solid var(--viewer-line);
+  outline-offset: 0;
+}
+
+.thumbImage {
+  display: block;
+  width: var(--viewer-thumb-w);
+  height: var(--viewer-thumb-h);
+  /* La derivada es 4:3 y el hueco 3:2: `cover` recorta, `fill` deformaría la
+     propiedad, que es peor que perder unos píxeles. */
+  object-fit: cover;
+}
+
+/* ---------- El pie: el precio no desaparece ---------- */
+
+.footer {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 18px;
+  border-top: 1px solid var(--viewer-line);
+}
+
+.priceBlock {
+  min-width: 0;
+}
+
+.price {
+  display: block;
+  font-family: var(--disp);
+  font-size: var(--viewer-price-fs);
+  font-weight: var(--ficha-price-fw);
+  font-variant-numeric: tabular-nums;
+}
+
+.perMonth {
+  display: block;
+  font-family: var(--meta);
+  font-size: var(--viewer-meta-fs);
+  color: var(--viewer-soft);
+}
+
+.exit {
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-height: var(--target-min);
+  padding: 0 18px;
+  border-radius: var(--r);
+  /* Invertido a propósito: es la única acción de la pantalla y el contraste
+     máximo contra el fondo es lo que la separa de la navegación entre fotos. */
+  background: var(--viewer-ink);
+  color: var(--viewer-bg);
+  font-size: var(--viewer-title-fs);
+  font-weight: var(--ficha-title-fw);
+  text-decoration: none;
+}
+
+/* **El foco se ve, y se ve sobre una fotografía.** El contorno es del color
+   del texto del visor y no del `--accent` del tema, por la misma razón que
+   todo lo demás en esta hoja. */
+.close:focus-visible,
+.previous:focus-visible,
+.next:focus-visible,
+.thumb:focus-visible,
+.thumbCurrent:focus-visible,
+.exit:focus-visible {
+  outline: 2px solid var(--viewer-ink);
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  /* En escritorio se navega con el teclado y con el ratón, no con el pulgar:
+     las zonas de toque siguen existiendo pero no necesitan comerse un tercio
+     del ancho de la foto. */
+  .previous,
+  .next {
+    width: var(--viewer-arrow-size);
+  }
+
+  .previous {
+    left: 10px;
+  }
+
+  .next {
+    right: 10px;
+  }
+
+  .title {
+    font-size: var(--ficha-title-fs-desktop);
+  }
+
+  .price {
+    font-size: var(--ficha-price-fs-desktop);
+  }
+}

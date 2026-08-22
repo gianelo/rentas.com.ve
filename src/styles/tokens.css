@@ -143,6 +143,46 @@
      número con algo que significa otra cosa es cómo un ajuste de miniatura
      termina moviendo los puntos. */
   --ficha-dot-size: 5px;
+  /* ---------- El visor de fotos (16.27) ----------
+
+     **Estos cuatro colores están FUERA del tema a propósito, y no es un
+     descuido que arreglar.** Una fotografía se mira sobre gris muy oscuro y
+     neutro: cualquier tinte compite con ella y le cambia la temperatura al
+     ojo. El visor es la única pantalla del producto cuyo contenido ES la
+     imagen, así que es la única que no puede tomar el color del tema — bajo
+     `menta` la foto quedaría sobre blanco y bajo cualquier paleta futura
+     sobre el color de esa paleta.
+
+     Por eso viven en `:root` y NO en `[data-theme="menta"]` /
+     `[data-theme="oscuro"]`: cambiar de tema no debe repintarlos. Ése es
+     también el motivo de que `scripts/lint-tokens.mjs` no los mire — su
+     contrato de tema compara esos dos bloques, y un valor declarado acá
+     queda deliberadamente fuera de esa comparación.
+
+     Si alguien viene dentro de seis meses a "corregirlos" a `--bg`/`--ink`,
+     esto es lo que estaría deshaciendo. */
+  --viewer-bg: #131517;
+  --viewer-ink: #f2f3f3;
+  --viewer-soft: rgba(242, 243, 243, 0.62);
+  --viewer-line: rgba(242, 243, 243, 0.24);
+  /* El disco detrás de la flecha. Es el propio fondo con transparencia, para
+     que la flecha se lea sobre una foto clara sin pintar un color nuevo. */
+  --viewer-scrim: rgba(19, 21, 23, 0.72);
+  /* Geometría del visor (16.26). La barra superior, las zonas de toque de
+     cada lado — 88px, anchas a propósito: se navega con el pulgar sobre el
+     borde — y la miniatura de la tira. */
+  --viewer-bar-h: 56px;
+  --viewer-tap-w: 88px;
+  --viewer-arrow-size: 40px;
+  --viewer-thumb-w: 84px;
+  --viewer-thumb-h: 56px;
+  --viewer-title-fs: 14px;
+  --viewer-price-fs: 20px;
+  --viewer-meta-fs: 10px;
+  /* Los glifos de navegación (‹ › ×). Un solo tamaño para los tres: son la
+     misma clase de control y separarlos sería inventar una diferencia. */
+  --viewer-glyph-fs: 16px;
+
   --title-fs: 20px;
   --title-fw: 700;
   --title-lh: 1.25;
