@@ -7,6 +7,8 @@ import {
   homeCollections,
 } from "./home-collections";
 import type { GridCover, GridListing } from "./listing-grid";
+import { slugify } from "./listing-url";
+import { resolveCityRoute } from "./zone-route";
 
 const CITIES = [
   { id: "dc", name: "Distrito Capital" },
@@ -341,5 +343,33 @@ describe("buildHome — lo que la tira no decide", () => {
     expect(home.strips[0]?.cards[0]?.href).toBe(
       "/alquiler/distrito-capital/altamira/apartamento-en-la-avenida-abc",
     );
+  });
+});
+
+/**
+ * **La placa del inicio y la ruta que la atiende, atadas.**
+ *
+ * Existe por la misma razón que `signin-return.test.ts`: lo que falla no es el
+ * render de ninguno de los dos lados, sino que **los dos usen la misma forma**.
+ * El inicio arma `/alquiler/<slug>` y la página de ciudad resuelve el segmento
+ * contra `slugify(nombre)`. Si alguien cambia una de las dos, la placa «Ver los
+ * 23» empieza a devolver 404 — y la pantalla se sigue dibujando perfecta.
+ */
+describe("la placa de ciudad cae en una ruta que resuelve", () => {
+  const CITIES = [
+    { id: "mar", name: "Maracaibo" },
+    { id: "dtto", name: "Distrito Capital" },
+  ];
+
+  it("el último segmento del enlace resuelve a la misma ciudad", () => {
+    for (const city of CITIES) {
+      const spec = homeCollections(CITIES).find(
+        (candidate) => candidate.href === `/alquiler/${slugify(city.name)}`,
+      );
+
+      expect(spec).toBeDefined();
+      const segment = (spec?.href ?? "").split("/").pop() ?? "";
+      expect(resolveCityRoute(CITIES, segment)?.id).toBe(city.id);
+    }
   });
 });
