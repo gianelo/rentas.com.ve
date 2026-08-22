@@ -39,9 +39,22 @@ y escritorio a 1280 con contenedor de 1100.
 | `Rentas - Entrar - Mobile.dc.html` | Entrar: página propia, hoja, y espera del enlace por correo |
 | `Rentas - Entrar - Desktop.dc.html` | Ídem, con diálogo de 460 px en vez de hoja |
 | `Rentas - Ficha - Mobile.dc.html` | Ficha del aviso y visor de fotos |
+| `Rentas - Ficha - Desktop.dc.html` | Ficha a 1280: dos columnas 640 + 1fr, contacto pegado, visor modal |
+| `Rentas - Lista y Filtros - Mobile.dc.html` | Inicio, acordeón de búsqueda de 4 pasos, resultados |
+| `Rentas - Lista y Filtros - Desktop.dc.html` | Ídem a 1280: panel de filtros de 3 columnas, barra lateral de 240 |
+| `Rentas - Publicar - Mobile.dc.html` | Publicar en nueve pasos, barra de progreso, revisión |
+| `Rentas - Publicar - Desktop.dc.html` | Ídem a 1280: riel de 9 pasos a la izquierda, columna de 520 |
+| `Rentas - Sistema.dc.html` | El sistema completo, renderizable |
+| `support.js` | El runtime que los `.dc.html` necesitan para renderizar |
 
-**Faltan por importar:** Ficha escritorio, Lista y Filtros (móvil y escritorio),
-Publicar (móvil y escritorio).
+**La importación está completa: las nueve pantallas del proyecto de Claude Design
+están acá.** Se bajaron el 2026-08-22 desde el proyecto
+`06d743b2-ca43-4694-849e-e6b2d9a51f61`.
+
+**`support.js` va en esta carpeta y no en otra**, porque cada `.dc.html` lo carga
+como `./support.js`. Es una copia byte a byte del de `reference/sistema/`; están
+duplicados a propósito, porque los dos grupos de artboards viven en carpetas
+distintas y un artboard sin su runtime al lado no abre.
 
 ### Puntos de quiebre, y valen para todas las pantallas
 
@@ -55,6 +68,25 @@ Publicar (móvil y escritorio).
 **El contenedor no se estira nunca.** Lo que escala con el ancho es el número de
 columnas, no el tamaño de la tarjeta ni el ancho de un campo. En 4K tampoco se
 sirven fotos al doble de densidad: chocaría con el presupuesto de bytes.
+
+---
+
+## `especificaciones/` — qué hace cada pantalla
+
+Los documentos funcionales del fundador, bajados del mismo proyecto. **Son la
+fuente de verdad de las reglas**; los `.dc.html` son la fuente de verdad de las
+medidas.
+
+| Archivo | Qué cubre |
+|---|---|
+| `Rentas - Flujos y funcionalidades.md` | **El documento maestro.** Mapa de pantallas, flujos A/B/C, F1–F31, rejilla, esquema de URLs, reglas transversales |
+| `Rentas - Ficha - Especificacion.md` | La ficha y el visor: estructura, R1–R7, galería, los tres estados del contacto, medidas |
+| `Rentas - Publicar - Especificacion.md` | Los nueve pasos, volver atrás, borrador, validación, colores |
+| `Rentas - UX movil.md` | F1–F15 de búsqueda. **Superado por `Flujos y funcionalidades.md`**, que lo dice en su primera línea. Se conserva por procedencia |
+
+**Dónde difieren, manda `Flujos y funcionalidades.md`.** Ejemplo concreto y ya
+resuelto en el código: `UX movil.md` escribe `/buscar?ciudad=…`, y el maestro lo
+reemplaza por `/alquiler/<ciudad>?zona=…`, que es el esquema que la 14.24 adoptó.
 
 ---
 

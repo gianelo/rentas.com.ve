@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><style>
+body{margin:0;background:#e9eae8;font-family:system-ui,sans-serif}
+a{color:#272343}a:hover{color:#1a1830}
+.mn *,.mn *::before,.mn *::after{box-sizing:border-box}
+.mn{--sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,monospace;--meta:var(--mono);--disp:var(--mono);--r:12px;--rs:999px;--surface:#FFFFFF;--bg:#F0F5F9;--line:#e1e4e6;--rule:#788189;--ink:#1E2022;--soft:#52616B;--accent:#272343;--acc-ink:#FFFFFF;--tint:#E3F6F5;--warn:#8a5a00;--thumb:repeating-linear-gradient(135deg,#BAE8E8 0 7px,#E3F6F5 7px 14px)}
+.dv-turn{padding:32px 44px 44px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 8px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-sub{margin:0 0 30px;font:400 12px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.55);max-width:820px}
+.dv-opt{display:flex;flex-direction:column;gap:12px;margin:0 0 44px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-opt:target .dv-oid{background:#1a1a1a;color:#fff}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:600 12px/1.3 system-ui,sans-serif;color:#1a1a1a}
+.dv-desc{margin:-2px 0 6px;font:400 11.5px/1.65 system-ui,sans-serif;color:rgba(0,0,0,.52);max-width:760px}
+.dv-row{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
+.dv-fr{display:flex;flex-direction:column;gap:6px}
+.dv-fcap{font:400 10px/1 ui-monospace,Menlo,monospace;color:rgba(0,0,0,.42)}
+.dv-card{background:#fff;border:1px solid rgba(0,0,0,.14);position:relative;overflow:hidden;border-radius:14px}
+.dv-note{font:400 10.5px/1.7 ui-monospace,Menlo,monospace;color:rgba(0,0,0,.5);margin:6px 0 0;padding:0;list-style:none;max-width:760px}
+.dv-note b{color:#1a1a1a}
+.warn{color:#8a5a00}
+</style></helmet>
+
+<div class="mn">
+<section class="dv-turn" id="t12">
+<div class="dv-thd"><a class="dv-tid" href="#t12">12</a><span class="dv-tname">Publicar · móvil 360 · una pregunta por pantalla</span></div>
+<p class="dv-sub">Nueve pasos de formulario, más revisar, verificar el teléfono y listo. Cada pantalla hace una pregunta, con titular de 24px y controles de 56px: se llena de pie, con una mano, sin leer instrucciones. El precio de esta estructura son doce pantallas, así que hay tres cosas que la sostienen: <b>el progreso siempre visible</b>, <b>volver atrás sin perder nada</b>, y <b>una pantalla de revisión antes de publicar</b>, porque nadie recuerda qué escribió nueve pasos atrás. Los campos marcados <b class="warn">◆</b> todavía no existen en la base.</p>
+
+<div class="dv-opt" id="12c">
+<div class="dv-olabel"><a class="dv-oid" href="#12c">12c</a>Los nueve pasos</div>
+<p class="dv-desc">La propiedad primero (pasos 1 a 8), la persona al final (paso 9). Ese orden es deliberado: quien entra a publicar quiere hablar de su apartamento, no de sí mismo, y pedirle los datos personales de arranque se lee como un registro.</p>
+<div class="dv-row">
+
+<div class="dv-fr"><span class="dv-fcap">1 · tipo</span>
+<div class="dv-card" style="width:360px">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans);min-height:580px;display:flex;flex-direction:column">
+<div style="height:52px;display:flex;align-items:center;gap:10px;padding:0 10px"><a href="#12c" style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:17px;text-decoration:none">←</a><span style="flex:1"></span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft);padding-right:6px">1 / 9</span></div>
+<div style="height:3px;background:var(--line)"><span style="display:block;width:11%;height:3px;background:var(--accent)"></span></div>
+<div style="flex:1;padding:26px 20px 0">
+<h1 style="margin:0;font-size:24px;font-weight:700;line-height:1.25;text-wrap:pretty">¿Qué vas a alquilar? <span class="warn" style="font-family:var(--meta);font-size:12px;font-weight:400">◆</span></h1>
+<div style="margin-top:22px;display:flex;flex-direction:column;gap:10px">
+<span style="min-height:56px;display:flex;align-items:center;padding:0 18px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:16px;font-weight:600">Apartamento</span>
+<span style="min-height:56px;display:flex;align-items:center;padding:0 18px;border-radius:var(--r);border:1px solid var(--rule);font-size:16px">Casa</span>
+<span style="min-height:56px;display:flex;align-items:center;padding:0 18px;border-radius:var(--r);border:1px solid var(--rule);font-size:16px">Quinta</span>
+<span style="min-height:56px;display:flex;align-items:center;padding:0 18px;border-radius:var(--r);border:1px solid var(--rule);font-size:16px">Anexo</span>
+<span style="min-height:56px;display:flex;align-items:center;padding:0 18px;border-radius:var(--r);border:1px solid var(--rule);font-size:16px">Habitación</span>
+</div>
+
+</div>
+<div style="padding:16px 20px 20px"><a href="#12c" style="display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:16px;font-weight:600;text-decoration:none">Seguir</a></div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">2 · zona</span>
+<div class="dv-card" style="width:360px">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans);min-height:580px;display:flex;flex-direction:column">
+<div style="height:52px;display:flex;align-items:center;gap:10px;padding:0 10px"><a href="#12c" style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:17px;text-decoration:none">←</a><span style="flex:1"></span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft);padding-right:6px">2 / 9</span></div>
+<div style="height:3px;background:var(--line)"><span style="display:block;width:22%;height:3px;background:var(--accent)"></span></div>
+<div style="flex:1;padding:26px 20px 0">
+<h1 style="margin:0;font-size:24px;font-weight:700;line-height:1.25;text-wrap:pretty">¿En qué zona queda?</h1>
+<div style="margin-top:18px;display:flex;align-items:center;gap:10px;min-height:56px;padding:0 16px;border-radius:var(--r);border:2px solid var(--accent)">
+<span style="flex:none;font-family:var(--meta);font-size:14px;color:var(--soft)">◎</span>
+<input type="text" value="alta" placeholder="Buscá tu zona" aria-label="Buscar zona" style="width:100%;align-self:stretch;border:0;outline:0;background:transparent;font-family:var(--sans);font-size:17px;color:var(--ink)">
+</div>
+
+<div style="height:14px"></div>
+<div style="max-height:238px;overflow-y:auto;display:flex;flex-direction:column">
+<label style="display:flex;align-items:center;gap:12px;min-height:58px;border-bottom:1px solid var(--line)"><span style="flex:none;width:22px;height:22px;border-radius:99px;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center"><span style="width:11px;height:11px;border-radius:99px;background:var(--accent)"></span></span><span style="flex:1;min-width:0"><span style="display:block;font-size:15.5px">Altamira</span><span style="display:block;font-family:var(--meta);font-size:10px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Municipio Chacao · Distrito Capital</span></span><span style="flex:none;font-family:var(--meta);font-size:10.5px;color:var(--soft)">9 avisos</span></label>
+<label style="display:flex;align-items:center;gap:12px;min-height:58px;border-bottom:1px solid var(--line)"><span style="flex:none;width:22px;height:22px;border-radius:99px;border:1px solid var(--rule);display:flex;align-items:center;justify-content:center"></span><span style="flex:1;min-width:0"><span style="display:block;font-size:15.5px">Alta Florida</span><span style="display:block;font-family:var(--meta);font-size:10px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Municipio Libertador · Distrito Capital</span></span><span style="flex:none;font-family:var(--meta);font-size:10.5px;color:var(--soft)">3 avisos</span></label>
+<label style="display:flex;align-items:center;gap:12px;min-height:58px;border-bottom:1px solid var(--line)"><span style="flex:none;width:22px;height:22px;border-radius:99px;border:1px solid var(--rule);display:flex;align-items:center;justify-content:center"></span><span style="flex:1;min-width:0"><span style="display:block;font-size:15.5px">Altavista</span><span style="display:block;font-family:var(--meta);font-size:10px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Municipio Libertador · Distrito Capital</span></span><span style="flex:none;font-family:var(--meta);font-size:10.5px;color:var(--soft)">1 aviso</span></label>
+<label style="display:flex;align-items:center;gap:12px;min-height:58px"><span style="flex:none;width:22px;height:22px;border-radius:99px;border:1px solid var(--rule);display:flex;align-items:center;justify-content:center"></span><span style="flex:1;min-width:0"><span style="display:block;font-size:15.5px">Altos de Sucre</span><span style="display:block;font-family:var(--meta);font-size:10px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Municipio Sucre · Distrito Capital</span></span><span style="flex:none;font-family:var(--meta);font-size:10.5px;color:var(--soft)">2 avisos</span></label>
+</div>
+<p style="margin:12px 0 0;font-family:var(--meta);font-size:10.5px;color:var(--soft)">¿No está la tuya? <a href="#12c" style="color:var(--accent)">Avisanos</a></p>
+
+<div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)">
+<label for="s-ref" style="display:block;font-size:15px;font-weight:600">Referencia <span style="font-family:var(--meta);font-size:11px;font-weight:400;color:var(--soft)">opcional · no se publica la dirección</span></label>
+<input id="s-ref" type="text" value="A dos calles de la plaza Altamira" placeholder="Una calle o algo conocido cerca" style="margin-top:10px;width:100%;min-height:52px;padding:0 16px;border-radius:var(--r);border:1px solid var(--rule);background:var(--surface);font-family:var(--sans);font-size:15px;color:var(--ink)">
+</div>
+</div>
+<div style="padding:16px 20px 20px"><a href="#12c" style="display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:16px;font-weight:600;text-decoration:none">Seguir</a></div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">3 · precio</span>
+<div class="dv-card" style="width:360px">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans);min-height:580px;display:flex;flex-direction:column">
+<div style="height:52px;display:flex;align-items:center;gap:10px;padding:0 10px"><a href="#12c" style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:17px;text-decoration:none">←</a><span style="flex:1"></span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft);padding-right:6px">3 / 9</span></div>
+<div style="height:3px;background:var(--line)"><span style="display:block;width:33%;height:3px;background:var(--accent)"></span></div>
+<div style="flex:1;padding:26px 20px 0">
+<h1 style="margin:0;font-size:24px;font-weight:700;line-height:1.25;text-wrap:pretty">¿Cuánto pedís al mes?</h1>
+<p style="margin:8px 0 0;font-size:14px;line-height:1.55;color:var(--soft)">En dólares, sin centavos.</p>
+<div style="margin-top:24px;display:flex;align-items:stretch;gap:10px;padding:0 18px;min-height:72px;border-radius:var(--r);border:2px solid var(--accent)">
+<span style="display:flex;align-items:center;font-family:var(--disp);font-weight:700;font-size:28px;color:var(--soft)">$</span>
+<input type="text" value="450" aria-label="Precio mensual" style="width:100%;align-self:stretch;border:0;outline:0;background:transparent;font-family:var(--disp);font-weight:700;font-size:36px;letter-spacing:-.02em;color:var(--ink)">
+</div>
+<div style="margin-top:20px;padding:15px;border-radius:var(--r);background:var(--bg)">
+<span style="display:block;font-family:var(--meta);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">En Chacao</span>
+<div style="margin-top:11px;display:flex;align-items:flex-end;gap:3px;height:44px">
+<span style="flex:1;height:24%;background:var(--line);border-radius:3px 3px 0 0"></span><span style="flex:1;height:48%;background:var(--line);border-radius:3px 3px 0 0"></span><span style="flex:1;height:82%;background:var(--accent);border-radius:3px 3px 0 0"></span><span style="flex:1;height:100%;background:var(--accent);border-radius:3px 3px 0 0"></span><span style="flex:1;height:66%;background:var(--line);border-radius:3px 3px 0 0"></span><span style="flex:1;height:34%;background:var(--line);border-radius:3px 3px 0 0"></span>
+</div>
+<p style="margin:11px 0 0;font-size:12.5px;line-height:1.5;color:var(--soft)">La mayoría pide entre $380 y $620. Tu precio está en el medio.</p>
+</div>
+</div>
+<div style="padding:16px 20px 20px"><a href="#12c" style="display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:16px;font-weight:600;text-decoration:none">Seguir</a></div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">4 · los cuatro números</span>
+<div class="dv-card" style="width:360px">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans);min-height:580px;display:flex;flex-direction:column">
+<div style="height:52px;display:flex;align-items:center;gap:10px;padding:0 10px"><a href="#12c" style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:17px;text-decoration:none">←</a><span style="flex:1"></span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft);padding-right:6px">4 / 9</span></div>
+<div style="height:3px;background:var(--line)"><span style="display:block;width:44%;height:3px;background:var(--accent)"></span></div>
+<div style="flex:1;padding:26px 20px 0">
+<h1 style="margin:0;font-size:24px;font-weight:700;line-height:1.25;text-wrap:pretty">¿Cómo es de grande?</h1>
+<div style="margin-top:22px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="font-size:16px">Habitaciones</span><span style="flex:none;display:flex;border-radius:var(--r);border:1px solid var(--rule);overflow:hidden"><span style="width:52px;min-height:52px;display:flex;align-items:center;justify-content:center;font-size:21px;border-right:1px solid var(--line)">−</span><span style="width:52px;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:18px;font-weight:700">2</span><span style="width:52px;min-height:52px;display:flex;align-items:center;justify-content:center;font-size:21px;border-left:1px solid var(--line)">+</span></span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="font-size:16px">Baños</span><span style="flex:none;display:flex;border-radius:var(--r);border:1px solid var(--rule);overflow:hidden"><span style="width:52px;min-height:52px;display:flex;align-items:center;justify-content:center;font-size:21px;border-right:1px solid var(--line)">−</span><span style="width:52px;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:18px;font-weight:700">2</span><span style="width:52px;min-height:52px;display:flex;align-items:center;justify-content:center;font-size:21px;border-left:1px solid var(--line)">+</span></span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="font-size:16px">Puestos de auto</span><span style="flex:none;display:flex;border-radius:var(--r);border:1px solid var(--rule);overflow:hidden"><span style="width:52px;min-height:52px;display:flex;align-items:center;justify-content:center;font-size:21px;border-right:1px solid var(--line)">−</span><span style="width:52px;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:18px;font-weight:700">1</span><span style="width:52px;min-height:52px;display:flex;align-items:center;justify-content:center;font-size:21px;border-left:1px solid var(--line)">+</span></span></div>
+<div><label for="s-m2" style="display:block;font-size:16px">Metros cuadrados</label><div style="margin-top:9px;display:flex;align-items:stretch;gap:8px;padding:0 16px;min-height:60px;border-radius:var(--r);border:1px solid var(--rule)"><input id="s-m2" type="text" value="78" style="width:100%;align-self:stretch;border:0;outline:0;background:transparent;font-family:var(--disp);font-weight:700;font-size:26px;color:var(--ink)"><span style="display:flex;align-items:center;font-size:15px;color:var(--soft)">m²</span></div></div>
+</div>
+<p style="margin:16px 0 0;font-family:var(--meta);font-size:10.5px;line-height:1.6;color:var(--soft)">Un estudio cuenta como 1 habitación. Si no tiene estacionamiento, dejalo en 0.</p>
+</div>
+<div style="padding:16px 20px 20px"><a href="#12c" style="display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:16px;font-weight:600;text-decoration:none">Seguir</a></div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">5 · atributos</span>
+<div class="dv-card" style="width:360px">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans);min-height:580px;display:flex;flex-direction:column">
+<div style="height:52px;display:flex;align-items:center;gap:10px;padding:0 10px"><a href="#12c" style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:17px;text-decoration:none">←</a><span style="flex:1"></span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft);padding-right:6px">5 / 9</span></div>
+<div style="height:3px;background:var(--line)"><span style="display:block;width:55%;height:3px;background:var(--accent)"></span></div>
+<div style="flex:1;padding:26px 20px 0">
+<h1 style="margin:0;font-size:24px;font-weight:700;line-height:1.25;text-wrap:pretty">¿Qué tiene? <span class="warn" style="font-family:var(--meta);font-size:12px;font-weight:400">◆</span></h1>
+<p style="margin:8px 0 0;font-size:14px;line-height:1.55;color:var(--soft)">Marcá lo que tenga. Lo que dejes sin marcar no se menciona en el aviso.</p>
+<div style="margin-top:20px;display:flex;flex-direction:column;gap:9px">
+<span style="min-height:56px;display:flex;align-items:center;gap:13px;padding:0 16px;border-radius:var(--r);background:var(--tint);border:1px solid var(--accent);font-size:16px;font-weight:600;color:var(--accent)"><span style="flex:none;width:22px;height:22px;border-radius:6px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Planta eléctrica</span>
+<span style="min-height:56px;display:flex;align-items:center;gap:13px;padding:0 16px;border-radius:var(--r);background:var(--tint);border:1px solid var(--accent);font-size:16px;font-weight:600;color:var(--accent)"><span style="flex:none;width:22px;height:22px;border-radius:6px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Agua regular</span>
+<span style="min-height:56px;display:flex;align-items:center;gap:13px;padding:0 16px;border-radius:var(--r);border:1px solid var(--rule);font-size:16px"><span style="flex:none;width:22px;height:22px;border-radius:6px;border:1px solid var(--rule)"></span>Amoblado</span>
+<span style="min-height:56px;display:flex;align-items:center;gap:13px;padding:0 16px;border-radius:var(--r);background:var(--tint);border:1px solid var(--accent);font-size:16px;font-weight:600;color:var(--accent)"><span style="flex:none;width:22px;height:22px;border-radius:6px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Vigilancia 24 h</span>
+<span style="min-height:56px;display:flex;align-items:center;gap:13px;padding:0 16px;border-radius:var(--r);border:1px solid var(--rule);font-size:16px"><span style="flex:none;width:22px;height:22px;border-radius:6px;border:1px solid var(--rule)"></span>Línea blanca</span>
+</div>
+</div>
+<div style="padding:16px 20px 20px"><a href="#12c" style="display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:16px;font-weight:600;text-decoration:none">Seguir</a><a href="#12c" style="margin-top:10px;display:flex;align-items:center;justify-content:center;min-height:44px;font-size:14px;color:var(--soft);text-decoration:none">No tiene ninguna de estas</a></div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">6 · título</span>
+<div class="dv-card" style="width:360px">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans);min-height:580px;display:flex;flex-direction:column">
+<div style="height:52px;display:flex;align-items:center;gap:10px;padding:0 10px"><a href="#12c" style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:17px;text-decoration:none">←</a><span style="flex:1"></span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft);padding-right:6px">6 / 9</span></div>
+<div style="height:3px;background:var(--line)"><span style="display:block;width:66%;height:3px;background:var(--accent)"></span></div>
+<div style="flex:1;padding:26px 20px 0">
+<h1 style="margin:0;font-size:24px;font-weight:700;line-height:1.25;text-wrap:pretty">Ponele un título</h1>
+<p style="margin:8px 0 0;font-size:14px;line-height:1.55;color:var(--soft)">Lo más importante primero. Es lo que se lee en la lista.</p>
+<div style="margin-top:20px;padding:14px 16px;border-radius:var(--r);border:2px solid var(--accent);min-height:88px"><span style="display:block;font-size:17px;line-height:1.4;font-weight:600">Apartamento 2 habitaciones con puesto</span></div>
+<div style="margin-top:8px;display:flex;align-items:baseline;justify-content:space-between"><span style="font-family:var(--meta);font-size:10.5px;color:var(--soft)">Sin mayúsculas sostenidas.</span><span style="font-family:var(--meta);font-size:10.5px;color:var(--soft);font-variant-numeric:tabular-nums">37 / 90</span></div>
+<div style="margin-top:22px;padding:15px;border-radius:var(--r);background:var(--bg)">
+<span style="display:block;font-family:var(--meta);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Así se va a ver</span>
+<div style="margin-top:12px;display:flex;gap:11px">
+<span style="flex:none;width:78px;height:59px;background:var(--thumb);border-radius:8px"></span>
+<span style="flex:1;min-width:0"><span style="display:block;font-family:var(--disp);font-weight:700;font-size:16px">$450</span><span style="display:block;margin-top:2px;font-size:13px;line-height:1.35">Apartamento 2 habitaciones con puesto</span><span style="display:block;margin-top:3px;font-family:var(--meta);font-size:10.5px;color:var(--soft)">Chacao · 2 hab · 78 m²</span></span>
+</div>
+</div>
+</div>
+<div style="padding:16px 20px 20px"><a href="#12c" style="display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:16px;font-weight:600;text-decoration:none">Seguir</a></div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">7 · descripción · el paso caro</span>
+<div class="dv-card" style="width:360px">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans);min-height:580px;display:flex;flex-direction:column">
+<div style="height:52px;display:flex;align-items:center;gap:10px;padding:0 10px"><a href="#12c" style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:17px;text-decoration:none">←</a><span style="flex:1"></span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft);padding-right:6px">7 / 9</span></div>
+<div style="height:3px;background:var(--line)"><span style="display:block;width:77%;height:3px;background:var(--accent)"></span></div>
+<div style="flex:1;padding:26px 20px 0">
+<h1 style="margin:0;font-size:24px;font-weight:700;line-height:1.25;text-wrap:pretty">Contá lo que no se ve en las fotos</h1>
+<div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:7px">
+<span style="min-height:36px;display:flex;align-items:center;padding:0 11px;border-radius:var(--rs);background:var(--bg);font-size:12.5px;color:var(--soft)">+ el agua</span>
+<span style="min-height:36px;display:flex;align-items:center;padding:0 11px;border-radius:var(--rs);background:var(--bg);font-size:12.5px;color:var(--soft)">+ el depósito</span>
+<span style="min-height:36px;display:flex;align-items:center;padding:0 11px;border-radius:var(--rs);background:var(--bg);font-size:12.5px;color:var(--soft)">+ qué hay cerca</span>
+<span style="min-height:36px;display:flex;align-items:center;padding:0 11px;border-radius:var(--rs);background:var(--bg);font-size:12.5px;color:var(--soft)">+ el edificio</span>
+</div>
+<div style="margin-top:14px;padding:14px 16px;border-radius:var(--r);border:2px solid var(--accent);height:176px"><span style="display:block;font-size:15px;line-height:1.55;color:var(--soft)">Edificio de 2007, piso 6 con ascensor y vigilancia. Tiene planta y tanque propio, el agua llega todos los días.</span></div>
+<div style="margin-top:11px"><div style="height:5px;border-radius:99px;background:var(--line)"><span style="display:block;width:88%;height:5px;border-radius:99px;background:var(--accent)"></span></div><div style="margin-top:8px;display:flex;align-items:baseline;justify-content:space-between"><span style="font-family:var(--meta);font-size:10.5px;color:var(--soft)">te faltan 14 caracteres</span><span style="font-family:var(--meta);font-size:10.5px;font-weight:700;color:var(--soft);font-variant-numeric:tabular-nums">106 / 120</span></div></div>
+</div>
+<div style="padding:16px 20px 20px"><span style="display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:var(--r);background:var(--line);color:var(--soft);font-size:16px;font-weight:600">Seguir</span></div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">8 · fotos</span>
+<div class="dv-card" style="width:360px">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans);min-height:580px;display:flex;flex-direction:column">
+<div style="height:52px;display:flex;align-items:center;gap:10px;padding:0 10px"><a href="#12c" style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:17px;text-decoration:none">←</a><span style="flex:1"></span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft);padding-right:6px">8 / 9</span></div>
+<div style="height:3px;background:var(--line)"><span style="display:block;width:88%;height:3px;background:var(--accent)"></span></div>
+<div style="flex:1;padding:26px 20px 0">
+<h1 style="margin:0;font-size:24px;font-weight:700;line-height:1.25;text-wrap:pretty">Subí las fotos</h1>
+<p style="margin:8px 0 0;font-size:14px;color:var(--soft)">Entre 1 y 6.</p>
+<div style="margin-top:18px;display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;gap:12px;align-items:center;padding:10px;border-radius:var(--r);border:1px solid var(--accent);background:var(--bg)">
+<span style="flex:none;position:relative;width:88px;height:66px;background:var(--thumb);border-radius:8px"><span style="position:absolute;left:5px;top:5px;font-family:var(--meta);font-weight:700;font-size:9px;padding:2px 6px;border-radius:var(--rs);background:var(--accent);color:var(--acc-ink)">PORTADA</span></span>
+<span style="flex:1;min-width:0"><span style="display:block;font-size:14px;font-weight:600">Sala comedor</span><span style="display:block;margin-top:3px;font-family:var(--meta);font-size:10.5px;color:var(--soft)">3,8 MB <b style="color:var(--accent)">→ 168 KB</b></span></span>
+<a href="#12e" style="flex:none;width:44px;height:44px;border-radius:99px;display:flex;align-items:center;justify-content:center;color:var(--soft);font-size:17px;text-decoration:none" aria-label="Opciones de la foto">⋯</a>
+</div>
+<div style="display:flex;gap:12px;align-items:center;padding:10px;border-radius:var(--r);border:1px solid var(--line)">
+<span style="flex:none;width:88px;height:66px;background:var(--thumb);border-radius:8px"></span>
+<span style="flex:1;min-width:0"><span style="display:block;font-size:14px;font-weight:600">Habitación principal</span><span style="display:block;margin-top:3px;font-family:var(--meta);font-size:10.5px;color:var(--soft)">2,4 MB <b style="color:var(--accent)">→ 141 KB</b></span></span>
+<a href="#12e" style="flex:none;width:44px;height:44px;border-radius:99px;display:flex;align-items:center;justify-content:center;color:var(--soft);font-size:17px;text-decoration:none" aria-label="Opciones de la foto">⋯</a>
+</div>
+<div style="display:flex;gap:12px;align-items:center;padding:10px;border-radius:var(--r);border:1px dashed var(--rule)">
+<span style="flex:none;width:88px;height:66px;background:var(--bg);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px;color:var(--soft)">42%</span>
+<span style="flex:1;min-width:0"><span style="display:block;font-size:14px;font-weight:600">Cocina</span><span style="display:block;margin-top:6px;height:4px;border-radius:99px;background:var(--line)"><span style="display:block;width:42%;height:4px;border-radius:99px;background:var(--accent)"></span></span></span>
+</div>
+</div>
+<div style="margin-top:11px;padding:14px;border-radius:var(--r);border:1px dashed var(--rule);display:flex;align-items:center;justify-content:center;gap:9px;min-height:56px">
+<span style="font-size:18px;color:var(--accent)">+</span><span style="font-size:15px;font-weight:600;color:var(--accent)">Agregar fotos</span><span style="font-family:var(--meta);font-size:10.5px;color:var(--soft)">3 de 6</span>
+</div>
+<p style="margin:14px 0 0;font-family:var(--meta);font-size:10.5px;color:var(--soft)">6,2 MB → <b style="color:var(--ink)">449 KB</b>. Las achicamos en tu teléfono.</p>
+</div>
+<div style="padding:16px 20px 20px"><a href="#12c" style="display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:16px;font-weight:600;text-decoration:none">Seguir</a></div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">9 · quién publica y contacto</span>
+<div class="dv-card" style="width:360px">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans);min-height:580px;display:flex;flex-direction:column">
+<div style="height:52px;display:flex;align-items:center;gap:10px;padding:0 10px"><a href="#12c" style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:17px;text-decoration:none">←</a><span style="flex:1"></span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft);padding-right:6px">9 / 9</span></div>
+<div style="height:3px;background:var(--accent)"></div>
+<div style="flex:1;padding:26px 20px 0">
+<h1 style="margin:0;font-size:24px;font-weight:700;line-height:1.25;text-wrap:pretty">¿Quién publica?</h1>
+<div style="margin-top:18px;display:flex;flex-direction:column;gap:10px">
+<span style="min-height:58px;display:flex;align-items:center;gap:13px;padding:0 16px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink)"><span style="flex:none;font-size:14px">◆</span><span style="font-size:16px;font-weight:600">Soy el dueño</span></span>
+<span style="min-height:58px;display:flex;align-items:center;gap:13px;padding:0 16px;border-radius:var(--r);border:1px solid var(--rule)"><span style="flex:none;font-size:14px">◇</span><span style="font-size:16px;font-weight:600">Inmobiliaria o corredor</span></span>
+</div>
+<p style="margin:11px 0 0;font-family:var(--meta);font-size:10.5px;line-height:1.6;color:var(--soft)">Aparece siempre en tu aviso y <b style="color:var(--ink)">no se puede cambiar después</b>.</p>
+
+<h2 style="margin:26px 0 0;font-size:18px;font-weight:700;line-height:1.3">¿Cómo te contactan?</h2>
+<div style="margin-top:12px;display:flex;gap:8px">
+<span style="flex:1;min-height:48px;display:flex;align-items:center;justify-content:center;border-radius:var(--r);background:var(--tint);border:1px solid var(--accent);color:var(--accent);font-size:14px;font-weight:600">WhatsApp</span>
+<span style="flex:1;min-height:48px;display:flex;align-items:center;justify-content:center;border-radius:var(--r);border:1px solid var(--rule);font-size:14px">Llamada</span>
+<span style="flex:1;min-height:48px;display:flex;align-items:center;justify-content:center;border-radius:var(--r);border:1px solid var(--rule);font-size:14px">Correo</span>
+</div>
+<div style="margin-top:10px;display:flex;align-items:stretch;gap:8px;padding:0 16px;min-height:56px;border-radius:var(--r);border:1px solid var(--rule)"><span style="display:flex;align-items:center;font-family:var(--disp);font-size:16px;color:var(--soft)">+58</span><input type="text" value="412 555 0134" aria-label="Número de WhatsApp" style="width:100%;align-self:stretch;border:0;outline:0;background:transparent;font-family:var(--disp);font-weight:700;font-size:18px;color:var(--ink)"></div>
+<p style="margin:9px 0 0;font-family:var(--meta);font-size:10.5px;color:var(--soft)">Tu aviso dirá “Escribir por WhatsApp”.</p>
+</div>
+<div style="padding:16px 20px 20px"><a href="#12c" style="display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:16px;font-weight:600;text-decoration:none">Revisar el aviso</a></div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">8 · menú de una foto</span>
+<div class="dv-card" id="12e" style="width:360px">
+<div style="position:relative;background:var(--surface);color:var(--ink);font-family:var(--sans);min-height:580px;display:flex;flex-direction:column">
+<div style="height:52px;display:flex;align-items:center;gap:10px;padding:0 10px"><span style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:17px">←</span><span style="flex:1"></span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft);padding-right:6px">8 / 9</span></div>
+<div style="height:3px;background:var(--line)"><span style="display:block;width:88%;height:3px;background:var(--accent)"></span></div>
+<div style="flex:1;padding:26px 20px 0">
+<h1 style="margin:0;font-size:24px;font-weight:700;line-height:1.25">Subí las fotos</h1>
+<p style="margin:8px 0 0;font-size:14px;color:var(--soft)">Entre 1 y 6.</p>
+<div style="margin-top:18px;display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;gap:12px;align-items:center;padding:10px;border-radius:var(--r);border:1px solid var(--accent);background:var(--bg)"><span style="flex:none;position:relative;width:88px;height:66px;background:var(--thumb);border-radius:8px"><span style="position:absolute;left:5px;top:5px;font-family:var(--meta);font-weight:700;font-size:9px;padding:2px 6px;border-radius:var(--rs);background:var(--accent);color:var(--acc-ink)">PORTADA</span></span><span style="flex:1;min-width:0"><span style="display:block;font-size:14px;font-weight:600">Sala comedor</span><span style="display:block;margin-top:3px;font-family:var(--meta);font-size:10.5px;color:var(--soft)">3,8 MB → 168 KB</span></span><span style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--soft);font-size:17px">⋯</span></div>
+<div style="display:flex;gap:12px;align-items:center;padding:10px;border-radius:var(--r);border:1px solid var(--line)"><span style="flex:none;position:relative;width:88px;height:66px;background:var(--thumb);border-radius:8px"></span><span style="flex:1;min-width:0"><span style="display:block;font-size:14px;font-weight:600">Habitación principal</span><span style="display:block;margin-top:3px;font-family:var(--meta);font-size:10.5px;color:var(--soft)">2,4 MB → 141 KB</span></span><span style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--soft);font-size:17px">⋯</span></div>
+<div style="display:flex;gap:12px;align-items:center;padding:10px;border-radius:var(--r);border:1px solid var(--line)"><span style="flex:none;position:relative;width:88px;height:66px;background:var(--thumb);border-radius:8px"></span><span style="flex:1;min-width:0"><span style="display:block;font-size:14px;font-weight:600">Cocina</span><span style="display:block;margin-top:3px;font-family:var(--meta);font-size:10.5px;color:var(--soft)">2,9 MB → 140 KB</span></span><span style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--soft);font-size:17px">⋯</span></div>
+</div>
+</div>
+<div style="position:absolute;inset:0;background:rgba(30,32,34,.5)"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:18px 18px 0 0;box-shadow:0 -8px 32px rgba(30,32,34,.28);padding:8px 0 12px">
+<div style="display:flex;justify-content:center;padding:6px 0 10px"><span style="width:40px;height:4px;border-radius:99px;background:var(--line)"></span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:0 20px 14px;border-bottom:1px solid var(--line)">
+<span style="flex:none;width:56px;height:42px;background:var(--thumb);border-radius:7px"></span>
+<span style="min-width:0"><span style="display:block;font-size:15px;font-weight:600">Habitación principal</span><span style="display:block;margin-top:2px;font-family:var(--meta);font-size:10.5px;color:var(--soft)">foto 2 de 3 · 141 KB</span></span>
+</div>
+<div style="display:flex;align-items:center;gap:14px;min-height:60px;padding:0 20px;border-bottom:1px solid var(--line)"><span style="flex:none;width:24px;text-align:center;font-size:15px;color:var(--accent)">◆</span><span style="min-width:0"><span style="display:block;font-size:16px;font-weight:600">Hacer portada</span><span style="display:block;margin-top:1px;font-family:var(--meta);font-size:10.5px;color:var(--soft)">se ve en la lista y arriba del aviso</span></span></div>
+<div style="display:flex;align-items:center;gap:14px;min-height:60px;padding:0 20px;border-bottom:1px solid var(--line)"><span style="flex:none;width:24px;text-align:center;font-size:15px;color:var(--accent)">↑</span><span style="min-width:0"><span style="display:block;font-size:16px;font-weight:600">Mover arriba</span></span></div>
+<div style="display:flex;align-items:center;gap:14px;min-height:60px;padding:0 20px;border-bottom:1px solid var(--line)"><span style="flex:none;width:24px;text-align:center;font-size:15px;color:var(--accent)">↓</span><span style="min-width:0"><span style="display:block;font-size:16px;font-weight:600">Mover abajo</span></span></div>
+<div style="display:flex;align-items:center;gap:14px;min-height:60px;padding:0 20px"><span style="flex:none;width:24px;text-align:center;font-size:15px;color:var(--warn)">×</span><span style="min-width:0"><span style="display:block;font-size:16px;font-weight:600;color:var(--warn)">Quitar del aviso</span><span style="display:block;margin-top:1px;font-family:var(--meta);font-size:10.5px;color:var(--soft)">no borra la foto de tu teléfono</span></span></div>
+<div style="padding:12px 20px 0"><span style="display:flex;align-items:center;justify-content:center;min-height:50px;border-radius:var(--r);border:1px solid var(--rule);font-size:15px;font-weight:600">Cancelar</span></div>
+</div>
+</div>
+</div>
+<ul class="dv-note"><li>una acción por fila, con nombre: nada que adivinar ni arrastrar</li><li>"quitar" aclara que no borra la foto del teléfono</li><li>60px por fila: se toca sin apuntar</li></ul>
+</div>
+
+</div>
+<ul class="dv-note"><li>titulares de 24px, controles de 52–64px: se llena de pie</li><li>la propiedad primero, la persona en el paso 9</li><li>paso 5 tiene salida explícita: "No tiene ninguna de estas"</li><li>paso 2 sin elegir ciudad: la zona la determina</li><li>autocompletado propio sobre lista cerrada, sin servicio externo</li><li>la dirección exacta no se pide: solo un punto de referencia opcional</li><li>paso 6 muestra la tarjeta real mientras se escribe el título</li><li>paso 8 sin arrastrar: menú <b>⋯</b> con acciones nombradas por foto</li><li>paso 7 convierte el mínimo de 120 en meta, no en castigo</li></ul>
+</div>
+
+<div class="dv-opt" id="12d">
+<div class="dv-olabel"><a class="dv-oid" href="#12d">12d</a>Revisar, verificar y listo</div>
+<p class="dv-desc">Las tres pantallas que esta estructura vuelve obligatorias. Después de nueve pasos nadie recuerda qué puso en el cuarto, así que revisar deja de ser un lujo. Y verificar el teléfono va <b>después</b> de revisar: pedir un código antes de que el aviso exista es pedir esfuerzo sin nada a cambio.</p>
+<div class="dv-row">
+
+<div class="dv-fr"><span class="dv-fcap">revisar</span>
+<div class="dv-card" style="width:360px">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans);min-height:580px;display:flex;flex-direction:column">
+<div style="height:52px;display:flex;align-items:center;gap:10px;padding:0 10px;border-bottom:1px solid var(--line)"><a href="#12c" style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:17px;text-decoration:none">←</a><span style="flex:1;font-size:15px;font-weight:600">Revisá tu aviso</span></div>
+<div style="flex:1;padding:18px 20px 0">
+<div style="display:flex;gap:12px">
+<span style="flex:none;width:96px;height:72px;background:var(--thumb);border-radius:8px"></span>
+<span style="flex:1;min-width:0"><span style="display:block;font-family:var(--disp);font-weight:700;font-size:20px">$450</span><span style="display:block;margin-top:3px;font-size:14px;line-height:1.35;font-weight:600">Apartamento 2 habitaciones con puesto</span></span>
+</div>
+<div style="margin-top:18px;display:flex;flex-direction:column">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;border-top:1px solid var(--line)"><span style="min-width:0"><span style="display:block;font-family:var(--meta);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Tipo y zona</span><span style="display:block;font-size:14.5px">Apartamento · Chacao</span></span><a href="#12c" style="flex:none;min-height:44px;display:flex;align-items:center;padding:0 4px;font-size:13px;color:var(--accent);text-decoration:none">Cambiar</a></div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;border-top:1px solid var(--line)"><span style="min-width:0"><span style="display:block;font-family:var(--meta);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Tamaño</span><span style="display:block;font-size:14.5px">2 hab · 2 baños · 78 m² · 1 puesto</span></span><a href="#12c" style="flex:none;min-height:44px;display:flex;align-items:center;padding:0 4px;font-size:13px;color:var(--accent);text-decoration:none">Cambiar</a></div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;border-top:1px solid var(--line)"><span style="min-width:0"><span style="display:block;font-family:var(--meta);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Tiene</span><span style="display:block;font-size:14.5px">Planta · agua regular · vigilancia</span></span><a href="#12c" style="flex:none;min-height:44px;display:flex;align-items:center;padding:0 4px;font-size:13px;color:var(--accent);text-decoration:none">Cambiar</a></div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;border-top:1px solid var(--line)"><span style="min-width:0"><span style="display:block;font-family:var(--meta);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Fotos</span><span style="display:block;font-size:14.5px">3 fotos · 449 KB</span></span><a href="#12c" style="flex:none;min-height:44px;display:flex;align-items:center;padding:0 4px;font-size:13px;color:var(--accent);text-decoration:none">Cambiar</a></div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)"><span style="min-width:0"><span style="display:block;font-family:var(--meta);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Publicás como</span><span style="display:block;font-size:14.5px">◆ Dueño · WhatsApp</span></span><a href="#12c" style="flex:none;min-height:44px;display:flex;align-items:center;padding:0 4px;font-size:13px;color:var(--accent);text-decoration:none">Cambiar</a></div>
+</div>
+<p style="margin:14px 0 0;font-family:var(--meta);font-size:10.5px;line-height:1.65;color:var(--soft)">Después de publicar podés editar todo, <b style="color:var(--ink)">menos si publicás como dueño o inmobiliaria</b>.</p>
+</div>
+<div style="padding:16px 20px 20px"><a href="#12d" style="display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:16px;font-weight:600;text-decoration:none">Publicar aviso</a></div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">verificar teléfono</span>
+<div class="dv-card" style="width:360px">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans);min-height:580px;display:flex;flex-direction:column">
+<div style="height:52px;display:flex;align-items:center;gap:10px;padding:0 10px"><a href="#12d" style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:17px;text-decoration:none">←</a><span style="flex:1"></span></div>
+<div style="flex:1;padding:22px 20px 0">
+<h1 style="margin:0;font-size:24px;font-weight:700;line-height:1.25;text-wrap:pretty">Confirmá tu WhatsApp</h1>
+<p style="margin:10px 0 0;font-size:14.5px;line-height:1.6;color:var(--soft);text-wrap:pretty">Te mandamos un código de 6 dígitos al <b style="color:var(--ink)">+58 412 555 0134</b>. Así los inquilinos saben que el número funciona.</p>
+<div style="margin-top:24px;display:flex;gap:8px">
+<span style="flex:1;height:64px;border-radius:var(--r);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:24px;font-weight:700">4</span>
+<span style="flex:1;height:64px;border-radius:var(--r);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:24px;font-weight:700">1</span>
+<span style="flex:1;height:64px;border-radius:var(--r);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:24px;font-weight:700">9</span>
+<span style="flex:1;height:64px;border-radius:var(--r);border:1px solid var(--rule);display:flex;align-items:center;justify-content:center"></span>
+<span style="flex:1;height:64px;border-radius:var(--r);border:1px solid var(--rule);display:flex;align-items:center;justify-content:center"></span>
+<span style="flex:1;height:64px;border-radius:var(--r);border:1px solid var(--rule);display:flex;align-items:center;justify-content:center"></span>
+</div>
+<div style="margin-top:20px;padding:15px;border-radius:var(--r);background:var(--bg)">
+<span style="display:block;font-size:13.5px;font-weight:600">Tu aviso ya está guardado</span>
+<p style="margin:6px 0 0;font-size:13px;line-height:1.55;color:var(--soft)">Si cerrás ahora, lo encontrás en Mis publicaciones como pendiente de verificar. No perdés nada.</p>
+</div>
+<span style="display:flex;align-items:center;justify-content:center;min-height:48px;margin-top:16px;font-family:var(--meta);font-size:12px;color:var(--soft)">Reenviar el código en 0:38</span>
+</div>
+<div style="padding:16px 20px 20px"><span style="display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:var(--r);background:var(--line);color:var(--soft);font-size:16px;font-weight:600">Verificar y publicar</span></div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">listo</span>
+<div class="dv-card" style="width:360px">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans);min-height:580px;display:flex;flex-direction:column">
+<div style="height:52px"></div>
+<div style="flex:1;padding:14px 20px 0;text-align:center">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:99px;background:var(--tint);font-size:26px;color:var(--accent)">✓</span>
+<h1 style="margin:20px 0 0;font-size:24px;font-weight:700;line-height:1.25;text-wrap:pretty">Tu aviso está activo</h1>
+<p style="margin:10px 0 0;font-size:14.5px;line-height:1.6;color:var(--soft);text-wrap:pretty">Queda publicado 30 días. Te avisamos por correo antes de que venza.</p>
+<div style="margin-top:24px;padding:14px;border-radius:var(--r);border:1px solid var(--line);text-align:left;display:flex;gap:12px">
+<span style="flex:none;width:88px;height:66px;background:var(--thumb);border-radius:8px"></span>
+<span style="flex:1;min-width:0"><span style="display:block;font-family:var(--disp);font-weight:700;font-size:17px">$450</span><span style="display:block;margin-top:2px;font-size:13px;line-height:1.35">Apartamento 2 habitaciones con puesto</span><span style="display:block;margin-top:4px;font-family:var(--meta);font-size:10px;color:var(--soft)">vence el 21 de septiembre</span></span>
+</div>
+<div style="margin-top:20px;padding:15px;border-radius:var(--r);background:var(--bg);text-align:left">
+<span style="display:block;font-size:13.5px;font-weight:600">Lo que sigue</span>
+<p style="margin:6px 0 0;font-size:13px;line-height:1.6;color:var(--soft)">Los interesados te escriben directo por WhatsApp. Rentas no participa en la negociación: visitá la propiedad y verificá con quién hablás antes de recibir dinero.</p>
+</div>
+</div>
+<div style="padding:16px 20px 20px;display:flex;flex-direction:column;gap:9px">
+<a href="#12c" style="display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:16px;font-weight:600;text-decoration:none">Ver mi aviso</a>
+<a href="#12c" style="display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:var(--r);border:1px solid var(--rule);font-size:15px;color:var(--ink);text-decoration:none">Publicar otra propiedad</a>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+<ul class="dv-note"><li>revisar con "Cambiar" por bloque: se vuelve al paso, no al principio</li><li>verificar va después de publicar el borrador: el aviso ya existe</li><li>"tu aviso ya está guardado" resuelve el caso de cerrar el navegador</li><li>la advertencia de negociación aparece acá, no solo en la ficha</li></ul>
+</div>
+
+<p style="margin:0;font:400 11.5px/1.75 system-ui,sans-serif;color:rgba(0,0,0,.5);max-width:820px">Tres decisiones que tomé al desplegar los pasos, y conviene que las revises. <b>El orden pone la propiedad antes que la persona:</b> quien entra a publicar quiere hablar de su apartamento, y pedirle sus datos en el paso 1 se lee como un registro. <b>Verificar el teléfono ocurre después de guardar el aviso</b>, no antes: así el que abandona en el código no pierde nada y aparece en Mis publicaciones como pendiente — eso resuelve el caso borde de cerrar el navegador a mitad de camino. <b>El borrador de 10 minutos no alcanza para nueve pasos:</b> con esta estructura hay que guardarlo del lado del servidor por paso, o subirlo a 30 minutos como mínimo.</p>
+
+<div style="margin:36px 0 0;padding:18px 20px;border:1px solid rgba(0,0,0,.16);border-radius:10px;background:#fff;max-width:800px">
+<span style="display:block;font:700 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.06em;text-transform:uppercase;color:rgba(0,0,0,.45)">Rejilla y puntos de quiebre · vale para todas las pantallas</span>
+<p style="margin:10px 0 0;font:400 11.5px/1.7 system-ui,sans-serif;color:rgba(0,0,0,.62)">Todo lo de arriba está dibujado a <b>360</b> de ancho, que es el piso del mercado. Hasta 767 el diseño es fluido con márgenes de 16 y todo lo demás se mantiene. De 768 en adelante manda la versión de escritorio, con su contenedor fijo de 1100 que no se estira en ninguna pantalla más grande.</p>
+<div style="margin-top:12px;display:grid;grid-template-columns:120px 1fr;gap:6px 14px;font:400 11px/1.5 ui-monospace,Menlo,monospace;color:rgba(0,0,0,.6)">
+<span style="color:rgba(0,0,0,.4)">&lt; 768</span><span>versión móvil, fluida con márgenes de 16</span>
+<span style="color:rgba(0,0,0,.4)">768 – 1099</span><span>contenedor fluido, márgenes de 24 · <b style="color:#8a5a00">sin diseñar</b></span>
+<span style="color:rgba(0,0,0,.4)">1100 – ∞</span><span>contenedor fijo en 1100, centrado</span>
+<span style="color:rgba(0,0,0,.4)">1440 · 1920 · 4K</span><span>idéntico a 1280: solo crece el aire lateral</span>
+</div>
+<p style="margin:12px 0 0;font:400 11.5px/1.7 system-ui,sans-serif;color:rgba(0,0,0,.62)"><b>El contenedor no se estira nunca.</b> Lo que escala con el ancho es el número de columnas, no el tamaño de la tarjeta ni el ancho de un campo. En 4K tampoco se sirven fotos al doble de densidad: chocaría con el presupuesto de bytes.</p>
+</div>
+
+</section>
+</div>
+</x-dc>
+</body>
+</html>

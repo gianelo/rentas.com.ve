@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><style>
+body{margin:0;background:#e9eae8;font-family:system-ui,sans-serif}
+a{color:#272343}a:hover{color:#1a1830}
+.mn *,.mn *::before,.mn *::after{box-sizing:border-box}
+.mn{--sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,monospace;--meta:var(--mono);--disp:var(--mono);--r:12px;--rs:999px;--surface:#FFFFFF;--bg:#F0F5F9;--line:#e1e4e6;--rule:#788189;--ink:#1E2022;--soft:#52616B;--accent:#272343;--acc-ink:#FFFFFF;--tint:#E3F6F5;--warn:#8a5a00;--thumb:repeating-linear-gradient(135deg,#BAE8E8 0 7px,#E3F6F5 7px 14px)}
+.dv-turn{padding:32px 44px 44px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 8px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-sub{margin:0 0 30px;font:400 12px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.55);max-width:820px}
+.dv-opt{display:flex;flex-direction:column;gap:12px;margin:0 0 44px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-opt:target .dv-oid{background:#1a1a1a;color:#fff}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:600 12px/1.3 system-ui,sans-serif;color:#1a1a1a}
+.dv-desc{margin:-2px 0 6px;font:400 11.5px/1.65 system-ui,sans-serif;color:rgba(0,0,0,.52);max-width:760px}
+.dv-col{display:flex;flex-direction:column;gap:26px}
+.dv-fr{display:flex;flex-direction:column;gap:6px}
+.dv-fcap{font:400 10px/1 ui-monospace,Menlo,monospace;color:rgba(0,0,0,.42)}
+.dv-card{background:#fff;border:1px solid rgba(0,0,0,.14);position:relative;overflow:hidden;border-radius:10px;width:1280px}
+.dv-note{font:400 10.5px/1.7 ui-monospace,Menlo,monospace;color:rgba(0,0,0,.5);margin:6px 0 0;padding:0;list-style:none;max-width:760px}
+.dv-note b{color:#1a1a1a}
+.warn{color:#8a5a00}
+</style></helmet>
+
+<div class="mn">
+<section class="dv-turn" id="t13">
+<div class="dv-thd"><a class="dv-tid" href="#t13">13</a><span class="dv-tname">Publicar · escritorio 1280 · contenedor 1100</span></div>
+<p class="dv-sub">Los mismos nueve pasos del móvil, más revisar, verificar y listo. Un cambio de fondo: en 1280 la barra de progreso fina se reemplaza por <b>la lista de los nueve pasos a la izquierda</b>, siempre visible. En un teléfono no hay lugar y hay que confiar en un porcentaje; acá se ve el mapa entero, se puede volver a cualquier paso ya hecho con un clic, y el formulario no se estira: vive en una columna de 520 px, porque un campo de precio de 1100 px no ayuda a nadie.</p>
+
+<div class="dv-opt" id="13a">
+<div class="dv-olabel"><a class="dv-oid" href="#13a">13a</a>Los nueve pasos</div>
+<p class="dv-desc">Riel de pasos a la izquierda, formulario a la derecha. El riel no es decoración: reemplaza el botón de volver del móvil, porque con mouse se espera poder saltar directo al paso 4 sin pasar por el 3.</p>
+<div class="dv-col">
+
+<div class="dv-fr"><span class="dv-fcap">1 · tipo</span>
+<div class="dv-card">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:72px;display:flex;align-items:center;gap:20px"><span style="flex:none;font-family:var(--mono);font-weight:700;font-size:19px;letter-spacing:-.02em">rentas</span><span style="flex:1;font-size:15px;font-weight:600">Publicar una propiedad</span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft)">Gratis · activo 30 días</span><a href="#13a" style="flex:none;width:38px;height:38px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:14px;text-decoration:none">×</a></div></div>
+<div style="width:1100px;margin:0 auto;padding:40px 0 56px;display:grid;grid-template-columns:240px 1fr;gap:60px;align-items:start">
+
+<div style="position:sticky;top:24px;display:flex;flex-direction:column;gap:2px">
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;font-weight:600"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px;font-weight:700">1</span>Tipo</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">2</span>Zona</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">3</span>Precio</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">4</span>Tamaño</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">5</span>Qué tiene</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">6</span>Título</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">7</span>Descripción</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">8</span>Fotos</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">9</span>Quién publica</span>
+</div>
+
+<div style="max-width:520px">
+<h1 style="margin:0;font-size:28px;font-weight:700;line-height:1.2;letter-spacing:-.01em">¿Qué vas a alquilar? <span class="warn" style="font-family:var(--meta);font-size:13px;font-weight:400">◆</span></h1>
+<div style="margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<span style="min-height:52px;display:flex;align-items:center;padding:0 18px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:15px;font-weight:600">Apartamento</span>
+<span style="min-height:52px;display:flex;align-items:center;padding:0 18px;border-radius:var(--r);border:1px solid var(--rule);font-size:15px">Casa</span>
+<span style="min-height:52px;display:flex;align-items:center;padding:0 18px;border-radius:var(--r);border:1px solid var(--rule);font-size:15px">Quinta</span>
+<span style="min-height:52px;display:flex;align-items:center;padding:0 18px;border-radius:var(--r);border:1px solid var(--rule);font-size:15px">Anexo</span>
+<span style="min-height:52px;display:flex;align-items:center;padding:0 18px;border-radius:var(--r);border:1px solid var(--rule);font-size:15px">Habitación</span>
+</div>
+<div style="margin-top:32px;display:flex;align-items:center;gap:14px"><a href="#13a" style="min-height:48px;display:flex;align-items:center;padding:0 30px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:15px;font-weight:600;text-decoration:none">Seguir</a><span style="font-family:var(--meta);font-size:10.5px;color:var(--soft)">o Enter</span></div>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">2 · zona</span>
+<div class="dv-card">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:72px;display:flex;align-items:center;gap:20px"><span style="flex:none;font-family:var(--mono);font-weight:700;font-size:19px;letter-spacing:-.02em">rentas</span><span style="flex:1;font-size:15px;font-weight:600">Publicar una propiedad</span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft)">Guardado</span><a href="#13a" style="flex:none;width:38px;height:38px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:14px;text-decoration:none">×</a></div></div>
+<div style="width:1100px;margin:0 auto;padding:40px 0 56px;display:grid;grid-template-columns:240px 1fr;gap:60px;align-items:start">
+
+<div style="position:sticky;top:24px;display:flex;flex-direction:column;gap:2px">
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Apartamento</a>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;font-weight:600"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px;font-weight:700">2</span>Zona</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">3</span>Precio</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">4</span>Tamaño</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">5</span>Qué tiene</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">6</span>Título</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">7</span>Descripción</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">8</span>Fotos</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">9</span>Quién publica</span>
+</div>
+
+<div style="max-width:520px">
+<h1 style="margin:0;font-size:28px;font-weight:700;line-height:1.2;letter-spacing:-.01em">¿En qué zona queda?</h1>
+<div style="margin-top:20px;display:flex;align-items:center;gap:10px;min-height:52px;padding:0 16px;border-radius:var(--r);border:2px solid var(--accent)">
+<span style="flex:none;font-family:var(--meta);font-size:13px;color:var(--soft)">◎</span>
+<input type="text" value="alta" placeholder="Buscá tu zona" aria-label="Buscar zona" style="width:100%;align-self:stretch;border:0;outline:0;background:transparent;font-family:var(--sans);font-size:16px;color:var(--ink)">
+</div>
+<div style="margin-top:6px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden">
+<label style="display:flex;align-items:center;gap:12px;min-height:52px;padding:0 16px;background:var(--bg);border-bottom:1px solid var(--line)"><span style="flex:none;width:20px;height:20px;border-radius:99px;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center"><span style="width:10px;height:10px;border-radius:99px;background:var(--accent)"></span></span><span style="flex:1;min-width:0;font-size:15px">Altamira <span style="font-family:var(--meta);font-size:10.5px;color:var(--soft)">Municipio Chacao · Distrito Capital</span></span><span style="flex:none;font-family:var(--meta);font-size:10.5px;color:var(--soft)">9</span></label>
+<label style="display:flex;align-items:center;gap:12px;min-height:52px;padding:0 16px;border-bottom:1px solid var(--line)"><span style="flex:none;width:20px;height:20px;border-radius:99px;border:1px solid var(--rule)"></span><span style="flex:1;min-width:0;font-size:15px">Alta Florida <span style="font-family:var(--meta);font-size:10.5px;color:var(--soft)">Municipio Libertador · Distrito Capital</span></span><span style="flex:none;font-family:var(--meta);font-size:10.5px;color:var(--soft)">3</span></label>
+<label style="display:flex;align-items:center;gap:12px;min-height:52px;padding:0 16px;border-bottom:1px solid var(--line)"><span style="flex:none;width:20px;height:20px;border-radius:99px;border:1px solid var(--rule)"></span><span style="flex:1;min-width:0;font-size:15px">Altavista <span style="font-family:var(--meta);font-size:10.5px;color:var(--soft)">Municipio Libertador · Distrito Capital</span></span><span style="flex:none;font-family:var(--meta);font-size:10.5px;color:var(--soft)">1</span></label>
+<label style="display:flex;align-items:center;gap:12px;min-height:52px;padding:0 16px"><span style="flex:none;width:20px;height:20px;border-radius:99px;border:1px solid var(--rule)"></span><span style="flex:1;min-width:0;font-size:15px">Altos de Sucre <span style="font-family:var(--meta);font-size:10.5px;color:var(--soft)">Municipio Sucre · Distrito Capital</span></span><span style="flex:none;font-family:var(--meta);font-size:10.5px;color:var(--soft)">2</span></label>
+</div>
+<p style="margin:10px 0 0;font-family:var(--meta);font-size:10.5px;color:var(--soft)">¿No está la tuya? <a href="#13a" style="color:var(--accent)">Avisanos</a></p>
+
+<div style="margin-top:26px">
+<label for="d-ref" style="display:block;font-size:14px;font-weight:600">Referencia <span style="font-family:var(--meta);font-size:11px;font-weight:400;color:var(--soft)">opcional · no se publica la dirección</span></label>
+<input id="d-ref" type="text" value="A dos calles de la plaza Altamira" style="margin-top:9px;width:100%;min-height:48px;padding:0 16px;border-radius:var(--r);border:1px solid var(--rule);background:var(--surface);font-family:var(--sans);font-size:15px;color:var(--ink)">
+</div>
+<div style="margin-top:30px;display:flex;align-items:center;gap:14px"><a href="#13a" style="min-height:48px;display:flex;align-items:center;padding:0 30px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:15px;font-weight:600;text-decoration:none">Seguir</a><a href="#13a" style="font-size:14px;color:var(--soft);text-decoration:none">Atrás</a></div>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">3 · precio</span>
+<div class="dv-card">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:72px;display:flex;align-items:center;gap:20px"><span style="flex:none;font-family:var(--mono);font-weight:700;font-size:19px;letter-spacing:-.02em">rentas</span><span style="flex:1;font-size:15px;font-weight:600">Publicar una propiedad</span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft)">Guardado</span><a href="#13a" style="flex:none;width:38px;height:38px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:14px;text-decoration:none">×</a></div></div>
+<div style="width:1100px;margin:0 auto;padding:40px 0 56px;display:grid;grid-template-columns:240px 1fr;gap:60px;align-items:start">
+
+<div style="position:sticky;top:24px;display:flex;flex-direction:column;gap:2px">
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Apartamento</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Altamira</a>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;font-weight:600"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px;font-weight:700">3</span>Precio</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">4</span>Tamaño</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">5</span>Qué tiene</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">6</span>Título</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">7</span>Descripción</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">8</span>Fotos</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">9</span>Quién publica</span>
+</div>
+
+<div style="max-width:520px">
+<h1 style="margin:0;font-size:28px;font-weight:700;line-height:1.2;letter-spacing:-.01em">¿Cuánto pedís al mes?</h1>
+<p style="margin:8px 0 0;font-size:14.5px;color:var(--soft)">En dólares, sin centavos.</p>
+<div style="margin-top:22px;display:flex;align-items:stretch;gap:10px;padding:0 18px;min-height:68px;max-width:280px;border-radius:var(--r);border:2px solid var(--accent)">
+<span style="display:flex;align-items:center;font-family:var(--disp);font-weight:700;font-size:26px;color:var(--soft)">$</span>
+<input type="text" value="450" aria-label="Precio mensual" style="width:100%;align-self:stretch;border:0;outline:0;background:transparent;font-family:var(--disp);font-weight:700;font-size:34px;letter-spacing:-.02em;color:var(--ink)">
+</div>
+<div style="margin-top:24px;padding:18px;border-radius:var(--r);background:var(--bg)">
+<span style="display:block;font-family:var(--meta);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Precios en Altamira</span>
+<div style="margin-top:12px;display:flex;align-items:flex-end;gap:4px;height:52px">
+<span style="flex:1;height:24%;background:var(--line);border-radius:3px 3px 0 0"></span><span style="flex:1;height:48%;background:var(--line);border-radius:3px 3px 0 0"></span><span style="flex:1;height:82%;background:var(--accent);border-radius:3px 3px 0 0"></span><span style="flex:1;height:100%;background:var(--accent);border-radius:3px 3px 0 0"></span><span style="flex:1;height:66%;background:var(--line);border-radius:3px 3px 0 0"></span><span style="flex:1;height:34%;background:var(--line);border-radius:3px 3px 0 0"></span><span style="flex:1;height:18%;background:var(--line);border-radius:3px 3px 0 0"></span><span style="flex:1;height:10%;background:var(--line);border-radius:3px 3px 0 0"></span>
+</div>
+<div style="margin-top:8px;display:flex;justify-content:space-between"><span style="font-family:var(--meta);font-size:10px;color:var(--soft)">$200</span><span style="font-family:var(--meta);font-size:10px;color:var(--soft)">$1000</span></div>
+<p style="margin:12px 0 0;font-size:13.5px;line-height:1.5;color:var(--soft)">La mayoría pide entre $380 y $620. Tu precio está en el medio.</p>
+</div>
+<div style="margin-top:30px;display:flex;align-items:center;gap:14px"><a href="#13a" style="min-height:48px;display:flex;align-items:center;padding:0 30px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:15px;font-weight:600;text-decoration:none">Seguir</a><a href="#13a" style="font-size:14px;color:var(--soft);text-decoration:none">Atrás</a></div>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">4 · tamaño</span>
+<div class="dv-card">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:72px;display:flex;align-items:center;gap:20px"><span style="flex:none;font-family:var(--mono);font-weight:700;font-size:19px;letter-spacing:-.02em">rentas</span><span style="flex:1;font-size:15px;font-weight:600">Publicar una propiedad</span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft)">Guardado</span><a href="#13a" style="flex:none;width:38px;height:38px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:14px;text-decoration:none">×</a></div></div>
+<div style="width:1100px;margin:0 auto;padding:40px 0 56px;display:grid;grid-template-columns:240px 1fr;gap:60px;align-items:start">
+
+<div style="position:sticky;top:24px;display:flex;flex-direction:column;gap:2px">
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Apartamento</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Altamira</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>$450 al mes</a>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;font-weight:600"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px;font-weight:700">4</span>Tamaño</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">5</span>Qué tiene</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">6</span>Título</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">7</span>Descripción</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">8</span>Fotos</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">9</span>Quién publica</span>
+</div>
+
+<div style="max-width:520px">
+<h1 style="margin:0;font-size:28px;font-weight:700;line-height:1.2;letter-spacing:-.01em">¿Cómo es de grande?</h1>
+<div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div><span style="display:block;font-size:14px;font-weight:600">Habitaciones</span><div style="margin-top:9px;display:flex;border-radius:var(--r);border:1px solid var(--rule);overflow:hidden"><span style="width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;font-size:19px;border-right:1px solid var(--line)">−</span><span style="flex:1;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:17px;font-weight:700">2</span><span style="width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;font-size:19px;border-left:1px solid var(--line)">+</span></div></div>
+<div><span style="display:block;font-size:14px;font-weight:600">Baños</span><div style="margin-top:9px;display:flex;border-radius:var(--r);border:1px solid var(--rule);overflow:hidden"><span style="width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;font-size:19px;border-right:1px solid var(--line)">−</span><span style="flex:1;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:17px;font-weight:700">2</span><span style="width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;font-size:19px;border-left:1px solid var(--line)">+</span></div></div>
+<div><span style="display:block;font-size:14px;font-weight:600">Puestos de auto</span><div style="margin-top:9px;display:flex;border-radius:var(--r);border:1px solid var(--rule);overflow:hidden"><span style="width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;font-size:19px;border-right:1px solid var(--line)">−</span><span style="flex:1;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:17px;font-weight:700">1</span><span style="width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;font-size:19px;border-left:1px solid var(--line)">+</span></div></div>
+<div><label for="d-m2" style="display:block;font-size:14px;font-weight:600">Metros cuadrados</label><div style="margin-top:9px;display:flex;align-items:stretch;gap:8px;padding:0 16px;min-height:50px;border-radius:var(--r);border:1px solid var(--rule)"><input id="d-m2" type="text" value="78" style="width:100%;align-self:stretch;border:0;outline:0;background:transparent;font-family:var(--disp);font-weight:700;font-size:20px;color:var(--ink)"><span style="display:flex;align-items:center;font-size:14px;color:var(--soft)">m²</span></div></div>
+</div>
+<p style="margin:16px 0 0;font-family:var(--meta);font-size:10.5px;color:var(--soft)">Un estudio cuenta como 1 habitación.</p>
+<div style="margin-top:30px;display:flex;align-items:center;gap:14px"><a href="#13a" style="min-height:48px;display:flex;align-items:center;padding:0 30px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:15px;font-weight:600;text-decoration:none">Seguir</a><a href="#13a" style="font-size:14px;color:var(--soft);text-decoration:none">Atrás</a></div>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">5 · qué tiene</span>
+<div class="dv-card">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:72px;display:flex;align-items:center;gap:20px"><span style="flex:none;font-family:var(--mono);font-weight:700;font-size:19px;letter-spacing:-.02em">rentas</span><span style="flex:1;font-size:15px;font-weight:600">Publicar una propiedad</span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft)">Guardado</span><a href="#13a" style="flex:none;width:38px;height:38px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:14px;text-decoration:none">×</a></div></div>
+<div style="width:1100px;margin:0 auto;padding:40px 0 56px;display:grid;grid-template-columns:240px 1fr;gap:60px;align-items:start">
+
+<div style="position:sticky;top:24px;display:flex;flex-direction:column;gap:2px">
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Apartamento</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Altamira</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>$450 al mes</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>2 hab · 78 m²</a>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;font-weight:600"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px;font-weight:700">5</span>Qué tiene</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">6</span>Título</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">7</span>Descripción</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">8</span>Fotos</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">9</span>Quién publica</span>
+</div>
+
+<div style="max-width:520px">
+<h1 style="margin:0;font-size:28px;font-weight:700;line-height:1.2;letter-spacing:-.01em">¿Qué tiene? <span class="warn" style="font-family:var(--meta);font-size:13px;font-weight:400">◆</span></h1>
+<p style="margin:8px 0 0;font-size:14.5px;line-height:1.5;color:var(--soft)">Lo que dejes sin marcar no se menciona en el aviso.</p>
+<div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<span style="min-height:52px;display:flex;align-items:center;gap:12px;padding:0 16px;border-radius:var(--r);background:var(--tint);border:1px solid var(--accent);font-size:15px;font-weight:600;color:var(--accent)"><span style="flex:none;width:20px;height:20px;border-radius:5px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-size:11px">✓</span>Planta eléctrica</span>
+<span style="min-height:52px;display:flex;align-items:center;gap:12px;padding:0 16px;border-radius:var(--r);background:var(--tint);border:1px solid var(--accent);font-size:15px;font-weight:600;color:var(--accent)"><span style="flex:none;width:20px;height:20px;border-radius:5px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-size:11px">✓</span>Agua regular</span>
+<span style="min-height:52px;display:flex;align-items:center;gap:12px;padding:0 16px;border-radius:var(--r);border:1px solid var(--rule);font-size:15px"><span style="flex:none;width:20px;height:20px;border-radius:5px;border:1px solid var(--rule)"></span>Amoblado</span>
+<span style="min-height:52px;display:flex;align-items:center;gap:12px;padding:0 16px;border-radius:var(--r);background:var(--tint);border:1px solid var(--accent);font-size:15px;font-weight:600;color:var(--accent)"><span style="flex:none;width:20px;height:20px;border-radius:5px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-size:11px">✓</span>Vigilancia 24 h</span>
+<span style="min-height:52px;display:flex;align-items:center;gap:12px;padding:0 16px;border-radius:var(--r);border:1px solid var(--rule);font-size:15px"><span style="flex:none;width:20px;height:20px;border-radius:5px;border:1px solid var(--rule)"></span>Línea blanca</span>
+</div>
+<div style="margin-top:30px;display:flex;align-items:center;gap:14px"><a href="#13a" style="min-height:48px;display:flex;align-items:center;padding:0 30px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:15px;font-weight:600;text-decoration:none">Seguir</a><a href="#13a" style="font-size:14px;color:var(--soft);text-decoration:none">No tiene ninguna</a></div>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">6 · título · con la tarjeta real al costado</span>
+<div class="dv-card">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:72px;display:flex;align-items:center;gap:20px"><span style="flex:none;font-family:var(--mono);font-weight:700;font-size:19px;letter-spacing:-.02em">rentas</span><span style="flex:1;font-size:15px;font-weight:600">Publicar una propiedad</span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft)">Guardado</span><a href="#13a" style="flex:none;width:38px;height:38px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:14px;text-decoration:none">×</a></div></div>
+<div style="width:1100px;margin:0 auto;padding:40px 0 56px;display:grid;grid-template-columns:240px 1fr 260px;gap:44px;align-items:start">
+
+<div style="position:sticky;top:24px;display:flex;flex-direction:column;gap:2px">
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Apartamento</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Altamira</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>$450 al mes</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>2 hab · 78 m²</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>3 atributos</a>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;font-weight:600"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px;font-weight:700">6</span>Título</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">7</span>Descripción</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">8</span>Fotos</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">9</span>Quién publica</span>
+</div>
+
+<div>
+<h1 style="margin:0;font-size:28px;font-weight:700;line-height:1.2;letter-spacing:-.01em">Ponele un título</h1>
+<p style="margin:8px 0 0;font-size:14.5px;line-height:1.5;color:var(--soft)">Lo más importante primero.</p>
+<div style="margin-top:20px;padding:14px 16px;border-radius:var(--r);border:2px solid var(--accent);min-height:72px"><span style="display:block;font-size:17px;line-height:1.4;font-weight:600">Apartamento 2 habitaciones con puesto</span></div>
+<div style="margin-top:8px;display:flex;align-items:baseline;justify-content:space-between"><span style="font-family:var(--meta);font-size:10.5px;color:var(--soft)">Sin mayúsculas sostenidas.</span><span style="font-family:var(--meta);font-size:10.5px;color:var(--soft);font-variant-numeric:tabular-nums">37 / 90</span></div>
+<div style="margin-top:30px;display:flex;align-items:center;gap:14px"><a href="#13a" style="min-height:48px;display:flex;align-items:center;padding:0 30px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:15px;font-weight:600;text-decoration:none">Seguir</a><a href="#13a" style="font-size:14px;color:var(--soft);text-decoration:none">Atrás</a></div>
+</div>
+
+<div style="position:sticky;top:24px">
+<span style="display:block;font-family:var(--meta);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Así se va a ver</span>
+<div style="margin-top:12px;padding:12px;border-radius:var(--r);border:1px solid var(--line)">
+<span style="display:block;width:100%;height:174px;background:var(--thumb);border-radius:8px"></span>
+<span style="display:block;margin-top:10px;font-family:var(--disp);font-weight:700;font-size:17px">$450</span>
+<span style="display:block;margin-top:3px;font-size:13.5px;line-height:1.35">Apartamento 2 habitaciones con puesto</span>
+<span style="display:block;margin-top:4px;font-family:var(--meta);font-size:10.5px;color:var(--soft)">Altamira · 2 hab · 78 m²</span>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">7 · descripción</span>
+<div class="dv-card">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:72px;display:flex;align-items:center;gap:20px"><span style="flex:none;font-family:var(--mono);font-weight:700;font-size:19px;letter-spacing:-.02em">rentas</span><span style="flex:1;font-size:15px;font-weight:600">Publicar una propiedad</span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft)">Guardado</span><a href="#13a" style="flex:none;width:38px;height:38px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:14px;text-decoration:none">×</a></div></div>
+<div style="width:1100px;margin:0 auto;padding:40px 0 56px;display:grid;grid-template-columns:240px 1fr;gap:60px;align-items:start">
+
+<div style="position:sticky;top:24px;display:flex;flex-direction:column;gap:2px">
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Apartamento</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Altamira</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>$450 al mes</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>2 hab · 78 m²</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>3 atributos</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Título</a>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;font-weight:600"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px;font-weight:700">7</span>Descripción</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">8</span>Fotos</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">9</span>Quién publica</span>
+</div>
+
+<div style="max-width:560px">
+<h1 style="margin:0;font-size:28px;font-weight:700;line-height:1.2;letter-spacing:-.01em">Contá lo que no se ve en las fotos</h1>
+<div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px">
+<span style="min-height:34px;display:flex;align-items:center;padding:0 12px;border-radius:var(--rs);background:var(--bg);font-size:12.5px;color:var(--soft)">+ el agua</span>
+<span style="min-height:34px;display:flex;align-items:center;padding:0 12px;border-radius:var(--rs);background:var(--bg);font-size:12.5px;color:var(--soft)">+ el depósito</span>
+<span style="min-height:34px;display:flex;align-items:center;padding:0 12px;border-radius:var(--rs);background:var(--bg);font-size:12.5px;color:var(--soft)">+ qué hay cerca</span>
+<span style="min-height:34px;display:flex;align-items:center;padding:0 12px;border-radius:var(--rs);background:var(--bg);font-size:12.5px;color:var(--soft)">+ el edificio</span>
+</div>
+<div style="margin-top:14px;padding:16px;border-radius:var(--r);border:2px solid var(--accent);height:168px"><span style="display:block;font-size:15px;line-height:1.6;color:var(--soft)">Edificio de 2007, piso 6 con ascensor y vigilancia. Tiene planta y tanque propio, el agua llega todos los días.</span></div>
+<div style="margin-top:11px"><div style="height:5px;border-radius:99px;background:var(--line)"><span style="display:block;width:88%;height:5px;border-radius:99px;background:var(--accent)"></span></div><div style="margin-top:8px;display:flex;align-items:baseline;justify-content:space-between"><span style="font-family:var(--meta);font-size:10.5px;color:var(--soft)">te faltan 14 caracteres</span><span style="font-family:var(--meta);font-size:10.5px;font-weight:700;color:var(--soft);font-variant-numeric:tabular-nums">106 / 120</span></div></div>
+<div style="margin-top:26px;display:flex;align-items:center;gap:14px"><span style="min-height:48px;display:flex;align-items:center;padding:0 30px;border-radius:var(--r);background:var(--line);color:var(--soft);font-size:15px;font-weight:600">Seguir</span><a href="#13a" style="font-size:14px;color:var(--soft);text-decoration:none">Atrás</a></div>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">8 · fotos · cuadrícula, no lista</span>
+<div class="dv-card">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:72px;display:flex;align-items:center;gap:20px"><span style="flex:none;font-family:var(--mono);font-weight:700;font-size:19px;letter-spacing:-.02em">rentas</span><span style="flex:1;font-size:15px;font-weight:600">Publicar una propiedad</span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft)">Guardado</span><a href="#13a" style="flex:none;width:38px;height:38px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:14px;text-decoration:none">×</a></div></div>
+<div style="width:1100px;margin:0 auto;padding:40px 0 56px;display:grid;grid-template-columns:240px 1fr;gap:60px;align-items:start">
+
+<div style="position:sticky;top:24px;display:flex;flex-direction:column;gap:2px">
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Apartamento</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Altamira</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>$450 al mes</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>2 hab · 78 m²</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>3 atributos</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Título</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Descripción</a>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;font-weight:600"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px;font-weight:700">8</span>Fotos</span>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--soft)"><span style="flex:none;width:24px;height:24px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px">9</span>Quién publica</span>
+</div>
+
+<div>
+<h1 style="margin:0;font-size:28px;font-weight:700;line-height:1.2;letter-spacing:-.01em">Subí las fotos</h1>
+<p style="margin:8px 0 0;font-size:14.5px;color:var(--soft)">Entre 1 y 6. Arrastralas acá o elegilas de tu computadora.</p>
+
+<div style="margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+<div style="position:relative"><span style="display:block;width:100%;height:158px;background:var(--thumb);border-radius:var(--r);border:2px solid var(--accent)"></span><span style="position:absolute;left:8px;top:8px;font-family:var(--meta);font-weight:700;font-size:9.5px;padding:3px 8px;border-radius:var(--rs);background:var(--accent);color:var(--acc-ink)">PORTADA</span><span style="position:absolute;right:8px;top:8px;width:30px;height:30px;border-radius:99px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--soft)">⋯</span><span style="display:block;margin-top:8px;font-family:var(--meta);font-size:10.5px;color:var(--soft)">3,8 MB → <b style="color:var(--ink)">168 KB</b></span></div>
+<div style="position:relative"><span style="display:block;width:100%;height:158px;background:var(--thumb);border-radius:var(--r);border:1px solid var(--line)"></span><span style="position:absolute;right:8px;top:8px;width:30px;height:30px;border-radius:99px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--soft)">⋯</span><span style="display:block;margin-top:8px;font-family:var(--meta);font-size:10.5px;color:var(--soft)">2,4 MB → <b style="color:var(--ink)">141 KB</b></span></div>
+<div style="position:relative"><span style="display:flex;align-items:center;justify-content:center;width:100%;height:158px;background:var(--bg);border-radius:var(--r);border:1px solid var(--line);font-family:var(--meta);font-size:12px;color:var(--soft)">42%</span><span style="display:block;margin-top:8px;height:4px;border-radius:99px;background:var(--line)"><span style="display:block;width:42%;height:4px;border-radius:99px;background:var(--accent)"></span></span></div>
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;width:100%;height:158px;border-radius:var(--r);border:1px dashed var(--rule)"><span style="font-size:20px;color:var(--accent)">+</span><span style="font-size:14px;font-weight:600;color:var(--accent)">Agregar</span><span style="font-family:var(--meta);font-size:10px;color:var(--soft)">3 de 6</span></div>
+</div>
+<p style="margin:16px 0 0;font-family:var(--meta);font-size:10.5px;color:var(--soft)">6,2 MB → <b style="color:var(--ink)">449 KB</b>. Las achicamos en tu navegador. Arrastrá para cambiar el orden.</p>
+<div style="margin-top:26px;display:flex;align-items:center;gap:14px"><a href="#13a" style="min-height:48px;display:flex;align-items:center;padding:0 30px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:15px;font-weight:600;text-decoration:none">Seguir</a><a href="#13a" style="font-size:14px;color:var(--soft);text-decoration:none">Atrás</a></div>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">9 · quién publica y contacto</span>
+<div class="dv-card">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:72px;display:flex;align-items:center;gap:20px"><span style="flex:none;font-family:var(--mono);font-weight:700;font-size:19px;letter-spacing:-.02em">rentas</span><span style="flex:1;font-size:15px;font-weight:600">Publicar una propiedad</span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft)">Guardado</span><a href="#13a" style="flex:none;width:38px;height:38px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:14px;text-decoration:none">×</a></div></div>
+<div style="width:1100px;margin:0 auto;padding:40px 0 56px;display:grid;grid-template-columns:240px 1fr;gap:60px;align-items:start">
+
+<div style="position:sticky;top:24px;display:flex;flex-direction:column;gap:2px">
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Apartamento</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Altamira</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>$450 al mes</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>2 hab · 78 m²</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>3 atributos</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Título</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Descripción</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>3 fotos</a>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;font-weight:600"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px;font-weight:700">9</span>Quién publica</span>
+</div>
+
+<div style="max-width:520px">
+<h1 style="margin:0;font-size:28px;font-weight:700;line-height:1.2;letter-spacing:-.01em">¿Quién publica?</h1>
+<div style="margin-top:20px;display:flex;gap:10px">
+<span style="flex:1;min-height:56px;display:flex;align-items:center;gap:12px;padding:0 16px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink)"><span style="flex:none;font-size:13px">◆</span><span style="font-size:15px;font-weight:600">Soy el dueño</span></span>
+<span style="flex:1;min-height:56px;display:flex;align-items:center;gap:12px;padding:0 16px;border-radius:var(--r);border:1px solid var(--rule)"><span style="flex:none;font-size:13px">◇</span><span style="font-size:15px;font-weight:600">Inmobiliaria</span></span>
+</div>
+<p style="margin:11px 0 0;font-family:var(--meta);font-size:10.5px;line-height:1.6;color:var(--soft)">Aparece siempre en tu aviso y <b style="color:var(--ink)">no se puede cambiar después</b>.</p>
+
+<h2 style="margin:32px 0 0;font-size:19px;font-weight:700;line-height:1.3">¿Cómo te contactan?</h2>
+<div style="margin-top:14px;display:flex;gap:9px">
+<span style="flex:1;min-height:46px;display:flex;align-items:center;justify-content:center;border-radius:var(--r);background:var(--tint);border:1px solid var(--accent);color:var(--accent);font-size:14px;font-weight:600">WhatsApp</span>
+<span style="flex:1;min-height:46px;display:flex;align-items:center;justify-content:center;border-radius:var(--r);border:1px solid var(--rule);font-size:14px">Llamada</span>
+<span style="flex:1;min-height:46px;display:flex;align-items:center;justify-content:center;border-radius:var(--r);border:1px solid var(--rule);font-size:14px">Correo</span>
+</div>
+<div style="margin-top:11px;display:flex;align-items:stretch;gap:8px;padding:0 16px;min-height:52px;max-width:300px;border-radius:var(--r);border:1px solid var(--rule)"><span style="display:flex;align-items:center;font-family:var(--disp);font-size:15px;color:var(--soft)">+58</span><input type="text" value="412 555 0134" aria-label="Número de WhatsApp" style="width:100%;align-self:stretch;border:0;outline:0;background:transparent;font-family:var(--disp);font-weight:700;font-size:17px;color:var(--ink)"></div>
+<p style="margin:9px 0 0;font-family:var(--meta);font-size:10.5px;color:var(--soft)">Tu aviso dirá “Escribir por WhatsApp”.</p>
+<div style="margin-top:30px;display:flex;align-items:center;gap:14px"><a href="#13b" style="min-height:48px;display:flex;align-items:center;padding:0 30px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:15px;font-weight:600;text-decoration:none">Revisar el aviso</a><a href="#13a" style="font-size:14px;color:var(--soft);text-decoration:none">Atrás</a></div>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">volviendo al paso 4 desde revisar</span>
+<div class="dv-card" id="13c">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:72px;display:flex;align-items:center;gap:20px"><span style="flex:none;font-family:var(--mono);font-weight:700;font-size:19px;letter-spacing:-.02em">rentas</span><span style="flex:1;font-size:15px;font-weight:600">Publicar una propiedad</span><span style="flex:none;font-family:var(--meta);font-size:11px;color:var(--soft)">Guardado</span><a href="#13a" style="flex:none;width:38px;height:38px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:14px;text-decoration:none">×</a></div></div>
+<div style="width:1100px;margin:0 auto;padding:40px 0 56px;display:grid;grid-template-columns:240px 1fr;gap:60px;align-items:start">
+
+<div style="position:sticky;top:24px;display:flex;flex-direction:column;gap:2px">
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Apartamento</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Altamira</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>$450 al mes</a>
+<span style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;font-weight:600"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--accent);color:var(--acc-ink);display:flex;align-items:center;justify-content:center;font-family:var(--meta);font-size:11px;font-weight:700">4</span>Tamaño</span>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>3 atributos</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Título</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Descripción</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>3 fotos</a>
+<a href="#13a" style="display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;color:var(--ink);text-decoration:none"><span style="flex:none;width:24px;height:24px;border-radius:99px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>Dueño · WhatsApp</a>
+<a href="#13b" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:flex;align-items:center;gap:12px;min-height:38px;font-size:14px;font-weight:600;color:var(--accent);text-decoration:none"><span style="flex:none;width:24px;text-align:center;font-size:13px">↩</span>Volver a revisar</a>
+</div>
+
+<div style="max-width:520px">
+<h1 style="margin:0;font-size:28px;font-weight:700;line-height:1.2;letter-spacing:-.01em">¿Cómo es de grande?</h1>
+<div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div><span style="display:block;font-size:14px;font-weight:600">Habitaciones</span><div style="margin-top:9px;display:flex;border-radius:var(--r);border:1px solid var(--rule);overflow:hidden"><span style="width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;font-size:19px;border-right:1px solid var(--line)">−</span><span style="flex:1;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:17px;font-weight:700">3</span><span style="width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;font-size:19px;border-left:1px solid var(--line)">+</span></div></div>
+<div><span style="display:block;font-size:14px;font-weight:600">Baños</span><div style="margin-top:9px;display:flex;border-radius:var(--r);border:1px solid var(--rule);overflow:hidden"><span style="width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;font-size:19px;border-right:1px solid var(--line)">−</span><span style="flex:1;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:17px;font-weight:700">2</span><span style="width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;font-size:19px;border-left:1px solid var(--line)">+</span></div></div>
+<div><span style="display:block;font-size:14px;font-weight:600">Puestos de auto</span><div style="margin-top:9px;display:flex;border-radius:var(--r);border:1px solid var(--rule);overflow:hidden"><span style="width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;font-size:19px;border-right:1px solid var(--line)">−</span><span style="flex:1;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:17px;font-weight:700">1</span><span style="width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;font-size:19px;border-left:1px solid var(--line)">+</span></div></div>
+<div><label for="d3-m2" style="display:block;font-size:14px;font-weight:600">Metros cuadrados</label><div style="margin-top:9px;display:flex;align-items:stretch;gap:8px;padding:0 16px;min-height:50px;border-radius:var(--r);border:1px solid var(--rule)"><input id="d3-m2" type="text" value="78" style="width:100%;align-self:stretch;border:0;outline:0;background:transparent;font-family:var(--disp);font-weight:700;font-size:20px;color:var(--ink)"><span style="display:flex;align-items:center;font-size:14px;color:var(--soft)">m²</span></div></div>
+</div>
+<div style="margin-top:20px;padding:14px 16px;border-radius:var(--r);background:var(--bg);display:flex;align-items:center;gap:12px">
+<span style="flex:none;font-size:14px;color:var(--accent)">↩</span>
+<span style="font-size:13.5px;line-height:1.5;color:var(--soft)">Cambiaste habitaciones de 2 a 3. El resto del aviso quedó como estaba.</span>
+</div>
+<div style="margin-top:26px;display:flex;align-items:center;gap:14px">
+<a href="#13b" style="min-height:48px;display:flex;align-items:center;padding:0 30px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:15px;font-weight:600;text-decoration:none">Guardar y volver a revisar</a>
+<a href="#13b" style="font-size:14px;color:var(--soft);text-decoration:none">Descartar el cambio</a>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+<ul class="dv-note"><li>volver no borra lo que sigue: los nueve pasos siguen hechos</li><li>el botón cambia de "Seguir" a <b>"Guardar y volver a revisar"</b></li><li>"Volver a revisar" fijo al pie del riel: no hay que recorrer de nuevo</li><li>se dice qué cambió, para que nadie dude si se guardó</li></ul>
+</div>
+
+</div>
+<ul class="dv-note"><li>el riel de nueve pasos reemplaza la barra de progreso: se ve el mapa entero</li><li>cada paso hecho muestra <b>su valor</b>, no su número, y es un enlace</li><li>formulario en 520 px: el campo de precio se acota a 280</li><li>paso 6 pone la tarjeta real en una tercera columna</li><li>paso 8 pasa de lista a cuadrícula de 3: hay ancho para verlas</li><li>los pasos por delante no son enlaces: no se salta a lo no contestado</li></ul>
+</div>
+
+<div class="dv-opt" id="13b">
+<div class="dv-olabel"><a class="dv-oid" href="#13b">13b</a>Revisar, verificar y listo</div>
+<p class="dv-desc">Sin riel: acá ya no hay pasos que recorrer. Revisar usa las dos columnas para poner el aviso como se va a ver al lado de los datos, que es lo que en móvil no cabe.</p>
+<div class="dv-col">
+
+<div class="dv-fr"><span class="dv-fcap">revisar</span>
+<div class="dv-card">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:72px;display:flex;align-items:center;gap:20px"><span style="flex:none;font-family:var(--mono);font-weight:700;font-size:19px;letter-spacing:-.02em">rentas</span><span style="flex:1;font-size:15px;font-weight:600">Revisá tu aviso</span><a href="#13a" style="flex:none;font-size:13.5px;color:var(--accent);text-decoration:none">Volver al formulario</a></div></div>
+<div style="width:1100px;margin:0 auto;padding:40px 0 56px;display:grid;grid-template-columns:1fr 380px;gap:56px;align-items:start">
+
+<div>
+<div style="display:flex;flex-direction:column">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:56px;border-bottom:1px solid var(--line)"><span style="min-width:0"><span style="display:block;font-family:var(--meta);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Tipo y zona</span><span style="display:block;font-size:15px">Apartamento · Altamira, Distrito Capital</span></span><a href="#13a" style="flex:none;min-height:40px;display:flex;align-items:center;padding:0 6px;font-size:13.5px;color:var(--accent);text-decoration:none">Cambiar</a></div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:56px;border-bottom:1px solid var(--line)"><span style="min-width:0"><span style="display:block;font-family:var(--meta);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Precio</span><span style="display:block;font-size:15px">$450 al mes</span></span><a href="#13a" style="flex:none;min-height:40px;display:flex;align-items:center;padding:0 6px;font-size:13.5px;color:var(--accent);text-decoration:none">Cambiar</a></div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:56px;border-bottom:1px solid var(--line)"><span style="min-width:0"><span style="display:block;font-family:var(--meta);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Tamaño</span><span style="display:block;font-size:15px">2 hab · 2 baños · 78 m² · 1 puesto</span></span><a href="#13a" style="flex:none;min-height:40px;display:flex;align-items:center;padding:0 6px;font-size:13.5px;color:var(--accent);text-decoration:none">Cambiar</a></div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:56px;border-bottom:1px solid var(--line)"><span style="min-width:0"><span style="display:block;font-family:var(--meta);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Tiene</span><span style="display:block;font-size:15px">Planta eléctrica · agua regular · vigilancia 24 h</span></span><a href="#13a" style="flex:none;min-height:40px;display:flex;align-items:center;padding:0 6px;font-size:13.5px;color:var(--accent);text-decoration:none">Cambiar</a></div>
+<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)"><span style="min-width:0"><span style="display:block;font-family:var(--meta);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Descripción</span><span style="display:block;margin-top:3px;font-size:14.5px;line-height:1.55;color:var(--soft);max-width:520px">Edificio de 2007, piso 6 con ascensor y vigilancia. Tiene planta y tanque propio, el agua llega todos los días.</span></span><a href="#13a" style="flex:none;min-height:40px;display:flex;align-items:center;padding:0 6px;font-size:13.5px;color:var(--accent);text-decoration:none">Cambiar</a></div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:56px;border-bottom:1px solid var(--line)"><span style="min-width:0"><span style="display:block;font-family:var(--meta);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Fotos</span><span style="display:block;font-size:15px">3 fotos · 449 KB</span></span><a href="#13a" style="flex:none;min-height:40px;display:flex;align-items:center;padding:0 6px;font-size:13.5px;color:var(--accent);text-decoration:none">Cambiar</a></div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:56px;border-bottom:1px solid var(--line)"><span style="min-width:0"><span style="display:block;font-family:var(--meta);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Publicás como</span><span style="display:block;font-size:15px">◆ Dueño · WhatsApp +58 412 555 0134</span></span><a href="#13a" style="flex:none;min-height:40px;display:flex;align-items:center;padding:0 6px;font-size:13.5px;color:var(--accent);text-decoration:none">Cambiar</a></div>
+</div>
+<p style="margin:16px 0 0;font-family:var(--meta);font-size:10.5px;line-height:1.65;color:var(--soft)">Podés editar todo después de publicar, <b style="color:var(--ink)">menos si publicás como dueño o inmobiliaria</b>.</p>
+<div style="margin-top:26px"><a href="#13b" style="min-height:50px;display:inline-flex;align-items:center;padding:0 34px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:15.5px;font-weight:600;text-decoration:none">Publicar aviso</a></div>
+</div>
+
+<div style="position:sticky;top:24px">
+<span style="display:block;font-family:var(--meta);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)">Así lo van a ver</span>
+<div style="margin-top:12px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden">
+<span style="display:block;width:100%;height:214px;background:var(--thumb)"></span>
+<div style="padding:16px">
+<span style="display:inline-flex;font-family:var(--meta);font-weight:700;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:var(--rs);background:var(--ink);color:var(--surface)">Dueño</span>
+<span style="display:block;margin-top:10px;font-family:var(--disp);font-weight:700;font-size:26px;letter-spacing:-.02em">$450</span>
+<span style="display:block;margin-top:6px;font-size:15px;line-height:1.35;font-weight:600">Apartamento 2 habitaciones con puesto</span>
+<span style="display:block;margin-top:5px;font-family:var(--meta);font-size:11px;color:var(--soft)">Altamira · 2 hab · 78 m²</span>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">verificar teléfono</span>
+<div class="dv-card">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:72px;display:flex;align-items:center"><span style="font-family:var(--mono);font-weight:700;font-size:19px;letter-spacing:-.02em">rentas</span></div></div>
+<div style="width:1100px;margin:0 auto;padding:64px 0 80px;display:flex;justify-content:center">
+<div style="width:480px">
+<h1 style="margin:0;font-size:28px;font-weight:700;line-height:1.2;letter-spacing:-.01em">Confirmá tu WhatsApp</h1>
+<p style="margin:12px 0 0;font-size:15px;line-height:1.6;color:var(--soft);text-wrap:pretty">Te mandamos un código de 6 dígitos al <b style="color:var(--ink)">+58 412 555 0134</b>. Así los inquilinos saben que el número funciona.</p>
+<div style="margin-top:28px;display:flex;gap:10px">
+<span style="flex:1;height:64px;border-radius:var(--r);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:24px;font-weight:700">4</span>
+<span style="flex:1;height:64px;border-radius:var(--r);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:24px;font-weight:700">1</span>
+<span style="flex:1;height:64px;border-radius:var(--r);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:24px;font-weight:700">9</span>
+<span style="flex:1;height:64px;border-radius:var(--r);border:1px solid var(--rule)"></span>
+<span style="flex:1;height:64px;border-radius:var(--r);border:1px solid var(--rule)"></span>
+<span style="flex:1;height:64px;border-radius:var(--r);border:1px solid var(--rule)"></span>
+</div>
+<div style="margin-top:22px;padding:16px 18px;border-radius:var(--r);background:var(--bg)">
+<span style="display:block;font-size:14px;font-weight:600">Tu aviso ya está guardado</span>
+<p style="margin:6px 0 0;font-size:13.5px;line-height:1.55;color:var(--soft)">Si cerrás ahora, lo encontrás en Mis publicaciones como pendiente de verificar.</p>
+</div>
+<div style="margin-top:24px;display:flex;align-items:center;gap:18px">
+<span style="min-height:50px;display:inline-flex;align-items:center;padding:0 32px;border-radius:var(--r);background:var(--line);color:var(--soft);font-size:15.5px;font-weight:600">Verificar y publicar</span>
+<span style="font-family:var(--meta);font-size:11.5px;color:var(--soft)">Reenviar en 0:38</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-fr"><span class="dv-fcap">listo</span>
+<div class="dv-card">
+<div style="background:var(--surface);color:var(--ink);font-family:var(--sans)">
+<div style="border-bottom:1px solid var(--line)"><div style="width:1100px;margin:0 auto;height:72px;display:flex;align-items:center;gap:20px"><span style="flex:none;font-family:var(--mono);font-weight:700;font-size:19px;letter-spacing:-.02em">rentas</span><span style="flex:1"></span><a href="#13a" style="flex:none;font-size:13.5px;color:var(--accent);text-decoration:none">Mis publicaciones</a></div></div>
+<div style="width:1100px;margin:0 auto;padding:56px 0 72px;display:grid;grid-template-columns:1fr 380px;gap:56px;align-items:start">
+
+<div style="max-width:520px">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:99px;background:var(--tint);font-size:24px;color:var(--accent)">✓</span>
+<h1 style="margin:20px 0 0;font-size:30px;font-weight:700;line-height:1.2;letter-spacing:-.01em">Tu aviso está activo</h1>
+<p style="margin:12px 0 0;font-size:15.5px;line-height:1.6;color:var(--soft);text-wrap:pretty">Queda publicado 30 días, hasta el 21 de septiembre. Te avisamos por correo antes de que venza.</p>
+<div style="margin-top:26px;padding:18px;border-radius:var(--r);background:var(--bg)">
+<span style="display:block;font-size:14.5px;font-weight:600">Lo que sigue</span>
+<p style="margin:7px 0 0;font-size:14px;line-height:1.6;color:var(--soft)">Los interesados te escriben directo por WhatsApp. Rentas no participa en la negociación: visitá la propiedad y verificá con quién hablás antes de recibir dinero.</p>
+</div>
+<div style="margin-top:28px;display:flex;align-items:center;gap:12px">
+<a href="#13a" style="min-height:50px;display:inline-flex;align-items:center;padding:0 30px;border-radius:var(--r);background:var(--accent);color:var(--acc-ink);font-size:15.5px;font-weight:600;text-decoration:none">Ver mi aviso</a>
+<a href="#13a" style="min-height:50px;display:inline-flex;align-items:center;padding:0 24px;border-radius:var(--r);border:1px solid var(--rule);color:var(--ink);font-size:15px;text-decoration:none">Publicar otra</a>
+</div>
+</div>
+
+<div>
+<div style="border:1px solid var(--line);border-radius:var(--r);overflow:hidden">
+<span style="display:block;width:100%;height:214px;background:var(--thumb)"></span>
+<div style="padding:16px">
+<span style="display:inline-flex;font-family:var(--meta);font-weight:700;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:var(--rs);background:var(--ink);color:var(--surface)">Dueño</span>
+<span style="display:block;margin-top:10px;font-family:var(--disp);font-weight:700;font-size:26px;letter-spacing:-.02em">$450</span>
+<span style="display:block;margin-top:6px;font-size:15px;line-height:1.35;font-weight:600">Apartamento 2 habitaciones con puesto</span>
+<span style="display:block;margin-top:5px;font-family:var(--meta);font-size:11px;color:var(--soft)">Altamira · 2 hab · 78 m²</span>
+<span style="display:block;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-family:var(--meta);font-size:10.5px;color:var(--soft)">vence el 21 de septiembre</span>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+</div>
+<ul class="dv-note"><li>revisar muestra el aviso como se va a ver, al lado de los datos</li><li>"Cambiar" por bloque: vuelve al paso, no al principio</li><li>verificar en columna de 480: el código no se estira a 1100</li></ul>
+</div>
+
+<p style="margin:0;font:400 11.5px/1.75 system-ui,sans-serif;color:rgba(0,0,0,.5);max-width:820px">Lo que cambia respecto del móvil, y por qué. <b>El riel de nueve pasos reemplaza la barra de progreso</b>, y cada paso ya hecho muestra su valor en vez de su número —"Altamira", "$450 al mes"— porque con mouse se espera poder saltar directo al paso 4 sin pasar por el 3. <b>El paso 8 pasa de lista a cuadrícula de tres</b>: hay ancho para ver las fotos, que es de lo que trata ese paso. <b>El paso 6 gana una tercera columna</b> con la tarjeta real mientras se escribe el título. Y <b>revisar pone el aviso terminado al lado de los datos</b>, que es lo que en 360 px no cabe. Una decisión que quedó pendiente y acá se nota más: en escritorio el arrastre de fotos sí es razonable, así que el orden se cambia arrastrando y el menú <b>⋯</b> queda para portada y quitar.</p>
+
+<div style="margin:36px 0 0;padding:18px 20px;border:1px solid rgba(0,0,0,.16);border-radius:10px;background:#fff;max-width:800px">
+<span style="display:block;font:700 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.06em;text-transform:uppercase;color:rgba(0,0,0,.45)">Rejilla y puntos de quiebre · vale para todas las pantallas</span>
+<p style="margin:10px 0 0;font:400 11.5px/1.7 system-ui,sans-serif;color:rgba(0,0,0,.62)">Todo lo de arriba está dibujado a <b>1280</b> de ancho, con el contenido en un contenedor de <b>1100</b> centrado. Ese contenedor es fijo: en 1440, 1920 o 4K el contenido sigue midiendo 1100 y lo que crece es el aire a los lados.</p>
+<div style="margin-top:12px;display:grid;grid-template-columns:120px 1fr;gap:6px 14px;font:400 11px/1.5 ui-monospace,Menlo,monospace;color:rgba(0,0,0,.6)">
+<span style="color:rgba(0,0,0,.4)">&lt; 768</span><span>versión móvil, fluida con márgenes de 16</span>
+<span style="color:rgba(0,0,0,.4)">768 – 1099</span><span>contenedor fluido, márgenes de 24 · <b style="color:#8a5a00">sin diseñar</b></span>
+<span style="color:rgba(0,0,0,.4)">1100 – ∞</span><span>contenedor fijo en 1100, centrado</span>
+<span style="color:rgba(0,0,0,.4)">1440 · 1920 · 4K</span><span>idéntico a 1280: solo crece el aire lateral</span>
+</div>
+<p style="margin:12px 0 0;font:400 11.5px/1.7 system-ui,sans-serif;color:rgba(0,0,0,.62)"><b>El contenedor no se estira nunca.</b> Lo que escala con el ancho es el número de columnas, no el tamaño de la tarjeta ni el ancho de un campo. En 4K tampoco se sirven fotos al doble de densidad: chocaría con el presupuesto de bytes.</p>
+</div>
+
+</section>
+</div>
+</x-dc>
+</body>
+</html>
