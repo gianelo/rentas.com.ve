@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
-import { resolveSelectedCity, zonesForCity } from "@/modules/listing-catalogue/domain/catalogue";
 import { DrizzleCatalogue } from "@/modules/listing-catalogue/infrastructure/drizzle-catalogue";
-import { buildListingPath } from "@/modules/listing-discovery/domain/listing-url";
-import { buildSearchCriteria } from "@/modules/listing-search/domain/search-criteria";
-import { DrizzleListingSearch } from "@/modules/listing-search/infrastructure/drizzle-listing-search";
+import { buildHome, homeCollections } from "@/modules/listing-discovery/domain/home-collections";
+import { DrizzleHomeCollections } from "@/modules/listing-discovery/infrastructure/drizzle-home-collections";
+import { DrizzleListingPhotos } from "@/modules/listing-discovery/infrastructure/drizzle-listing-photos";
+import { readPhotoPublicBaseUrl } from "@/modules/listing-discovery/infrastructure/photo-public-base-url";
 import { db } from "@/shared/db/client";
 import { Container } from "../components/layout/Container";
-import { SidebarLayout } from "../components/layout/SidebarLayout";
-import { ResultRow } from "../components/molecules/ResultRow";
-import { SearchFilters } from "../components/molecules/SearchFilters";
-import styles from "./search.module.css";
+import { ListingStrip } from "../components/molecules/ListingStrip";
+import styles from "./home.module.css";
 
 export const metadata: Metadata = {
   title: "Alquileres de larga estancia en Venezuela — Rentas",
@@ -17,71 +15,80 @@ export const metadata: Metadata = {
     "Alquileres de larga estancia en Distrito Capital y Maracaibo. Publicar y buscar es gratis, sin comisión.",
 };
 
-interface SearchPageProps {
-  searchParams: Promise<Record<string, string | undefined>>;
-}
+/**
+ * **Se renderiza por petición, y hay que declararlo.** Cuando acá vivían los
+ * resultados, el `searchParams` obligaba a Next a tratar esta ruta como
+ * dinámica sin que nadie lo escribiera. El inicio no recibe ningún parámetro,
+ * así que Next intenta exportarlo en tiempo de compilación — y el `build` corre
+ * contra una `DATABASE_URL` deliberadamente inalcanzable, así que la compilación
+ * se cae en `listCities()`. Se descubrió compilando, no en producción.
+ *
+ * Aparte de destrabar el build, es lo correcto: estas cuatro tiras cambian cada
+ * vez que alguien publica, y una portada horneada en tiempo de compilación
+ * mostraría el catálogo del día del despliegue hasta el siguiente.
+ */
+export const dynamic = "force-dynamic";
 
 /**
- * Artboard 2a — the search results, and **the site's root**.
+ * El inicio (14.21), en `/`.
  *
- * There is no separate home page, and that is a decision rather than an
- * omission: the design has no home artboard and never mentions one, while a
- * classifieds product's strongest surface is its listings. A landing page
- * that only links onward spends the domain's strongest URL on a click.
+ * **Esta página era los resultados de búsqueda, y ya no lo es.** El comentario
+ * que estaba acá decía que no existía un inicio aparte "y eso es una decisión
+ * antes que una omisión"; la 14.24 lo dejó falso al mover toda búsqueda a la
+ * ruta de su lugar — `/alquiler/<ciudad>/<zona>` *es* la búsqueda de esa zona.
+ * Con los resultados mudados, la dirección más fuerte del dominio quedó libre,
+ * y la F1 dice qué va en ella: cuatro tiras de cinco avisos — recientes, una
+ * por ciudad, y hasta $400.
  *
- * What it gives up, recorded so it is a choice and not a discovery: there is
- * nowhere to put a value proposition or a publish pitch beyond the bar's
- * "Publicar" button. If that is ever wanted it needs its own place.
+ * **Ni una regla de producto en este archivo, y es la regla permanente del
+ * fundador.** Cuántas tiras hay, con qué criterio se arma cada una, si una tira
+ * se dibuja o desaparece, si lleva placa y qué número dice esa placa: todo eso
+ * vive en `listing-discovery/domain/home-collections.ts`, con su suelo de
+ * cobertura del 90 % encima. Acá no hay un `.filter()`, ni un umbral, ni un
+ * número escrito — esta página traduce una petición a dos llamadas y dibuja lo
+ * que le devuelven.
  *
- * **No session and no client JavaScript.** This is the read path D13 is
- * about: browsing, filtering and navigating are server-rendered with the
- * state in the URL, so the page works before any bundle arrives and a
- * crawler sees the same thing a visitor does. The filter form is a plain
- * `GET`, which is also what makes a filtered search pasteable into a
- * WhatsApp message — the way listings actually circulate here.
+ * **Tres consultas, y ninguna crece con el catálogo**: el catálogo de ciudades,
+ * las filas de todas las colecciones con el total de cada una, y las portadas de
+ * todas las tarjetas de todas las tiras. Neon es HTTP, así que cada consulta es
+ * un viaje de red — una quinta ciudad agrega una tira sin agregar un viaje.
  *
- * Reads go through `db` (`neon-http`), not the transactional client: this is
- * exactly the path D2's latency argument was about.
+ * Son tres y no dos porque las colecciones dependen del catálogo: qué tiras hay
+ * sale de las ciudades, así que esa lectura no puede ir en paralelo con la que
+ * la usa. Las otras dos tampoco: las portadas se piden por los ids que devuelve
+ * la consulta anterior.
+ *
+ * **Sin sesión y sin JavaScript de cliente.** Es el camino de lectura del D13:
+ * un rastreador ve exactamente lo mismo que un visitante, y la tira se arrastra
+ * con `scroll-snap` del navegador y no con un carrusel embarcado.
  */
-export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const params = await searchParams;
+export default async function InicioPage() {
+  const cities = await new DrizzleCatalogue(db).listCities();
 
-  const catalogue = new DrizzleCatalogue(db);
-  const [cities, zones] = await Promise.all([catalogue.listCities(), catalogue.listZones()]);
+  // Qué colecciones existen lo decide el dominio, a partir del catálogo. Con
+  // dos ciudades son las cuatro tiras de la F1; con tres, cinco.
+  const specs = homeCollections(cities);
 
-  // Which city, and which zones go with it, are both decided in
-  // listing-catalogue's domain. This page states neither rule: it fetches
-  // through the port, asks, and renders. That is the whole job `design.md`
-  // gives the `app/` tree — "a thin delivery adapter that only translates
-  // HTTP/RSC into a use case call".
+  const collections = await new DrizzleHomeCollections(db).collectionsFor(specs);
+
+  // **UNA llamada para todas las portadas de todas las tiras.** Pedirlas por
+  // tira serían cuatro viajes, y por aviso hasta veinte — el N+1 clásico
+  // pagado en latencia real. La firma plural del puerto lo hace inexpresable.
   //
-  // `resolveSelectedCity` also rejects a city id the catalogue does not hold,
-  // which this page previously passed straight through: `?city=cualquier-cosa`
-  // reached `WHERE city_id = $1` and rendered an empty page for a catalogue
-  // full of listings.
-  const selectedCity = resolveSelectedCity(cities, params.city);
-  // D5 on the read path: the selector offers one city's zones, never both.
-  const selectableZones = zonesForCity(zones, selectedCity);
+  // El `Set` es por la consulta y no por la pantalla: un aviso barato y
+  // reciente aparece en tres colecciones (14.23) y ahí se queda, pero pedir su
+  // portada tres veces sería pedirle a Postgres la misma fila tres veces.
+  const listingIds = [
+    ...new Set([...collections.values()].flatMap((page) => page.rows.map((row) => row.id))),
+  ];
+  const covers = await new DrizzleListingPhotos(db).coversFor(listingIds);
 
-  const criteria = buildSearchCriteria(
-    {
-      city: selectedCity,
-      zone: params.zone,
-      minPrice: params.minPrice,
-      maxPrice: params.maxPrice,
-      minRooms: params.minRooms,
-    },
-    zones,
-  );
-
-  const results = criteria ? await new DrizzleListingSearch(db).search(criteria) : [];
-  const zoneName = new Map(zones.map((zone) => [zone.id, zone.name]));
-  const cityName = new Map(cities.map((city) => [city.id, city.name]));
+  const home = buildHome(specs, collections, covers, readPhotoPublicBaseUrl());
 
   return (
     <>
-      {/* The bar artboard 2a draws on both viewports: the wordmark, and the
-          one action the whole supply side depends on. */}
+      {/* La barra que el producto entero comparte: la marca, y la única acción
+          de la que depende todo el lado de la oferta. */}
       <header className={styles.bar}>
         <div className={styles.barInner}>
           <p className={styles.brand}>rentas.</p>
@@ -92,75 +99,39 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       </header>
 
       <Container>
-        <SidebarLayout
-          sidebar={
-            <SearchFilters
-              cities={cities}
-              zones={selectableZones}
-              values={{
-                city: selectedCity ?? undefined,
-                zone: params.zone,
-                minPrice: params.minPrice,
-                maxPrice: params.maxPrice,
-                minRooms: params.minRooms,
-              }}
-            />
-          }
-        >
-          {/* **An addition to the design, and stated as one.** Artboard 2a
-            renders the count as plain text and gives this screen no heading
-            at all. That is defensible on a results page reached from
-            elsewhere; it is not defensible on the site's root, which needs a
-            real `<h1>` for a screen reader's document outline and for the
-            strongest URL on the domain. So the heading exists and is
-            visually hidden, and the screen still looks exactly as drawn. */}
-          <h1 className={styles.srOnly}>Alquileres de larga estancia en Venezuela</h1>
+        {/* Un `<h1>` de verdad y visualmente oculto, igual que cuando acá
+            vivían los resultados: la dirección más fuerte del dominio necesita
+            un encabezado en el esquema del documento, y el diseño del inicio
+            arranca directo con la primera tira. */}
+        <h1 className={styles.srOnly}>Alquileres de larga estancia en Venezuela</h1>
 
-          <p className={styles.count} data-testid="result-count">
-            {criteria === null
-              ? "Todavía no hay ciudades cargadas."
-              : results.length === 1
-                ? "1 propiedad activa"
-                : `${results.length} propiedades activas`}
-          </p>
-
-          {criteria !== null && results.length === 0 ? (
-            // An empty result is a normal answer, not an error. Saying so, and
-            // saying what to change, beats a blank column that reads as broken.
-            <p className={styles.empty}>
-              No hay avisos con esos filtros. Probá ampliando el rango de precio o quitando la zona.
+        {home.invitesToPublish ? (
+          // **Sin un solo aviso activo el problema no es la demanda, es la
+          // oferta.** Una página que dijera "no hay resultados" le echaría la
+          // culpa a quien llegó; ésta le ofrece lo único que hay para hacer.
+          // Que este estado exista lo decidió el dominio, no esta línea.
+          <section className={styles.invite}>
+            <h2 className={styles.inviteTitle}>Todavía no hay avisos publicados</h2>
+            <p className={styles.inviteText}>
+              Publicar es gratis y no se cobra comisión. Tu aviso queda activo 30 días.
             </p>
-          ) : null}
-
-          <ol className={styles.results}>
-            {results.map((listing) => (
-              <li key={listing.id}>
-                <ResultRow
-                  priceUsd={listing.priceUsd}
-                  title={listing.title}
-                  zone={zoneName.get(listing.zoneId) ?? ""}
-                  city={cityName.get(listing.cityId) ?? ""}
-                  rooms={listing.rooms}
-                  areaM2={listing.areaM2}
-                  publisherType={listing.publisherType}
-                  // **El enlace que faltaba desde el primer dia.** Hasta aca
-                  // cada resultado se dibujaba sin href, asi que se podia
-                  // buscar y publicar pero NO abrir un aviso: nadie llegaba
-                  // nunca al WhatsApp de quien publica, que es la unica razon
-                  // por la que el sitio existe. La ruta la arma
-                  // `buildListingPath`, y la ficha redirige cualquier variante
-                  // a la canonica.
-                  href={buildListingPath({
-                    cityName: cityName.get(listing.cityId) ?? "",
-                    zoneName: zoneName.get(listing.zoneId) ?? "",
-                    title: listing.title,
-                    id: listing.id,
-                  })}
-                />
-              </li>
+            <a className={styles.inviteAction} href="/publicar">
+              Publicar un aviso
+            </a>
+          </section>
+        ) : (
+          <div className={styles.strips}>
+            {home.strips.map((strip) => (
+              <ListingStrip
+                key={strip.key}
+                stripKey={strip.key}
+                title={strip.title}
+                cards={strip.cards}
+                seeAll={strip.seeAll}
+              />
             ))}
-          </ol>
-        </SidebarLayout>
+          </div>
+        )}
       </Container>
     </>
   );

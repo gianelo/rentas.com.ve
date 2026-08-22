@@ -101,3 +101,26 @@ const FILTER_KEYS = ["min", "max", "hab"] as const;
 export function isFilteredZoneRoute(query: Record<string, string | undefined>): boolean {
   return FILTER_KEYS.some((key) => (query[key] ?? "").trim() !== "");
 }
+
+/**
+ * Qué ciudad nombra `/alquiler/<ciudad>`.
+ *
+ * **Existe porque el inicio la necesita.** La placa «Ver los 23» de cada tira
+ * de ciudad apunta acá, y hasta que esta ruta resolviera, esa placa era un
+ * enlace roto — lo mismo que la miga de pan de la página de zona evita
+ * dejando la ciudad sin enlace, con esa razón escrita al lado.
+ *
+ * `null` para una ciudad que el catálogo no tiene, y **nunca la primera**. Es
+ * la misma asimetría que documenta `resolveZoneRoute`: el inicio no tiene un
+ * lugar en la URL y tiene que elegir uno; esta ruta *afirma* un lugar, y
+ * responder 200 con los avisos de otra parte publica contenido duplicado bajo
+ * una dirección inventada.
+ */
+export function resolveCityRoute<C extends RoutableCity>(
+  cities: readonly C[],
+  citySlug: string,
+): C | null {
+  if (citySlug.trim() === "") return null;
+
+  return cities.find((candidate) => slugify(candidate.name) === citySlug) ?? null;
+}

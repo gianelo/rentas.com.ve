@@ -1,0 +1,139 @@
+/* La tira del inicio (14.26). Un solo componente y dos mecanismos: riel que se
+   arrastra en el teléfono, fila fija de cinco en escritorio. Toda la geometría
+   sale de tokens (D16), y los anchos de tarjeta son los de `ListingCard` —
+   esta hoja los reusa, no los redefine. */
+
+.strip {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--title-fs);
+  font-weight: var(--title-fw);
+  line-height: var(--title-lh);
+  color: var(--ink);
+}
+
+/* El mecanismo de escritorio, oculto en el teléfono. `display: none` y no
+   `visibility` ni un `sr-only`: los dos dejarían el enlace en el árbol de
+   accesibilidad, y un lector de pantalla anunciaría dos veces la misma salida
+   — la del encabezado y la placa del final del riel. */
+.headLink {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.headLink:hover {
+  text-decoration: underline;
+}
+
+.headLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r);
+}
+
+.arrow {
+  /* Empuja la flecha una pizca sin moverla del renglón. */
+  line-height: 1;
+}
+
+.rail {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: var(--card-gap);
+  /* El mecanismo del teléfono, entero y sin una línea de JavaScript: se
+     arrastra, y cada tarjeta se ancla al borde. */
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  /* El riel sangra hasta el borde de la pantalla y vuelve a entrar con su
+     propio relleno, así la sexta tarjeta se asoma y se ve que hay más — que es
+     lo único que le dice a alguien que esto se arrastra. */
+  scroll-padding-inline-start: 16px;
+  padding-inline: 16px;
+  margin-inline: -16px;
+  /* La barra de desplazamiento no dibuja nada: el riel es táctil y en
+     escritorio este mecanismo ya no existe. */
+  scrollbar-width: none;
+}
+
+.item {
+  /* Ni se encoge ni se estira: un riel cuyas tarjetas se aprietan deja de
+     tener un ancho de anclaje, y el `scroll-snap` empieza a caer en mitades. */
+  flex: 0 0 var(--card-w);
+  scroll-snap-align: start;
+  /* La placa es tan alta como una tarjeta, así el riel no queda escalonado. */
+  display: flex;
+}
+
+/* La placa del final del riel: el mecanismo del teléfono. */
+.plate {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--accent);
+  text-align: center;
+  text-decoration: none;
+}
+
+.plate:hover {
+  text-decoration: underline;
+}
+
+.plate:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  .headLink {
+    display: inline-flex;
+  }
+
+  .rail {
+    /* Cinco columnas fijas, y `minmax(0, 1fr)` en vez del ancho de diseño:
+       cinco tarjetas de 254 px suman más que el contenedor de 1100, así que un
+       ancho pelado desbordaría en horizontal en vez de repartirse. */
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    /* Se acabó el arrastre: en escritorio están las cinco a la vista. */
+    overflow-x: visible;
+    scroll-snap-type: none;
+    padding-inline: 0;
+    margin-inline: 0;
+  }
+
+  .plate {
+    display: none;
+  }
+}
