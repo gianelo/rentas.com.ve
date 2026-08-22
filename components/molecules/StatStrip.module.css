@@ -1,0 +1,38 @@
+/* Tira de cuatro datos de la ficha (F24). Cuatro celdas iguales con
+   separadores, tal como la dibuja el diseño en los dos anchos. */
+.strip {
+  display: flex;
+  margin: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.cell {
+  flex: 1;
+  padding: 12px 4px;
+  text-align: center;
+  border-right: 1px solid var(--line);
+}
+
+/* La última no lleva separador: el borde del contenedor ya cierra la tira. */
+.cell:last-child {
+  border-right: 0;
+}
+
+.value {
+  margin: 0;
+  font-family: var(--disp);
+  font-weight: var(--ficha-price-fw);
+  font-size: var(--ficha-stat-fs);
+  font-variant-numeric: tabular-nums;
+}
+
+.label {
+  font-family: var(--meta);
+  font-size: var(--ficha-stat-label-fs);
+  letter-spacing: var(--badge-ls);
+  text-transform: uppercase;
+  /* --soft y no opacity: atenuar con opacity baja el contraste por debajo de
+     AA y el diseño lo prohíbe explícitamente. */
+  color: var(--soft);
+}

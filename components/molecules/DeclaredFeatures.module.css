@@ -1,0 +1,53 @@
+/* "La propiedad tiene" (F25). Dos columnas en móvil, como dibuja el diseño. */
+.block {
+  padding-top: 18px;
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--meta);
+  font-weight: var(--badge-fw);
+  font-size: var(--badge-fs);
+  letter-spacing: var(--badge-ls);
+  text-transform: uppercase;
+  color: var(--soft);
+}
+
+.list {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px 12px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--control-fs);
+}
+
+/* Nivel "selección" de la jerarquía de botones: fondo --tint, texto --accent.
+   El mismo par que usan las casillas marcadas del formulario. */
+.check {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--r-thumb);
+  background: var(--tint);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--meta-fs-sm);
+}
+
+.note {
+  margin: 10px 0 0;
+  font-family: var(--meta);
+  font-size: var(--meta-fs);
+  line-height: var(--ficha-body-lh);
+  color: var(--soft);
+}

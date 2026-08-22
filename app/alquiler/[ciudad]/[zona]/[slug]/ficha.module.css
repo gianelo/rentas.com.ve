@@ -1,0 +1,147 @@
+/* Ficha del aviso, móvil primero. El diseño de escritorio (dos columnas, la
+   derecha pegada) usa `DetailSplit`, que ya ship*a* con sus 640px + 420px —
+   se compone en su propia tarea junto con la galería. */
+.page {
+  max-width: 360px;
+  margin-inline: auto;
+  padding-inline: 16px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--brandbar-h);
+  border-bottom: 1px solid var(--line);
+}
+
+/* 44px de área táctil, incluidos los enlaces de volver (regla transversal 7).
+   Es el enlace que devuelve a los resultados, y errarle es salir del aviso. */
+.back {
+  display: flex;
+  align-items: center;
+  min-height: var(--target-min);
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* Dueño con relleno, inmobiliaria con borde: la distinción tiene que sobrevivir
+   a la escala de grises, y eso es estructura, no color. Acá se dibuja el caso
+   con relleno; el de borde lo resuelve PublisherBadge cuando se componga. */
+.badge {
+  font-family: var(--meta);
+  font-weight: var(--badge-fw);
+  font-size: var(--badge-fs);
+  letter-spacing: var(--badge-ls);
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: var(--rs);
+  background: var(--ink);
+  color: var(--surface);
+}
+
+/* El precio pesa más que el título, en orden de documento y en peso visual
+   (regla transversal 2). Es la primera cifra que se lee. */
+.price {
+  margin: 18px 0 0;
+  font-family: var(--disp);
+  font-weight: var(--ficha-price-fw);
+  font-size: var(--ficha-price-fs);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--brand-ls);
+}
+
+.perMonth {
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  font-weight: 400;
+  color: var(--soft);
+  letter-spacing: 0;
+}
+
+.title {
+  margin: 10px 0 0;
+  font-size: var(--ficha-title-fs);
+  font-weight: var(--ficha-title-fw);
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+
+.location {
+  margin: 6px 0 18px;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  color: var(--soft);
+}
+
+.description {
+  padding-top: 20px;
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--meta);
+  font-weight: var(--badge-fw);
+  font-size: var(--badge-fs);
+  letter-spacing: var(--badge-ls);
+  text-transform: uppercase;
+  color: var(--soft);
+}
+
+.body {
+  margin: 10px 0 0;
+  font-size: var(--ficha-body-fs);
+  line-height: var(--ficha-body-lh);
+  text-wrap: pretty;
+}
+
+/* Borde punteado, como el diseño dibuja el estado vencido: se distingue de un
+   bloque normal sin depender del color. */
+.expired {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px dashed var(--strong);
+  border-radius: var(--r);
+}
+
+.exit {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--action-h);
+  border-radius: var(--r);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: var(--control-fs);
+  font-weight: var(--meta-fw);
+  text-decoration: none;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 0;
+}
+
+.report {
+  display: flex;
+  align-items: center;
+  min-height: var(--target-min);
+  font-size: var(--meta-fs);
+  color: var(--soft);
+  text-decoration: underline;
+}
+
+.meta {
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  color: var(--soft);
+}

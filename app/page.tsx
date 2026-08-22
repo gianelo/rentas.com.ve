@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { resolveSelectedCity, zonesForCity } from "@/modules/listing-catalogue/domain/catalogue";
 import { DrizzleCatalogue } from "@/modules/listing-catalogue/infrastructure/drizzle-catalogue";
+import { buildListingPath } from "@/modules/listing-discovery/domain/listing-url";
 import { buildSearchCriteria } from "@/modules/listing-search/domain/search-criteria";
 import { DrizzleListingSearch } from "@/modules/listing-search/infrastructure/drizzle-listing-search";
 import { db } from "@/shared/db/client";
@@ -142,6 +143,19 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   rooms={listing.rooms}
                   areaM2={listing.areaM2}
                   publisherType={listing.publisherType}
+                  // **El enlace que faltaba desde el primer dia.** Hasta aca
+                  // cada resultado se dibujaba sin href, asi que se podia
+                  // buscar y publicar pero NO abrir un aviso: nadie llegaba
+                  // nunca al WhatsApp de quien publica, que es la unica razon
+                  // por la que el sitio existe. La ruta la arma
+                  // `buildListingPath`, y la ficha redirige cualquier variante
+                  // a la canonica.
+                  href={buildListingPath({
+                    cityName: cityName.get(listing.cityId) ?? "",
+                    zoneName: zoneName.get(listing.zoneId) ?? "",
+                    title: listing.title,
+                    id: listing.id,
+                  })}
                 />
               </li>
             ))}

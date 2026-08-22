@@ -80,6 +80,37 @@
      which happens to share the value but means "price" — two meanings on one
      token is how a price change silently resizes every text input. */
   --control-fs: 15px;
+  /* Ficha del aviso. Los declara el diseño nuevo y el conjunto que ship*a* no
+     los tenía, que es exactamente la situación que ya produjo un defecto real:
+     sin un token de título de página, el <h1> de la home agarró --fpb, que el
+     sistema define como "Precio en ficha". lint:tokens pasó — verifica que un
+     valor SEA una propiedad personalizada, nunca que sea la CORRECTA. Un token
+     faltante no produce un gate en rojo; produce una respuesta plausible y
+     equivocada.
+
+     Se nombran por su lugar en la ficha y llevan su variante de escritorio,
+     porque el diseño da los dos valores y una sola escala obligaría a elegir
+     cuál de las dos pantallas se ve mal. */
+  --ficha-price-fs: 30px;
+  --ficha-price-fs-desktop: 34px;
+  --ficha-price-fw: 700;
+  --ficha-title-fs: 17px;
+  --ficha-title-fs-desktop: 19px;
+  --ficha-title-fw: 600;
+  --ficha-body-fs: 15px;
+  --ficha-body-lh: 1.6;
+  /* La cifra de la tira de cuatro celdas y el rótulo debajo. */
+  --ficha-stat-fs: 17px;
+  --ficha-stat-label-fs: 10px;
+  /* Alto del botón de acción. No es --target-min (44) ni su variante de
+     escritorio (36): el diseño lo fija en 46 para las dos. */
+  --action-h: 46px;
+  /* Geometría de la galería, tomada del diseño y no de un cálculo. */
+  --ficha-photo-h: 180px;
+  --ficha-photo-w-desktop: 640px;
+  --ficha-photo-h-desktop: 360px;
+  --ficha-thumb-w: 120px;
+  --ficha-thumb-h: 90px;
   --title-fs: 20px;
   --title-fw: 700;
   --title-lh: 1.25;
