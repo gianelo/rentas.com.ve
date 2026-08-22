@@ -103,10 +103,50 @@ describe("PhotoStrip", () => {
     expect(markup.match(/detail\.webp/g)).toHaveLength(1);
   });
 
-  it("cada foto enlaza a la ficha — el visor todavía no existe", () => {
+  /**
+   * **La tira es la única entrada al visor**, y cada foto lleva a la suya —
+   * no todas a la ficha. Ése es el punto de que cada foto tenga su propia
+   * dirección: se comparte la foto de la cocina, no "el aviso".
+   *
+   * El número es base uno y sale del dominio (`photoNumberOf`), nunca de un
+   * `index + 1` escrito acá: la traducción entre el `<n>` de la URL y
+   * `listing_photo.position` es una regla, y una regla copiada en un
+   * componente es la que queda corrida en uno.
+   */
+  it("cada foto enlaza a su visor, numerado desde uno", () => {
     const markup = render();
 
-    expect(markup.match(new RegExp(`href="${HREF}"`, "g"))).toHaveLength(6);
+    expect(markup).toContain(`href="${HREF}/foto/1"`);
+    expect(markup).toContain(`href="${HREF}/foto/6"`);
+    expect(markup.match(new RegExp(`href="${HREF}/foto/\\d+"`, "g"))).toHaveLength(6);
+    // Ninguna se queda apuntando a la ficha, que era el destino provisional.
+    expect(markup).not.toContain(`href="${HREF}"`);
+  });
+
+  /**
+   * El número de la URL y el del alternativo son el MISMO número. Si el visor
+   * dijera "Foto 3 de 6" sobre la foto que la tira enlazó como `/foto/2`,
+   * quien navega con lector de pantalla estaría leyendo una posición falsa.
+   */
+  it("el número del enlace coincide con el del texto alternativo", () => {
+    const markup = render();
+    const links = [...markup.matchAll(/href="[^"]*\/foto\/(\d+)"/g)].map((m) => m[1]);
+    const alts = [...markup.matchAll(/alt="Foto (\d+) de 6/g)].map((m) => m[1]);
+
+    expect(links).toEqual(alts);
+  });
+
+  /**
+   * Con una foto salteada por falta de derivadas, el enlace numera sobre lo
+   * que se DIBUJA, igual que el alternativo: la foto que la tira muestra
+   * segunda es `/foto/2`, aunque en la tabla ocupe la posición 2.
+   */
+  it("numera los enlaces sobre lo que dibuja, no sobre la columna", () => {
+    const markup = render({ photos: [photo(0), { position: 1, keys: {} }, photo(2)] });
+
+    expect(markup).toContain(`href="${HREF}/foto/1"`);
+    expect(markup).toContain(`href="${HREF}/foto/2"`);
+    expect(markup).not.toContain(`href="${HREF}/foto/3"`);
   });
 
   /**
