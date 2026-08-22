@@ -1,6 +1,6 @@
 {
-  "id": "9e82fd45-18f4-4e18-b68c-1b9994abc276",
-  "prevId": "bfa0789b-4733-4dfb-98ee-6cf477f3dde3",
+  "id": "0d52783b-43c8-40d8-9b43-29d77f25133f",
+  "prevId": "9e82fd45-18f4-4e18-b68c-1b9994abc276",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -316,6 +316,65 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.listing_photo_derivative": {
+      "name": "listing_photo_derivative",
+      "schema": "",
+      "columns": {
+        "photo_id": {
+          "name": "photo_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bytes": {
+          "name": "bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "listing_photo_derivative_photo_id_listing_photo_id_fk": {
+          "name": "listing_photo_derivative_photo_id_listing_photo_id_fk",
+          "tableFrom": "listing_photo_derivative",
+          "tableTo": "listing_photo",
+          "columnsFrom": [
+            "photo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "listing_photo_derivative_photo_id_name_pk": {
+          "name": "listing_photo_derivative_photo_id_name_pk",
+          "columns": [
+            "photo_id",
+            "name"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.listing_photo_hash": {
       "name": "listing_photo_hash",
       "schema": "",
@@ -379,30 +438,6 @@
         },
         "position": {
           "name": "position",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "thumbnail_key": {
-          "name": "thumbnail_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "detail_key": {
-          "name": "detail_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "thumbnail_bytes": {
-          "name": "thumbnail_bytes",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "detail_bytes": {
-          "name": "detail_bytes",
           "type": "integer",
           "primaryKey": false,
           "notNull": true

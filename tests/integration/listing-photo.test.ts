@@ -33,15 +33,18 @@ function getTestDatabaseUrl(): string {
 const client = new Client({ connectionString: getTestDatabaseUrl() });
 
 const INSERT_PHOTO = `
-  INSERT INTO "listing_photo"
-    (id, listing_id, position, thumbnail_key, detail_key,
-     thumbnail_bytes, detail_bytes, created_at)
-  VALUES ($1,$2,$3,$4,$5,$6,$7,now())
+  INSERT INTO "listing_photo" (id, listing_id, position, created_at)
+  VALUES ($1,$2,$3,now())
+`;
+
+/** Las claves y tamaños se mudaron a `listing_photo_derivative`. */
+const INSERT_DERIVATIVE = `
+  INSERT INTO "listing_photo_derivative" (photo_id, name, key, bytes)
+  VALUES ($1,$2,$3,$4)
 `;
 
 function photoValues(listingId: string, position: number) {
-  const id = randomUUID();
-  return [id, listingId, position, `thumb/${id}.webp`, `detail/${id}.webp`, 8_000, 180_000];
+  return [randomUUID(), listingId, position];
 }
 
 /** A listing, with the user/city/zone rows its foreign keys require. */
@@ -135,19 +138,36 @@ describe("listing_photo", () => {
     });
   });
 
-  it("requires both derivative keys and both measured sizes", async () => {
-    // D12 stores two derivatives and discards the original. A row missing
-    // either key is a photo that cannot be rendered somewhere it is needed,
-    // and a missing byte count silently removes that row from any audit of
-    // the storage budget.
+  it("exige clave y tamaño en cada derivada", async () => {
+    // **La misma garantía que antes, en la tabla a la que se mudó.** Una
+    // derivada sin clave es una foto que no se puede dibujar donde hace falta,
+    // y una sin bytes desaparece en silencio de cualquier auditoría del
+    // presupuesto de almacenamiento — que es lo que D12 existe para vigilar.
     const listingId = await insertListing();
+    const [photoId] = photoValues(listingId, 0);
+    await client.query(
+      INSERT_PHOTO,
+      photoValues(listingId, 0).map((v, i) => (i === 0 ? photoId : v)),
+    );
 
     await expect(
       client.query(
-        `INSERT INTO "listing_photo" (id, listing_id, position, thumbnail_key, created_at)
-         VALUES ($1,$2,0,$3,now())`,
-        [randomUUID(), listingId, "thumb/only.webp"],
+        `INSERT INTO "listing_photo_derivative" (photo_id, name, key) VALUES ($1,'thumb',$2)`,
+        [photoId, "thumb/only.webp"],
       ),
     ).rejects.toMatchObject({ code: "23502" }); // not_null_violation
+  });
+
+  it("no admite dos derivadas del mismo tamaño en una foto", async () => {
+    // Cuál gana dependería de cuál alcanzó primero un escaneo, que es la clase
+    // de respuesta que cambia sola entre dos consultas idénticas.
+    const listingId = await insertListing();
+    const values = photoValues(listingId, 0);
+    await client.query(INSERT_PHOTO, values);
+
+    await client.query(INSERT_DERIVATIVE, [values[0], "thumb", "a.webp", 8_000]);
+    await expect(
+      client.query(INSERT_DERIVATIVE, [values[0], "thumb", "b.webp", 9_000]),
+    ).rejects.toMatchObject({ code: "23505" }); // unique_violation
   });
 });

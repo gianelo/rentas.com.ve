@@ -64,9 +64,14 @@ function makeStorage(
   };
 }
 
+// Las cinco, con dos buffers distintos repartidos: alcanza para probar que
+// cada derivada sube a su propia clave y que ninguna se pisa con otra.
 const derive: PhotoDerivationPort = async () => ({
-  thumbnail: { bytes: THUMBNAIL, byteLength: THUMBNAIL.byteLength },
+  thumb: { bytes: THUMBNAIL, byteLength: THUMBNAIL.byteLength },
+  card: { bytes: THUMBNAIL, byteLength: THUMBNAIL.byteLength },
+  strip: { bytes: DETAIL, byteLength: DETAIL.byteLength },
   detail: { bytes: DETAIL, byteLength: DETAIL.byteLength },
+  full: { bytes: DETAIL, byteLength: DETAIL.byteLength },
 });
 
 function request(overrides: Partial<Parameters<typeof processUploadedPhoto>[0]> = {}) {
@@ -79,26 +84,51 @@ function request(overrides: Partial<Parameters<typeof processUploadedPhoto>[0]> 
 }
 
 describe("processUploadedPhoto", () => {
-  it("stores both derivatives and reports their keys and measured sizes", async () => {
+  it("sube las cinco derivadas y reporta sus claves y tamaños medidos", async () => {
     const storage = makeStorage();
 
     const processed = await processUploadedPhoto(request(), { storage, derive });
 
     expect(storage.reads).toEqual([INCOMING_KEY]);
+    // Una fila por derivada, cada una a su propia clave. Antes eran cuatro
+    // campos planos, y esa forma congelaba el número de derivadas en dos.
     expect(processed).toEqual({
-      thumbnailKey: `photos/${PUBLISHER}/${TOKEN}/thumbnail.webp`,
-      detailKey: `photos/${PUBLISHER}/${TOKEN}/detail.webp`,
-      thumbnailBytes: THUMBNAIL.byteLength,
-      detailBytes: DETAIL.byteLength,
+      derivatives: [
+        {
+          name: "thumb",
+          key: `photos/${PUBLISHER}/${TOKEN}/thumb.webp`,
+          byteLength: THUMBNAIL.byteLength,
+        },
+        {
+          name: "card",
+          key: `photos/${PUBLISHER}/${TOKEN}/card.webp`,
+          byteLength: THUMBNAIL.byteLength,
+        },
+        {
+          name: "strip",
+          key: `photos/${PUBLISHER}/${TOKEN}/strip.webp`,
+          byteLength: DETAIL.byteLength,
+        },
+        {
+          name: "detail",
+          key: `photos/${PUBLISHER}/${TOKEN}/detail.webp`,
+          byteLength: DETAIL.byteLength,
+        },
+        {
+          name: "full",
+          key: `photos/${PUBLISHER}/${TOKEN}/full.webp`,
+          byteLength: DETAIL.byteLength,
+        },
+      ],
     });
   });
 
-  it("stores both derivatives as WebP and stores nothing else", async () => {
+  it("sube las cinco como WebP y nada más", async () => {
     const storage = makeStorage();
 
     await processUploadedPhoto(request(), { storage, derive });
 
-    expect(storage.puts.map((put) => put.contentType)).toEqual(["image/webp", "image/webp"]);
+    expect(storage.puts.map((put) => put.contentType)).toEqual(Array(5).fill("image/webp"));
     // D12's other half, asserted rather than assumed. The adapter refuses a
     // non-WebP content type, but a caller that mislabelled the original would
     // slip past it — this compares the actual bytes.

@@ -925,10 +925,11 @@
             "city_id"
           ]
         },
-        "zone_parent_category_name_unique": {
-          "name": "zone_parent_category_name_unique",
+        "zone_city_parent_category_name_unique": {
+          "name": "zone_city_parent_category_name_unique",
           "nullsNotDistinct": true,
           "columns": [
+            "city_id",
             "parent_id",
             "category",
             "name"

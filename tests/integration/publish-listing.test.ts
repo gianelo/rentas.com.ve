@@ -83,10 +83,33 @@ function draft(overrides: Partial<NewListing> = {}): NewListing {
 function photo(position: number) {
   return {
     position,
-    thumbnailKey: `photos/${PUBLISHER}/${position}/thumbnail.webp`,
-    detailKey: `photos/${PUBLISHER}/${position}/detail.webp`,
-    thumbnailBytes: 4_000,
-    detailBytes: 120_000,
+    derivatives: [
+      {
+        name: "thumb" as const,
+        key: `photos/${PUBLISHER}/${position}/thumb.webp`,
+        byteLength: 4000,
+      },
+      {
+        name: "card" as const,
+        key: `photos/${PUBLISHER}/${position}/card.webp`,
+        byteLength: 12000,
+      },
+      {
+        name: "strip" as const,
+        key: `photos/${PUBLISHER}/${position}/strip.webp`,
+        byteLength: 30000,
+      },
+      {
+        name: "detail" as const,
+        key: `photos/${PUBLISHER}/${position}/detail.webp`,
+        byteLength: 50000,
+      },
+      {
+        name: "full" as const,
+        key: `photos/${PUBLISHER}/${position}/full.webp`,
+        byteLength: 110000,
+      },
+    ],
   };
 }
 
@@ -132,11 +155,14 @@ describe("DrizzleListingRepository", () => {
     });
 
     const photos = await pool.query(
-      `SELECT position, thumbnail_bytes FROM "listing_photo" WHERE listing_id = $1 ORDER BY position`,
+      `SELECT p.position, d.bytes AS thumb_bytes
+         FROM "listing_photo" p
+         JOIN "listing_photo_derivative" d ON d.photo_id = p.id AND d.name = 'thumb'
+        WHERE p.listing_id = $1 ORDER BY p.position`,
       [id],
     );
     expect(photos.rows.map((row) => row.position)).toEqual([0, 1, 2]);
-    expect(photos.rows[0]?.thumbnail_bytes).toBe(4_000);
+    expect(photos.rows[0]?.thumb_bytes).toBe(4_000);
   });
 
   it("leaves no listing behind when a photo row is refused", async () => {

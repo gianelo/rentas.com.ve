@@ -21,83 +21,86 @@ import sharp from "sharp";
  * a bound to letterbox inside. A thumbnail with bars would break the row's
  * measured 96px height ceiling by changing what the image occupies.
  */
-export const THUMBNAIL_WIDTH = 128;
-export const THUMBNAIL_HEIGHT = 96;
-
-/** D12: "a card thumbnail and a ~200 KB detail image per photo". */
-export const THUMBNAIL_MAX_BYTES = 10 * 1024;
-export const DETAIL_MAX_BYTES = 200 * 1024;
+const KB = 1024;
 
 /**
- * The detail photo renders at 640 × 360 on desktop (SISTEMA.md screen 2), so
- * 1280 is that at 2×. Applied to the LONGEST edge with the aspect ratio
- * preserved rather than as a 1280 × 720 crop: a portrait photograph forced
- * into a landscape box loses half the room. **This number is chosen here**,
- * as D12 states a byte budget for the detail image but no dimension.
+ * **Cinco derivadas, y cada una nombra la superficie que la usa.** Las dos que
+ * había se dimensionaron para el layout viejo, cuando la miniatura de una fila
+ * medía 44×34; el diseño nuevo tiene cuatro superficies con anchos distintos.
+ * Nombrarlas por su uso y no por su tamaño es lo que evita que alguien elija
+ * "la de 256" para un lugar donde entra "la de 360" — el mismo error que
+ * `tokens.css` ya registró cuando un título tomó el token del precio.
+ *
+ * **A 1x, y eso lo dice el diseño**: "En 4K tampoco se sirven fotos al doble de
+ * densidad: chocaría con el presupuesto de bytes."
  */
-export const DETAIL_MAX_EDGE = 1280;
+export const DERIVATIVE_SPECS = {
+  /** Tarjeta de la cuadrícula en móvil (158) y miniaturas del visor. */
+  thumb: { width: 160, height: 120 },
+  /** Tarjeta de la cuadrícula en escritorio (254). */
+  card: { width: 256, height: 192 },
+  /** Tira de la ficha en móvil (328×180). */
+  strip: { width: 360, height: 200 },
+  /** Foto principal de la ficha en escritorio. */
+  detail: { width: 640, height: 360 },
+} as const;
 
 /**
- * A decompression bomb is a few KB on the wire and gigabytes decoded, so the
- * byte-length check in `inspectUploadedPhoto` cannot see it — this is the
- * pixel-dimension half promised there and landed here, where the decoder
- * exists. 40 MP clears any phone camera (a 12 MP photo is 4032 × 3024) while
- * refusing the images that exist only to exhaust a serverless function's
- * fixed memory ceiling.
+ * El visor, acotado por su lado mayor porque conserva la proporción de la
+ * fuente: es la única superficie que muestra la foto entera y no un recorte.
+ *
+ * **1024 y no 1280, por decisión del fundador (2026-08-22), y la razón está
+ * medida.** Esta derivada es el 59% del peso de una foto, así que bajarla
+ * devuelve 1.393 avisos de capacidad dentro de los 10 GB gratuitos de R2 —
+ * más que cualquier otro recorte posible.
  */
+export const FULL_MAX_EDGE = 1024;
+
+/**
+ * El techo de bytes de cada una. **Cambiar cualquiera de estos cinco números
+ * cambia cuántos avisos entran en R2**, así que un test los suma y afirma el
+ * total: 246 KB por foto, 1,44 MB por aviso de seis, ~7.100 avisos en el
+ * tramo gratuito.
+ */
+export const DERIVATIVE_BUDGETS = {
+  thumb: 8 * KB,
+  card: 16 * KB,
+  strip: 40 * KB,
+  detail: 62 * KB,
+  full: 120 * KB,
+} as const;
+
+export type DerivativeName = keyof typeof DERIVATIVE_BUDGETS;
+
+/**
+ * Se conservan porque el adaptador de R2 y el esquema todavía los nombran. La
+ * mudanza de `listing_photo` a las cinco derivadas es su propia tarea.
+ */
+export const THUMBNAIL_WIDTH = DERIVATIVE_SPECS.thumb.width;
+export const THUMBNAIL_HEIGHT = DERIVATIVE_SPECS.thumb.height;
+export const THUMBNAIL_MAX_BYTES = DERIVATIVE_BUDGETS.thumb;
+export const DETAIL_MAX_BYTES = DERIVATIVE_BUDGETS.full;
+export const DETAIL_MAX_EDGE = FULL_MAX_EDGE;
+
 const MAX_INPUT_PIXELS = 40_000_000;
-
-/**
- * WebP for both derivatives. At the same perceptual quality it is
- * substantially smaller than JPEG, and every byte saved here is spent twice:
- * once against the search page's transfer budget, which loads many
- * thumbnails, and once against the 10 GB storage ceiling that decides how
- * many listings the free tier holds.
- */
 const INITIAL_QUALITY = 80;
 const MIN_QUALITY = 40;
 const QUALITY_STEP = 10;
 
 /**
- * When quality alone cannot reach the budget, the longest edge steps down
- * too. **This ladder exists because the first implementation threw instead,
- * and the noise fixtures proved that was reachable**: a maximally-detailed
- * 1280-edge image lands at ~209 KB even at quality 40, over the 200 KB
- * ceiling.
- *
- * Throwing was the wrong answer to that. Refusing a publisher's upload
- * because their photograph carried too much detail is a broken product —
- * and the photos most likely to be dense are the ones taken outdoors in
- * daylight, which is most of a rental listing. Fewer pixels at decent
- * quality also beats the same pixels at bad quality: WebP artefacts on a
- * room photo read as dirt on the walls.
+ * La escalera de tamaños del visor. Si la calidad mínima no alcanza para
+ * entrar en el presupuesto a 1024, se baja el tamaño antes que la calidad:
+ * una foto más chica y nítida se lee mejor que una grande y sucia.
  */
-const DETAIL_EDGE_LADDER = [1280, 1024, 800] as const;
+const FULL_EDGE_LADDER = [FULL_MAX_EDGE, 800, 640] as const;
 
 export interface Derivative {
   readonly bytes: Buffer;
   readonly byteLength: number;
 }
 
-export interface PhotoDerivatives {
-  readonly thumbnail: Derivative;
-  readonly detail: Derivative;
-}
+export type PhotoDerivatives = Record<DerivativeName, Derivative>;
 
-/**
- * Encodes at descending quality until the result fits its budget.
- *
- * The budget is met **by construction rather than asserted afterwards**, and
- * that distinction is the whole point. A single fixed quality either wastes
- * bytes on the average photo or blows the ceiling on a noisy one, and the
- * only way to find out which is to measure in production — where the
- * consequence is a page that misses its transfer budget for the visitors on
- * the worst connections, who are exactly the ones the budget exists for.
- *
- * If even the floor quality cannot fit, this throws rather than returning an
- * over-budget image. Silently exceeding a budget is how a budget stops
- * meaning anything.
- */
 async function encodeWithinBudget(
   pipeline: sharp.Sharp,
   maxBytes: number,
@@ -116,44 +119,42 @@ async function encodeWithinBudget(
 
 export async function deriveListingPhoto(source: Buffer): Promise<PhotoDerivatives> {
   const decoded = sharp(source, { limitInputPixels: MAX_INPUT_PIXELS });
+  const metadata = await decoded.metadata();
+  const sourceWidth = metadata.width ?? 0;
+  const sourceHeight = metadata.height ?? 0;
 
-  // Fails fast on a bomb or on bytes that are not an image at all, before
-  // either resize pipeline runs.
-  await decoded.metadata();
+  const derivatives: Partial<PhotoDerivatives> = {};
 
-  const thumbnail = await encodeWithinBudget(
-    decoded.clone().resize(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, { fit: "cover" }),
-    THUMBNAIL_MAX_BYTES,
-  );
-
-  if (!thumbnail) {
-    // 128 × 96 is 12,288 pixels against a 10 KB ceiling. If even quality 40
-    // cannot fit that, the assumption behind the budget is wrong and a
-    // louder failure is the correct outcome — unlike the detail image,
-    // there is no smaller size left to fall back to.
-    throw new Error(
-      `photo-derivatives: thumbnail could not be encoded within ${THUMBNAIL_MAX_BYTES} bytes ` +
-        `at ${THUMBNAIL_WIDTH}×${THUMBNAIL_HEIGHT}. Refusing to return an over-budget derivative.`,
+  for (const [name, spec] of Object.entries(DERIVATIVE_SPECS)) {
+    const derivative = await encodeWithinBudget(
+      // `withoutEnlargement` porque agrandar inventa píxeles y gasta bytes en
+      // ellos. Una foto de 300px no se estira a 640.
+      decoded.clone().resize(spec.width, spec.height, { fit: "cover", withoutEnlargement: true }),
+      DERIVATIVE_BUDGETS[name as keyof typeof DERIVATIVE_BUDGETS],
     );
+    if (!derivative) {
+      throw new Error(
+        `photo-derivatives: "${name}" no entra en ${DERIVATIVE_BUDGETS[name as DerivativeName]} ` +
+          `bytes a ${spec.width}×${spec.height} ni a la calidad mínima. Se niega a devolver una ` +
+          "derivada fuera de presupuesto: el presupuesto es lo que hace que la página cargue.",
+      );
+    }
+    derivatives[name as DerivativeName] = derivative;
   }
 
-  for (const maxEdge of DETAIL_EDGE_LADDER) {
-    const detail = await encodeWithinBudget(
-      decoded.clone().resize(maxEdge, maxEdge, {
-        fit: "inside",
-        // Upscaling invents pixels and costs bytes for no added detail.
-        withoutEnlargement: true,
-      }),
-      DETAIL_MAX_BYTES,
+  for (const maxEdge of FULL_EDGE_LADDER) {
+    const full = await encodeWithinBudget(
+      decoded.clone().resize(maxEdge, maxEdge, { fit: "inside", withoutEnlargement: true }),
+      DERIVATIVE_BUDGETS.full,
     );
-
-    // Exactly two members, and the source is not one of them (task 3.10).
-    if (detail) return { thumbnail, detail };
+    if (full) {
+      return { ...(derivatives as PhotoDerivatives), full };
+    }
   }
 
   throw new Error(
-    `photo-derivatives: detail could not be encoded within ${DETAIL_MAX_BYTES} bytes ` +
-      `at any size down to ${DETAIL_EDGE_LADDER[DETAIL_EDGE_LADDER.length - 1]}px. ` +
-      "Refusing to return an over-budget derivative.",
+    `photo-derivatives: el visor no entra en ${DERIVATIVE_BUDGETS.full} bytes ni bajando a ` +
+      `${FULL_EDGE_LADDER[FULL_EDGE_LADDER.length - 1]}px desde una fuente de ` +
+      `${sourceWidth}×${sourceHeight}.`,
   );
 }

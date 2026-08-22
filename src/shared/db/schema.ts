@@ -412,8 +412,17 @@ export const listings = pgTable(
   ],
 );
 
-// listing_photo (tasks.md 3.8, design.md D12). Two derivatives per photo and
-// nothing else.
+// listing_photo (tasks.md 3.8, design.md D12). Una foto, y sus derivadas en
+// `listing_photo_derivative`.
+//
+// **Este comentario decia "dos derivadas por foto y nada mas", y esa frase
+// prohibia lo que el disenio nuevo pide.** Son cinco: tarjeta de 158 en movil,
+// de 254 en escritorio, tira de la ficha de 328x180, foto principal de 640x360
+// y el visor. Las dos que habia se dimensionaron para el layout viejo, cuando
+// la miniatura de una fila medía 44x34.
+//
+// Lo que la frase protegia sigue en pie y no cambio: **no hay columna para el
+// archivo original**, porque D12 los descarta despues de hashear.
 //
 // **There is deliberately no column for the original file.** D12: "Originals
 // are discarded after hashing and normalization." A phone photo is 3–8 MB
@@ -449,22 +458,50 @@ export const listingPhotos = pgTable(
     // configuration (`R2_BUCKET_PUBLIC_URL`) and changes when the bucket
     // moves behind a custom domain — baking it into every row would make
     // that migration a data rewrite instead of a config change.
-    thumbnailKey: text("thumbnail_key").notNull(),
-    detailKey: text("detail_key").notNull(),
-    // Measured byte sizes of the two derivatives (D12: thumbnail ≤ 10 KB,
-    // detail ≤ 200 KB). Stored so the budget stays auditable against real
-    // production rows — `SELECT max(detail_bytes) FROM listing_photo` is a
-    // question the test suite cannot answer, because it only ever sees
-    // fixtures. A budget verified solely against test images is a budget
-    // that has never met a real photograph.
-    thumbnailBytes: integer("thumbnail_bytes").notNull(),
-    detailBytes: integer("detail_bytes").notNull(),
+
     createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
   },
   (photo) => [
     // Two photos cannot claim the same slot in one listing's order.
     unique("listing_photo_position_unique").on(photo.listingId, photo.position),
     index("listing_photo_listing_idx").on(photo.listingId),
+  ],
+);
+
+/**
+ * Una derivada de una foto: su clave en R2 y su tamaño medido.
+ *
+ * **Una tabla y no cinco pares de columnas.** Congelar el número de derivadas
+ * en la forma de `listing_photo` es lo que obligó a este cambio: eran dos, el
+ * diseño pidió cinco, y agregar una sexta mañana no debería volver a tocar el
+ * esquema de la foto.
+ *
+ * **Los bytes se guardan por derivada, no se derivan.** El presupuesto de D12
+ * tiene que ser auditable contra filas reales de producción —
+ * `SELECT name, max(bytes) FROM listing_photo_derivative GROUP BY name` es una
+ * pregunta que la suite de tests no puede contestar, porque sólo ve fixtures.
+ * Un presupuesto verificado únicamente contra imágenes de prueba es un
+ * presupuesto que nunca conoció una fotografía real.
+ *
+ * Guarda claves de R2, nunca URLs, por la misma razón que `listing_photo`
+ * antes: la URL pública es configuración de entorno y cambia cuando el bucket
+ * se mueve detrás de un dominio propio.
+ */
+export const listingPhotoDerivatives = pgTable(
+  "listing_photo_derivative",
+  {
+    photoId: text("photo_id")
+      .notNull()
+      .references(() => listingPhotos.id, { onDelete: "cascade" }),
+    /** thumb | card | strip | detail | full. */
+    name: text("name").notNull(),
+    key: text("key").notNull(),
+    bytes: integer("bytes").notNull(),
+  },
+  (row) => [
+    // Una foto no puede tener dos derivadas del mismo tamaño: cuál gana
+    // dependería de cuál alcanzó primero un escaneo.
+    primaryKey({ columns: [row.photoId, row.name] }),
   ],
 );
 
