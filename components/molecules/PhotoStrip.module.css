@@ -1,0 +1,113 @@
+/* La tira de fotos de la ficha (F26). Scroll nativo con `scroll-snap`: sin
+   JavaScript de por medio, la tira se arrastra igual con el script apagado.
+   El escritorio no la redibuja — la misma marca cambia de geometría en el
+   único punto de quiebre del proyecto, 768px. */
+
+.gallery {
+  margin: 0;
+}
+
+.track {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  /* La barra de scroll tapa el borde inferior de la foto y no aporta nada
+     donde se arrastra con el dedo. */
+  scrollbar-width: none;
+  /* Arrastrar hasta el final de la tira no debe arrastrar la página detrás. */
+  overscroll-behavior-inline: contain;
+}
+
+.item {
+  flex: none;
+  scroll-snap-align: center;
+}
+
+.frame {
+  display: block;
+  border-radius: var(--r);
+  /* El recorte va acá y no en la imagen: el radio tiene que recortar la foto,
+     no quedar debajo de ella. */
+  overflow: hidden;
+  /* La trama del sistema se ve mientras la foto viaja. Sin ella, cinco huecos
+     del color de la página se leen como una ficha rota, que es justo lo que
+     `lazy` provoca al desplazarse rápido. */
+  background: var(--thumb);
+}
+
+/* `<picture>` es inline, y una imagen de bloque adentro deja el hueco del
+   descendente debajo — una franja de fondo entre la foto y el borde
+   redondeado. */
+.frame picture {
+  display: block;
+}
+
+.frame:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.image {
+  display: block;
+  width: var(--ficha-photo-w);
+  height: var(--ficha-photo-h);
+  /* La derivada no tiene exactamente la proporción del hueco. `cover` recorta;
+     `fill` deformaría la propiedad, que es peor que perder unos píxeles. */
+  object-fit: cover;
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--ficha-dot-size);
+  padding-top: 10px;
+}
+
+.dot {
+  width: var(--ficha-dot-size);
+  height: var(--ficha-dot-size);
+  border-radius: var(--rs);
+  background: var(--line);
+}
+
+@media (min-width: 768px) {
+  /* En escritorio no hay arrastre: la foto principal ocupa la columna entera
+     y las demás caen debajo como miniaturas. Se apaga el `snap` porque una
+     tira que salta al centro sin haber scroll es una animación gratis. */
+  .track {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    scroll-snap-type: none;
+  }
+
+  .item:first-child {
+    /* Fuerza el corte de línea: la principal se queda sola en su renglón. */
+    flex-basis: 100%;
+  }
+
+  .image {
+    width: var(--ficha-thumb-w);
+    height: var(--ficha-thumb-h);
+  }
+
+  .item:first-child .image {
+    width: var(--ficha-photo-w-desktop);
+    height: var(--ficha-photo-h-desktop);
+  }
+
+  /* Un radio de 12px sobre una imagen de 120×90 se come la imagen; el sistema
+     ya tiene el radio chico para exactamente este caso. */
+  .item:not(:first-child) .frame {
+    border-radius: var(--r-thumb);
+  }
+
+  /* Los puntos sobran donde las miniaturas ya muestran cuántas fotos hay y
+     cómo son. */
+  .dots {
+    display: none;
+  }
+}

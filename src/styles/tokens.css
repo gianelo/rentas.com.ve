@@ -107,6 +107,11 @@
   --action-h: 46px;
   /* Geometría de la galería, tomada del diseño y no de un cálculo. */
   --ficha-photo-h: 180px;
+  /* El ancho de la foto en la tira móvil. **Fijo y no 100%**, y la diferencia
+     se ve: a 360px de viewport ocupa el ancho útil exacto, y en una pantalla
+     más ancha asoma el borde de la siguiente — que es lo que dice que hay más
+     de una foto sin gastar un script en decirlo. */
+  --ficha-photo-w: 328px;
   --ficha-photo-w-desktop: 640px;
   --ficha-photo-h-desktop: 360px;
   --ficha-thumb-w: 120px;
@@ -133,6 +138,11 @@
      cuadrícula. */
   --card-price-fs: 17px;
   --card-title-fs: 13px;
+  /* El punto de posición debajo de la tira. Propio y no `--r-thumb` ni una de
+     las medidas de miniatura: es una marca, no una imagen, y compartir el
+     número con algo que significa otra cosa es cómo un ajuste de miniatura
+     termina moviendo los puntos. */
+  --ficha-dot-size: 5px;
   --title-fs: 20px;
   --title-fw: 700;
   --title-lh: 1.25;
