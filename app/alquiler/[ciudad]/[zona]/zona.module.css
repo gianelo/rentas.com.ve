@@ -1,0 +1,96 @@
+/* Los resultados de una zona. La cuadrícula misma la trae `ListingCard`, que
+   es donde viven sus dos anchos; acá sólo queda el encabezado. */
+
+.breadcrumb {
+  padding-block: 4px;
+}
+
+.crumbs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  color: var(--soft);
+}
+
+.crumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--soft);
+}
+
+/* El separador es decoración, no un paso de la ruta: dibujado acá no llega al
+   árbol de accesibilidad, así que un lector de pantalla lee tres elementos y
+   no cinco. */
+.crumb + .crumb::before {
+  content: "›";
+  color: var(--strong);
+}
+
+/* 44 px de área táctil, incluidos los enlaces de volver (regla transversal 4).
+   Es el único camino de salida de esta pantalla, y errarle en un teléfono es
+   quedarse encerrado en la zona. */
+.crumbLink {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+  padding-inline-end: 4px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.crumbLink:hover {
+  text-decoration: underline;
+}
+
+.crumbLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.title {
+  margin: 4px 0 0;
+  font-family: var(--disp);
+  font-size: var(--title-fs);
+  font-weight: var(--title-fw);
+  line-height: var(--title-lh);
+  letter-spacing: var(--brand-ls);
+  color: var(--ink);
+}
+
+/* El gris es --soft y nunca `opacity`: atenuar con opacidad se lleva puesto
+   también el fondo y deja el contraste fuera de control. */
+.count {
+  margin: 6px 0 14px;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  font-weight: var(--meta-fw);
+  line-height: 1.4;
+  color: var(--soft);
+}
+
+/* Una cuadrícula vacía se lee como una página rota. Decir que no hay nada, y
+   qué cambiar, es una respuesta; un hueco blanco no lo es. */
+.empty {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--bg);
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+@media (min-width: 768px) {
+  .crumbLink {
+    min-block-size: var(--target-min-desktop);
+  }
+}

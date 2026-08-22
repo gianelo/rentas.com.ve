@@ -111,6 +111,28 @@
   --ficha-photo-h-desktop: 360px;
   --ficha-thumb-w: 120px;
   --ficha-thumb-h: 90px;
+  /* La tarjeta de la cuadrícula (14.25), que reemplaza a la fila de
+     resultado. Dos columnas de 158 px en móvil y tres de 254 px en
+     escritorio: los dos anchos son del fundador, no de un cálculo, y son
+     geometría de la TARJETA — por eso viven acá y no en la hoja de la
+     pantalla que la use, que ya son dos (la zona y el inicio de la 14.21). */
+  --card-w: 158px;
+  --card-w-desktop: 254px;
+  --card-gap: 12px;
+  /* La portada, dada como proporción y no como alto. Las derivadas `thumb`
+     (160×120) y `card` (256×192) son las dos 4:3, así que la proporción es
+     el dato real; un alto fijo deformaría la foto justo donde la columna se
+     encoge por debajo de 158 px, que es el teléfono angosto. */
+  --card-photo-ratio: 4 / 3;
+  /* **La regla transversal 2, escrita como dos números comparables.** El
+     precio pesa más que el título, y "más" tiene que ser verificable: el
+     test de la tarjeta compara estos dos tokens entre sí, no contra 17.
+     Separados de --fp/--ft (la fila) a propósito: aquella escala está
+     calculada para 44 px de miniatura al lado del texto, y reusarla haría
+     que cambiar la densidad de una fila que ya no existe redimensionara la
+     cuadrícula. */
+  --card-price-fs: 17px;
+  --card-title-fs: 13px;
   --title-fs: 20px;
   --title-fw: 700;
   --title-lh: 1.25;
