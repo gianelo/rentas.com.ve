@@ -1,14 +1,32 @@
-import type { ContactPresentation } from "@/modules/contact-reveal/domain/revealable-contact";
-import { contactChannelNoun } from "@/modules/contact-reveal/domain/revealable-contact";
-import { ActionLink } from "../atoms/buttons";
+import type {
+  ContactMethod,
+  ContactPresentation,
+} from "@/modules/contact-reveal/domain/revealable-contact";
+import {
+  contactActionHref,
+  contactChannelNoun,
+} from "@/modules/contact-reveal/domain/revealable-contact";
+import { ActionButton, ActionLink } from "../atoms/buttons";
+import { CopyContact } from "../client/CopyContact";
 import styles from "./ContactBlock.module.css";
 
 export interface ContactBlockProps {
   readonly contact: ContactPresentation;
   readonly publisherType: "owner" | "broker";
   readonly publisherName: string | null;
-  /** A dónde va el botón cuando hay que entrar. Lleva la vuelta a esta ficha. */
+  /** Viaja en el formulario: la acción es un endpoint HTTP como cualquier otro. */
+  readonly listingId: string;
+  /** Para el mensaje redactado — quien publica tiene que saber por cuál aviso le escriben. */
+  readonly listingTitle: string;
+  /** A dónde va la acción cuando hay que entrar. Lleva la vuelta a esta ficha. */
   readonly signInHref: string;
+  /** La revelación, que es un caso de uso y no un enlace. */
+  readonly revealAction: (formData: FormData) => Promise<void>;
+  /** `null` mientras no exista `phone_verified_at` (tasks.md 16.12). */
+  readonly verifiedAt: Date | null;
+  readonly expiresAt: Date;
+  readonly zoneName: string;
+  readonly zoneHref: string;
 }
 
 /**
@@ -28,24 +46,81 @@ const MASKS = {
 } as const;
 
 /** El sustantivo sale del dominio; la frase se arma acá. */
-function actionLabel(method: ContactPresentation["method"], publisherType: "owner" | "broker") {
+function lockedLabel(method: ContactMethod, publisherType: "owner" | "broker") {
   const owner = publisherType === "owner" ? "del dueño" : "de la inmobiliaria";
   return `Ver ${contactChannelNoun(method)} ${owner}`;
 }
 
 /**
- * El bloque de contacto con llave (F29, F30).
+ * El verbo de cada acción, que **no** es el sustantivo del canal.
+ *
+ * A un teléfono se lo llama y a un correo se le escribe: una sola plantilla
+ * ("Escribir por ___") produciría "Escribir por teléfono", que nombra el canal
+ * correcto y promete la acción equivocada. Un `Record` para que un cuarto
+ * método rompa la compilación en vez de caer en un verbo por defecto.
+ */
+const REVEALED_LABEL: Record<ContactMethod, (noun: string) => string> = {
+  whatsapp: (noun) => `Escribir por ${noun}`,
+  telefono: () => "Llamar",
+  email: () => "Escribir un correo",
+};
+
+/** "19 ago." — la misma escala corta que el pie de la ficha usa para el vencimiento. */
+function shortDate(date: Date): string {
+  return new Intl.DateTimeFormat("es-VE", { day: "numeric", month: "short" }).format(date);
+}
+
+/** "12 de septiembre" — el estado vencido dice la fecha entera, no una abreviatura. */
+function longDate(date: Date): string {
+  return new Intl.DateTimeFormat("es-VE", { day: "numeric", month: "long" }).format(date);
+}
+
+/**
+ * El bloque de contacto con llave (F29, F30), en sus **tres** estados.
  *
  * **Nunca se oculta entero.** Tiene que verse que el teléfono existe y qué
  * falta para verlo: un bloque ausente se lee como un aviso incompleto, y quien
  * lo mira se va sin saber que había un contacto a un toque de distancia.
+ *
+ * **Cuál de los tres estados se dibuja no se decide acá.** Llega resuelto en
+ * `contact`, desde `presentListingContact` — este componente no puede
+ * equivocarse de estado porque no tiene con qué: el estado bloqueado ni
+ * siquiera lleva el valor encima.
  */
 export function ContactBlock({
   contact,
   publisherType,
   publisherName,
+  listingId,
+  listingTitle,
   signInHref,
+  revealAction,
+  verifiedAt,
+  expiresAt,
+  zoneName,
+  zoneHref,
 }: ContactBlockProps) {
+  // El aviso vencido no lleva publicador, ni máscara, ni advertencia de
+  // negociación: no hay negociación que advertir. Lo que sí lleva es una
+  // salida, porque quien llegó buscando en esta zona sigue buscando en esta
+  // zona (nota del diseño, lámina 10c).
+  if (contact.state === "expired") {
+    return (
+      <section className={styles.block} data-testid="contact-block">
+        <div className={styles.expired} data-testid="expired-notice">
+          <h2 className={styles.expiredTitle}>Aviso vencido</h2>
+          <p className={styles.expiredText}>
+            Venció el {longDate(expiresAt)} y no fue renovado. No mostramos el contacto de avisos
+            vencidos.
+          </p>
+        </div>
+        <div className={styles.control}>
+          <ActionLink href={zoneHref}>Ver avisos activos en {zoneName}</ActionLink>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className={styles.block} data-testid="contact-block">
       {publisherName ? (
@@ -68,9 +143,56 @@ export function ContactBlock({
               Mostramos el {contactChannelNoun(contact.method)} a usuarios registrados. Pedimos la
               cuenta para frenar avisos falsos: es gratis y es un toque.
             </p>
-            <ActionLink href={signInHref}>{actionLabel(contact.method, publisherType)}</ActionLink>
+            {/* **Un formulario y no un enlace, que era el agujero.** El botón
+                iba a `/signin` y no llamaba a nada: se podía entrar, volver a
+                la ficha, y el número seguía tapado. Un enlace no ejecuta la
+                revelación — y la revelación es el hecho que la métrica norte
+                del producto cuenta. Sigue andando sin JavaScript: es un POST
+                nativo, como el formulario de publicar. */}
+            <form className={styles.control} action={revealAction}>
+              <input type="hidden" name="listingId" value={listingId} />
+              {/* La ficha es la única que conoce su URL canónica; la acción la
+                  usa sólo si hace falta mandar a entrar (F19). */}
+              <input type="hidden" name="signInHref" value={signInHref} />
+              <ActionButton type="submit">
+                {lockedLabel(contact.method, publisherType)}
+              </ActionButton>
+            </form>
           </>
-        ) : null}
+        ) : (
+          <>
+            {/* Sólo si se sabe. `phone_verified_at` no existe todavía
+                (tasks.md 16.12) y la verificación por WhatsApp es un stub, así
+                que con `null` la línea no se dibuja: certificar un número que
+                nadie comprobó sería peor que no decir nada. Dice CUÁNDO y no
+                "vigente" — un aviso puede publicarse el último día de una
+                verificación, y los dos relojes se cruzan (tasks.md 19.12). */}
+            {verifiedAt ? (
+              <p className={styles.verified}>
+                Verificado por {contactChannelNoun(contact.method)} el {shortDate(verifiedAt)}
+              </p>
+            ) : null}
+
+            <div className={styles.control}>
+              <ActionLink
+                href={contactActionHref(
+                  contact.method,
+                  contact.value,
+                  `Hola, vi tu aviso «${listingTitle}» en rentas.com.ve y me interesa.`,
+                )}
+              >
+                {REVEALED_LABEL[contact.method](contactChannelNoun(contact.method))}
+              </ActionLink>
+            </div>
+
+            <div className={styles.copy}>
+              <CopyContact
+                value={contact.value}
+                label={`Copiar el ${contactChannelNoun(contact.method)}`}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {/* Acompaña al contacto y no va al pie (F30): quien está por escribir es

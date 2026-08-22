@@ -32,17 +32,98 @@
 }
 
 /* Monoespaciado y con cifras tabulares: un número de teléfono se lee en
-   bloques, y una fuente proporcional los desalinea. */
+   bloques, y una fuente proporcional los desalinea.
+
+   `user-select: all` es lo que sostiene la degradación del botón de copiar: sin
+   JavaScript ese botón no existe, y un toque sostenido sobre el número tiene
+   que seleccionarlo entero. Sin esto la selección corta por palabras y quien
+   copia se lleva medio teléfono. */
 .value {
   margin: 0;
   font-family: var(--disp);
   font-size: var(--ficha-title-fs);
   font-weight: var(--meta-fw);
   font-variant-numeric: tabular-nums;
+  user-select: all;
 }
 
 .why {
   margin: 6px 0 12px;
+  font-size: var(--meta-fs);
+  line-height: var(--ficha-body-lh);
+  color: var(--soft);
+  text-wrap: pretty;
+}
+
+/* Dice desde cuándo, no que siga vigente. Metadato pequeño y monoespaciado,
+   como la ubicación en la ficha: es un dato de servicio, no una afirmación que
+   compita con el número. */
+.verified {
+  margin: 6px 0 12px;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  color: var(--soft);
+}
+
+/* **El ancho lo pone el contenedor, no el botón.** Los átomos de
+   `components/atoms/buttons.tsx` son `inline-flex` (el mismo botón también vive
+   en una barra al lado de otro) y fijan su clase DESPUÉS del spread, a
+   propósito: así nadie mezcla niveles de la jerarquía desde afuera. La
+   consecuencia es que el ancho y el alto de esta pantalla se deciden acá.
+
+   46px y no --target-min: el diseño fija esa altura para el botón de acción en
+   móvil y en escritorio, donde el átomo bajaría a 36. Está por encima del
+   mínimo táctil, así que la regla transversal 7 se cumple con holgura. */
+.control {
+  display: block;
+  margin-top: 12px;
+}
+
+/* Por elemento y no `> *`: el formulario también lleva campos ocultos como
+   hijos directos, y estirarlos no se ve pero deja la regla diciendo algo que
+   no quiso decir. */
+.control > a,
+.control > button {
+  width: 100%;
+  min-height: var(--action-h);
+}
+
+/* El de copiar es el control secundario y no debe pesar como el de acción,
+   pero sigue siendo un objetivo táctil: 44px en las dos pantallas, donde el
+   átomo bajaría a 36 en escritorio. */
+.copy {
+  display: flex;
+  justify-content: center;
+}
+
+/* El aire va en el hijo y no en el contenedor: sin JavaScript el botón no se
+   dibuja, y un margen puesto arriba dejaría un hueco de 8px sosteniendo nada. */
+.copy > button {
+  margin-top: 8px;
+  min-height: var(--target-min);
+}
+
+/* Borde punteado, como el diseño dibuja el estado vencido: se distingue de un
+   bloque normal sin depender del color. */
+.expired {
+  padding: 12px;
+  border: 1px dashed var(--strong);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+
+.expiredTitle {
+  margin: 0;
+  font-family: var(--meta);
+  font-weight: var(--badge-fw);
+  font-size: var(--badge-fs);
+  letter-spacing: var(--badge-ls);
+  text-transform: uppercase;
+  color: var(--soft);
+}
+
+.expiredText {
+  margin: 8px 0 0;
   font-size: var(--meta-fs);
   line-height: var(--ficha-body-lh);
   color: var(--soft);

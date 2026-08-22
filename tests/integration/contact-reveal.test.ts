@@ -6,6 +6,7 @@ import {
   type ContactRevealDatabase,
   DrizzleContactRevealEvents,
   DrizzleContactRevealMetrics,
+  DrizzleRevealableListing,
 } from "../../src/modules/contact-reveal/infrastructure/drizzle-contact-reveal";
 import * as schema from "../../src/shared/db/schema";
 
@@ -35,6 +36,7 @@ const pool = new Pool({ connectionString: getTestDatabaseUrl() });
 const db = drizzle(pool, { schema }) as unknown as ContactRevealDatabase;
 const events = new DrizzleContactRevealEvents(db);
 const metrics = new DrizzleContactRevealMetrics(db);
+const revealable = new DrizzleRevealableListing(db);
 
 const CITY = randomUUID();
 const ZONE = randomUUID();
@@ -43,6 +45,8 @@ const ANA = randomUUID();
 const BRUNO = randomUUID();
 const LISTING = randomUUID();
 const OTHER_LISTING = randomUUID();
+const EXPIRED_LISTING = randomUUID();
+const HIDDEN_LISTING = randomUUID();
 
 /** Ana reveals the same listing three times, a week apart. */
 const REVEALS = [
@@ -51,12 +55,12 @@ const REVEALS = [
   new Date("2026-03-15T10:00:00.000Z"),
 ];
 
-async function insertListing(id: string) {
+async function insertListing(id: string, status = "active") {
   await pool.query(
     `INSERT INTO "listing" (id, publisher_id, publisher_type, property_type, city_id, zone_id, title,
        description, price_usd, rooms, area_m2, bathrooms, contact_method, contact_value, status, published_at, expires_at)
-     VALUES ($1,$2,'owner','apartamento',$3,$4,'Título','x',450,2,78,2,'whatsapp','04121234567','active',now(),now() + interval '30 days')`,
-    [id, PUBLISHER, CITY, ZONE],
+     VALUES ($1,$2,'owner','apartamento',$3,$4,'Título','x',450,2,78,2,'whatsapp','04121234567',$5,now(),now() + interval '30 days')`,
+    [id, PUBLISHER, CITY, ZONE, status],
   );
 }
 
@@ -71,6 +75,8 @@ beforeAll(async () => {
   }
   await insertListing(LISTING);
   await insertListing(OTHER_LISTING);
+  await insertListing(EXPIRED_LISTING, "expired");
+  await insertListing(HIDDEN_LISTING, "hidden");
 
   for (const revealedAt of REVEALS) {
     await events.record({
@@ -122,6 +128,41 @@ describe("contact_reveal_event", () => {
     );
 
     expect(Number(rows[0]?.count)).toBe(REVEALS.length);
+  });
+});
+
+describe("DrizzleRevealableListing", () => {
+  it("entrega el método y el valor de un aviso activo", async () => {
+    const listing = await revealable.findRevealable(LISTING);
+
+    expect(listing).toEqual({
+      listingId: LISTING,
+      publisherId: PUBLISHER,
+      cityId: CITY,
+      contactMethod: "whatsapp",
+      contactValue: "04121234567",
+    });
+  });
+
+  /**
+   * **La garantía es que el valor NO SALE DE POSTGRES, y sólo se puede probar
+   * acá.** El filtro vive en el `WHERE`, así que un aviso vencido u oculto no
+   * devuelve fila: no hay nada que un render, un log de consulta o un payload
+   * de componente de servidor pueda arrastrar. Filtrado en TypeScript, el
+   * número ya viajó — y ninguna prueba con un repositorio falso puede notar la
+   * diferencia, porque el falso nunca tuvo el número.
+   */
+  it.each([
+    ["vencido", () => EXPIRED_LISTING],
+    ["oculto por moderación", () => HIDDEN_LISTING],
+  ])("no devuelve nada de un aviso %s", async (_estado, id) => {
+    await expect(revealable.findRevealable(id())).resolves.toBeNull();
+  });
+
+  it("no distingue un aviso dado de baja de uno que nunca existió", async () => {
+    // Las dos respuestas son `null`, que es lo que el puerto promete: quien
+    // sondea URLs no puede usar la diferencia para inventariar bajas.
+    await expect(revealable.findRevealable(randomUUID())).resolves.toBeNull();
   });
 });
 

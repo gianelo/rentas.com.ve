@@ -1,0 +1,166 @@
+import { describe, expect, it, vi } from "vitest";
+import type {
+  AuthenticatedSession,
+  SessionPort,
+} from "../../identity/application/ports/session.port";
+import type {
+  ContactRevealMetricsPort,
+  UniqueRevealPair,
+} from "./ports/contact-reveal-metrics.port";
+import type { RevealableListing, RevealableListingPort } from "./ports/revealable-listing.port";
+import { viewListingContact } from "./view-listing-contact";
+
+const TENANT: AuthenticatedSession = {
+  userId: "tenant-1",
+  email: "tenant@example.com",
+  name: "Jane Doe",
+};
+
+const LISTING: RevealableListing = {
+  listingId: "listing-1",
+  publisherId: "publisher-1",
+  cityId: "city-caracas",
+  contactMethod: "whatsapp",
+  contactValue: "+58 412 555 0134",
+};
+
+const PAIR: UniqueRevealPair = {
+  tenantUserId: TENANT.userId,
+  listingId: LISTING.listingId,
+  publisherId: LISTING.publisherId,
+  cityId: LISTING.cityId,
+  firstRevealedAt: new Date("2026-03-01T10:00:00.000Z"),
+  revealCount: 1,
+};
+
+function dependencies(
+  session: AuthenticatedSession | null,
+  pairs: readonly UniqueRevealPair[] = [],
+  listing: RevealableListing | null = LISTING,
+) {
+  const sessionPort: SessionPort = { getSession: vi.fn().mockResolvedValue(session) };
+  const listings: RevealableListingPort = { findRevealable: vi.fn().mockResolvedValue(listing) };
+  const reveals: ContactRevealMetricsPort = {
+    findUniquePairs: vi.fn().mockResolvedValue(pairs),
+  };
+
+  return { sessionPort, listings, reveals };
+}
+
+const ACTIVE = {
+  listingId: LISTING.listingId,
+  method: "whatsapp",
+  availability: "available",
+} as const;
+
+describe("viewListingContact", () => {
+  /**
+   * **La garantía entera del bloque bloqueado, y no es el `state`.** Es que
+   * el valor NO SE LEE: mientras nadie revele, el número no sale de Postgres,
+   * así que no hay render, JSON ni carga de componente de servidor que pueda
+   * filtrarlo por descuido. Un caso de uso que leyera el aviso y después
+   * decidiera qué mostrar dependería de que cada componente se acuerde de
+   * mirar el `state` — y ese olvido es silencioso.
+   */
+  it("no le pide el valor al catálogo cuando el visitante es anónimo", async () => {
+    const deps = dependencies(null);
+
+    const presentation = await viewListingContact(ACTIVE, deps);
+
+    expect(presentation).toEqual({ state: "locked", method: "whatsapp" });
+    expect(deps.listings.findRevealable).not.toHaveBeenCalled();
+  });
+
+  it("tampoco lo lee para quien entró pero todavía no reveló", async () => {
+    // Entrar no es revelar: la revelación es el hecho que la métrica cuenta
+    // (design.md D6), y una sesión que abriera el número por sí sola no
+    // inflaría el número — lo dejaría ciego.
+    const deps = dependencies(TENANT, []);
+
+    const presentation = await viewListingContact(ACTIVE, deps);
+
+    expect(presentation).toEqual({ state: "locked", method: "whatsapp" });
+    expect(deps.listings.findRevealable).not.toHaveBeenCalled();
+  });
+
+  it("entrega el valor a quien ya reveló este aviso", async () => {
+    const deps = dependencies(TENANT, [PAIR]);
+
+    await expect(viewListingContact(ACTIVE, deps)).resolves.toEqual({
+      state: "revealed",
+      method: "whatsapp",
+      value: "+58 412 555 0134",
+    });
+  });
+
+  /**
+   * **El filtro lleva las dos claves, y si le falta una el fallo es enorme y
+   * mudo.** Preguntando sólo por `listingId`, el primer inquilino que revela
+   * un aviso se lo abre a todos los demás; preguntando sólo por
+   * `tenantUserId`, revelar un aviso abre todos los avisos. Las dos versiones
+   * devuelven filas, ninguna lanza nada.
+   */
+  it("pregunta por el par inquilino + aviso, nunca por uno solo", async () => {
+    const deps = dependencies(TENANT, [PAIR]);
+
+    await viewListingContact(ACTIVE, deps);
+
+    expect(deps.reveals.findUniquePairs).toHaveBeenCalledWith({
+      listingId: LISTING.listingId,
+      tenantUserId: TENANT.userId,
+    });
+  });
+
+  /**
+   * Un aviso vencido no tiene contacto en ningún estado de sesión, y acá eso
+   * se paga además en lecturas: no se consulta la sesión, ni la métrica, ni
+   * el catálogo. La decisión es del dominio; lo que este caso de uso agrega
+   * es no ir a buscar nada para tomarla.
+   */
+  it("resuelve el aviso vencido sin leer sesión, métrica ni catálogo", async () => {
+    const deps = dependencies(TENANT, [PAIR]);
+
+    const presentation = await viewListingContact({ ...ACTIVE, availability: "expired" }, deps);
+
+    expect(presentation).toEqual({ state: "expired" });
+    expect(deps.sessionPort.getSession).not.toHaveBeenCalled();
+    expect(deps.reveals.findUniquePairs).not.toHaveBeenCalled();
+    expect(deps.listings.findRevealable).not.toHaveBeenCalled();
+  });
+
+  /**
+   * **La carrera real, no una hipotética.** El evento de revelación sobrevive
+   * al aviso a propósito (la métrica no se puede borrar con un `JOIN`), así
+   * que un aviso dado de baja después de la revelación deja al par existiendo
+   * y al aviso ya no revelable. Sin esta rama, `contactValue` de `null`
+   * llegaría como `undefined` hasta el render.
+   */
+  it("vuelve a bloquear si el aviso dejó de ser revelable después de la revelación", async () => {
+    const deps = dependencies(TENANT, [PAIR], null);
+
+    await expect(viewListingContact(ACTIVE, deps)).resolves.toEqual({
+      state: "locked",
+      method: "whatsapp",
+    });
+  });
+
+  /**
+   * El método lo pone la ficha, que ya lo tiene; el valor lo pone el
+   * catálogo. Que el aviso guarde otro canal del que la ficha dibujó es un
+   * dato desincronizado, y gana el que trae el valor: el rótulo tiene que
+   * nombrar el canal del número que se está mostrando.
+   */
+  it("nombra el canal del valor que efectivamente entrega", async () => {
+    const deps = dependencies(TENANT, [PAIR], {
+      ...LISTING,
+      contactMethod: "email",
+      contactValue: "duenio@ejemplo.com",
+    });
+
+    await expect(viewListingContact(ACTIVE, deps)).resolves.toEqual({
+      state: "revealed",
+      method: "email",
+      value: "duenio@ejemplo.com",
+    });
+  });
+});
