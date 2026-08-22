@@ -298,10 +298,37 @@ export function readR2Config(env: Record<string, string | undefined> = process.e
     secretAccessKey: env.R2_BUCKET_SECRET_KEY as string,
   };
 
+  const endpoint = new URL(config.endpoint);
+
+  /**
+   * **El endpoint es un origen, no una ruta — y esto no falla, corrompe.**
+   *
+   * El SDK de S3 arma `endpoint + /bucket + /clave`. Con el bucket ya escrito
+   * dentro del endpoint, R2 recibe el nombre DOS veces: lee el primero como
+   * bucket y **el segundo pasa a ser el principio de la clave**. Cada subida
+   * termina en `rentas-photos/photos/…` mientras `listing_photo_derivative`
+   * guarda `photos/…`, y el objeto queda a un segmento de distancia de donde
+   * toda pantalla lo busca.
+   *
+   * Nada lanza. Sube bien, se guarda bien, y la foto da 404 para siempre. Nos
+   * pasó el 2026-08-22 con las 180 derivadas de la demo, y sólo se encontró
+   * comparando lo que la base decía contra lo que R2 tenía. Por eso es una
+   * guarda de arranque: mismo razonamiento que el cruce con
+   * `R2_BUCKET_ACCOUNT_ID` de abajo — convertir una configuración equivocada
+   * en un error visible en vez de un 404 silencioso.
+   */
+  if (endpoint.pathname !== "/" && endpoint.pathname !== "") {
+    throw new Error(
+      `r2-photo-storage: R2_BUCKET_URL (${config.endpoint}) carries a path. ` +
+        "It must be the account origin only — the bucket goes in R2_BUCKET, and a path here " +
+        "is prepended to every object key, so uploads land where nothing reads them.",
+    );
+  }
+
   // `startsWith` rather than an exact hostname: R2's jurisdiction-specific
   // endpoints (`<account>.eu.r2.cloudflarestorage.com`) are legitimate, and an
   // exact match would reject them.
-  if (!new URL(config.endpoint).hostname.startsWith(`${config.accountId}.`)) {
+  if (!endpoint.hostname.startsWith(`${config.accountId}.`)) {
     throw new Error(
       `r2-photo-storage: R2_BUCKET_URL (${config.endpoint}) does not belong to ` +
         `R2_BUCKET_ACCOUNT_ID (${config.accountId})`,
