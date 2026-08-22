@@ -1,3 +1,4 @@
+import { zonesForCity } from "../../src/modules/listing-catalogue/domain/catalogue";
 import { ActionButton } from "../atoms/buttons";
 import { Label } from "../atoms/Label";
 import styles from "./CityZoneSelect.module.css";
@@ -52,9 +53,11 @@ export function CityZoneSelect({
   selectedCityId,
   selectedZoneId,
 }: CityZoneSelectProps) {
-  const zonesForSelectedCity = selectedCityId
-    ? zones.filter((zone) => zone.cityId === selectedCityId)
-    : [];
+  // The narrowing rule lives in listing-catalogue's domain, not here. It read
+  // `zones.filter(...)` inline until 2026-08-21; it is the same D5 rule the
+  // search filters need, and two components each holding their own copy is
+  // how the two screens start disagreeing.
+  const zonesForSelectedCity = zonesForCity(zones, selectedCityId);
 
   return (
     <form method="get" className={styles.form}>

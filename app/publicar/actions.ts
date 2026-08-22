@@ -1,11 +1,10 @@
 "use server";
 
-import { asc, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/shared/db/client";
-import { zones as zonesTable } from "@/shared/db/schema";
 import { validatePublishableListing } from "../../src/modules/listing-publication/domain/publishable-listing";
+import { DrizzleZoneCatalogue } from "../../src/modules/listing-publication/infrastructure/drizzle-listing-repository";
 import { requireSession } from "../_lib/require-session";
 import { DRAFT_COOKIE, DRAFT_TTL_SECONDS, serialiseDraft } from "./draft";
 import { readValues, STEP_TWO_VIOLATIONS, toDraft } from "./submission";
@@ -29,12 +28,13 @@ export async function submitPublishStep1(formData: FormData): Promise<void> {
 
   const values = readValues(formData);
 
+  // Through the port listing-publication already owns. The hand-written
+  // select this replaces skipped its join against `city`, so a zone whose
+  // city had been removed still validated a draft — and the insert then
+  // failed on a foreign key, turning an actionable `cityId.unknown` into a
+  // 500.
   const curatedZones = values.cityId
-    ? await db
-        .select({ id: zonesTable.id, cityId: zonesTable.cityId })
-        .from(zonesTable)
-        .where(eq(zonesTable.cityId, values.cityId))
-        .orderBy(asc(zonesTable.name))
+    ? await new DrizzleZoneCatalogue(db).listZonesForCity(values.cityId)
     : [];
 
   const violations = validatePublishableListing(toDraft(values), curatedZones).filter(
