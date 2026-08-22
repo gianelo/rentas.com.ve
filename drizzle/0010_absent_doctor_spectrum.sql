@@ -1,4 +1,10 @@
 -- Escrita a mano sobre lo que genero drizzle-kit.
+-- deploy-migrate: allow-destructive — los cuatro DROP COLUMN de abajo corren
+-- DESPUES del INSERT ... SELECT que copia toda clave de R2 y todo tamano a
+-- listing_photo_derivative. Ninguna fila se pierde: cambian de tabla. Sin
+-- este marcador el guardia aborta el deploy, que es lo que paso el 22 de
+-- agosto entre las 15:36 y las 18:30.
+--
 --
 -- El generador emitio los cuatro DROP COLUMN directo. Eso BORRA las claves de
 -- R2 de toda foto ya subida: las derivadas seguirian existiendo en el bucket y
