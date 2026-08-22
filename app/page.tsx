@@ -1,9 +1,9 @@
-import { asc } from "drizzle-orm";
 import type { Metadata } from "next";
+import { resolveSelectedCity, zonesForCity } from "@/modules/listing-catalogue/domain/catalogue";
+import { DrizzleCatalogue } from "@/modules/listing-catalogue/infrastructure/drizzle-catalogue";
 import { buildSearchCriteria } from "@/modules/listing-search/domain/search-criteria";
 import { DrizzleListingSearch } from "@/modules/listing-search/infrastructure/drizzle-listing-search";
 import { db } from "@/shared/db/client";
-import { cities as citiesTable, zones as zonesTable } from "@/shared/db/schema";
 import { Container } from "../components/layout/Container";
 import { SidebarLayout } from "../components/layout/SidebarLayout";
 import { ResultRow } from "../components/molecules/ResultRow";
@@ -45,31 +45,22 @@ interface SearchPageProps {
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;
 
-  const [cities, zones] = await Promise.all([
-    db
-      .select({ id: citiesTable.id, name: citiesTable.name })
-      .from(citiesTable)
-      .orderBy(asc(citiesTable.name)),
-    db
-      .select({ id: zonesTable.id, name: zonesTable.name, cityId: zonesTable.cityId })
-      .from(zonesTable)
-      .orderBy(asc(zonesTable.name)),
-  ]);
+  const catalogue = new DrizzleCatalogue(db);
+  const [cities, zones] = await Promise.all([catalogue.listCities(), catalogue.listZones()]);
 
-  // **The first city when the URL names none**, which is what artboard 2a
-  // draws: its sidebar shows Distrito Capital already chosen.
+  // Which city, and which zones go with it, are both decided in
+  // listing-catalogue's domain. This page states neither rule: it fetches
+  // through the port, asks, and renders. That is the whole job `design.md`
+  // gives the `app/` tree — "a thin delivery adapter that only translates
+  // HTTP/RSC into a use case call".
   //
-  // The first version showed nothing until a city was picked, reasoning that
-  // a default would answer D5's question on the visitor's behalf. That was
-  // wrong in practice: both cities are visible as chips either way, so
-  // nothing is hidden -- and what the caution actually bought was a root
-  // whose first impression is an empty column, which reads as broken rather
-  // than as an invitation. D5 is about never MIXING cities, and a named
-  // default does not mix anything.
-  //
-  // The page supplies the default and SearchFilters stays dumb about it, so
-  // it lives in one place rather than two that can disagree.
-  const selectedCity = params.city ?? cities[0]?.id;
+  // `resolveSelectedCity` also rejects a city id the catalogue does not hold,
+  // which this page previously passed straight through: `?city=cualquier-cosa`
+  // reached `WHERE city_id = $1` and rendered an empty page for a catalogue
+  // full of listings.
+  const selectedCity = resolveSelectedCity(cities, params.city);
+  // D5 on the read path: the selector offers one city's zones, never both.
+  const selectableZones = zonesForCity(zones, selectedCity);
 
   const criteria = buildSearchCriteria(
     {
@@ -104,9 +95,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           sidebar={
             <SearchFilters
               cities={cities}
-              zones={zones}
+              zones={selectableZones}
               values={{
-                city: selectedCity,
+                city: selectedCity ?? undefined,
                 zone: params.zone,
                 minPrice: params.minPrice,
                 maxPrice: params.maxPrice,

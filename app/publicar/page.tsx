@@ -1,8 +1,7 @@
-import { asc } from "drizzle-orm";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import { DrizzleCatalogue } from "@/modules/listing-catalogue/infrastructure/drizzle-catalogue";
 import { db } from "@/shared/db/client";
-import { cities as citiesTable, zones as zonesTable } from "@/shared/db/schema";
 import { FormShell } from "../../components/layout/FormShell";
 import { requireSession } from "../_lib/require-session";
 import { submitPublishStep1 } from "./actions";
@@ -45,16 +44,11 @@ export default async function PublishPage({ searchParams }: PublishPageProps) {
   // one-handed on a phone.
   const draft = parseDraft((await cookies()).get(DRAFT_COOKIE)?.value);
 
-  const [cities, zones] = await Promise.all([
-    db
-      .select({ id: citiesTable.id, name: citiesTable.name })
-      .from(citiesTable)
-      .orderBy(asc(citiesTable.name)),
-    db
-      .select({ id: zonesTable.id, name: zonesTable.name, cityId: zonesTable.cityId })
-      .from(zonesTable)
-      .orderBy(asc(zonesTable.name)),
-  ]);
+  // Through the catalogue port, like the search page. This used to be the
+  // same hand-written Drizzle select copied into both files — the duplication
+  // that told us the port was missing.
+  const catalogue = new DrizzleCatalogue(db);
+  const [cities, zones] = await Promise.all([catalogue.listCities(), catalogue.listZones()]);
 
   return (
     <>

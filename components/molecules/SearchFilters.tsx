@@ -76,10 +76,17 @@ export function SearchFilters({ cities, zones, values = {}, resultCount }: Searc
 
       <div className={styles.group}>
         <span className={styles.groupLabel}>Zona</span>
-        {/* Every zone, grouped by city — the same shape the publish form
-            needed. A cascade that depends on a reload cannot narrow this list
-            before the visitor has chosen, and a zone belonging to the other
-            city is dropped by the server rather than hidden here. */}
+        {/* **Rendered, not filtered.** `zones` arrives already narrowed to the
+            selected city by `zonesForCity` (listing-catalogue's domain). This
+            control used to render the whole taxonomy in an `<optgroup>` per
+            city, so choosing Maracaibo still offered Chacao — and the filter
+            that fixed it belongs in the domain, not here, because a rule in a
+            component is a rule the coverage floor never reaches.
+
+            The cascade costs one reload: picking a city and submitting brings
+            the list back narrowed. That is the price of D13's no-JS read path,
+            paid deliberately — a client-side narrow would ship a bundle to the
+            cheap phones the rule exists for. */}
         <select
           id="zone"
           name="zone"
@@ -88,16 +95,10 @@ export function SearchFilters({ cities, zones, values = {}, resultCount }: Searc
           aria-label="Zona"
         >
           <option value="">Todas las zonas</option>
-          {cities.map((city) => (
-            <optgroup key={city.id} label={city.name}>
-              {zones
-                .filter((zone) => zone.cityId === city.id)
-                .map((zone) => (
-                  <option key={zone.id} value={zone.id}>
-                    {zone.name}
-                  </option>
-                ))}
-            </optgroup>
+          {zones.map((zone) => (
+            <option key={zone.id} value={zone.id}>
+              {zone.name}
+            </option>
           ))}
         </select>
       </div>

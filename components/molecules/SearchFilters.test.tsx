@@ -33,14 +33,30 @@ describe("SearchFilters", () => {
     expect(render()).toContain('type="submit"');
   });
 
-  it("offers every zone grouped by city, not only the chosen city's", () => {
-    const markup = render({ values: { city: "dc" } });
+  /**
+   * **This test used to assert the opposite, and the opposite was the bug.**
+   * It required every city's zones in one `<optgroup>` per city, so choosing
+   * Maracaibo still offered Chacao. The founder called it (2026-08-21):
+   * picking a city must narrow the zones.
+   *
+   * The narrowing itself is `zonesForCity` in listing-catalogue's domain, not
+   * here — a rule in a component is a rule the 90% coverage floor never
+   * reaches. What this asserts is the component's half of the contract: it
+   * renders exactly the zones it was handed, and invents no grouping that
+   * would put a second city back on screen.
+   */
+  it("renders exactly the zones it is handed, and never regroups by city", () => {
+    // Exactly what `zonesForCity(zones, "dc")` hands back — spelled out
+    // rather than indexed, so the fixture states the contract instead of
+    // depending on the order of the array above.
+    const caracasZones = zones.filter((zone) => zone.cityId === "dc");
+    const markup = renderToStaticMarkup(
+      <SearchFilters cities={cities} zones={caracasZones} values={{ city: "dc" }} />,
+    );
 
-    // The same shape the publish form needed: a cascade that depends on a
-    // reload cannot narrow this before the visitor has chosen.
-    expect(markup).toContain('<optgroup label="Distrito Capital">');
-    expect(markup).toContain('<optgroup label="Maracaibo">');
-    expect(markup).toContain("La Lago");
+    expect(markup).toContain("Chacao");
+    expect(markup).not.toContain("La Lago");
+    expect(markup).not.toContain("<optgroup");
   });
 
   it("preselects nothing on its own — the page decides the default", () => {
