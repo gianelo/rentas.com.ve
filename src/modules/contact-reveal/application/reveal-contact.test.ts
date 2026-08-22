@@ -21,7 +21,8 @@ const LISTING: RevealableListing = {
   listingId: "listing-1",
   publisherId: "publisher-1",
   cityId: "city-caracas",
-  whatsapp: "+58 412 555 0134",
+  contactMethod: "whatsapp",
+  contactValue: "+58 412 555 0134",
 };
 
 /** Records what was written, in order, so "how many rows" is an assertion. */
@@ -104,7 +105,8 @@ describe("revealContact", () => {
 
     await expect(revealContact({ listingId: LISTING.listingId }, deps)).resolves.toEqual({
       state: "revealed",
-      whatsapp: "+58 412 555 0134",
+      method: "whatsapp",
+      value: "+58 412 555 0134",
     });
   });
 
