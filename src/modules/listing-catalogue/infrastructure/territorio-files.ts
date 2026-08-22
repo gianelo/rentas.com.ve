@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { type ParsedMunicipality, parseTerritoryDocument } from "./territorio-parser";
+import { parseToponymIndex, type ToponymEntry } from "./toponym-index";
 
 /**
  * Lee `docs/territorio/` del disco y devuelve los municipios parseados.
@@ -46,4 +47,17 @@ export function readTerritoryDocuments(root: string = ROOT): readonly ParsedMuni
   }
 
   return files.flatMap((file) => parseTerritoryDocument(readFileSync(file, "utf8")));
+}
+
+/**
+ * Las filas del «Índice de topónimos» de cada archivo, en el mismo orden.
+ *
+ * Separado de `readTerritoryDocuments` aunque lea los mismos archivos: son dos
+ * secciones distintas del documento, con dos parsers que no pueden confundirse,
+ * y quien llame a una no siempre necesita la otra.
+ */
+export function readTerritoryToponyms(root: string = ROOT): readonly ToponymEntry[] {
+  return collect(root)
+    .sort()
+    .flatMap((file) => parseToponymIndex(readFileSync(file, "utf8")));
 }

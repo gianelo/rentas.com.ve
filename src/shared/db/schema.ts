@@ -240,6 +240,45 @@ export const zones = pgTable(
   ],
 );
 
+/**
+ * Cómo se BUSCA una zona, cuando su nombre no es como la gente la nombra.
+ *
+ * **Existe porque IPOSTEL entierra topónimos dentro de nombres compuestos.** En
+ * alcance hay 32 «Oficina Postal Telegráfica X», 90 «X del Sector Y», 8 «Casco
+ * Central de X», 33 «Centro X» y 16 «Zona Industrial X». `zone.name` guarda el
+ * nombre completo, que es lo correcto — es lo que la fuente publica — pero
+ * nadie escribe «Oficina Postal Telegráfica Bella Vista» en una caja de
+ * búsqueda. Sin esta tabla, «Bella Vista» encuentra dos de sus siete
+ * apariciones reales.
+ *
+ * **Un alias no crea una zona.** Cada fila apunta a una que ya existe, y sale
+ * del «Índice de topónimos» que los propios archivos de `docs/territorio/`
+ * publican después de la taxonomía. Inventar un lugar está prohibido por la
+ * regla del proyecto; darle un segundo nombre por el cual encontrarlo, no.
+ *
+ * **No se guarda el alias que repite `zone.name`.** Buscar por el nombre
+ * completo ya funciona contra la columna; una copia idéntica acá sería un
+ * segundo lugar donde el mismo dato puede quedar viejo.
+ *
+ * ON DELETE cascade porque un alias sin su zona no significa nada — al revés
+ * que `contact_reveal_event`, donde la fila sobrevive a propósito.
+ */
+export const zoneAliases = pgTable(
+  "zone_alias",
+  {
+    zoneId: text("zone_id")
+      .notNull()
+      .references(() => zones.id, { onDelete: "cascade" }),
+    alias: text("alias").notNull(),
+  },
+  (row) => [
+    primaryKey({ columns: [row.zoneId, row.alias] }),
+    // El índice que la caja de sugerencias va a recorrer. Sin él, cada tecla
+    // escrita es un recorrido secuencial sobre 3.547 filas.
+    index("zone_alias_alias_idx").on(row.alias),
+  ],
+);
+
 // listing (design.md D5, tasks.md 3.1). The rental advert itself.
 //
 // Two decisions here are load-bearing, and both are constraints rather than

@@ -1,10 +1,15 @@
 import { createHash } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { readTerritoryDocuments } from "../../modules/listing-catalogue/infrastructure/territorio-files";
+import { areaForMunicipality } from "../../modules/listing-catalogue/infrastructure/territorio-areas";
+import {
+  readTerritoryDocuments,
+  readTerritoryToponyms,
+} from "../../modules/listing-catalogue/infrastructure/territorio-files";
 import {
   buildTerritoryRows,
   territoryId,
 } from "../../modules/listing-catalogue/infrastructure/territorio-import";
+import { buildAliasRows } from "../../modules/listing-catalogue/infrastructure/toponym-resolve";
 // TYPE-ONLY, and it has to stay that way. `./client` calls
 // `getPooledDatabaseUrl()` at module scope, so a value import would make
 // merely *importing* this file throw when DATABASE_URL is unset — before
@@ -17,7 +22,7 @@ import {
 // as a hard failure that local runs hid, because a local `.env` supplies
 // DATABASE_URL and CI supplies only TEST_DATABASE_URL.
 import type { db } from "./client";
-import { cities, listings, type PropertyType, users, zones } from "./schema";
+import { cities, listings, type PropertyType, users, zoneAliases, zones } from "./schema";
 
 /**
  * PROVISIONAL taxonomy (tasks.md 2.3). The founder has not supplied the
@@ -335,6 +340,34 @@ export async function seed(database?: SeedDatabase): Promise<void> {
       .insert(zones)
       .values(zoneRows.slice(i, i + BATCH))
       .onConflictDoNothing({ target: zones.id });
+  }
+
+  // **Los alias de busqueda.** El arbol guarda el nombre que la fuente publica;
+  // esto guarda el nombre por el que la gente lo busca. Son 3.547 filas, y
+  // ninguna crea una zona: cada una apunta a una que ya existe.
+  const territoryDocuments = readTerritoryDocuments();
+  const aliasResult = buildAliasRows(
+    territoryDocuments,
+    readTerritoryToponyms(),
+    areaForMunicipality,
+  );
+
+  if (aliasResult.unresolved.length > 0) {
+    // Ruidoso: un alias que apunta a una zona inexistente es una sugerencia que
+    // lleva a cero resultados, que es exactamente lo que el producto no puede
+    // hacer. Preferimos que la siembra falle a que la busqueda mienta.
+    const [first] = aliasResult.unresolved;
+    throw new Error(
+      `seed: ${aliasResult.unresolved.length} toponimos sin resolver, el primero ` +
+        `"${first?.toponym}" en ${first?.parish} -> "${first?.entry}"`,
+    );
+  }
+
+  for (let i = 0; i < aliasResult.aliases.length; i += BATCH) {
+    await target
+      .insert(zoneAliases)
+      .values(aliasResult.aliases.slice(i, i + BATCH))
+      .onConflictDoNothing({ target: [zoneAliases.zoneId, zoneAliases.alias] });
   }
 
   const publisherIds = new Map<string, string>();
