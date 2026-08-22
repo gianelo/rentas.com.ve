@@ -64,6 +64,13 @@
       "when": 1787427058175,
       "tag": "0008_tiny_rumiko_fujikawa",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787428479273,
+      "tag": "0009_goofy_lightspeed",
+      "breakpoints": true
     }
   ]
 }

@@ -66,6 +66,12 @@ describe("seed", () => {
     // desde docs/territorio/ y no transcritos. El numero coincide con el que
     // los propios archivos declaran, archivo por archivo.
     expect(await countRows("zone")).toBe(5796);
+    // 3.547 alias de busqueda, ninguno de los cuales crea una zona: cada uno
+    // apunta a una fila que ya existe. Salen del "Indice de toponimos" que los
+    // propios archivos publican, y son lo que hace que escribir "Bella Vista"
+    // encuentre los siete lugares que se llaman asi -- incluido el que vive
+    // enterrado dentro de "Oficina Postal Telegrafica Bella Vista".
+    expect(await countRows("zone_alias")).toBe(3547);
     expect(await countRows("listing")).toBe(10);
   });
 
@@ -121,6 +127,12 @@ describe("seed", () => {
     // desde docs/territorio/ y no transcritos. El numero coincide con el que
     // los propios archivos declaran, archivo por archivo.
     expect(await countRows("zone")).toBe(5796);
+    // 3.547 alias de busqueda, ninguno de los cuales crea una zona: cada uno
+    // apunta a una fila que ya existe. Salen del "Indice de toponimos" que los
+    // propios archivos publican, y son lo que hace que escribir "Bella Vista"
+    // encuentre los siete lugares que se llaman asi -- incluido el que vive
+    // enterrado dentro de "Oficina Postal Telegrafica Bella Vista".
+    expect(await countRows("zone_alias")).toBe(3547);
     expect(await countRows("listing")).toBe(10);
   });
 
