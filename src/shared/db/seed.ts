@@ -193,7 +193,7 @@ const SEEDED_LISTINGS: ReadonlyArray<{
     parkingSpots: 0,
   },
   {
-    path: "Maracaibo/Maracaibo/Olegario Villalobos/sector/Sector Cecilio Acosta",
+    path: "Maracaibo/Maracaibo/Olegario Villalobos/sector/Sector La Lago I",
     propertyType: "apartamento",
     publisherType: "broker",
     title: "Apartamento 2 habitaciones en La Lago, vista al lago",
