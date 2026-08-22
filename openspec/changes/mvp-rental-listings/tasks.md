@@ -376,16 +376,49 @@ Parked here on purpose rather than started. Both are real, both were requested, 
 
 
 
+## Qué del código actual sobrevive al rediseño, y qué no (2026-08-22)
+
+Medido sobre lo construido, no estimado. El fundador preguntó lo correcto: *"con el nuevo diseño hay cosas que ya posiblemente hicimos y que debemos hacer de nuevo"*. Sí — y esta lista existe para que nadie rehaga lo que no hace falta.
+
+### Se rehace: la capa de entrega
+
+| Pieza | Por qué |
+|---|---|
+| `components/molecules/ResultRow` | La fila se vuelve tarjeta de cuadrícula (14.25) |
+| `components/molecules/SearchFilters` | Pasa a acordeón de 4 pasos con conteo en vivo |
+| `components/layout/SidebarLayout` | La barra lateral de 240 px cambia por el panel de 3 columnas |
+| `app/page.tsx` | Deja de ser los resultados y pasa a ser el inicio (14.21, 14.24) |
+| `app/publicar/*` | Un formulario de dos pasos se vuelve nueve pantallas (Fase 18) |
+| `app/(auth)/signin` | Gana el enlace por correo y sus dos presentaciones (Fase 15) |
+
+### Sobrevive intacto, y es donde está el trabajo difícil
+
+**Todo `src/modules/`**: las reglas de publicación con sus 27 códigos de violación, los puertos, los adaptadores de Drizzle y R2, el pipeline de fotos, la detección de duplicados por hash perceptual, el contacto con llave, el esquema de URL, el catálogo, el árbol territorial y los 3.547 alias. Más el esquema de base de datos entero y sus nueve migraciones.
+
+**Y los átomos, que es lo que sorprende:** `Price`, `PublisherBadge`, `Label`, los tres botones y `Container` **no se tocan**. La paleta del diseño nuevo es idéntica a la que ya ship*a* — once de once valores, verificados uno por uno — y `design-contract.test.tsx` ya prueba estructuralmente lo que el diseño nuevo sigue pidiendo: el publicador distinguible en escala de grises, el precio con `tabular-nums`, el contraste AA en los dos temas, y ningún texto atenuado con `opacity`.
+
+`DetailSplit` también se queda: sus `640px 420px` son exactamente lo que la ficha pide.
+
+### La cuenta honesta
+
+Se rehace la capa de entrega, que es cerca de un tercio del código. Se conservan las reglas, los datos y el contrato visual.
+
+**Y no fue tiempo perdido.** Contrastar el diseño contra el código construido es lo que destapó cinco huecos de datos **antes** de escribir una pantalla: el tipo de propiedad, los cinco atributos, la unicidad de zonas que hacía imposible importar la taxonomía real, las seis zonas de Caracas archivadas en el estado equivocado, y los 179 topónimos enterrados. Las dos veces anteriores que este proyecto encontró un hueco así, fue **después** de construir.
+
 ## Phase 14: The search flow the founder specified (2026-08-21)
 
 **Where this came from.** The founder delivered a functional specification for the mobile search flow — F1 to F15, with edge cases and ten acceptance criteria — plus a redesign of the list and filters (mobile and desktop). This phase is that document turned into work, checked line by line against what the code already does. It is deliberately written as *functionality*, not screens: the visual half arrives separately and must not be able to silently change a rule recorded here.
 
 **What already holds, so nobody rebuilds it:** city isolation (F2, criterion 8) is guaranteed twice — the search port cannot express an unscoped query, and `listing_zone_city_fk` makes a cross-city row physically impossible; search state already lives in the URL as a `GET` with no client JS (F12, F14, criteria 5 and 7); publisher type is already visible and greyscale-distinguishable, with price above title (criteria 2 and 3); results already order by `published_at` descending (F9); the contact-reveal module already exists and is proven (F13's engine — only its screen is missing).
 
-**The three contradictions with earlier decisions, unresolved and NOT to be settled by whoever implements first:**
-1. **F9 asks for a two-column grid.** `SISTEMA.md` states as a hard rule: "Lista de filas, nunca grilla de tarjetas, en ningún ancho."
-2. **F1 makes `/` a home with four collections** and moves results to `/buscar`. Today `app/page.tsx` records the opposite as a deliberate decision: the results *are* the root, and there is no home.
+**The three contradictions, two of them RESOLVED by the founder on 2026-08-22:**
+
+1. **RESOLVED — the grid wins, and `SISTEMA.md`'s row rule is retired.** That document states as a hard rule "Lista de filas, nunca grilla de tarjetas, en ningún ancho"; the founder overrode it deliberately after being shown the conflict. **The original argument was weight**, not taste: a row with a small thumbnail fits the 150 KB budget for 20 listings. The founder's own document reports today's results page at ~128 KB, so there is headroom — but a grid of 158 px photos spends it, and 14.5 (the budget gate) is what will say whether it fits. Two columns on mobile, three on desktop.
+
+2. **RESOLVED — `/` becomes a home with four strips, results move to `/buscar`.** `app/page.tsx` currently records the opposite as a deliberate decision ("there is no separate home page, and that is a decision rather than an omission"), and that comment must be rewritten rather than left contradicting the code beside it. What the old decision bought — the domain's strongest URL showing listings — is given up for what the strips buy: someone who arrives without knowing what they want sees supply immediately instead of an empty filter column.
 3. **F13 says the number is "parcialmente oculto".** The shipped guarantee is stronger and deliberate: in the locked state the contact value is *unrepresentable* — it never reaches the browser at all, so there is nothing to un-hide in the HTML. Showing real digits is a different promise and has to be chosen, not slid into.
+
+**A scheduling consequence of the grid decision, and it moves work earlier.** A card without an image reads as broken, so **the grid requires cover photos** — and today the search query never touches `listing_photo` while `ResultRow` renders a CSS placeholder. Phase 19's photo pipeline (four sizes, re-derivation, backfill) stops being a ficha concern and becomes a **prerequisite for the list itself**. Whoever plans the order should read 19a before starting 14.
 
 ### 14a. Data the product does not store yet
 
@@ -418,7 +451,19 @@ Parked here on purpose rather than started. Both are real, both were requested, 
 
 ### 14d. Surfaces
 
-- [ ] 14.21 The home with four collections (F1) — recientes, each city, and ≤ $400 — each declaring its real total, each hiding itself when empty. **Blocked on contradiction 2 above**
+### 14f. El inicio y la cuadrícula (founder, 2026-08-22)
+
+**Las dos decisiones de arriba rehacen la superficie de lectura entera**, y hasta ahora el plan sólo tenía una tarea bloqueada donde debería haber una sección. Esto es lo que realmente cambia.
+
+- [ ] 14.21 **El inicio, en `/`, con cuatro tiras de 5 avisos** (F1): recientes, cada ciudad, y hasta $400. Cada una declara su **total real** ("Ver los 23"), una colección vacía **no se renderiza** — la tira desaparece, no queda un hueco — y una con menos de 5 muestra los que haya sin la placa "Ver todos". Sin ningún aviso activo, el inicio muestra la barra de búsqueda y una invitación a publicar
+- [ ] 14.22 **Las cuatro consultas, con su conteo total.** No es un `LIMIT 5` cuatro veces: cada tira necesita sus 5 filas **y** el total de la colección, y "Ver los 23" tiene que decir 23 de verdad (regla transversal 3). Ni vencidos, ni ocultos, ni pendientes de moderación
+- [ ] 14.23 **La misma propiedad puede salir en dos tiras** — reciente y barata a la vez — y eso es correcto, no un duplicado a deduplicar
+- [ ] 14.24 **Mudar los resultados a `/buscar`** con el esquema de la F12: `?ciudad=…&zona=chacao,altamira&min=…&max=…&hab=…&tipo=dueno&pag=1`. Hoy viven en `/` con parámetros en inglés. **Y el comentario de `app/page.tsx` hay que reescribirlo**: dice que no hay inicio separado "y eso es una decisión antes que una omisión", que ahora es falso y quedaría contradiciendo al código de al lado
+- [ ] 14.25 **La tarjeta de cuadrícula, que reemplaza a `ResultRow`.** Dos columnas de 158 px en móvil, tres de 254 px en escritorio. Conserva lo que la fila ya garantizaba y está probado en `design-contract.test.tsx`: el publicador visible y distinguible **en escala de grises** (relleno contra borde), y el precio antes del título en orden de documento y en peso
+- [ ] 14.26 **La tira del inicio cambia de mecanismo entre anchos**: scroll horizontal con 5 más la placa "Ver todos" en móvil, filas fijas de 5 con el total y una flecha en el encabezado en escritorio. **Un solo componente con puntos de quiebre, nunca dos** — la misma razón que `SearchFilters` ya documenta: dos implementaciones se separan, y una búsqueda filtrada terminaría dando URLs distintas según el ancho
+- [ ] 14.27 **El presupuesto es lo que decide si la cuadrícula sobrevive.** El argumento original de "lista de filas, nunca grilla" era el peso, y el documento del fundador reporta la página de resultados hoy en ~128 KB contra un tope de 150 KB con 20 avisos. Una cuadrícula de fotos de 158 px gasta ese margen. **El inicio tiene su propio techo**: ~80 KB con 20 fotos de 158×118. La 11.17 (`budget-bundle`) y la 11.19 (Lighthouse) son las que van a decir si entra, y hay que mirarlas antes de dar la cuadrícula por buena
+- [ ] 14.28 **Sin foto de portada la cuadrícula no existe.** Es 14.5, y sube de prioridad por esto: una tarjeta sin imagen se lee como rota, mientras que una fila sin miniatura sólo se ve pobre. La 19a — cuatro tamaños, re-derivación y rellenado de las fotos ya subidas — pasa a ser prerrequisito de la lista, no de la ficha
+- [ ] 14.29 **Criterio de aceptación 1, y es medible:** 4 avisos completos sobre el pliegue a 360 px, 6 a 1280. La medición vive en `tests/measure/`, que es donde ya se prueban las cotas de layout con Playwright
 - [ ] 14.22 "Limpiar todo" (F8), which resets everything except the city — "la ciudad no es un filtro, es el contexto"
 - [ ] 14.23 The URL scheme F12 specifies: `/buscar?ciudad=…&zona=chacao,altamira&min=…&max=…&hab=…&tipo=dueno&pag=1`. Today the parameters are English and live at the root. An invalid parameter is ignored with a notice rather than breaking the page; a zone that no longer exists is dropped and the rest of the search survives
 - [ ] 14.24 An expired listing reached by direct link shows the ficha marked expired plus active listings from the same zone (F12) — needs `not-found`/expired handling, which is 11b.3
