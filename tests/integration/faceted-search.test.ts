@@ -251,13 +251,37 @@ describe('"si una etiqueta dice 9, hay 9" (regla transversal 3, task 14.11)', ()
    */
   const CASOS: readonly (readonly [string, SearchCriteria])[] = [
     ["sin filtros", { cityId: MARACAIBO }],
-    ["por zona", { cityId: MARACAIBO, zoneId: MCBO_CENTRO }],
+    ["por zona", { cityId: MARACAIBO, zoneIds: [MCBO_CENTRO] }],
     ["por habitaciones", { cityId: MARACAIBO, minRooms: 3 }],
     ["por precio", { cityId: MARACAIBO, minPriceUsd: 300, maxPriceUsd: 500 }],
     ["por área", { cityId: MARACAIBO, minAreaM2: 70 }],
-    ["zona y habitaciones juntas", { cityId: MARACAIBO, zoneId: MCBO_NORTE, minRooms: 2 }],
-    ["una combinación sin resultados", { cityId: MARACAIBO, zoneId: MCBO_VACIA }],
+    ["zona y habitaciones juntas", { cityId: MARACAIBO, zoneIds: [MCBO_NORTE], minRooms: 2 }],
+    ["una combinación sin resultados", { cityId: MARACAIBO, zoneIds: [MCBO_VACIA] }],
     ["otra ciudad", { cityId: DISTRITO }],
+    // Los criterios de las tasks 14.6 a 14.9. Si uno llegara a la búsqueda y
+    // no a las facetas, el botón diría un número y la lista traería otro —
+    // que es exactamente la forma en que un conteo empieza a mentir.
+    ["por varias zonas", { cityId: MARACAIBO, zoneIds: [MCBO_CENTRO, MCBO_NORTE] }],
+    ["por tipo de publicador", { cityId: MARACAIBO, publisherType: "owner" }],
+    ["por tipo de propiedad", { cityId: MARACAIBO, propertyType: "apartamento" }],
+    ["por un atributo", { cityId: MARACAIBO, attributes: ["hasPowerPlant"] }],
+    [
+      "por dos atributos, que se exigen los dos",
+      { cityId: MARACAIBO, attributes: ["hasPowerPlant", "hasRegularWater"] },
+    ],
+    [
+      "por todo a la vez",
+      {
+        cityId: MARACAIBO,
+        zoneIds: [MCBO_CENTRO, MCBO_NORTE],
+        minRooms: 2,
+        minPriceUsd: 100,
+        maxPriceUsd: 1000,
+        propertyType: "apartamento",
+        publisherType: "broker",
+        attributes: ["hasPowerPlant"],
+      },
+    ],
   ];
 
   it.each(CASOS)(
@@ -370,7 +394,7 @@ describe("una faceta no se filtra a sí misma (task 14.11)", () => {
 
   it("el conteo de zonas ignora el filtro de zona", async () => {
     const counts = await facets.countFacets(
-      { cityId: MARACAIBO, zoneId: MCBO_NORTE },
+      { cityId: MARACAIBO, zoneIds: [MCBO_NORTE] },
       ZONAS_OFRECIDAS,
     );
 
@@ -396,7 +420,7 @@ describe("una faceta no se filtra a sí misma (task 14.11)", () => {
 
   it("el conteo de habitaciones sí refleja el filtro de zona", async () => {
     const counts = await facets.countFacets(
-      { cityId: MARACAIBO, zoneId: MCBO_NORTE },
+      { cityId: MARACAIBO, zoneIds: [MCBO_NORTE] },
       ZONAS_OFRECIDAS,
     );
 
@@ -406,7 +430,7 @@ describe("una faceta no se filtra a sí misma (task 14.11)", () => {
 
   it("los dos filtros propios se ignoran a la vez, cada uno en su faceta", async () => {
     const counts = await facets.countFacets(
-      { cityId: MARACAIBO, zoneId: MCBO_CENTRO, minRooms: 3 },
+      { cityId: MARACAIBO, zoneIds: [MCBO_CENTRO], minRooms: 3 },
       ZONAS_OFRECIDAS,
     );
 
@@ -446,7 +470,7 @@ describe("las cinco facetas de atributo, tipo y publicador (F6)", () => {
 
   it("estrecha esos conteos con el resto de los filtros", async () => {
     const counts = await facets.countFacets(
-      { cityId: MARACAIBO, zoneId: MCBO_NORTE },
+      { cityId: MARACAIBO, zoneIds: [MCBO_NORTE] },
       ZONAS_OFRECIDAS,
     );
 
@@ -515,5 +539,122 @@ describe("una sola consulta (task 14.11: el costo son los viajes de red)", () =>
     await counting.end();
 
     expect(queries).toBe(1);
+  });
+});
+
+describe("los criterios nuevos también son facetas (tasks 14.6 a 14.9)", () => {
+  /**
+   * **Un filtro que llega a la búsqueda y no a las facetas deja los conteos
+   * mintiendo.** Y hay una segunda mitad, más sutil: un filtro nuevo que se
+   * quedara en el `WHERE` compartido apagaría su propia faceta — todas sus
+   * alternativas darían cero y cambiar de opinión parecería imposible.
+   */
+  it("el conteo de publicador ignora el filtro de publicador", async () => {
+    const counts = await facets.countFacets(
+      { cityId: MARACAIBO, publisherType: "owner" },
+      ZONAS_OFRECIDAS,
+    );
+
+    expect(counts.total).toBe(3); // A1, A2, A5
+    // Si se filtrara a sí misma, `broker` daría 0 y no habría vuelta atrás.
+    expect(counts.byPublisherType).toEqual({ owner: 3, broker: 2 });
+    // Y las demás facetas sí respetan el filtro: entre los de dueño hay dos
+    // apartamentos y una quinta.
+    expect(counts.byPropertyType).toEqual({
+      apartamento: 2,
+      casa: 0,
+      quinta: 1,
+      anexo: 0,
+      habitacion: 0,
+    });
+  });
+
+  it("el conteo de tipo de propiedad ignora el filtro de tipo", async () => {
+    const counts = await facets.countFacets(
+      { cityId: MARACAIBO, propertyType: "apartamento" },
+      ZONAS_OFRECIDAS,
+    );
+
+    expect(counts.total).toBe(3); // A1, A2, A4
+    expect(counts.byPropertyType).toEqual({
+      apartamento: 3,
+      casa: 1,
+      quinta: 1,
+      anexo: 0,
+      habitacion: 0,
+    });
+    expect(counts.byPublisherType).toEqual({ owner: 2, broker: 1 });
+  });
+
+  it("los conteos de atributo dicen cuántos quedarían si se marcara uno más", async () => {
+    const counts = await facets.countFacets(
+      { cityId: MARACAIBO, attributes: ["hasPowerPlant"] },
+      ZONAS_OFRECIDAS,
+    );
+
+    expect(counts.total).toBe(2); // A2 y A4 declaran planta
+    expect(counts.byAttribute).toEqual({
+      hasPowerPlant: 2,
+      hasRegularWater: 1, // sólo A4 declara las dos
+      isFurnished: 1, // sólo A2 declara planta y amoblado
+      hasSecurity: 0,
+      hasAppliances: 0,
+    });
+  });
+
+  it("dos atributos se exigen con Y, no con O", async () => {
+    // **El discriminador.** Con O serían dos avisos (A2 por la planta, A4 por
+    // las dos); con Y es uno solo. La diferencia entre las dos lecturas es un
+    // inquilino escribiéndole a un apartamento que no tiene agua.
+    const criteria: SearchCriteria = {
+      cityId: MARACAIBO,
+      attributes: ["hasPowerPlant", "hasRegularWater"],
+    };
+    const [counts, rows] = await Promise.all([
+      facets.countFacets(criteria, ZONAS_OFRECIDAS),
+      search.search(criteria),
+    ]);
+
+    expect(counts.total).toBe(1);
+    expect(rows.map((row) => row.id)).toEqual([A4]);
+  });
+
+  it("varias zonas se combinan con O, no con Y", async () => {
+    // Con Y ninguna fila puede estar en dos zonas a la vez y el total sería 0.
+    const counts = await facets.countFacets(
+      { cityId: MARACAIBO, zoneIds: [MCBO_CENTRO, MCBO_NORTE] },
+      ZONAS_OFRECIDAS,
+    );
+
+    expect(counts.total).toBe(5);
+    expect(counts.byZone).toEqual({
+      [MCBO_CENTRO]: 3,
+      [MCBO_NORTE]: 2,
+      [MCBO_VACIA]: 0,
+    });
+  });
+
+  it("ningún criterio nuevo se lleva por delante el aislamiento de ciudad", async () => {
+    // D1 es de dueño, apartamento y amoblado: cae dentro de los tres filtros.
+    // Una consulta a la que le faltara el predicado de ciudad lo sumaría acá.
+    const counts = await facets.countFacets(
+      {
+        cityId: MARACAIBO,
+        publisherType: "owner",
+        propertyType: "apartamento",
+        attributes: ["isFurnished"],
+      },
+      ZONAS_OFRECIDAS,
+    );
+
+    expect(counts.total).toBe(1); // sólo A2
+
+    const enCaracas = await facets.countFacets({ cityId: DISTRITO, attributes: ["isFurnished"] }, [
+      DC_CENTRO,
+    ]);
+
+    // A2 y A3 también están amoblados, y son de Maracaibo.
+    expect(enCaracas.total).toBe(1);
+    expect(enCaracas.byZone).toEqual({ [DC_CENTRO]: 1 });
   });
 });

@@ -1,5 +1,6 @@
 import type { PropertyType } from "../../../../shared/db/schema";
-import type { SearchCriteria } from "../../domain/search-criteria";
+import type { RoomStep } from "../../domain/room-steps";
+import type { ListingAttribute, PublisherType, SearchCriteria } from "../../domain/search-criteria";
 
 /**
  * The numbers every filter option shows before anybody picks it (tasks.md
@@ -32,30 +33,36 @@ import type { SearchCriteria } from "../../domain/search-criteria";
  * actually returns.
  */
 
-/** The five declared attributes of F6, by the name the schema gives them. */
-export type ListingAttribute =
-  | "hasPowerPlant"
-  | "hasRegularWater"
-  | "isFurnished"
-  | "hasSecurity"
-  | "hasAppliances";
-
-export type PublisherType = "owner" | "broker";
-
 /**
- * The four steps of the rooms control, **where 4 means "four or more"** —
- * the same meaning `SearchCriteria.minRooms` already carries, because it is
- * the same filter. A histogram of exact room counts would be a different
- * number from the one the option leads to, and rule 3 does not allow the
- * label and the outcome to disagree.
+ * Los tres vocabularios de abajo **los define el dominio y este puerto los
+ * reexporta**, no los declara (tasks 14.6 a 14.9).
+ *
+ * Eran tres tipos escritos acá que casualmente coincidían con los filtros. Al
+ * volverse criterios de verdad, una segunda declaración sería una copia libre
+ * de derivar: una faceta que cuenta `RoomStep` 1-4 mientras el control ofrece
+ * cinco escalones es un número que miente sin que nada se ponga rojo. Que sean
+ * *el mismo* tipo es lo que hace que "la etiqueta dice 9" y "la lista trae 9"
+ * sigan siendo la misma pregunta.
+ *
+ * `RoomStep` sigue significando **4 es "cuatro o más"**, porque es el mismo
+ * filtro que `SearchCriteria.minRooms`. Un histograma de cuartos exactos
+ * daría un número distinto del que la opción produce, y la regla 3 no permite
+ * que la etiqueta y el resultado discrepen.
  */
-export type RoomStep = 1 | 2 | 3 | 4;
+export type { RoomStep } from "../../domain/room-steps";
+export type { ListingAttribute, PublisherType } from "../../domain/search-criteria";
 
 export interface FacetCounts {
   /**
-   * What the confirm button says (F7). Equal, by construction, to the length
-   * of `ListingSearchPort.search(criteria)` — the integration test asserts
-   * exactly that rather than a hand-written constant.
+   * What the confirm button says (F7). Equal, by construction, to the number
+   * of rows `ListingSearchPort.search(criteria)` can reach — the integration
+   * test asserts exactly that rather than a hand-written constant.
+   *
+   * **`criteria.page` no lo toca, y ésa es toda su relación con la
+   * paginación** (task 14.10): un conteo es sobre la búsqueda entera, no
+   * sobre la pantalla que se está viendo. Es justamente lo que deja saber
+   * cuántas páginas hay — un total que se recortara al `LIMIT` daría siempre
+   * "una sola página" y el botón diría 24 sobre 300 avisos.
    */
   readonly total: number;
   /**

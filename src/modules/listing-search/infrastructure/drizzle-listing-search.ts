@@ -1,12 +1,13 @@
-import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
-import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import type { PgColumn, PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import { listings } from "../../../shared/db/schema";
 import type {
   ListingSearchPort,
   ListingSearchResult,
 } from "../application/ports/listing-search.port";
-import type { SearchCriteria } from "../domain/search-criteria";
+import { pageWindow } from "../domain/pagination";
+import type { ListingAttribute, SearchCriteria } from "../domain/search-criteria";
 
 /**
  * The catalogue read, run where the rows are (task 5.4/5.6).
@@ -22,12 +23,28 @@ import type { SearchCriteria } from "../domain/search-criteria";
  * and status is not on it at all. `listing_city_status_idx` is (city_id,
  * status), so the pair every query starts with is also the access path.
  *
- * No `LIMIT` yet, and this is the honest gap: two launch cities with a few
- * hundred adverts each fit in one response, and pagination without a real
- * row count is a guess at page size. It has to arrive before the catalogue
- * grows, and it belongs with the results UI (5.7) that will show it.
+ * **La ventana la decide el dominio** (task 14.10). Este archivo no elige un
+ * `LIMIT`: se lo pide a `pageWindow`, que es donde vive el tamaño de página.
+ * Un adaptador que eligiera el suyo sería una regla de producto escondida en
+ * SQL, y discreparía con la pantalla el día que alguien tocara una sola de
+ * las dos.
  */
 export type SearchDatabase = PgDatabase<PgQueryResultHKT, typeof schema>;
+
+/**
+ * Cada atributo declarado con su columna.
+ *
+ * Anotado como `Record` completo a propósito: un sexto atributo en el dominio
+ * rompe la compilación acá en vez de quedar como un filtro que el criterio
+ * puede pedir y la consulta ignora en silencio.
+ */
+const ATTRIBUTE_COLUMNS: Readonly<Record<ListingAttribute, PgColumn>> = {
+  hasPowerPlant: listings.hasPowerPlant,
+  hasRegularWater: listings.hasRegularWater,
+  isFurnished: listings.isFurnished,
+  hasSecurity: listings.hasSecurity,
+  hasAppliances: listings.hasAppliances,
+};
 
 export class DrizzleListingSearch implements ListingSearchPort {
   constructor(private readonly db: SearchDatabase) {}
@@ -41,9 +58,15 @@ export class DrizzleListingSearch implements ListingSearchPort {
       eq(listings.status, "active"),
     ];
 
-    // A stale zone never arrives as a filter — `buildSearchCriteria` drops
-    // one that does not belong to this city before it can get here.
-    if (criteria.zoneId !== undefined) filters.push(eq(listings.zoneId, criteria.zoneId));
+    // Varias zonas se combinan con **O** (task 14.6, F4): un aviso entra si
+    // está en cualquiera de ellas. `inArray` sobre una lista vacía sería un
+    // `IN ()` — por eso `buildSearchCriteria` nunca deja una vacía, y una zona
+    // vieja o de otra ciudad ya se cayó antes de llegar acá. La ciudad sigue
+    // en el `AND` de arriba, así que una zona ajena que se colara igual no
+    // puede traer un aviso de otra parte: acota, nunca amplía.
+    if (criteria.zoneIds !== undefined) {
+      filters.push(inArray(listings.zoneId, [...criteria.zoneIds]));
+    }
     if (criteria.minPriceUsd !== undefined) {
       filters.push(gte(listings.priceUsd, criteria.minPriceUsd));
     }
@@ -52,6 +75,24 @@ export class DrizzleListingSearch implements ListingSearchPort {
     }
     if (criteria.minRooms !== undefined) filters.push(gte(listings.rooms, criteria.minRooms));
     if (criteria.minAreaM2 !== undefined) filters.push(gte(listings.areaM2, criteria.minAreaM2));
+    // task 14.8. El tipo llega ya validado contra la lista cerrada del
+    // dominio; `eq` contra la columna tipada es la segunda red, en compilación.
+    if (criteria.propertyType !== undefined) {
+      filters.push(eq(listings.propertyType, criteria.propertyType));
+    }
+    // task 14.7 — "sólo de dueños" (F6).
+    if (criteria.publisherType !== undefined) {
+      filters.push(eq(listings.publisherType, criteria.publisherType));
+    }
+    // task 14.9: los atributos se combinan con **Y** — pedir planta y agua es
+    // pedir las dos. Y sólo se compara contra `true`: en estas columnas
+    // `false` significa "no lo declaró", no "no lo tiene", así que un
+    // `= false` devolvería avisos que sí lo tienen y nunca lo anotaron.
+    for (const attribute of criteria.attributes ?? []) {
+      filters.push(eq(ATTRIBUTE_COLUMNS[attribute], true));
+    }
+
+    const { limit, offset } = pageWindow(criteria.page);
 
     return (
       this.db
@@ -72,7 +113,14 @@ export class DrizzleListingSearch implements ListingSearchPort {
         // transaction share a `now()`, and an unordered query would then return
         // whichever row Postgres reached first — a test that passes on ordering
         // luck is the failure this project keeps finding.
+        //
+        // **Con paginación el desempate deja de ser cosmético.** Sin un orden
+        // total, dos páginas de la misma búsqueda pueden repetir un aviso y
+        // saltarse otro, porque `OFFSET` corta sobre el orden que Postgres
+        // haya elegido esta vez.
         .orderBy(desc(listings.publishedAt), asc(listings.id))
+        .limit(limit)
+        .offset(offset)
     );
   }
 }

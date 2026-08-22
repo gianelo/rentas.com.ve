@@ -1,5 +1,5 @@
-import { and, eq, gte, lte, type SQL, sql } from "drizzle-orm";
-import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+import { and, eq, gte, inArray, lte, type SQL, sql } from "drizzle-orm";
+import type { PgColumn, PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import type { PropertyType } from "../../../shared/db/schema";
 import { listings } from "../../../shared/db/schema";
@@ -10,7 +10,7 @@ import type {
   PublisherType,
   RoomStep,
 } from "../application/ports/faceted-search.port";
-import type { SearchCriteria } from "../domain/search-criteria";
+import { LISTING_ATTRIBUTES, type SearchCriteria } from "../domain/search-criteria";
 
 /**
  * Cada número que un filtro muestra, en UNA consulta (task 14.11).
@@ -34,11 +34,31 @@ import type { SearchCriteria } from "../domain/search-criteria";
  * la cuenta filtrada global. Los ceros de las zonas ofrecidas que no aparecen
  * se ponen después, porque una zona sin avisos no tiene fila que agrupar.
  *
+ * **`criteria.page` no se mira, y es deliberado** (task 14.10): un conteo es
+ * sobre la búsqueda entera y no sobre la pantalla que se está viendo. Es lo
+ * que deja saber cuántas páginas hay; un total recortado al `LIMIT` diría
+ * siempre "una sola página".
+ *
  * El handle es argumento del constructor y no un import, igual que en
  * `DrizzleListingSearch`: este mismo código corre contra Neon en producción y
  * contra un Postgres real en tests/integration/faceted-search.test.ts.
  */
 export type FacetedSearchDatabase = PgDatabase<PgQueryResultHKT, typeof schema>;
+
+/**
+ * Las seis dimensiones que tienen faceta propia, o sea las seis que pueden
+ * pedir que se ignore su propio filtro.
+ */
+type FacetAxis = "zone" | "rooms" | "type" | "publisher" | ListingAttribute;
+
+/** Cada atributo con su columna, igual que en `DrizzleListingSearch`. */
+const ATTRIBUTE_COLUMNS: Readonly<Record<ListingAttribute, PgColumn>> = {
+  hasPowerPlant: listings.hasPowerPlant,
+  hasRegularWater: listings.hasRegularWater,
+  isFurnished: listings.isFurnished,
+  hasSecurity: listings.hasSecurity,
+  hasAppliances: listings.hasAppliances,
+};
 
 /**
  * `count(*) filter (where …)`, y `count(*)` pelado cuando no hay nada que
@@ -79,56 +99,79 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       shared.push(gte(listings.areaM2, criteria.minAreaM2));
     }
 
-    // Los dos filtros que SÍ tienen faceta propia quedan fuera del `WHERE` y
+    // Los filtros que SÍ tienen faceta propia quedan fuera del `WHERE` y
     // entran columna por columna. Es la única forma de que la faceta de zona
     // vea las otras zonas y la de habitaciones vea los otros escalones: una
     // opción que no es la elegida tiene que poder decir cuántos habría *si
     // cambiara*, y desde el `WHERE` de afuera esa fila ya no existe.
+    //
+    // Desde las tasks 14.6 a 14.9 son seis y no dos, y el criterio es el
+    // mismo: cada faceta ignora **su propio** filtro y respeta todos los
+    // demás. Un filtro nuevo que se quedara en `shared` apagaría su propia
+    // faceta — todas las alternativas darían cero y cambiar de opinión
+    // parecería imposible.
     const byZoneFilter =
-      criteria.zoneId === undefined ? undefined : eq(listings.zoneId, criteria.zoneId);
+      criteria.zoneIds === undefined ? undefined : inArray(listings.zoneId, [...criteria.zoneIds]);
     const byRoomsFilter =
       criteria.minRooms === undefined ? undefined : gte(listings.rooms, criteria.minRooms);
+    const byTypeFilter =
+      criteria.propertyType === undefined
+        ? undefined
+        : eq(listings.propertyType, criteria.propertyType);
+    const byPublisherFilter =
+      criteria.publisherType === undefined
+        ? undefined
+        : eq(listings.publisherType, criteria.publisherType);
+
+    const asked = new Set(criteria.attributes ?? []);
+
+    /**
+     * Los filtros activos **menos el de la faceta que se está contando**.
+     * Sin argumento devuelve todos, que es el total.
+     *
+     * Para un atributo la exclusión no cambia el número: su filtro y su
+     * faceta son la MISMA condición (`columna = true`). Se excluye igual,
+     * porque así la regla se escribe una sola vez y sigue valiendo el día que
+     * un filtro deje de coincidir exactamente con su faceta.
+     */
+    const others = (except?: FacetAxis): (SQL | undefined)[] => [
+      except === "zone" ? undefined : byZoneFilter,
+      except === "rooms" ? undefined : byRoomsFilter,
+      except === "type" ? undefined : byTypeFilter,
+      except === "publisher" ? undefined : byPublisherFilter,
+      ...LISTING_ATTRIBUTES.filter((attribute) => attribute !== except && asked.has(attribute)).map(
+        (attribute) => eq(ATTRIBUTE_COLUMNS[attribute], true),
+      ),
+    ];
 
     const rows = await this.db
       .select({
         zoneId: listings.zoneId,
-        // El total lleva los dos: es la búsqueda entera, la que el botón dice.
-        total: countWhere(byZoneFilter, byRoomsFilter),
+        // El total lleva todos: es la búsqueda entera, la que el botón dice.
+        total: countWhere(...others()),
         // La faceta de zona ignora la zona elegida y respeta todo lo demás.
-        inZone: countWhere(byRoomsFilter),
-        // Las de habitaciones ignoran `minRooms` y respetan la zona. El 4 es
+        inZone: countWhere(...others("zone")),
+        // Las de habitaciones ignoran `minRooms` y respetan el resto. El 4 es
         // "4 o más", igual que el criterio, porque es el mismo filtro.
-        rooms1: countWhere(byZoneFilter, gte(listings.rooms, 1)),
-        rooms2: countWhere(byZoneFilter, gte(listings.rooms, 2)),
-        rooms3: countWhere(byZoneFilter, gte(listings.rooms, 3)),
-        rooms4: countWhere(byZoneFilter, gte(listings.rooms, 4)),
-        // Atributos, tipo y publicador todavía no son criterios (tasks 14.7 a
-        // 14.9), así que no tienen filtro propio que ignorar y llevan los dos.
-        // El día que lo tengan, cada uno sale de esta lista igual que arriba.
-        hasPowerPlant: countWhere(byZoneFilter, byRoomsFilter, eq(listings.hasPowerPlant, true)),
+        rooms1: countWhere(...others("rooms"), gte(listings.rooms, 1)),
+        rooms2: countWhere(...others("rooms"), gte(listings.rooms, 2)),
+        rooms3: countWhere(...others("rooms"), gte(listings.rooms, 3)),
+        rooms4: countWhere(...others("rooms"), gte(listings.rooms, 4)),
+        hasPowerPlant: countWhere(...others("hasPowerPlant"), eq(listings.hasPowerPlant, true)),
         hasRegularWater: countWhere(
-          byZoneFilter,
-          byRoomsFilter,
+          ...others("hasRegularWater"),
           eq(listings.hasRegularWater, true),
         ),
-        isFurnished: countWhere(byZoneFilter, byRoomsFilter, eq(listings.isFurnished, true)),
-        hasSecurity: countWhere(byZoneFilter, byRoomsFilter, eq(listings.hasSecurity, true)),
-        hasAppliances: countWhere(byZoneFilter, byRoomsFilter, eq(listings.hasAppliances, true)),
-        apartamento: countWhere(
-          byZoneFilter,
-          byRoomsFilter,
-          eq(listings.propertyType, "apartamento"),
-        ),
-        casa: countWhere(byZoneFilter, byRoomsFilter, eq(listings.propertyType, "casa")),
-        quinta: countWhere(byZoneFilter, byRoomsFilter, eq(listings.propertyType, "quinta")),
-        anexo: countWhere(byZoneFilter, byRoomsFilter, eq(listings.propertyType, "anexo")),
-        habitacion: countWhere(
-          byZoneFilter,
-          byRoomsFilter,
-          eq(listings.propertyType, "habitacion"),
-        ),
-        owner: countWhere(byZoneFilter, byRoomsFilter, eq(listings.publisherType, "owner")),
-        broker: countWhere(byZoneFilter, byRoomsFilter, eq(listings.publisherType, "broker")),
+        isFurnished: countWhere(...others("isFurnished"), eq(listings.isFurnished, true)),
+        hasSecurity: countWhere(...others("hasSecurity"), eq(listings.hasSecurity, true)),
+        hasAppliances: countWhere(...others("hasAppliances"), eq(listings.hasAppliances, true)),
+        apartamento: countWhere(...others("type"), eq(listings.propertyType, "apartamento")),
+        casa: countWhere(...others("type"), eq(listings.propertyType, "casa")),
+        quinta: countWhere(...others("type"), eq(listings.propertyType, "quinta")),
+        anexo: countWhere(...others("type"), eq(listings.propertyType, "anexo")),
+        habitacion: countWhere(...others("type"), eq(listings.propertyType, "habitacion")),
+        owner: countWhere(...others("publisher"), eq(listings.publisherType, "owner")),
+        broker: countWhere(...others("publisher"), eq(listings.publisherType, "broker")),
       })
       .from(listings)
       .where(and(...shared))

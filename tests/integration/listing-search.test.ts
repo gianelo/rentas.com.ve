@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { RESULTS_PER_PAGE } from "../../src/modules/listing-search/domain/pagination";
 import {
   DrizzleListingSearch,
   type SearchDatabase,
@@ -14,6 +15,13 @@ import * as schema from "../../src/shared/db/schema";
  * proves the SQL does. Isolation is the guarantee the whole product rests
  * on (design.md D5), and its failure mode is silent: a Caracas flat in a
  * Maracaibo search looks like a result, not like a bug.
+ *
+ * **Y las tasks 14.6 a 14.10**, que son las que traen predicados nuevos: el O
+ * de varias zonas, el Y de los atributos, el tipo, el publicador y la ventana
+ * de paginación. Cada una tiene acá una fila que la contradice — un aviso que
+ * entraría si el predicado se escribiera al revés — porque una consulta que
+ * filtra de más y una que filtra de menos se ven igual desde afuera cuando la
+ * base sólo tiene ejemplos que confirman.
  */
 
 function getTestDatabaseUrl(): string {
@@ -45,21 +53,82 @@ const MCBO_EXPIRED = randomUUID();
 const MCBO_HIDDEN = randomUUID();
 const DC_ACTIVE = randomUUID();
 
-async function insertListing(
-  id: string,
-  zoneId: string,
-  cityId: string,
-  price: number,
-  rooms: number,
-  areaM2: number,
-  status: string,
-  publisherType = "owner",
-) {
+/**
+ * Una tercera ciudad sólo para los filtros de las tasks 14.6 a 14.9, para que
+ * agregar variedad de tipos y atributos no le cambie los números a las
+ * aserciones de arriba.
+ */
+const FILTROS = randomUUID();
+const F_UNO = randomUUID();
+const F_DOS = randomUUID();
+const F_TRES = randomUUID();
+const F_A = randomUUID();
+const F_B = randomUUID();
+const F_C = randomUUID();
+const F_D = randomUUID();
+/** Declara los cinco atributos y está vencido: ningún filtro puede alcanzarlo. */
+const F_VENCIDO = randomUUID();
+
+/** Y una cuarta con más avisos que una página, para la 14.10. */
+const PAGINADA = randomUUID();
+const P_ZONA = randomUUID();
+const PAGINADOS = RESULTS_PER_PAGE + 2;
+
+interface Fixture {
+  readonly id: string;
+  readonly zoneId: string;
+  readonly cityId: string;
+  readonly priceUsd: number;
+  readonly rooms: number;
+  readonly areaM2: number;
+  readonly status: string;
+  readonly title?: string;
+  readonly propertyType?: string;
+  readonly publisherType?: string;
+  readonly hasPowerPlant?: boolean;
+  readonly hasRegularWater?: boolean;
+  readonly isFurnished?: boolean;
+  readonly hasSecurity?: boolean;
+  readonly hasAppliances?: boolean;
+  /**
+   * Minutos de antigüedad. Sin esto, todas las filas comparten un `now()` con
+   * la misma resolución y el orden de la lista sale de la suerte — que es
+   * justo lo que la paginación no puede tolerar: `OFFSET` corta sobre un
+   * orden, y si ese orden cambia entre dos consultas, la página 2 repite un
+   * aviso y se salta otro.
+   */
+  readonly ageMinutes?: number;
+}
+
+async function insertListing(fixture: Fixture) {
   await pool.query(
     `INSERT INTO "listing" (id, publisher_id, publisher_type, property_type, city_id, zone_id, title,
-       description, price_usd, rooms, area_m2, bathrooms, contact_method, contact_value, status, published_at, expires_at)
-     VALUES ($1,$2,$3,'apartamento',$4,$5,'Apartamento','x',$6,$7,$8,2,'whatsapp','04121234567',$9,now(),now() + interval '30 days')`,
-    [id, ANA, publisherType, cityId, zoneId, price, rooms, areaM2, status],
+       description, price_usd, rooms, area_m2, bathrooms,
+       has_power_plant, has_regular_water, is_furnished, has_security, has_appliances,
+       contact_method, contact_value, status, published_at, expires_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,'x',$8,$9,$10,2,
+       $11,$12,$13,$14,$15,
+       'whatsapp','04121234567',$16,
+       now() - make_interval(mins => $17::int), now() + interval '30 days')`,
+    [
+      fixture.id,
+      ANA,
+      fixture.publisherType ?? "owner",
+      fixture.propertyType ?? "apartamento",
+      fixture.cityId,
+      fixture.zoneId,
+      fixture.title ?? "Apartamento",
+      fixture.priceUsd,
+      fixture.rooms,
+      fixture.areaM2,
+      fixture.hasPowerPlant ?? false,
+      fixture.hasRegularWater ?? false,
+      fixture.isFurnished ?? false,
+      fixture.hasSecurity ?? false,
+      fixture.hasAppliances ?? false,
+      fixture.status,
+      fixture.ageMinutes ?? 0,
+    ],
   );
 }
 
@@ -67,6 +136,8 @@ beforeAll(async () => {
   for (const [city, name] of [
     [MARACAIBO, "Maracaibo"],
     [DISTRITO, "Distrito Capital"],
+    [FILTROS, "Filtros"],
+    [PAGINADA, "Paginada"],
   ] as const) {
     await pool.query(`INSERT INTO "city" (id, name) VALUES ($1,$2)`, [city, `${name} ${city}`]);
   }
@@ -74,6 +145,10 @@ beforeAll(async () => {
     [MCBO_CENTRO, MARACAIBO, "Centro"],
     [MCBO_NORTE, MARACAIBO, "Norte"],
     [DC_CENTRO, DISTRITO, "Centro"],
+    [F_UNO, FILTROS, "Uno"],
+    [F_DOS, FILTROS, "Dos"],
+    [F_TRES, FILTROS, "Tres"],
+    [P_ZONA, PAGINADA, "Única"],
   ] as const) {
     await pool.query(
       `INSERT INTO "zone" (id, city_id, name, kind, source) VALUES ($1,$2,$3,'parroquia','INE')`,
@@ -82,16 +157,144 @@ beforeAll(async () => {
   }
   await pool.query(`INSERT INTO "user" (id, email) VALUES ($1,$2)`, [ANA, `ana-${ANA}@ej.com`]);
 
-  await insertListing(MCBO_ACTIVE, MCBO_CENTRO, MARACAIBO, 320, 2, 74, "active");
-  await insertListing(MCBO_BIG, MCBO_NORTE, MARACAIBO, 900, 3, 120, "active", "broker");
-  await insertListing(MCBO_EXPIRED, MCBO_CENTRO, MARACAIBO, 300, 2, 70, "expired");
-  await insertListing(MCBO_HIDDEN, MCBO_CENTRO, MARACAIBO, 310, 2, 71, "hidden");
-  await insertListing(DC_ACTIVE, DC_CENTRO, DISTRITO, 350, 2, 70, "active");
+  await insertListing({
+    id: MCBO_ACTIVE,
+    zoneId: MCBO_CENTRO,
+    cityId: MARACAIBO,
+    priceUsd: 320,
+    rooms: 2,
+    areaM2: 74,
+    status: "active",
+  });
+  await insertListing({
+    id: MCBO_BIG,
+    zoneId: MCBO_NORTE,
+    cityId: MARACAIBO,
+    priceUsd: 900,
+    rooms: 3,
+    areaM2: 120,
+    status: "active",
+    publisherType: "broker",
+  });
+  await insertListing({
+    id: MCBO_EXPIRED,
+    zoneId: MCBO_CENTRO,
+    cityId: MARACAIBO,
+    priceUsd: 300,
+    rooms: 2,
+    areaM2: 70,
+    status: "expired",
+  });
+  await insertListing({
+    id: MCBO_HIDDEN,
+    zoneId: MCBO_CENTRO,
+    cityId: MARACAIBO,
+    priceUsd: 310,
+    rooms: 2,
+    areaM2: 71,
+    status: "hidden",
+  });
+  await insertListing({
+    id: DC_ACTIVE,
+    zoneId: DC_CENTRO,
+    cityId: DISTRITO,
+    priceUsd: 350,
+    rooms: 2,
+    areaM2: 70,
+    status: "active",
+  });
+
+  await insertListing({
+    id: F_A,
+    zoneId: F_UNO,
+    cityId: FILTROS,
+    priceUsd: 100,
+    rooms: 1,
+    areaM2: 40,
+    status: "active",
+    publisherType: "owner",
+    propertyType: "apartamento",
+    hasPowerPlant: true,
+  });
+  await insertListing({
+    id: F_B,
+    zoneId: F_DOS,
+    cityId: FILTROS,
+    priceUsd: 200,
+    rooms: 2,
+    areaM2: 50,
+    status: "active",
+    publisherType: "broker",
+    propertyType: "casa",
+    hasPowerPlant: true,
+    hasRegularWater: true,
+  });
+  await insertListing({
+    id: F_C,
+    zoneId: F_TRES,
+    cityId: FILTROS,
+    priceUsd: 300,
+    rooms: 3,
+    areaM2: 60,
+    status: "active",
+    publisherType: "owner",
+    propertyType: "quinta",
+  });
+  await insertListing({
+    id: F_D,
+    zoneId: F_UNO,
+    cityId: FILTROS,
+    priceUsd: 400,
+    rooms: 4,
+    areaM2: 70,
+    status: "active",
+    publisherType: "broker",
+    propertyType: "apartamento",
+    hasPowerPlant: true,
+    hasRegularWater: true,
+    isFurnished: true,
+    hasSecurity: true,
+    hasAppliances: true,
+  });
+  await insertListing({
+    id: F_VENCIDO,
+    zoneId: F_UNO,
+    cityId: FILTROS,
+    priceUsd: 400,
+    rooms: 4,
+    areaM2: 70,
+    status: "expired",
+    publisherType: "owner",
+    propertyType: "apartamento",
+    hasPowerPlant: true,
+    hasRegularWater: true,
+    isFurnished: true,
+    hasSecurity: true,
+    hasAppliances: true,
+  });
+
+  for (let index = 0; index < PAGINADOS; index += 1) {
+    await insertListing({
+      id: randomUUID(),
+      zoneId: P_ZONA,
+      cityId: PAGINADA,
+      priceUsd: 100 + index,
+      rooms: 2,
+      areaM2: 50,
+      status: "active",
+      // Índice ascendente = más viejo, y el orden es del más nuevo al más
+      // viejo, así que la página 1 son los títulos 00 a 23 en orden.
+      title: `Aviso ${String(index).padStart(2, "0")}`,
+      ageMinutes: index,
+    });
+  }
 });
 
 afterAll(async () => {
   await pool.query(`DELETE FROM "user" WHERE id = $1`, [ANA]);
-  await pool.query(`DELETE FROM "city" WHERE id = ANY($1)`, [[MARACAIBO, DISTRITO]]);
+  await pool.query(`DELETE FROM "city" WHERE id = ANY($1)`, [
+    [MARACAIBO, DISTRITO, FILTROS, PAGINADA],
+  ]);
   await pool.end();
 });
 
@@ -115,9 +318,21 @@ describe("city isolation (D5, task 5.3)", () => {
     // Two zones named "Centro". Filtering by the Maracaibo one must not
     // reach the Caracas one — the ids differ, and the id is what is asked
     // for, but a query that joined or matched on name would not know that.
-    const results = await search.search({ cityId: MARACAIBO, zoneId: MCBO_CENTRO });
+    const results = await search.search({ cityId: MARACAIBO, zoneIds: [MCBO_CENTRO] });
 
     expect(results.map((r) => r.id)).toEqual([MCBO_ACTIVE]);
+  });
+
+  it("holds when the zone list itself carries another city's zone", async () => {
+    // `buildSearchCriteria` deja caer una zona ajena antes de llegar acá, pero
+    // el puerto no puede apoyarse en eso: la ciudad está en el `AND` de
+    // afuera, así que la lista de zonas sólo puede acotar, nunca ampliar.
+    const results = await search.search({
+      cityId: FILTROS,
+      zoneIds: [F_UNO, MCBO_CENTRO, DC_CENTRO],
+    });
+
+    expect(results.map((r) => r.id).sort()).toEqual([F_A, F_D].sort());
   });
 });
 
@@ -125,11 +340,30 @@ describe("active only (tasks 5.5/5.6)", () => {
   it("excludes expired and auto-hidden listings that would otherwise match", async () => {
     // Same city, same zone, same price band as MCBO_ACTIVE: status is the
     // only reason these two are absent.
-    const results = await search.search({ cityId: MARACAIBO, zoneId: MCBO_CENTRO });
+    const results = await search.search({ cityId: MARACAIBO, zoneIds: [MCBO_CENTRO] });
     const ids = results.map((r) => r.id);
 
     expect(ids).not.toContain(MCBO_EXPIRED);
     expect(ids).not.toContain(MCBO_HIDDEN);
+  });
+
+  it("sigue fuera del alcance del filtro más específico posible", async () => {
+    // F_VENCIDO declara los cinco atributos, es apartamento y es de dueño: la
+    // búsqueda más estrecha que se puede escribir lo describe exactamente.
+    const results = await search.search({
+      cityId: FILTROS,
+      publisherType: "owner",
+      propertyType: "apartamento",
+      attributes: [
+        "hasPowerPlant",
+        "hasRegularWater",
+        "isFurnished",
+        "hasSecurity",
+        "hasAppliances",
+      ],
+    });
+
+    expect(results).toEqual([]);
   });
 });
 
@@ -148,5 +382,166 @@ describe("price and characteristics (task 5.4)", () => {
 
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({ id: MCBO_BIG, publisherType: "broker", areaM2: 120 });
+  });
+});
+
+describe("varias zonas, combinadas con O (task 14.6, F4)", () => {
+  it("trae los avisos de todas las zonas pedidas", async () => {
+    // **El discriminador.** Con Y ninguna fila puede estar en dos zonas a la
+    // vez y esto daría cero; con O son tres.
+    const results = await search.search({ cityId: FILTROS, zoneIds: [F_UNO, F_DOS] });
+
+    expect(results.map((r) => r.id).sort()).toEqual([F_A, F_B, F_D].sort());
+  });
+
+  it("una zona sola sigue siendo una lista de una", async () => {
+    const results = await search.search({ cityId: FILTROS, zoneIds: [F_TRES] });
+
+    expect(results.map((r) => r.id)).toEqual([F_C]);
+  });
+
+  it("las zonas acotan de verdad: la que no se pidió no aparece", async () => {
+    const results = await search.search({ cityId: FILTROS, zoneIds: [F_DOS, F_TRES] });
+
+    expect(results.map((r) => r.id).sort()).toEqual([F_B, F_C].sort());
+  });
+});
+
+describe("tipo de publicador y tipo de propiedad (tasks 14.7 y 14.8)", () => {
+  it("trae sólo los de dueño (F6)", async () => {
+    const results = await search.search({ cityId: FILTROS, publisherType: "owner" });
+
+    expect(results.map((r) => r.id).sort()).toEqual([F_A, F_C].sort());
+    expect(results.every((r) => r.publisherType === "owner")).toBe(true);
+  });
+
+  it("trae sólo los de inmobiliaria cuando eso es lo que se pide", async () => {
+    const results = await search.search({ cityId: FILTROS, publisherType: "broker" });
+
+    expect(results.map((r) => r.id).sort()).toEqual([F_B, F_D].sort());
+  });
+
+  it("filtra por tipo de propiedad", async () => {
+    expect(
+      (await search.search({ cityId: FILTROS, propertyType: "apartamento" }))
+        .map((r) => r.id)
+        .sort(),
+    ).toEqual([F_A, F_D].sort());
+    expect(
+      (await search.search({ cityId: FILTROS, propertyType: "casa" })).map((r) => r.id),
+    ).toEqual([F_B]);
+    expect(await search.search({ cityId: FILTROS, propertyType: "anexo" })).toEqual([]);
+  });
+
+  it("combina los dos con el resto, siempre con Y", async () => {
+    const results = await search.search({
+      cityId: FILTROS,
+      publisherType: "broker",
+      propertyType: "apartamento",
+    });
+
+    expect(results.map((r) => r.id)).toEqual([F_D]);
+  });
+});
+
+describe("los atributos declarados, combinados con Y (task 14.9)", () => {
+  it("trae los que declararon el atributo pedido", async () => {
+    const results = await search.search({ cityId: FILTROS, attributes: ["hasPowerPlant"] });
+
+    expect(results.map((r) => r.id).sort()).toEqual([F_A, F_B, F_D].sort());
+  });
+
+  it("exige TODOS los pedidos, no cualquiera de ellos", async () => {
+    // **El discriminador.** Con O serían tres (F_A por la planta, F_B y F_D
+    // por las dos); con Y son dos. La diferencia entre las dos lecturas es un
+    // inquilino escribiéndole a un apartamento que no tiene agua.
+    const results = await search.search({
+      cityId: FILTROS,
+      attributes: ["hasPowerPlant", "hasRegularWater"],
+    });
+
+    expect(results.map((r) => r.id).sort()).toEqual([F_B, F_D].sort());
+  });
+
+  it("los cinco a la vez dejan sólo al que declaró los cinco", async () => {
+    const results = await search.search({
+      cityId: FILTROS,
+      attributes: [
+        "hasPowerPlant",
+        "hasRegularWater",
+        "isFurnished",
+        "hasSecurity",
+        "hasAppliances",
+      ],
+    });
+
+    expect(results.map((r) => r.id)).toEqual([F_D]);
+  });
+
+  it("no hay forma de pedir el que NO lo declaró", async () => {
+    // No es un caso de borde: es la forma del tipo. `attributes` es una lista
+    // de atributos exigidos, así que no existe un valor que signifique
+    // "los que dijeron que no" — y no existe porque en estas columnas `false`
+    // significa "no lo declaró", no "no lo tiene". Lo único observable es que
+    // pedir el atributo nunca devuelve a quien no lo declaró.
+    const results = await search.search({ cityId: FILTROS, attributes: ["isFurnished"] });
+
+    expect(results.map((r) => r.id)).toEqual([F_D]);
+    expect(results.map((r) => r.id)).not.toContain(F_C);
+  });
+});
+
+describe("paginación (task 14.10, F10)", () => {
+  it("nunca devuelve más de una página, aunque la ciudad tenga más", async () => {
+    const results = await search.search({ cityId: PAGINADA });
+
+    // Antes de la 14.10 esta consulta devolvía el catálogo entero.
+    expect(PAGINADOS).toBeGreaterThan(RESULTS_PER_PAGE);
+    expect(results).toHaveLength(RESULTS_PER_PAGE);
+  });
+
+  it("la segunda página trae el resto y no repite nada de la primera", async () => {
+    const [primera, segunda] = await Promise.all([
+      search.search({ cityId: PAGINADA }),
+      search.search({ cityId: PAGINADA, page: 2 }),
+    ]);
+
+    expect(segunda).toHaveLength(PAGINADOS - RESULTS_PER_PAGE);
+
+    const ids = [...primera, ...segunda].map((row) => row.id);
+    // Ni un aviso repetido ni uno perdido: el orden total (fecha, y el id
+    // como desempate) es lo que hace que `OFFSET` corte siempre igual.
+    expect(new Set(ids).size).toBe(PAGINADOS);
+  });
+
+  it("las páginas salen en orden, de la más nueva a la más vieja", async () => {
+    const primera = await search.search({ cityId: PAGINADA });
+    const segunda = await search.search({ cityId: PAGINADA, page: 2 });
+
+    expect(primera[0]?.title).toBe("Aviso 00");
+    expect(primera[RESULTS_PER_PAGE - 1]?.title).toBe(
+      `Aviso ${String(RESULTS_PER_PAGE - 1).padStart(2, "0")}`,
+    );
+    expect(segunda[0]?.title).toBe(`Aviso ${String(RESULTS_PER_PAGE).padStart(2, "0")}`);
+  });
+
+  it("una página más allá del final devuelve vacío en vez de romperse", async () => {
+    // El enlace viejo pegado en un chat. La respuesta honesta es una lista
+    // vacía, no un error de Postgres ni una página 500.
+    expect(await search.search({ cityId: PAGINADA, page: 400 })).toEqual([]);
+  });
+
+  it("la ventana se aplica también sobre una búsqueda filtrada", async () => {
+    const results = await search.search({ cityId: PAGINADA, zoneIds: [P_ZONA], minRooms: 2 });
+
+    expect(results).toHaveLength(RESULTS_PER_PAGE);
+  });
+
+  it("no se lleva por delante el aislamiento de ciudad", async () => {
+    // La ciudad paginada tiene más de una página; Maracaibo tiene dos avisos.
+    // Un `LIMIT` que se aplicara antes del `WHERE` mezclaría las dos.
+    const results = await search.search({ cityId: MARACAIBO, page: 2 });
+
+    expect(results).toEqual([]);
   });
 });
