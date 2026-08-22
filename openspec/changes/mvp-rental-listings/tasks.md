@@ -176,6 +176,16 @@ The order is not cosmetic. **The token contract has to land before the first com
 - [x] 2.4 RED: zone selector offers only the selected city's zones — **PR2b, 2026-08-16.** `components/molecules/CityZoneSelect.test.tsx` written first against a deliberately unfiltered implementation (`zonesForSelectedCity = zones`). Real assertion failure captured live: `AssertionError: expected '<form class="_form_fbe3f4" method="ge…' not to contain 'Chacao'` (3/3 tests failed for the same reason — the selected city's zones weren't excluding the other city's). Fixed with `zones.filter((zone) => zone.cityId === selectedCityId)`; reran, 3/3 passed
 - [x] 2.5 GREEN: cascading city→zone select component (`components/molecules/CityZoneSelect.tsx`) — **PR2b, 2026-08-16.** Server-rendered `<form method="get">`, two native `<select>` elements, a visible `ActionButton type="submit"`. No `onChange` handler, no client component directive — changing the city resubmits as a GET and the server rebuilds the zone `<select>` already filtered (design.md D13). The filter lives inside the component (D5's "guarantees live in the narrowest API"): it takes every curated zone plus the selected city id and filters internally, so a caller cannot pass a mismatched pair. Ships a new standalone `Label` atom (`components/atoms/Label.tsx`, promotes 1b.5) — both selects carry a real associated `<label htmlFor>`, not a placeholder. Verified no client-side JS: `components/design-contract.test.tsx`'s existing "no shipped atom/molecule declares a client directive" scan covers both new files by construction (it globs `components/atoms` and `components/molecules`)
 
+  > **`listing-catalogue` module added 2026-08-21, and the reason is an architecture violation rather than a feature.** `design.md` states it in one line: "the Next.js `app/` tree is a thin delivery adapter that only translates HTTP/RSC into a use case call — no business rule lives there." Three files were writing raw Drizzle against `citiesTable`/`zonesTable` — the SAME `select` copied into `app/page.tsx` and `app/publicar/page.tsx`, plus a third in `app/publicar/actions.ts`. The duplication was the symptom; the cause was a missing port, because `ZoneCataloguePort` only answers "the zones of one city" and the read path needs every city plus the selected city's zones. `CataloguePort` + `DrizzleCatalogue` now serve all three, and `grep` for `shared/db/schema` under `app/` and `components/` comes back empty.
+  >
+  > **Two rules moved out of the front, at the founder's instruction (2026-08-21: "nunca mas coloques una regla de negocio en el front nunca").** `resolveSelectedCity` was `params.city ?? cities[0]?.id` inside `app/page.tsx` — which city a visitor sees before choosing one is a product decision, and it was being taken by whatever `ORDER BY name` returned first. `zonesForCity` was `zones.filter(...)` inline in TWO components, which is how two screens start disagreeing. Both now live in `listing-catalogue/domain`, where the 90% floor reaches them.
+  >
+  > **A real defect fixed on the way, not a refactor:** `buildSearchCriteria` never verified the city exists — it puts the value straight into `WHERE city_id = $1` — so `?city=cualquier-cosa` rendered an empty results page for a catalogue full of listings, indistinguishable to the visitor from "no hay avisos". `resolveSelectedCity` refuses an uncurated id and falls back. Same class of fix as `listingIdFromSlug`'s null.
+  >
+  > **The zone cascade the founder asked for (2026-08-21).** The search sidebar rendered the whole taxonomy in an `<optgroup>` per city, so choosing Maracaibo still offered Chacao. It now receives only the selected city's zones. The founder chose the SERVER cascade over client JS explicitly, with the tradeoff stated: the list narrows on reload, not on click, because a client-side narrow ships a bundle to the cheap phones D13 exists for. `SearchFilters.test.tsx`'s "offers every zone grouped by city" test was DELETED — it had encoded the bug as a requirement.
+  >
+  > Two mutations checked: accepting an uncurated city id turned 2 tests red, and making `zonesForCity` return the whole taxonomy for an absent city (the generous failure mode) turned 1 red. **Gap closed the same day: `tests/integration/catalogue.test.ts`** (5 specs, real Postgres). It proves the seam rather than re-proving the pure rules: that `listCities`' `ORDER BY name` is real — the site's root city for every visitor who has not chosen depends on it, and no unit test can see it — and that the rows feed `resolveSelectedCity`/`zonesForCity` unchanged. **The `innerJoin` against `city` was REMOVED rather than tested**: `zone_city_id_city_id_fk` is `ON DELETE cascade` (drizzle/0001), so the orphan zone it guarded cannot exist, and a join on every page load to defend an unreachable state is cost with no buyer. A spec now asserts the cascade against the running database, so weakening the constraint fails loudly instead of silently needing the join back. **One false green caught by mutation, and worth recording**: the cities fixture originally inserted Alfa before Beta, so insertion order and alphabetical order were the same sequence and the ordering assertion passed with the `ORDER BY` deleted. Reversed the insert; the mutation now turns it red. Same class of defect as PR11.1's killed-heredoc false green — a gate that cannot fail reports the guarantee as held.
+
 ## Phase 3: Listing Publication Core (PR3)
 
 **Split into slices, as this phase's High risk required.** PR3a `feat/publish-validation` (the pure rules, #23); PR3b `feat/upload-guard` (the byte-level upload guard, #24); later slices carry the `listing_photo` schema, the `sharp` derivatives, the form, and the R2 adapter.
@@ -240,6 +250,8 @@ The lesson is not "grant another exception". It is that **a screen with N form f
 - [x] 6.6 RED: integration — after N repeat reveals of one pair, unique-pair view returns 1 row, `reveal_count=N`, `first_revealed_at`=earliest; raw event table still holds N rows — proven against real Postgres 18. **Verified independently rather than on report**: recreating the view without `DISTINCT ON` turns four tests red, including the one whose assertion the agent had itself tightened from `toBeGreaterThanOrEqual` to `toBeGreaterThan` after discovering the loose form passed against the broken view
 - [x] 6.7 GREEN: view query wrapper
 - [ ] 6.8 Reveal UI: locked placeholder, reveal button, sign-in redirect
+
+  > **Correction landed 2026-08-21, ahead of 6.8.** The contact-reveal module modelled the publisher contact as a single `whatsapp: string`, written when no column stored one. Two columns ship now — `listing.contact_method` and `listing.contact_value`, both NOT NULL, copied at publish time — and `publishable-listing.ts` had already recorded the rule they exist for: "the reveal button's label comes from this, so a listing that says 'Ver WhatsApp' while holding an address is a promise the product does not keep." The method never reached the presentation layer, so 6.8's button would have said "Ver WhatsApp del dueño" over an email address for every publisher who chose one. Fixed in the domain rather than in the component, because the component is being redesigned and the rule is not: `ContactPresentation` now carries `method` in BOTH branches and `value` in the revealed branch only — **the method survives the lock, the value cannot be represented inside it**, which is the guarantee 6.3 was written for and it is unchanged. `contactChannelNoun` returns the channel noun alone ("WhatsApp" / "teléfono" / "email") so the sentence around it stays in the UI layer. Two mutations checked: making the locked branch carry the value turned 4 tests red including the `not.toContain` leak assertions, and hard-coding the noun to "WhatsApp" turned 1 red. **Open for the founder, four words wide**: SISTEMA.md writes the label as "Ver WhatsApp del dueño" and gives no wording for a broker or for the other two channels — the noun is derived, the rest of the sentence is not yet decided
 - [ ] 6.9 RED: an account exceeding the reveal window is throttled and further reveals stop — the catalog must not be drainable by one registered account
 - [ ] 6.10 GREEN: per-account reveal rate limit (threshold from the design's open question; loose enough for a genuine tenant comparing listings)
 
@@ -320,7 +332,7 @@ Depends on PR5 (search) and PR7 (lifecycle). Carries D11 and the performance bud
 
 **11.17–11.20 pulled forward, shipped as their own slice (`perf/budget-gates`, off `main`).** CI's `budget` job has carried two gates that could not fail since PR0c — each emits a GitHub warning saying so out loud (`.github/workflows/ci.yml`, `budget` job). Real read-path pages are about to land (PR2b's city/zone select, then PR3's publish flow); a budget that starts measuring after the app has gained weight cannot tell you what added it. Landing the gates now, ahead of Phase 3/5/11's own pages, is what makes them able to catch the first regression rather than the fifth.
 
-- [ ] 11.1 GREEN: URL scheme `/alquiler/<ciudad>/<zona>/<slug>-<id>`; filters as query parameters
+- [ ] 11.1 GREEN: URL scheme `/alquiler/<ciudad>/<zona>/<slug>-<id>`; filters as query parameters. **Partial, 2026-08-20** — the scheme ships as `src/modules/listing-discovery/domain/listing-url.ts` (`slugify`, `buildListingPath`, `listingIdFromSlug`), pulled forward out of Phase 11 because the listing detail page needs it and nothing else can be built on top of a URL that does not exist yet. The filters half already holds: search is a `GET` form and its state is the query string (5.7). **What is deliberately NOT done is the route** — nothing links to this scheme and no page serves it, because a link to a route that does not exist is a broken link, and the page is its own slice. **The design decision worth carrying forward: only the id identifies a listing.** City, zone and slug are for a crawler and for a person deciding whether to tap a link pasted into a WhatsApp group; they carry no lookup power, so a retitled advert keeps its URL. The cost is a duty on the page — every path ending in the same id resolves to the same listing, so the page must rebuild the canonical path and redirect anything that differs, or one advert publishes unbounded duplicate URLs. **`listingIdFromSlug` returning `null` is the guard, not a convenience**: its result becomes a `WHERE id = $1`, so a segment that merely looks plausible is refused here rather than handed to the database. Four rules were mutation-checked rather than asserted and left at that — removing the regex's end anchor turned two tests red including the `… OR 1=1` segment, and dropping the lowercase, the NFD accent strip or the 60-character cap each turned exactly one red
 - [ ] 11.2 RED: a copied filtered-search URL reopens with the same filter selection applied
 - [ ] 11.3 RED: search results are present in the served response with scripting disabled
 - [ ] 11.4 GREEN: server-rendered search — no client-side filter or pagination layer
@@ -363,6 +375,301 @@ Parked here on purpose rather than started. Both are real, both were requested, 
 - [ ] 13.3 Whatever 13.2 concludes, prove a restore once. **An untested backup is not a backup**, and the moment to discover that is not the moment it is needed
 
 
+
+## Phase 14: The search flow the founder specified (2026-08-21)
+
+**Where this came from.** The founder delivered a functional specification for the mobile search flow — F1 to F15, with edge cases and ten acceptance criteria — plus a redesign of the list and filters (mobile and desktop). This phase is that document turned into work, checked line by line against what the code already does. It is deliberately written as *functionality*, not screens: the visual half arrives separately and must not be able to silently change a rule recorded here.
+
+**What already holds, so nobody rebuilds it:** city isolation (F2, criterion 8) is guaranteed twice — the search port cannot express an unscoped query, and `listing_zone_city_fk` makes a cross-city row physically impossible; search state already lives in the URL as a `GET` with no client JS (F12, F14, criteria 5 and 7); publisher type is already visible and greyscale-distinguishable, with price above title (criteria 2 and 3); results already order by `published_at` descending (F9); the contact-reveal module already exists and is proven (F13's engine — only its screen is missing).
+
+**The three contradictions with earlier decisions, unresolved and NOT to be settled by whoever implements first:**
+1. **F9 asks for a two-column grid.** `SISTEMA.md` states as a hard rule: "Lista de filas, nunca grilla de tarjetas, en ningún ancho."
+2. **F1 makes `/` a home with four collections** and moves results to `/buscar`. Today `app/page.tsx` records the opposite as a deliberate decision: the results *are* the root, and there is no home.
+3. **F13 says the number is "parcialmente oculto".** The shipped guarantee is stronger and deliberate: in the locked state the contact value is *unrepresentable* — it never reaches the browser at all, so there is nothing to un-hide in the HTML. Showing real digits is a different promise and has to be chosen, not slid into.
+
+### 14a. Data the product does not store yet
+
+- [ ] 14.1 `listing.property_type`, `NOT NULL` with **no default** — following `publisher_type`'s precedent in the schema, where the note records that a default is the silent failure mode. Taxonomy fixed by the founder (2026-08-21): `apartamento`, `casa`, `quinta`, `anexo`, `habitacion`. **`local comercial` was proposed and withdrawn**, and the withdrawal is load-bearing: it keeps the product residential, keeps `listing.rooms` `NOT NULL` without forcing a meaningless number onto a commercial unit, and keeps the detail page's four-cell stat strip (whose schema comment says it "draws four identical cells and has no empty state for one of them"). Do not re-add it without re-opening all three. **This is the THIRD instance of the same recurring gap** — `habitaciones`/`metros²`, then `baños`/`puesto` (3.15), now this — and the first one caught before building rather than after
+- [ ] 14.2 Migration for 14.1 in three steps, because live rows exist and "no podemos borrar data real" is a gate (`scripts/deploy-migrate.mjs`, 11b.6): add nullable → backfill → set `NOT NULL`
+- [ ] 14.3 The six attributes of F6 — planta eléctrica, agua regular, amoblado, vigilancia 24 h, línea blanca (puesto de estacionamiento already ships as `parking_spots`). **As six boolean columns, not an attribute table**, and the reason is F6's own wording: attributes combine with AND ("piden todos, no cualquiera") and each must report how many of the current results have it. Six columns make that `COUNT(*) FILTER (WHERE amoblado)` — one pass, indexable. An attribute table makes it `GROUP BY … HAVING COUNT(*) = N` on every search: complexity paid on every query to save a migration done once a year
+- [ ] 14.4 A `pending_moderation` listing status. F1 excludes it from every collection; the enum today is only `active | expired | hidden`
+- [ ] 14.5 **Cover photo in search results.** Today the search query never touches `listing_photo` and `ResultRow` renders a CSS placeholder — there is not a single real photograph anywhere in the results. F9 also requires that a listing with no photo never reaches the grid; the publish form already refuses one, but the broker bulk import (Phase 9) does not
+
+### 14b. The search engine
+
+- [ ] 14.6 Multiple zones combined with OR (F4). `SearchCriteria` carries a single optional `zoneId`
+- [ ] 14.7 A `publisherType` criterion — "solo de dueños" (F6). The column exists; the filter does not
+- [ ] 14.8 A `propertyType` criterion, from 14.1
+- [ ] 14.9 Attribute criteria, AND-combined, from 14.3
+- [ ] 14.10 Pagination (F10). The query has no `LIMIT` and no `OFFSET` — it returns the whole catalogue
+- [ ] 14.11 **Counts, and this is the heaviest requirement in the entire document.** F3, F4, F6 and F7 all demand that *every filter option shows its number before you choose it*, and F7 demands the confirm button state the exact result count at every step. That turns each filter into a faceted aggregation. **The cost is round trips, not Postgres.** Neon is serverless over HTTP: one query for the rows plus six for the facets is seven network round trips. The requirement is therefore ONE query returning rows and every facet count together, not a cache
+- [ ] 14.12 Price histogram over the selected zones (F5), plus the "la mayoría está entre $380 y $620" summary
+- [ ] 14.13 Swap min and max when inverted instead of erroring; clamp out-of-range values to the real extremes and say so (F5)
+- [ ] 14.14 The relaxation proposal (F10, F11): evaluate each active filter and offer the single change that adds the most results, with its number. "Ninguna pantalla termina en un vacío sin salida" (criterion 9)
+- [ ] 14.15 Zero-results diagnosis (F11): name the filter causing the emptiness, offer up to three concrete exits each with its count. **Never suggest another city** (criterion 8)
+- [ ] 14.16 Saved searches, which F11 promises ("avisarme cuando aparezca algo así")
+
+### 14c. The suggestion box (founder, 2026-08-21 — "como hace Airbnb")
+
+- [ ] 14.17 **A translator, not a search.** Typing "arriendo maracaibo" must suggest the Maracaibo *filter*. This does NOT contradict the document's own "búsqueda de texto libre" exclusion, and the distinction is the whole design: it never reads listing titles or descriptions, so it cannot return empty on a thin catalogue — the reason free text was excluded. It matches a controlled vocabulary (cities, zones, prices, rooms, property types, attributes, publisher type) and emits filters. F4's "sólo autocompleta zonas conocidas" is this rule, widened
+- [ ] 14.18 **A suggestion is a (filter, value) pair, never a word.** `Centro` is a zone in BOTH Maracaibo and Distrito Capital — it is in the seed and `tests/integration/listing-search.test.ts` covers it as the colliding-name case. A bare "Centro" would apply the wrong city's filter and return zero results under the isolation rule, with the visitor unable to see why. Suggestions carry their kind and their scope: `Centro · Zona · Maracaibo`
+- [ ] 14.19 Pure-domain parser: text in, suggested filters out. No database, no network, no client — testable whole, and it keeps the founder's standing rule (a business rule never lives in the front). Reuse the NFD accent strip already shipped in `listing-discovery/domain/listing-url.ts` so "maracaybo" and "Maracaibo" agree
+- [ ] 14.20 Works with JavaScript off: the box is a `GET` form; the server translates and redirects to the canonical filtered URL. Live suggestions while typing are an enhancement on top, never the mechanism (F14)
+
+### 14d. Surfaces
+
+- [ ] 14.21 The home with four collections (F1) — recientes, each city, and ≤ $400 — each declaring its real total, each hiding itself when empty. **Blocked on contradiction 2 above**
+- [ ] 14.22 "Limpiar todo" (F8), which resets everything except the city — "la ciudad no es un filtro, es el contexto"
+- [ ] 14.23 The URL scheme F12 specifies: `/buscar?ciudad=…&zona=chacao,altamira&min=…&max=…&hab=…&tipo=dueno&pag=1`. Today the parameters are English and live at the root. An invalid parameter is ignored with a notice rather than breaking the page; a zone that no longer exists is dropped and the rest of the search survives
+- [ ] 14.24 An expired listing reached by direct link shows the ficha marked expired plus active listings from the same zone (F12) — needs `not-found`/expired handling, which is 11b.3
+
+### 14e. Deliberately NOT doing
+
+Recorded so nobody adds them as an improvement: map of results, address autocomplete, free-text search over listings, relevance ordering, favourites without an account. Each has a functional reason in the founder's document, not a scheduling one.
+
+**Redis is not in this phase, and that is a decision with a date on it.** The founder proposed it for search speed (2026-08-21). It was declined *for search* on the product's own terms: F7 requires the **exact** count, and a cache returns a stale one — a button reading "Ver 47 avisos" over a list of 44 breaks the only thing that button is for, and every publish, expiry, renewal and report invalidates it. The catalogue is also small by the founder's own measure, who set "varios cientos" as the horizon at which free-text search reopens. The engine ships behind a port and gets **measured**; if real data proves it slow, Redis enters as an adapter without touching the domain. Where it is already expected to earn its place is task 6.10's per-account reveal limit, which needs a counter shared across serverless instances — a database is the wrong tool for that, and a cache is the right one.
+
+## Phase 15: Entrar — the two doors, and the magic link (founder, 2026-08-21)
+
+**The single most expensive item in the founder's flows document, and it is not a screen.** Login by email link is infrastructure this project deliberately does not have, and the schema says so out loud: the note above `users` records that no `verificationToken` table exists *because* "this app has exactly one provider (Google OAuth) — no magic-link email provider". That justification expires the moment 15.1 lands, and the comment has to be corrected rather than left contradicting the schema beside it.
+
+**There is no email sender in this repository at all** — not Resend, not nodemailer, nothing. `design.md` names Resend as the plan; nothing is installed. Part of that work is not the assistant's to do: sending from `rentas.com.ve` without landing in spam needs SPF and DKIM records in the domain's DNS, which is the founder's.
+
+**Deliverability is a product risk here, not an ops detail.** The founder's own flow calls step 11 "el punto de fuga principal" — the only moment a tenant is asked for anything. A magic link that lands in the spam folder does not cost one visit; that person can never sign in at all. Google's one tap has no equivalent failure mode, which is why F16 goes first and above, and why F18's waiting screen with a live countdown is load-bearing rather than decorative.
+
+### 15a. Infrastructure
+
+- [ ] 15.1 `verificationToken` table + migration, and **correct the now-false comment** in `src/shared/db/schema.ts` that explains its absence
+- [ ] 15.2 An email sender behind a port, so the domain never learns who delivers mail. Founder-owned prerequisite: SPF/DKIM on `rentas.com.ve`'s DNS, plus the API key handled the way R2's was — never pasted into chat
+- [ ] 15.3 Auth.js email provider wired with `maxAge` set to **15 minutes** (F17). The library's default is far longer, so this is a configuration the spec pins, not a default to inherit
+
+### 15b. The rules of the link
+
+- [ ] 15.4 Single use (F17). Auth.js does this; assert it rather than assume it
+- [ ] 15.5 **Fifteen minutes** (F17)
+- [ ] 15.6 ~~Must open on the same device~~ — **REMOVED by the founder, 2026-08-21, and the reasoning is recorded so nobody restores it as a hardening.** The rule was in F17 and it contradicted the founder's own "Decisión pendiente" two sections later: on a desktop the mail is read on the phone, so the link opens on another device **in the normal case, not an edge case**. Enforced as written, signing in by email from a computer could never succeed. What the rule buys is protection against a leaked link — forwarded mail, a shared inbox, a mail scanner that pre-fetches URLs; what it guards is access to a phone number behind a free account. Single use plus fifteen minutes covers the real exposure. It is also custom work: Auth.js is not same-device by default, so keeping it meant building a mechanism to buy a problem
+
+### 15c. The two doors, same mechanism
+
+- [ ] 15.7 **Publicar → a page with its own URL** (both viewports). It has to be a return destination from Google and from a mail client, and a sheet has no URL
+- [ ] 15.8 **Ver WhatsApp → a sheet on mobile, a 460 px dialog on desktop.** The tenant must not be taken out of the listing they are reading
+- [ ] 15.9 F18's waiting screen: the typed address shown back (so a typo is caught without going back), why it might not arrive, resend **with a countdown rather than a dead button**, and an exit to Google so nobody is trapped waiting
+- [ ] 15.10 F19 — return to the exact screen and listing, never the home. This is criterion 11 and it is what makes the contact reveal worth attempting at all
+- [ ] 15.11 F20 — every door shows a visible way out. The listing is public; only the phone number is behind the account, and the copy says so
+
+### 15d. Still open after 15.6
+
+- [x] 15.12 **RESOLVED 2026-08-22 — the waiting tab polls, as a progressive enhancement.** The desktop design (`Rentas - Entrar - Desktop.dc.html`, screen 9c) commits to it in copy: "Si lo abris en el telefono, entras ahi y esta pestana sigue esperando: te avisamos aca cuando pase." The founder confirmed after review.
+  >
+  > **Why this does NOT break F14, correcting my own earlier reading.** I had argued it made the desktop the one exception to the no-JS read path. That was the wrong scope: F14 protects "buscar, filtrar, paginar y navegar" — the surfaces a crawler indexes and a cheap phone pays for. The "revisa tu correo" screen is neither. It is not indexed, not shared, and only reached by someone who just pressed a button on purpose.
+  >
+  > **Mechanism: polling, not a held connection.** The tab must learn about a session created in another browser on another device, so nothing same-browser (BroadcastChannel, storage events) can work — only the server can tell it. SSE/WebSocket is the elegant answer and the wrong one here: Vercel runs functions with execution limits, not long-lived connections, so it would mean a second service. A ~20-line inline script (no React, no bundle weight on the pages that matter) polling every few seconds, **stopping by itself at 15 minutes** because that is the link TTL.
+  >
+  > **Degrades cleanly:** with JavaScript off the screen still works — the resend countdown and the exit to Google are there, it simply does not update itself. Enhancement, never mechanism.
+- [ ] 15.14 **The poll endpoint must be keyed by a browser-held secret, not by the email address.** "Has maria.f@gmail.com signed in yet?" is a question anyone could ask about anyone, which turns the waiting screen into a way to probe when a given person is online. The cookie dropped when the link was requested is what the poll carries
+- [ ] 15.15 **Fix the mobile design copy.** `Rentas - Entrar - Mobile.dc.html` screen 8c still reads "Abri el enlace en este mismo telefono. Si lo abris en otro, te pedimos el correo de nuevo" — the same-device rule removed in 15.6. Mobile and desktop currently state opposite behaviours, and mobile states a rule that no longer exists
+### 15e. Phone verification is a different thing
+
+- [ ] 15.13 F21 — Google or the mail link confirm **who you are**; the WhatsApp code confirms **that the listing's number works**. Two steps, two moments, never merged into one screen. **Entirely unbuilt today**: `PhoneVerificationPort` exists with a `DisabledPhoneVerificationAdapter` and a `createPhoneVerificationAdapter` that throws `PhoneVerificationNotImplementedError`. It is a third channel with a per-message cost, and it belongs to the publish flow, not to signing in
+
+## Phase 16: La ficha — F22 to F31 (founder, 2026-08-22)
+
+The listing detail, specified by the founder with mobile and desktop designs delivered. This is the screen that closes the product loop: today a visitor can search and can publish, and **cannot open a listing at all** — `app/page.tsx` renders every result without an `href` and no `/alquiler/...` route exists.
+
+Five questions were put to the founder before writing this and all five are answered here. Nothing below is inference.
+
+### 16a. The photo pipeline no longer fits the design (founder, 2026-08-22: "tenemos que manejar ahora estos tamaños")
+
+**The largest technical item in this phase, and it is not on any screen.** Exactly two derivatives ship per photo — a 128×96 thumbnail capped at 10 KB and a detail of up to 1280 px capped at 200 KB — and they were sized for the old row layout, whose thumbnail was 44×34. The new design needs four sizes:
+
+| Surface | Needed | What exists today |
+|---|---|---|
+| Result card, mobile | 158 px | 128 px thumbnail — soft |
+| Result card, desktop | 254 px | 128 px thumbnail — visibly blurred |
+| Ficha strip, mobile | ~360 px at ~40 KB (F26) | the 200 KB detail — **six photos = 1.2 MB** |
+| Ficha main, desktop | 640×360 | the detail serves |
+
+The third row is a budget failure, not a quality one: F26 promises ~240 KB for all six and F15 caps the ficha at 500 KB, while six of today's detail derivative come to 1.2 MB.
+
+- [ ] 16.1 Re-derive from the 1280 px detail, **not from the original**. D12 discards originals after hashing and they are unrecoverable; 1280 px is enough to produce every smaller size, and saying so here stops someone concluding the photos must be re-uploaded
+- [ ] 16.2 `listing_photo` stores exactly two keys (`thumbnail_key`, `detail_key`) and its comment says "Two derivatives per photo and nothing else". Adding sizes changes that model — decide between more columns and a derivative table, and record which, because the comment currently forbids what this task requires
+- [ ] 16.3 A backfill for photos already stored, since the new sizes do not exist for them
+
+### 16b. URLs — the founder kept the ids (2026-08-22)
+
+**Decision: our own ids stay. No incremental numeric id.** F27's example wrote `/aviso/84512/foto/2`, which implied a short numeric public id and a new route base. The founder rejected the incremental id outright ("un id incremental no va… debes poner el id que nosotros manejamos"), so **task 11.1's scheme survives unchanged** and the viewer nests inside it.
+
+- [ ] 16.4 The ficha at `/alquiler/<ciudad>/<zona>/<slug>-<id>` — `buildListingPath` and `listingIdFromSlug` already ship (11.1) and are unaffected
+- [ ] 16.5 The photo viewer at `/alquiler/<ciudad>/<zona>/<slug>-<id>/foto/<n>` (F27). One photo, one URL, shareable, indexable
+- [ ] 16.6 **The duty 11.1 created, now due:** every path ending in the same id resolves to the same listing, so the page rebuilds the canonical path and redirects anything that differs. Without it one advert publishes unbounded duplicate URLs
+- [ ] 16.7 Previous and next are **real links**, not client state (F27). The browser's back button then steps back one photo rather than leaving the listing — that behaviour is a consequence of using links, not something to implement
+- [ ] 16.8 Pin whether `/foto/<n>` is 1-based while `listing_photo.position` is 0-based. F27 writes `/foto/2` for the second photo
+
+### 16c. Carrying the search back (F22, founder: "hay que arrastrarlo")
+
+- [ ] 16.9 "← Resultados" must return **with the filters intact**. The ficha's URL carries no search state, so the state has to travel with the link out of the results and back. Whatever shape it takes, it is a link and works with JavaScript off (F14)
+
+### 16d. The contact block (F29, F30)
+
+**The mask is a fixed string, and that is what keeps the guarantee.** The founder chose to reveal only `+58` and mask the rest. Since the mask is drawn without reading the stored value, **not one character leaks** — the shipped rule that the contact value is unrepresentable in the locked state (contact-reveal domain) is untouched, and F29's "the number is always visibly there" is satisfied.
+
+- [ ] 16.10 Locked masks, per method: phone → `+58 ••• ••• ••••`, email → `•••••@•••••.•••`. Literal strings, never derived
+- [ ] 16.11 **Three methods remain correct — no fourth value, and no migration.** The founder listed four cases (landline, mobile with WhatsApp, mobile without, email) but they collapse to three actions: `wa.me`, `tel:`, `mailto:`. A mobile without WhatsApp and a landline both dial. The only thing merged is a label nuance ("Llamar al celular" vs "Llamar"), which can be split later without breaking anything
+- [ ] 16.12 The revealed state needs **`phone_verified_at`** — F29 shows "desde cuándo está verificado". The column does not exist, and phone verification itself is a stub (`PhoneVerificationNotImplementedError`, see 15.13)
+- [ ] 16.13 The expired state: no contact, an explanation, and an exit to active listings **in the same zone** — that is the suggestion engine of 11.12, not a simple query
+- [ ] 16.14 F30's negotiation warning sits with the contact, not in the footer
+
+### 16e. Content rules that need no new data
+
+- [ ] 16.15 F24 — four cells always drawn, a zero rendered as "0". This already matches the schema's own note that the strip "has no empty state for one of them"
+- [ ] 16.16 F25 — **list only what was declared, never the absence.** An unticked `amoblado` means "not declared", not "not furnished", and rendering the negative would state something the system does not know. Worth carrying into the column semantics: these booleans record a declaration, not a fact about the property
+- [ ] 16.17 F23 — property type goes beside the location ("Apartamento · Chacao · Distrito Capital"), never inside the numeric strip, because it is a category and not a number
+- [ ] 16.18 F28 — alt text composed at render, **position first**: "Foto 2 de 6 — Apartamento 2 habitaciones, Chacao". There is no `alt_text` column and that is deliberate (see `listing_photo`'s note)
+- [ ] 16.19 F26 — the strip is native `scroll-snap`, so it works with JavaScript off. First photo eager, the other five lazy
+
+### 16f. Not found (founder, 2026-08-22: "esto se tiene que manejar como notfound")
+
+- [ ] 16.20 **The case the founder's document did not cover and I raised: a ficha that never existed.** The expired state is specified; a deleted listing or a mistyped link is not, and that arrives constantly because links travel by WhatsApp. Handled as a real 404 — which is task 11b.3, still blocked on a design
+- [ ] 16.21 Reports (F31) pass a listing to `hidden` on acceptance. **There is no report table at all** — Phase 8's work, and the ficha's report link has nowhere to write until it exists
+
+### 16g. Tokens and measurements (founder's ficha spec, 2026-08-22)
+
+**Measured before assuming: the palette did not change.** All eleven colour and radius values in the ficha specification are byte-identical to what `[data-theme="menta"]` already ships — `--surface`, `--bg`, `--line`, `--ink`, `--soft`, `--accent`, `--tint`, `--r`, `--rs`, plus `--rule`/`--acc-ink` under different names. The redesign is **layout, not colour**, and the restyle risk this phase was braced for does not exist for the ficha.
+
+- [ ] 16.22 Two names to reconcile, not two values: the spec's `--rule` is the shipped `--strong` (#788189) and its `--acc-ink` is `--accent-ink` (#ffffff). Pick one spelling and use it in both places — two names for one colour is how a palette starts drifting
+- [ ] 16.23 **Type sizes the token set does not carry**, and D16 forbids writing them as literals: price 28/700 mobile and 34/700 desktop (today `--fpb` is 26 and has no desktop step); title 17/600 mobile and 19/600 desktop (today `--title-fs` is 20/700, which means the page title); description 15/1.6. **Do not reach for a token that merely has the right number** — that exact mistake is already recorded in `tokens.css`: the home's `<h1>` grabbed `--fpb` ("precio en ficha") because no page-title token existed, and `lint:tokens` passed, because it verifies a value IS a custom property and never that it is the RIGHT one. A missing token does not fail a gate; it produces a plausible wrong answer
+- [ ] 16.24 **A conflict with a shipped token, not a gap:** the spec sets the desktop minimum touch target at 40 px; `--target-min-desktop` ships as 36 px. One of them is wrong and the change is global — every control on every screen
+- [ ] 16.25 Action buttons are 46 px tall, which is neither `--target-min` (44) nor the desktop value. Needs its own token
+- [ ] 16.26 Geometry tokens the ficha introduces: main photo 640×360, thumbnail 120×90, viewer thumbnail 84×56, mobile photo height 180, container 1100 (already shipped as `Container`)
+- [ ] 16.27 **The viewer's palette is deliberately outside the theme** — `#131517` background, `#F2F3F3` text, `rgba(242,243,243,.62)` secondary, `rgba(242,243,243,.24)` borders. The spec's reason is sound and worth keeping in the code: any tint shifts the temperature of the photograph. It still may not be written as literals in a component (D16), so it needs named tokens of its own. Note `scripts/lint-tokens.mjs` checks the contract across `menta` and `oscuro`; a third, screen-scoped set is a case it has never seen
+- [ ] 16.28 `--soft` is the shipped answer to "never dim text with `opacity`" (criterion 15). Already true in the token set; assert it rather than assume it
+
+### 16h. Two contradictions in the specification itself
+
+- [ ] 16.29 **The right column is 420 px or 328 px — the document says both.** §3 gives `grid-template-columns: 640px 1fr; gap: 40px` inside the 1100 container, which computes to 420. §8's measurement table says "Columna de contacto: 328px, pegada". The shipped `DetailSplit.module.css` already uses `640px 420px`, so the grid formula is what exists. 328 may be the block inside a 420 column, but that is a reading, not a decision
+- [x] 16.30 **The URL base: RESOLVED by the founder, 2026-08-22 — `/alquiler/<ciudad>/<zona>/<slug>-<id>`, chosen for SEO.** The ficha specification still writes `/aviso/84512` and the design files show only an id; the founder was explicit that this does not govern ("si ves en el diseño solo el id no le pares, solo para esto, ya que es la estructura nueva"). So task 11.1's shipped scheme stands unchanged, the viewer nests as `.../foto/<n>` (16.5), and the canonical redirect duty (16.6) is what keeps one advert from publishing unbounded duplicate URLs. Recorded because the design files will keep showing the short form and the next reader will otherwise think they are authoritative. ~~The founder rejected the incremental numeric id (2026-08-22) and said to use "el id que nosotros manejamos" — which settles the ID and leaves the BASE open.~~
+- [ ] 16.31 The WhatsApp action opens `wa.me` **with a drafted message that names the listing** (§2 step 9). New: nothing composes that text today, and it is the last thing the product does before the conversation leaves for WhatsApp
+- [ ] 16.32 "Copiar el número" in the revealed state — a clipboard action, so JavaScript, on a screen whose read path ships none. It is an enhancement and must degrade to the number being selectable
+- [ ] 16.33 Keyboard navigation in the desktop viewer: ← → change photo, Escape closes (criterion 9). JavaScript on top of links that already work without it (criterion 8) — the two criteria are compatible only in that order
+- [ ] 16.34 "verificado por WhatsApp el 19 ago" needs `phone_verified_at` (see 16.12) and a date format; the expired state needs the expiry date rendered ("Venció el 12 de septiembre"), which `expires_at` already carries
+- [ ] 16.35 The footer carries the listing ID and its expiry date beside the report link (§3 item 12) — the first surface that shows an id to a visitor, which is an argument in 16.30's decision
+
+## Phase 17: La taxonomía de zonas (founder, 2026-08-22)
+
+**Triggered by real data, not by design.** The founder supplied Maracaibo's official breakdown: 14 parroquias and several hundred barrios and sectores. Two things broke immediately.
+
+**1. That list cannot be imported into today's schema.** `zone` carries `UNIQUE (city_id, name)`, and the list repeats names constantly across parroquias — *San José* appears in Bolívar, Cacique Mara, Chiquinquirá and Cristo de Aranza; *La Consolación* in four; *Indio Mara*, *Rafael Urdaneta*, *Santa Clara*, *Los Andes*, *Nueva Vía*, *Manzana de Oro*, *Sabaneta*, *La Florida*, *La Pastora*, *5 de Julio*, *Los Planazos*, *Los Pinos*, *Los Olivos* likewise. The founder's own notes concede it: "la fuente contiene algunos nombres repetidos". A flat insert fails on the second *San José*. **A barrio is unique inside its parroquia, never inside a city** — that is the constraint the current model does not express.
+
+**2. The seeded taxonomy is already geographically wrong.** `src/shared/db/seed.ts` files Chacao, Altamira, La Castellana, Los Palos Grandes, El Rosal and Las Mercedes under the city "Distrito Capital". **All six are in the state of Miranda** — the first five in Municipio Chacao, Las Mercedes in Baruta. Distrito Capital is Municipio Libertador alone. The founder anticipated this ("imaginate si agregamos el Distrito Capital que hay varias ciudades") without knowing it had already shipped.
+
+### The model: search hierarchy, not administrative hierarchy
+
+Venezuela's real hierarchy is `Estado (o Distrito Capital) → Municipio → Parroquia → barrio/sector` — four levels, and what people call "Caracas" spans **two federal entities**. Modelling that faithfully produces a four-step filter, and nobody rents that way: a tenant says "busco en Tierra Negra", never "en la parroquia Cacique Mara del municipio Maracaibo del estado Zulia".
+
+Two navigable levels, plus one that is **a label and not a step**:
+
+| Level | Example | Purpose |
+|---|---|---|
+| Área | Maracaibo · Caracas | The first choice. What the city-isolation rule protects |
+| Zona | Tierra Negra · Chacao · San José | The real unit of search |
+| *Padre* | Cacique Mara · Municipio Chacao | **Never navigated.** Disambiguates a suggestion and makes the zone unique |
+
+The parent being a label is what keeps the filter exactly as shallow as it is today while letting *San José* exist four times. It also resolves Caracas honestly: one área holding zones from both Distrito Capital and Miranda, each showing its municipality.
+
+- [ ] 17.1 Add the parent level. `UNIQUE (city_id, name)` becomes uniqueness within the parent; the composite FK that guarantees D5 (`listing_zone_city_fk`) must keep working — it is the constraint that makes a Maracaibo listing physically unable to hold a Caracas zone, and it is not negotiable
+- [ ] 17.2 **Correct the seed.** Six zones are filed under the wrong federal entity. Decide the área's name first: "Distrito Capital" is factually wrong for five of the six, and "Caracas" is the name people actually use and search for. This is a product decision, not a data fix
+- [ ] 17.3 Import Maracaibo's parroquias and zones. **The founder decided to load the full list** (2026-08-22) rather than a curated shortlist, which is only viable because of 17.4
+- [ ] 17.4 **The zone search box, and it is now mandatory rather than a convenience.** A `<select>` of several hundred options is unusable on a phone; a box that suggests is not. Same mechanism as 14.18: a suggestion is a (filter, value) pair carrying its kind and scope — `San José · Cacique Mara`, exactly as the "Centro" collision between Maracaibo and Distrito Capital already required. Pure domain, no external service, no per-query cost, and it reuses the NFD accent strip shipped in `listing-discovery/domain/listing-url.ts` so "san jose" finds "San José". Works with JavaScript off as a `GET` whose results are links
+- [ ] 17.5 **Order suggestions by listing count, descending.** This is what makes loading the full list safe. **A correction of my own earlier advice, recorded because the reasoning matters:** I argued against importing hundreds of zones because ~93% would show a count of zero, and the founder's own document rejects free-text search for exactly that reason ("devuelve vacío casi siempre y el sitio parece vacío"). With a search box that argument mostly collapses — nobody sees all of them at once, only what they typed toward. Ranking by real supply finishes the job: the zones where renting actually happens rise on their own, and the empty ones sink without disappearing. The catalogue decides, not a guess about which neighbourhoods matter
+- [x] 17.6 **RESOLVED by the founder, 2026-08-22: never render a zero.** Zones with listings come first, showing their count; a zone with none shows no number at all — not "0", nothing. This supersedes F4's "una zona con 0 avisos se muestra atenuada con su conteo en cero", and it is the better rule: a column of zeroes is a catalogue advertising its own emptiness
+- [ ] 17.7 **Search and publish need opposite behaviour here, and conflating them breaks one of them.** In SEARCH, a zone with no listings must not be offered at all — transversal rule 4 says no option may lead to a void, and offering a zone that returns nothing is exactly that. In PUBLISH, every zone must remain selectable including the empty ones, because otherwise **a zone can never receive its first listing** and the taxonomy freezes at whatever it launched with. Same table, two different reads: the search side filters by supply, the publish side does not
+- [ ] 17.8 **The área "Caracas" spans several federal entities** (founder, 2026-08-22: "toda la capital cambia porque son varios estados que están dentro de Caracas"). Named `Caracas` because that is what people type, not `Distrito Capital`, which is factually wrong for five of the six seeded zones. Taxonomies for Caracas, Miranda and La Guaira are being prepared by the founder
+- [ ] 17.9 **Open: does La Guaira belong inside the Caracas área or is it its own?** It is a separate state and, for long-stay rental, a different market — someone searching Caracas is unlikely to want Catia La Mar or Macuto, which is a motorway away. Folding it in would make the city-isolation rule return results 40 minutes from what was asked for; keeping it separate costs nothing and can be merged later. **Not to be settled by whoever imports the list first**
+
+## Phase 18: Publicar — nueve pasos (founder, 2026-08-22)
+
+The founder delivered the publish specification with mobile and desktop designs, and it **replaces the two-step form that ships today**. The brief's own "es un formulario, no un embudo de cinco pasos" is explicitly overturned: nine steps, one question per screen, with a review screen before publishing.
+
+**A correction of my own earlier framing, recorded because it changed the estimate.** I told the founder publicar was "already built, so this is a reskin plus new fields". That was true of the two-step form. It is not true of this: nine screens, per-step server persistence, a review screen, and back-navigation that preserves forward steps is a **rebuild of the delivery layer**. What survives untouched is everything that matters most — `validatePublishableListing`, the photo pipeline, duplicate detection, and the publish use case. The domain was built for this; the screens were not.
+
+### 18a. Decisions the founder made here that close open questions
+
+- [x] 18.1 **A failed photo upload publishes with the rest.** "Se publica con las que subieron y se avisa cuál faltó" — this answers the edge case raised on 2026-08-21 and left open
+- [x] 18.2 **Phone verification happens AFTER the listing is saved**, not before. The listing exists as *pending verification*, so abandoning at the code loses nothing and closing the browser mid-flow is no longer an edge case. Asking for a code before the listing exists is asking for effort with nothing yet earned
+- [x] 18.3 **The city is never asked — it is derived from the zone.** Sound, and stronger than what ships: `zone` already carries `city_id` under `UNIQUE (id, city_id)`, which is the constraint `listing_zone_city_fk` depends on. Deriving cannot produce a mismatched pair, whereas asking twice can
+
+### 18b. What the new flow needs that does not exist
+
+- [ ] 18.4 **A new listing status: `pending_verification`.** The enum ships as `active | expired | hidden`; F1 additionally needs `pending_moderation`, so it grows to five. Verify what already holds: `DrizzleListingSearch` filters `status = 'active'` unconditionally, so a pending listing cannot leak into search by accident — assert it rather than assume it
+- [ ] 18.5 **Server-side draft, one row per step, keyed by session.** The shipped draft is a 10-minute cookie of ~4 KB, and the founder is right that it cannot carry nine steps plus photo state. New storage, and with it a new question the project has not had: abandoned drafts accumulate, and "no podemos borrar data real" (11b.6) has to be reconciled with a draft that nobody will ever finish
+- [ ] 18.6 **`title` has no maximum today.** The spec sets 90 characters; the domain has `title.required` and nothing else. A new violation code plus its Spanish copy
+- [ ] 18.7 **`referencia`** — free text, optional, shown only on the ficha. Never filtered, never indexed. This is the field that replaces Google Places, and the founder's reasoning for rejecting it is worth keeping: a formatted address is not the product's taxonomy, and four shipped things depend on the zone being a closed list — the search filter, the per-zone counts, the `/alquiler/<ciudad>/<zona>/…` URL, and the zone landing pages
+- [ ] 18.8 **The review screen** and **back-navigation that preserves forward steps.** Rule: correcting step 4 from review leaves steps 5–9 intact, with their values. Steps already answered are links; steps ahead are not. The button changes to "Guardar y volver a revisar" when entered from review, and the change is stated back ("Cambiaste habitaciones de 2 a 3")
+- [ ] 18.9 **The price histogram in step 3 is the same faceting engine as F5.** This raises 14.11's priority: counting is no longer only a search feature, it is on the publish path too
+
+### 18c. Contradictions to resolve before building
+
+- [ ] 18.10 **`--warn: #8a5a00` reverses a decision the founder made six days earlier.** `tokens.css` records it verbatim: "The mustard pair was the only colour on this screen belonging to no theme; `--warn` is now the accent navy and `--warn-bg` the mint, so 'vence pronto' reads as part of the product rather than a borrowed browser warning." **Measured with the project's own `contrastRatio`:** #8a5a00 gives 5.93:1 on `--surface` and 5.40:1 on `--bg` — both pass AA — but **2.90:1 on the dark background, which fails.** The dark theme carries its own `--dark-warn`, so this is survivable, but `design-contract.test.tsx` asserts AA across BOTH themes and will need the dark counterpart set deliberately rather than inherited
+- [ ] 18.11 **The zone list size contradicts Phase 17, decided the same day.** This document says "lista cerrada, ~40 en Distrito Capital y ~12 en Maracaibo". Phase 17.3 records the founder's decision to load the **full** Maracaibo taxonomy — hundreds of zones — made viable by the ranked search box. Twelve zones and several hundred are different products: with twelve, a plain `<select>` works and 17.4's search box is optional again
+- [ ] 18.12 **The zone autocomplete is specified as client-side filtering ("filtra en el cliente", "~2 KB").** F14 allows mandatory JavaScript only for photo compression, so the picker needs a working server path as well. The 2 KB figure also belongs to the twelve-zone reading of 18.11; the full taxonomy with parent labels is an order of magnitude larger
+- [ ] 18.13 **§6's validation table still lists Ciudad** with "Por ahora publicamos en Distrito Capital y Maracaibo", while criterion 7 says the city is never asked. Both cannot hold. The shipped `cityId.required` and `cityId.unknown` violations become unreachable from the form — they must stay in the domain regardless, because the bulk import calls the same validator
+- [ ] 18.14 **Editing a published listing (§12.6) collides with two shipped guarantees.** Publisher type cannot change after publishing. And the contact is *copied* at publish time precisely so that editing an account default never rewrites an advert somebody already acted on — the ficha's own rule is that a tenant who wrote to a number needs that advert to keep saying that number. What an edit may and may not touch is a product decision, not an implementation detail
+
+## Phase 19: Fotos, retención y capacidad (founder, 2026-08-22)
+
+Three decisions taken while importing the designs, each with the measurement that produced it.
+
+### 19a. Photo captions: removed before they were built
+
+- [x] 19.1 **The mobile ficha design labels every photo** — "Sala", "Habitación principal", "Cocina", "Baño", "Estacionamiento", "Fachada". `listing_photo` has no caption column, and more importantly the Publicar specification never asks for one, so six captions would have had to be typed with a thumb in step 8. The founder removed it on sight: "no debe llevar título, solo subir la foto". **Nothing is lost**: R7/F28 already composes the alt text at render time from position, title and zone ("Foto 2 de 6 — Apartamento 2 habitaciones, Chacao"), which is what a screen reader actually needs. What stays from step 8 is what matters — choosing the cover photo and ordering the rest
+- [x] 19.2 **"publica como dueña · desde 2025" → neutral, and the date dropped.** "dueña" is gendered and the product neither stores nor should store anyone's gender. The date needed a creation timestamp on `user`, which comes from the Auth.js adapter and does not carry one — a column avoided for a fact the founder judged not worth showing
+
+### 19b. What the new sizes cost, measured
+
+At 1x, because the design itself states that 4K is not served double-density ("chocaría con el presupuesto de bytes").
+
+| Derivative set | Per listing (6 photos) | Listings inside R2's free 10 GB |
+|---|---|---|
+| Today — thumbnail 128 + detail 1280 | 1.23 MB | **8,322** |
+| New design, 5 sizes (160·256·360·640·1280) | 1.79 MB | **5,711** |
+| New, viewer at 1024 instead of 1280 | 1.44 MB | 7,104 |
+| New, without the small thumb | 1.39 MB | 7,342 |
+
+Meeting the new design costs **31% of capacity**. Operations do not bind: 30 Class A writes per listing against 1,000,000 free monthly is ~33,000 listings/month, and R2 egress is free — the reason R2 was chosen over S3.
+
+- [ ] 19.3 **The biggest single lever is the viewer derivative**, not the number of sizes: dropping it from 1280 to 1024 returns 1,393 listings, because it is 59% of the weight
+
+### 19c. Retention — delete the photos, never the listing
+
+The founder proposed deleting expired listings after a 15-day grace period. **The listing row cannot be deleted, and that is a decision already written into the schema rather than an obstacle.** `contact_reveal_event` carries `ON DELETE restrict` on all four foreign keys, and its comment says why: cascading "would silently delete the go/pivot evidence exactly when a listing is taken down — the deletions most correlated with the months a reveal happened". A `DELETE FROM listing` fails for any listing anyone ever revealed, on purpose.
+
+Deleting only the photos gives up nothing: they are effectively 100% of the R2 weight, while a listing row is ~600 bytes — a hundred thousand expired listings is 57 MB **in Postgres, not R2**. Keeping the row also keeps the URL resolving into the expired state the design already draws, keeps Google from meeting a wall of 404s on indexed pages, and keeps the north-star metric intact.
+
+| Retention | Sustainable new listings per month, indefinitely |
+|---|---|
+| **45 days** (30 active + 15 grace) | **3,807** |
+| 60 days | 2,855 |
+| 90 days | 1,903 |
+
+At ~47 listings today, 45 days puts the ceiling 81× above the current catalogue.
+
+- [ ] 19.4 A job that deletes the **photos** of listings expired more than 15 days, leaving the listing row and its status untouched
+- [ ] 19.5 **Two emails, not one.** The plan carries one notice *before* expiry, to renew. The purge happens 15 days *after*, so a publisher who ignored the first email loses their photos with no second warning. Day 27: "vence en 3 días". Day 40: "tus fotos se borran el 27 de octubre — renová antes y el aviso vuelve con ellas"
+- [ ] 19.6 **The countdown must also live in Mis publicaciones**, because an irreversible deletion may not depend on an email arriving. This is the same deliverability risk that makes the magic link fragile (15.2), except the cost here is not a failed sign-in — it is a publisher's photographs, permanently
+- [ ] 19.7 **"Volver a publicar" changes meaning after the purge.** A listing older than 45 days can be republished but its photos are gone, so it means re-uploading. The copy in Mis publicaciones has to say which of the two it is
+- [ ] 19.8 Relationship to "no podemos borrar data real" (11b.6): that rule is about migrations destroying data silently. This is a deliberate, announced retention policy through two channels. Different thing — but the announcement is what makes it different, so 19.5 and 19.6 are not optional extras
+
+### 19d. Verification is reused, and it belongs to the value, not the person
+
+The founder asked whether a publisher who verified their WhatsApp should have to verify again for a second listing. No — and the schema half-anticipated it: `users.contact_method`/`contact_value` already exist as the account default, and `listing` **copies** them at publish time. What is missing is the verification state.
+
+**The unit is the (user, method, value) triple, not the user.** If María verifies +58 412 555 0134 and later publishes with a different number, that number is not verified. Treating it as verified because she once verified something is what makes verification stop meaning anything — and telling a real listing from a fake one is the only thing it is for. A small `verified_contact` table also serves an inmobiliaria with two numbers without inventing anything.
+
+- [ ] 19.9 `verified_contact (user_id, method, value, verified_at)`. Publishing with a value that has a live row asks for nothing; a new value is verified and recorded
+- [ ] 19.10 **Email needs no WhatsApp code at all.** If the chosen contact is an email and it matches the account's own address, Auth.js already set `emailVerified` at sign-in — through Google or through the magic link. Sending a WhatsApp code to verify an email address never made sense; this removes the step rather than implementing it
+- [ ] 19.11 **Verification expires after 12 months** (founder, 2026-08-22). Venezuelan numbers get recycled, and a two-year-old verification may belong to somebody else by now. A publish whose verification has lapsed re-verifies
+- [ ] 19.12 **An active listing is not invalidated when its verification lapses mid-flight.** A listing lives 30 days and can be published on a verification's last day, so the two clocks cross. The ficha states the date rather than a status — "verificado por WhatsApp el 19 ago" says *when*, never "still valid today" — which is already what the design draws, so nothing has to change to stay honest
+- [ ] 19.13 **This is what makes the broker bulk import (Phase 9) usable at all.** An agency uploading fifty listings verifies once, not fifty times
 
 ## Phase 12: Cleanup
 
