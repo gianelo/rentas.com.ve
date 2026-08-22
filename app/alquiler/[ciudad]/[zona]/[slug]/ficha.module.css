@@ -1,10 +1,14 @@
-/* Ficha del aviso, móvil primero. El diseño de escritorio (dos columnas, la
-   derecha pegada) usa `DetailSplit`, que ya ship*a* con sus 640px + 420px —
-   se compone en su propia tarea junto con la galería. */
+/* La ficha del aviso. **Una sola, con un punto de quiebre** — el del proyecto,
+   768px. El ancho lo pone `Container`, que se planta en 1100px; las dos
+   columnas de 640 + 420 y la derecha pegada las pone `DetailSplit`.
+
+   Lo único que esta hoja decide sobre el armado es el ORDEN de la columna
+   única, y decide algo que ninguna de las dos primitivas puede saber: en
+   escritorio el precio vive a la derecha y la descripción a la izquierda, pero
+   en una sola columna el precio va pegado a la foto y el contacto al final.
+   Concatenar "toda la izquierda y después toda la derecha" enterraría el
+   precio debajo del párrafo que casi nadie lee entero. */
 .page {
-  max-width: 360px;
-  margin-inline: auto;
-  padding-inline: 16px;
   background: var(--surface);
   color: var(--ink);
 }
@@ -12,9 +16,9 @@
 .bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   min-height: var(--brandbar-h);
   border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
 }
 
 /* 44px de área táctil, incluidos los enlaces de volver (regla transversal 7).
@@ -29,25 +33,39 @@
   text-decoration: none;
 }
 
-/* Dueño con relleno, inmobiliaria con borde: la distinción tiene que sobrevivir
-   a la escala de grises, y eso es estructura, no color. Acá se dibuja el caso
-   con relleno; el de borde lo resuelve PublisherBadge cuando se componga. */
-.badge {
-  font-family: var(--meta);
-  font-weight: var(--badge-fw);
-  font-size: var(--badge-fs);
-  letter-spacing: var(--badge-ls);
-  text-transform: uppercase;
-  padding: 3px 8px;
-  border-radius: var(--rs);
-  background: var(--ink);
-  color: var(--surface);
+/* ---- El orden de la columna única ---------------------------------------
+   `DetailSplit` disuelve sus dos envoltorios debajo del punto de quiebre, así
+   que estos cuatro bloques son los ítems de la grilla y se ordenan acá. Arriba
+   del punto de quiebre siguen valiendo, ahora dentro de su columna, y dan el
+   mismo orden vertical: foto → datos en la izquierda, precio → contacto en la
+   derecha. */
+.gallery {
+  order: 1;
+}
+
+.summary {
+  order: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.body {
+  order: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.contact {
+  order: 4;
 }
 
 /* El precio pesa más que el título, en orden de documento y en peso visual
    (regla transversal 2). Es la primera cifra que se lee. */
 .price {
-  margin: 18px 0 0;
+  margin: 0;
   font-family: var(--disp);
   font-weight: var(--ficha-price-fw);
   font-size: var(--ficha-price-fs);
@@ -65,7 +83,7 @@
 }
 
 .title {
-  margin: 10px 0 0;
+  margin: 0;
   font-size: var(--ficha-title-fs);
   font-weight: var(--ficha-title-fw);
   line-height: 1.35;
@@ -73,14 +91,14 @@
 }
 
 .location {
-  margin: 6px 0 18px;
+  margin: 0;
   font-family: var(--meta);
   font-size: var(--meta-fs-sm);
   color: var(--soft);
 }
 
 .description {
-  padding-top: 20px;
+  margin: 0;
 }
 
 .heading {
@@ -93,7 +111,7 @@
   color: var(--soft);
 }
 
-.body {
+.text {
   margin: 10px 0 0;
   font-size: var(--ficha-body-fs);
   line-height: var(--ficha-body-lh);
@@ -103,7 +121,6 @@
 /* Borde punteado, como el diseño dibuja el estado vencido: se distingue de un
    bloque normal sin depender del color. */
 .expired {
-  margin-top: 20px;
   padding: 16px;
   border: 1px dashed var(--strong);
   border-radius: var(--r);
@@ -129,6 +146,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 20px 0;
+  margin-top: 24px;
 }
 
 .report {
@@ -144,4 +162,21 @@
   font-family: var(--meta);
   font-size: var(--meta-fs-sm);
   color: var(--soft);
+}
+
+@media (min-width: 768px) {
+  .bar {
+    min-height: var(--brandbar-h-desktop);
+    margin-bottom: 24px;
+  }
+
+  /* El diseño da dos escalas y el conjunto de tokens las lleva las dos. Una
+     sola obligaría a elegir cuál de las dos pantallas se ve mal. */
+  .price {
+    font-size: var(--ficha-price-fs-desktop);
+  }
+
+  .title {
+    font-size: var(--ficha-title-fs-desktop);
+  }
 }

@@ -7,22 +7,40 @@
   gap: 24px;
 }
 
+/* **Debajo del punto de quiebre las dos columnas no existen**, y eso vale
+   también para el árbol: los envoltorios se disuelven y los bloques de la
+   página pasan a ser los ítems de la grilla.
+
+   No es una sutileza. Una ficha en una columna no lleva el mismo orden que en
+   dos — el precio va pegado a la foto y la descripción entre los datos y el
+   contacto — y con dos cajas el móvil quedaría atado a "primero toda la
+   izquierda, después toda la derecha", que entierra el precio debajo de la
+   descripción. Así la página ordena sus propios bloques con `order`, que es
+   donde ese orden se decide, y sigue habiendo un solo componente con puntos de
+   quiebre en vez de dos implementaciones de la misma ficha. */
+.media,
+.data {
+  display: contents;
+}
+
 @media (min-width: 768px) {
   .split {
     grid-template-columns: 640px 420px;
     gap: 32px;
+    align-items: start;
   }
-}
 
-.media {
-  min-width: 0;
-}
+  /* Recuperan su caja: acá sí son las dos columnas. El `gap` propio les da a
+     los bloques de cada una el mismo ritmo que la grilla le da a la pila del
+     móvil. */
+  .media,
+  .data {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+  }
 
-.data {
-  min-width: 0;
-}
-
-@media (min-width: 768px) {
   .data {
     position: sticky;
     top: 24px;
