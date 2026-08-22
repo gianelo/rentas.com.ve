@@ -43,6 +43,7 @@ const VALID_DESCRIPTION =
 function draft(overrides: Partial<DraftListing> = {}): DraftListing {
   return {
     publisherType: "owner",
+    propertyType: "apartamento",
     title: "Apartamento 2 habitaciones con puesto de estacionamiento",
     description: VALID_DESCRIPTION,
     priceUsd: 520,

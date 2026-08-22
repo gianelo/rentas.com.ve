@@ -49,19 +49,18 @@ const PHOTO = randomUUID();
 beforeAll(async () => {
   await client.connect();
   await client.query(`INSERT INTO "city" (id, name) VALUES ($1,$2)`, [CITY, `Ciudad ${CITY}`]);
-  await client.query(`INSERT INTO "zone" (id, city_id, name) VALUES ($1,$2,$3)`, [
-    ZONE,
-    CITY,
-    "Zona",
-  ]);
+  await client.query(
+    `INSERT INTO "zone" (id, city_id, name, kind, source) VALUES ($1,$2,$3,'parroquia','INE')`,
+    [ZONE, CITY, "Zona"],
+  );
   await client.query(`INSERT INTO "user" (id, email) VALUES ($1,$2)`, [
     PUBLISHER,
     `${PUBLISHER}@example.com`,
   ]);
   await client.query(
-    `INSERT INTO "listing" (id, publisher_id, publisher_type, city_id, zone_id, title,
+    `INSERT INTO "listing" (id, publisher_id, publisher_type, property_type, city_id, zone_id, title,
        description, price_usd, rooms, area_m2, bathrooms, contact_method, contact_value, status, published_at, expires_at)
-     VALUES ($1,$2,'owner',$3,$4,'Título','x',450,2,78,2,'whatsapp','04121234567','active',now(),now() + interval '30 days')`,
+     VALUES ($1,$2,'owner','apartamento',$3,$4,'Título','x',450,2,78,2,'whatsapp','04121234567','active',now(),now() + interval '30 days')`,
     [LISTING, PUBLISHER, CITY, ZONE],
   );
   await client.query(

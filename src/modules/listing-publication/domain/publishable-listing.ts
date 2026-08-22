@@ -14,6 +14,16 @@
 export type PublisherType = "owner" | "broker";
 
 /**
+ * Qué se alquila. Lista cerrada de cinco, decidida por el fundador
+ * (2026-08-22): la que la ficha muestra junto a la ubicación y la que el
+ * buscador de sugerencias traduce cuando alguien escribe "anexo maracaibo".
+ *
+ * `local comercial` se propuso y se retiró: el producto es residencial, y
+ * dejarlo entrar habría roto `rooms` NOT NULL y la tira de cuatro celdas.
+ */
+export type PropertyType = "apartamento" | "casa" | "quinta" | "anexo" | "habitacion";
+
+/**
  * How the publisher wants to be reached (founder, 2026-08-18): "el valor que
  * quiera mostrar la persona. Sea email, WhatsApp o número de teléfono."
  *
@@ -26,6 +36,13 @@ export type ContactMethod = "whatsapp" | "telefono" | "email";
 
 export interface DraftListing {
   readonly publisherType?: PublisherType;
+  readonly propertyType?: PropertyType;
+  /** Los cinco de la F6. Opcionales en el borrador, `false` en la fila. */
+  readonly hasPowerPlant?: boolean;
+  readonly hasRegularWater?: boolean;
+  readonly isFurnished?: boolean;
+  readonly hasSecurity?: boolean;
+  readonly hasAppliances?: boolean;
   readonly title?: string;
   readonly description?: string;
   readonly priceUsd?: number;
@@ -61,6 +78,8 @@ export interface CuratedZone {
 export type PublishViolation =
   | "publisherType.required"
   | "publisherType.invalid"
+  | "propertyType.required"
+  | "propertyType.invalid"
   | "title.required"
   | "description.required"
   | "description.tooShort"
@@ -123,6 +142,7 @@ export const MAX_PHOTOS_PER_LISTING = 6;
 
 const PUBLISHER_TYPES: readonly string[] = ["owner", "broker"];
 const CONTACT_METHODS: readonly string[] = ["whatsapp", "telefono", "email"];
+const PROPERTY_TYPES: readonly string[] = ["apartamento", "casa", "quinta", "anexo", "habitacion"];
 
 /**
  * Shape checks, not verification. Neither proves the address exists or the
@@ -196,6 +216,15 @@ export function validatePublishableListing(
     violations.push("publisherType.required");
   } else if (!PUBLISHER_TYPES.includes(draft.publisherType)) {
     violations.push("publisherType.invalid");
+  }
+
+  // Sin default, igual que publisherType y por el mismo motivo: un default
+  // convierte "al que se le olvidó" en "todos son apartamentos", y el tipo es
+  // lo que separa un anexo de $150 de un apartamento de $150.
+  if (draft.propertyType === undefined) {
+    violations.push("propertyType.required");
+  } else if (!PROPERTY_TYPES.includes(draft.propertyType)) {
+    violations.push("propertyType.invalid");
   }
 
   if (isBlank(draft.title)) {

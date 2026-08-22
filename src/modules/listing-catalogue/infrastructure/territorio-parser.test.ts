@@ -215,3 +215,39 @@ describe("parseTerritoryDocument", () => {
     expect(parseTerritoryDocument("# Solo un titulo\n\nTexto.\n")).toEqual([]);
   });
 });
+
+describe("secciones que vienen despues de la taxonomia", () => {
+  /**
+   * **Fragilidad encontrada revisando el "Índice de topónimos" que otro agente
+   * agregó a los archivos.** Esa sección abre con `# Índice de topónimos` — una
+   * sola almohadilla — y el parser sólo cerraba la parroquia abierta al ver
+   * `## `. La tabla del índice empieza cada fila con `|`, así que hoy no entra
+   * nada por accidente y el conteo sigue dando 5.705 exacto.
+   *
+   * Pero la garantía es circunstancial, no estructural: cualquier viñeta con
+   * marcador de procedencia escrita después del índice quedaría colgando de la
+   * última parroquia leída, que es una parroquia equivocada. Un encabezado de
+   * primer nivel que no nombra un municipio cierra todo.
+   */
+  it("cierra la parroquia al llegar a una seccion de primer nivel", () => {
+    const doc = `## Municipio X
+
+### Parroquia Y
+
+#### Barrios (1)
+
+- Barrio Real  \`[OSM]\`
+
+# Índice de topónimos
+
+- Barrio Que No Va  \`[OSM]\`
+
+# Fuentes
+
+- Otro Que Tampoco  \`[CP 4002 — IPOSTEL]\`
+`;
+    const elements = parseTerritoryDocument(doc)[0]?.parishes[0]?.elements ?? [];
+
+    expect(elements.map((e) => e.name)).toEqual(["Barrio Real"]);
+  });
+});

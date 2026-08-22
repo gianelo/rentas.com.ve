@@ -49,6 +49,12 @@ export interface FormZone {
  */
 export interface PublishFormValues {
   readonly publisherType?: string;
+  readonly propertyType?: string;
+  readonly hasPowerPlant?: string;
+  readonly hasRegularWater?: string;
+  readonly isFurnished?: string;
+  readonly hasSecurity?: string;
+  readonly hasAppliances?: string;
   readonly title?: string;
   readonly priceUsd?: string;
   readonly cityId?: string;

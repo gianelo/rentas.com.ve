@@ -118,9 +118,15 @@ export function parseTerritoryDocument(markdown: string): readonly ParsedMunicip
       continue;
     }
 
-    // Un `##` cualquiera cierra el municipio anterior: lo que sigue es prosa,
-    // y sus viñetas no deben caer dentro de la última parroquia leída.
-    if (line.startsWith("## ")) {
+    // Cualquier encabezado de primer o segundo nivel que NO nombre un
+    // municipio cierra lo que estaba abierto: lo que sigue es prosa, y sus
+    // viñetas no deben caer dentro de la última parroquia leída.
+    //
+    // El primer nivel importa desde que los archivos ganaron un
+    // `# Índice de topónimos` y un `# Fuentes` después de la taxonomía. Hoy
+    // nada se cuela igual, porque la tabla del índice empieza cada fila con
+    // `|` — pero esa garantía es circunstancial, y la de acá es estructural.
+    if (line.startsWith("## ") || line.startsWith("# ")) {
       parish = null;
       category = null;
       continue;

@@ -61,9 +61,9 @@ function bits(hash: bigint): string {
 
 async function insertListing(id: string, publisherId: string, status: string) {
   await pool.query(
-    `INSERT INTO "listing" (id, publisher_id, publisher_type, city_id, zone_id, title,
+    `INSERT INTO "listing" (id, publisher_id, publisher_type, property_type, city_id, zone_id, title,
        description, price_usd, rooms, area_m2, bathrooms, contact_method, contact_value, status, published_at, expires_at)
-     VALUES ($1,$2,'owner',$3,$4,'Título','x',450,2,78,2,'whatsapp','04121234567',$5,now(),now() + interval '30 days')`,
+     VALUES ($1,$2,'owner','apartamento',$3,$4,'Título','x',450,2,78,2,'whatsapp','04121234567',$5,now(),now() + interval '30 days')`,
     [id, publisherId, CITY, ZONE, status],
   );
 }
@@ -84,11 +84,10 @@ async function insertPhoto(id: string, listingId: string, position: number, hash
 
 beforeAll(async () => {
   await pool.query(`INSERT INTO "city" (id, name) VALUES ($1,$2)`, [CITY, `Ciudad ${CITY}`]);
-  await pool.query(`INSERT INTO "zone" (id, city_id, name) VALUES ($1,$2,$3)`, [
-    ZONE,
-    CITY,
-    "Zona",
-  ]);
+  await pool.query(
+    `INSERT INTO "zone" (id, city_id, name, kind, source) VALUES ($1,$2,$3,'parroquia','INE')`,
+    [ZONE, CITY, "Zona"],
+  );
   for (const [id, email] of [
     [ANA, "ana"],
     [BRUNO, "bruno"],

@@ -340,6 +340,159 @@ Se listan **todos** los casos detectados (8).
 | Otros | 18 |
 | **Total de elementos sub-parroquiales** | **154** |
 
+# Índice de topónimos
+
+Índice alfabético de **cómo se busca** cada zona. Un mismo topónimo puede aparecer con varias etiquetas y en varias parroquias: acá se ven todas juntas.
+
+**Este índice no crea zonas.** Cada topónimo se extrae del nombre que la fuente ya publica, quitándole únicamente la palabra de categoría (`Barrio`, `Sector`, `Urbanización`, `Conjunto Residencial`, `Parcelamiento`, `Caserío`, `Casco Central de`, `Centro de`, `Zona Industrial`, `Oficina Postal Telegráfica`). Cuando un nombre entierra un segundo topónimo — por ejemplo *«Barrio Tierra Negra del Sector **Bella Vista**»* — también se indexa el enterrado.
+
+Las *Edificaciones identificadas individualmente* quedan fuera del índice: no son zonas.
+
+| Topónimo | Dónde aparece |
+|---|---|
+| **19 de Abril** | **Santa Rita** → *Barrio 19 de Abril* |
+| **19 de Abril etapa II** | **Santa Rita** → *Barrio 19 de Abril etapa II* |
+| **5 de Julio** | **José Cenovio Urribarri** → *Barrio 5 de Julio* |
+| **Altamira** | **José Cenovio Urribarri** → *Urbanización Altamira* |
+| **Andes Norte** | **Santa Rita** → *Sector Andes Norte* |
+| **Andes Sur** | **Santa Rita** → *Sector Andes Sur* |
+| **Antonio María Pirela** | **Santa Rita** → *Sector Antonio María Pirela* |
+| **Barrancas** | **José Cenovio Urribarri** → *Sector Barrancas* |
+| **Barrios Las icoteitas** | **José Cenovio Urribarri** → *Barrios Las icoteitas* |
+| **Botijuela** | **Pedro Lucas Urribarri** → *Barrio Botijuela* |
+| **Buenos Aires** | **Santa Rita** → *Sector Buenos Aires* |
+| **Cantarrana** | **Pedro Lucas Urribarri** → *Sector Cantarrana* |
+| **Celestina Marin** | **El Mene** → *Parcelamiento Celestina Marin* |
+| **Celestino Cepeda** | **José Cenovio Urribarri** → *Parcelamiento Celestino Cepeda* |
+| **Centro El Guanábano** | **Pedro Lucas Urribarri** → *Centro El Guanábano* |
+| **Centro El Mene** | **El Mene** → *Centro El Mene* |
+| **Centro Palmarejo** | **José Cenovio Urribarri** → *Centro Palmarejo* |
+| **Centro Santa Rita** | **Santa Rita** → *Centro Santa Rita* |
+| **Chiquinquira** | **Santa Rita** → *Urbanización Chiquinquira* |
+| **Costa Oriental del Lago** | **Santa Rita** → *Urbanización Costa Oriental del Lago* |
+| **Cruz de Mayo** | **Santa Rita** → *Sector Cruz de Mayo* |
+| **Distribuidor Falcón - Zulia** | **José Cenovio Urribarri** → *Distribuidor Falcón - Zulia* |
+| **Don Antonio** | **Santa Rita** → *Urbanización Don Antonio* |
+| **El Ambulatorio** | **José Cenovio Urribarri** → *Sector El Ambulatorio* |
+| **El Ancianato** | **Santa Rita** → *Sector El Ancianato* |
+| **El Ara** | **José Cenovio Urribarri** → *Barrio El Ara* |
+| **El Cacique** | **Santa Rita** → *Sector El Cacique* |
+| **El Caño** | **Santa Rita** → *Sector El Caño* |
+| **El Cardonal** | **José Cenovio Urribarri** → *Barrio El Cardonal* |
+| **El Centro** | **José Cenovio Urribarri** → *Barrio el Centro* · *Sector El Centro* |
+| **El Cristo** | **José Cenovio Urribarri** → *Barrio El Cristo* |
+| **El Dispensario** | **José Cenovio Urribarri** → *Barrio El Dispensario* |
+| **El Estadio** | **José Cenovio Urribarri** → *Sector El Estadio* |
+| **El Fisca** | **José Cenovio Urribarri** → *Barrio El Fisca* |
+| **El Gamelotal** | **Pedro Lucas Urribarri** → *Sector El Gamelotal* |
+| **El Guanábano** | **Pedro Lucas Urribarri** → *El Guanábano* |
+| **El Güere** | **El Mene** → *Sector El Güere* |
+| **El Hipódromo** | **José Cenovio Urribarri** → *Sector El Hipódromo* |
+| **El Liceo** | **Santa Rita** → *Sector El Liceo* |
+| **El Mamón** | **José Cenovio Urribarri** → *Sector El Mamón*<br>**Pedro Lucas Urribarri** → *Sector El Mamón* |
+| **El Museito** | **José Cenovio Urribarri** → *Barrio El Museito* |
+| **El Rocio** | **José Cenovio Urribarri** → *Sector El Rocio* |
+| **El Seguro** | **Santa Rita** → *Sector El Seguro* |
+| **El Sindicato** | **Santa Rita** → *Sector El Sindicato* |
+| **El Suspiro** | **José Cenovio Urribarri** → *Barrio El Suspiro* |
+| **El Ventarron** | **José Cenovio Urribarri** → *Barrio El Ventarron* |
+| **El Zamuro** | **El Mene** → *Sector El Zamuro* |
+| **Flor de la Guajira I** | **José Cenovio Urribarri** → *Barrio Flor de la Guajira I* |
+| **Flor de la Guajira II** | **José Cenovio Urribarri** → *Barrio Flor de la Guajira II* |
+| **Guadalupe** | **Pedro Lucas Urribarri** → *Sector Guadalupe* |
+| **Incopreca** | **Santa Rita** → *Urbanización Incopreca* |
+| **Isla de Providencia** | **José Cenovio Urribarri** → *Isla de Providencia* |
+| **Isla Los Pájaros** | **José Cenovio Urribarri** → *Isla Los Pájaros* |
+| **Juan Marín** | **Pedro Lucas Urribarri** → *Sector Juan Marín* |
+| **Km 34** | **Pedro Lucas Urribarri** → *Sector Km 34* |
+| **La Alcabala** | **El Mene** → *Sector La Alcabala* |
+| **La Aurora** | **El Mene** → *Parcelamiento La Aurora* |
+| **La Cañaita** | **Santa Rita** → *Urbanización La Cañaita* |
+| **La cotiza** | **Santa Rita** → *Sector La cotiza* |
+| **La Cruz** | **El Mene** → *Parcelamiento La Cruz* |
+| **La Culebra** | **Pedro Lucas Urribarri** → *Sector La Culebra* |
+| **La Esperanza** | **Santa Rita** → *Parcelamiento La Esperanza* |
+| **La Estancia** | **Santa Rita** → *Sector La Estancia* |
+| **La Gabo** | **Santa Rita** → *Urbanización La Gabo* |
+| **La Gallera** | **El Mene** → *Sector La Gallera*<br>**Santa Rita** → *Sector La Gallera* |
+| **La Granja** | **Santa Rita** → *Sector La Granja* |
+| **La Manga de Coleo** | **Santa Rita** → *Sector La Manga de Coleo* |
+| **La Manzanita** | **José Cenovio Urribarri** → *Barrio La Manzanita* |
+| **La Maternidad** | **Santa Rita** → *Sector La Maternidad* |
+| **La Mocha** | **Santa Rita** → *Sector La Mocha* |
+| **La Mucurita** | **El Mene** → *Urbanización La Mucurita* |
+| **La Playitas** | **El Mene** → *Sector La Playitas* |
+| **La Plaza** | **José Cenovio Urribarri** → *Barrio La Plaza*<br>**Santa Rita** → *Sector La Plaza* |
+| **La Pollera** | **El Mene** → *Parcelamiento La Pollera* |
+| **La Salina** | **Santa Rita** → *Sector La Salina* |
+| **La Vera** | **José Cenovio Urribarri** → *Barrio La Vera* |
+| **La Victoria** | **El Mene** → *Parcelamiento La Victoria* |
+| **La Vivienda** | **El Mene** → *Sector La Vivienda* |
+| **La Willians** | **Pedro Lucas Urribarri** → *Sector La Willians* |
+| **La Y** | **José Cenovio Urribarri** → *Barrio La Y* |
+| **Las 4 Bocas** | **Santa Rita** → *Sector Las 4 Bocas* |
+| **Las Cabrias** | **José Cenovio Urribarri** → *Barrio Las Cabrias* |
+| **Las Gabarras** | **José Cenovio Urribarri** → *Barrio Las Gabarras* |
+| **Las Leonas** | **Santa Rita** → *Urbanización Las Leonas* |
+| **Las Quintas** | **Santa Rita** → *Urbanización Las Quintas* |
+| **Las Taparitas** | **Santa Rita** → *Sector Las Taparitas* |
+| **Las Triste** | **José Cenovio Urribarri** → *Sector Las Triste* |
+| **Las Vegas** | **Santa Rita** → *Sector Las Vegas* |
+| **Los Bomberos** | **Santa Rita** → *Sector Los Bomberos* |
+| **Los Cerrillos** | **Santa Rita** → *Barrio Los Cerrillos* |
+| **Los Hechiceros** | **Pedro Lucas Urribarri** → *Barrio Los Hechiceros* |
+| **Los Leones** | **José Cenovio Urribarri** → *Parcelamiento Los Leones* |
+| **Los Mayales** | **El Mene** → *Parcelamiento Los Mayales* |
+| **Los Olivitos** | **Santa Rita** → *Sector Los Olivitos* |
+| **Los Papelones** | **Pedro Lucas Urribarri** → *Sector Los Papelones* |
+| **Los Rosales** | **José Cenovio Urribarri** → *Barrio Los Rosales* |
+| **Macanilla** | **Santa Rita** → *Sector Macanilla* |
+| **Matapalo** | **José Cenovio Urribarri** → *Sector Matapalo* |
+| **Megasa** | **José Cenovio Urribarri** → *Barrio Megasa* |
+| **Monte Pio** | **El Mene** → *Sector Monte Pio* |
+| **Monti Club** | **Santa Rita** → *Barrio Monti Club* |
+| **Morfina Ritera** | **Santa Rita** → *Sector Morfina Ritera* |
+| **Nigale** | **Santa Rita** → *Urbanización Nigale* |
+| **Nueva Santa Rita** | **Santa Rita** → *Urbanización Nueva Santa Rita* |
+| **Olaya** | **Santa Rita** → *Sector Olaya* |
+| **Palmarejo** | **José Cenovio Urribarri** → *Palmarejo* · *Sector Palmarejo* |
+| **Pascual Baez** | **José Cenovio Urribarri** → *Parcelamiento Pascual Baez* |
+| **Pele el Ojo** | **Santa Rita** → *Sector Pele el Ojo* |
+| **Pepsi Cola** | **Santa Rita** → *Urbanización Pepsi Cola* |
+| **Plaza Bolivar** | **Santa Rita** → *Plaza Bolivar* |
+| **Plaza Bolívar Puerto Escondido** | **Santa Rita** → *Plaza Bolívar Puerto Escondido* |
+| **Plaza Cruz de Mayo** | **Santa Rita** → *Plaza Cruz de Mayo* |
+| **Plaza del Gaitero** | **Santa Rita** → *Sector Plaza del Gaitero* |
+| **Plaza El Centro** | **El Mene** → *Sector Plaza El Centro* |
+| **Plaza El Gaitero** | **Santa Rita** → *Plaza El Gaitero* |
+| **Plaza Pedro Lucas Urribarri** | **Santa Rita** → *Plaza Pedro Lucas Urribarri* |
+| **Plaza San benito** | **Santa Rita** → *Plaza San benito* |
+| **Produzca** | **Santa Rita** → *Urbanización Produzca* |
+| **Puerto Escondido** | **Santa Rita** → *Puerto Escondido* · *Sector Puerto Escondido* |
+| **Punta Iguana** | **José Cenovio Urribarri** → *Punta Iguana* · *Sector Punta Iguana* |
+| **Punta Iguana Norte** | **José Cenovio Urribarri** → *Sector Punta Iguana Norte* |
+| **Punta Iguana Sur** | **José Cenovio Urribarri** → *Sector Punta Iguana Sur* |
+| **Rafel Urdaneta** | **José Cenovio Urribarri** → *Barrio Rafel Urdaneta* |
+| **Retorno de Tolosa** | **El Mene** → *Retorno de Tolosa* |
+| **Ricardo Cepeda** | **José Cenovio Urribarri** → *Parcelamiento Ricardo Cepeda* |
+| **Samuel Robinson** | **Santa Rita** → *Parcelamiento Samuel Robinson* |
+| **San Benito** | **Santa Rita** → *Urbanización San Benito* |
+| **San Ignacio** | **Santa Rita** → *Barrio San Ignacio* · *Urbanización San Ignacio* |
+| **San Pablo** | **Pedro Lucas Urribarri** → *Barrio San Pablo* |
+| **Santa Rita** | **Santa Rita** → *Oficina Postal Telegráfica Santa Rita* · *Urbanización Santa Rita* |
+| **Simón Bolivar** | **Santa Rita** → *Barrio Simón Bolívar* · *Sector Simón Bolivar* |
+| **Simón Meza** | **Santa Rita** → *Barrio Simón Meza* · *Sector Simón Meza* |
+| **Simón Rodríguez** | **Santa Rita** → *Barrio Simón Rodríguez* |
+| **Tanques Inos** | **Santa Rita** → *Sector Tanques Inos* |
+| **Tolosa** | **Pedro Lucas Urribarri** → *Sector Tolosa* · *Tolosa* |
+| **Valle Encantado** | **Santa Rita** → *Sector Valle Encantado* |
+| **Villa María** | **Santa Rita** → *Parcelamiento Villa María* |
+| **Villa Rita** | **José Cenovio Urribarri** → *Urbanización Villa Rita* |
+| **Villa Santa** | **José Cenovio Urribarri** → *Barrio Villa Santa* |
+| **Virgen del Rosario** | **Santa Rita** → *Parcelamiento Virgen del Rosario* |
+| **Vista Hermosa** | **El Mene** → *Parcelamiento Vista Hermosa* |
+| **Vivienda Venezolana** | **Santa Rita** → *Urbanización Vivienda Venezolana* |
+
 # Fuentes
 
 ### 1. Fuentes oficiales

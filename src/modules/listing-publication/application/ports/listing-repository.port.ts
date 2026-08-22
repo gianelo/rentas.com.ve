@@ -1,4 +1,4 @@
-import type { ContactMethod, PublisherType } from "../../domain/publishable-listing";
+import type { ContactMethod, PropertyType, PublisherType } from "../../domain/publishable-listing";
 
 /**
  * Persistence for a published listing and its photos.
@@ -28,6 +28,7 @@ export interface NewListingPhoto {
 export interface NewListing {
   readonly publisherId: string;
   readonly publisherType: PublisherType;
+  readonly propertyType: PropertyType;
   readonly cityId: string;
   readonly zoneId: string;
   readonly title: string;
@@ -36,6 +37,17 @@ export interface NewListing {
   readonly rooms: number;
   readonly areaM2: number;
   readonly bathrooms: number;
+  /**
+   * Los cinco de la F6. Sin `?`, por la misma razón que el resto de este
+   * archivo: registran una DECLARACIÓN, y "no lo declaró" es `false`, no
+   * ausente. Un opcional acá dejaría a la importación de cartera publicando
+   * filas donde nadie distingue lo uno de lo otro.
+   */
+  readonly hasPowerPlant: boolean;
+  readonly hasRegularWater: boolean;
+  readonly isFurnished: boolean;
+  readonly hasSecurity: boolean;
+  readonly hasAppliances: boolean;
   /**
    * Required HERE even though the draft may omit it: by this layer the form's
    * default has already been applied, and a row without it renders a blank

@@ -55,11 +55,17 @@ function draft(overrides: Partial<NewListing> = {}): NewListing {
   return {
     publisherId: PUBLISHER,
     publisherType: "owner",
+    propertyType: "apartamento",
     cityId: CAPITAL,
     zoneId: CHACAO,
     title: "Apartamento 2 habitaciones con puesto de estacionamiento",
     description: "x".repeat(140),
     priceUsd: 520,
+    hasPowerPlant: false,
+    hasRegularWater: false,
+    isFurnished: false,
+    hasSecurity: false,
+    hasAppliances: false,
     rooms: 2,
     areaM2: 78,
     bathrooms: 2,
@@ -91,14 +97,10 @@ beforeAll(async () => {
     MARACAIBO,
     `Maracaibo ${MARACAIBO}`,
   ]);
-  await pool.query(`INSERT INTO "zone" (id, city_id, name) VALUES ($1,$2,$3),($4,$5,$6)`, [
-    CHACAO,
-    CAPITAL,
-    "Chacao",
-    LA_LAGO,
-    MARACAIBO,
-    "La Lago",
-  ]);
+  await pool.query(
+    `INSERT INTO "zone" (id, city_id, name, kind, source) VALUES ($1,$2,$3,'parroquia','INE'),($4,$5,$6,'parroquia','INE')`,
+    [CHACAO, CAPITAL, "Chacao", LA_LAGO, MARACAIBO, "La Lago"],
+  );
   await pool.query(`INSERT INTO "user" (id, email) VALUES ($1,$2)`, [
     PUBLISHER,
     `${PUBLISHER}@example.com`,

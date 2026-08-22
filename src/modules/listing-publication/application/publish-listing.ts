@@ -129,6 +129,7 @@ export async function publishListing(
   const { id } = await listings.save({
     publisherId: session.userId,
     publisherType: present(request.publisherType, "publisherType"),
+    propertyType: present(request.propertyType, "propertyType"),
     cityId: present(request.cityId, "cityId"),
     zoneId: present(request.zoneId, "zoneId"),
     title: present(request.title, "title"),
@@ -142,6 +143,16 @@ export async function publishListing(
     // parking is a fact the domain deliberately does not require anyone to
     // state, so a draft that omits it is complete rather than broken.
     parkingSpots: request.parkingSpots ?? 0,
+    // Los cinco atributos siguen la misma regla que `parkingSpots` y por otra
+    // razón: no es que su ausencia sea respondible, es que `false` ES la
+    // respuesta. "No lo declaró" y "no lo tiene" son la misma fila en la base
+    // y dos frases distintas en la pantalla, y esa distinción vive en la ficha
+    // (F25), que nunca afirma una ausencia.
+    hasPowerPlant: request.hasPowerPlant ?? false,
+    hasRegularWater: request.hasRegularWater ?? false,
+    isFurnished: request.isFurnished ?? false,
+    hasSecurity: request.hasSecurity ?? false,
+    hasAppliances: request.hasAppliances ?? false,
     contactMethod: present(request.contactMethod, "contactMethod"),
     contactValue: present(request.contactValue, "contactValue"),
     status: "active",

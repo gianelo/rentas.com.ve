@@ -58,8 +58,14 @@ describe("seed", () => {
   });
 
   it("populates the full taxonomy and catalogue", async () => {
-    expect(await countRows("city")).toBe(2);
-    expect(await countRows("zone")).toBe(10);
+    // Cinco areas, no dos: Caracas, La Guaira, Maracaibo, Cabimas y Santa Rita.
+    // Salen de AREAS en listing-catalogue, que es donde vive esa decision de
+    // producto — el area agrupa municipios y no es un nivel oficial.
+    expect(await countRows("city")).toBe(5);
+    // 5.796 filas: 10 municipios, 81 parroquias y 5.705 elementos, generados
+    // desde docs/territorio/ y no transcritos. El numero coincide con el que
+    // los propios archivos declaran, archivo por archivo.
+    expect(await countRows("zone")).toBe(5796);
     expect(await countRows("listing")).toBe(10);
   });
 
@@ -107,8 +113,14 @@ describe("seed", () => {
     // screen stopped meaning anything.
     await seed(database);
 
-    expect(await countRows("city")).toBe(2);
-    expect(await countRows("zone")).toBe(10);
+    // Cinco areas, no dos: Caracas, La Guaira, Maracaibo, Cabimas y Santa Rita.
+    // Salen de AREAS en listing-catalogue, que es donde vive esa decision de
+    // producto — el area agrupa municipios y no es un nivel oficial.
+    expect(await countRows("city")).toBe(5);
+    // 5.796 filas: 10 municipios, 81 parroquias y 5.705 elementos, generados
+    // desde docs/territorio/ y no transcritos. El numero coincide con el que
+    // los propios archivos declaran, archivo por archivo.
+    expect(await countRows("zone")).toBe(5796);
     expect(await countRows("listing")).toBe(10);
   });
 

@@ -417,6 +417,159 @@ Se listan **todos** los casos detectados (11).
 | Otros | 13 |
 | **Total de elementos sub-parroquiales** | **165** |
 
+# Índice de topónimos
+
+Índice alfabético de **cómo se busca** cada zona. Un mismo topónimo puede aparecer con varias etiquetas y en varias parroquias: acá se ven todas juntas.
+
+**Este índice no crea zonas.** Cada topónimo se extrae del nombre que la fuente ya publica, quitándole únicamente la palabra de categoría (`Barrio`, `Sector`, `Urbanización`, `Conjunto Residencial`, `Parcelamiento`, `Caserío`, `Casco Central de`, `Centro de`, `Zona Industrial`, `Oficina Postal Telegráfica`). Cuando un nombre entierra un segundo topónimo — por ejemplo *«Barrio Tierra Negra del Sector **Bella Vista**»* — también se indexa el enterrado.
+
+Las *Edificaciones identificadas individualmente* quedan fuera del índice: no son zonas.
+
+| Topónimo | Dónde aparece |
+|---|---|
+| **10 de Enero** | **Domitila Flores** → *Sector 10 de Enero* |
+| **13 de Abril** | **Domitila Flores** → *Barrio 13 de Abril* |
+| **14 de Abril** | **Domitila Flores** → *Barrio 14 de Abril* |
+| **17 de Noviembre** | **Domitila Flores** → *Sector 17 de Noviembre* |
+| **18 de Agosto** | **Domitila Flores** → *Barrio 18 de Agosto* |
+| **18 de Diciembre** | **Domitila Flores** → *Sector 18 de Diciembre* |
+| **19 de Julio** | **Domitila Flores** → *Sector 19 de Julio* |
+| **1ro de Marzo** | **Domitila Flores** → *Barrio 1ro de Marzo* |
+| **24 de Julio** | **Domitila Flores** → *Sector 24 de Julio* |
+| **28 de Diciembre** | **Domitila Flores** → *Sector 28 de Diciembre* |
+| **5 de Febrero** | **Marcial Hernández** → *Barrio 5 de Febrero* |
+| **Adams Stormes** | **Francisco Ochoa** → *Sector Adams Stormes* |
+| **Alberto Carnavalli** | **San Francisco** → *Barrio Alberto Carnavalli* |
+| **Alberto Carnavallis** | **Domitila Flores** → *Sector Alberto Carnavallis* |
+| **Alicia Pietri de Caldera** | **Domitila Flores** → *Sector Alicia Pietri de Caldera* |
+| **Andrés Bello** | **Marcial Hernández** → *Sector Andrés Bello* |
+| **Bajo Grande** | **El Bajo** → *Sector Bajo Grande* |
+| **Base Aérea Militar Rafael Urdaneta** | **Marcial Hernández** → *Base Aérea Militar Rafael Urdaneta* |
+| **Betulio González** | **San Francisco** → *Barrio Betulio González* · *Sector Betulio González* |
+| **Bicentenario Sur** | **San Francisco** → *Barrio Bicentenario Sur* · *Sector Bicentenario Sur* |
+| **Blanquita de Pérez** | **Domitila Flores** → *Sector Blanquita de Pérez* |
+| **Bolivariano** | **Francisco Ochoa** → *Sector Bolivariano* |
+| **Bolivariano de Manzanillo** | **Francisco Ochoa** → *Sector Bolivariano de Manzanillo* |
+| **Brisas del Sol** | **San Francisco** → *Parcelamiento Brisas del Sol* |
+| **Carabobo** | **Domitila Flores** → *Barrio Carabobo* · *Sector Carabobo* |
+| **Carlos Andrés Pérez** | **San Francisco** → *Barrio Carlos Andrés Pérez* |
+| **Caujarito** | **Marcial Hernández** → *Caujarito* |
+| **Centro Comercial San Franscisco Plaza** | **Domitila Flores** → *Centro Comercial San Franscisco Plaza* |
+| **Centro San Francisco** | **San Francisco** → *Centro San Francisco* |
+| **Ciudad El Sol** | **El Bajo** → *Urbanización Ciudad El Sol* |
+| **Ciudadela Rafael Caldera** | **José Domingo Rus** → *Ciudadela Rafael Caldera*<br>**Los Cortijos** → *Ciudadela Rafael Caldera* |
+| **Colina Bolivariana** | **San Francisco** → *Sector Colina Bolivariana* |
+| **Colinas Bolivarianas** | **San Francisco** → *Barrio Colinas Bolivarianas* |
+| **Corazón de Jesús** | **Francisco Ochoa** → *Barrio Corazón de Jesús* · *Sector Corazón de Jesús* |
+| **Coromoto** | **San Francisco** → *Urbanización Coromoto* |
+| **Delia de Fernández** | **Domitila Flores** → *Sector Delia de Fernández* |
+| **Día de las Madres** | **Domitila Flores** → *Barrio Día de las Madres* |
+| **Distribuidor La Chinita** | **Marcial Hernández** → *Distribuidor La Chinita* |
+| **Distribuidor San Francisco** | **Francisco Ochoa** → *Distribuidor San Francisco* |
+| **Divino Niño** | **San Francisco** → *Barrio Divino Niño* |
+| **El Bajo** | **El Bajo** → *Sector El Bajo* |
+| **El Callao** | **Domitila Flores** → *Barrio El Callao* |
+| **El Caujaro** | **José Domingo Rus** → *El Caujaro*<br>**Los Cortijos** → *Urbanización El Caujaro* |
+| **El Manzanillo** | **Francisco Ochoa** → *Sector El Manzanillo* |
+| **El Matei** | **Domitila Flores** → *Barrio El Matei* |
+| **El Paragual** | **Francisco Ochoa** → *Conjunto Residencial El Paragual* |
+| **El Paraguito** | **Francisco Ochoa** → *Conjunto Residencial El Paraguito* |
+| **El Paraíso** | **El Bajo** → *Sector El Paraíso* |
+| **El Perú** | **San Francisco** → *Sector El Perú* |
+| **El Placer** | **San Francisco** → *Urbanización El Placer* |
+| **El Rodeo** | **Domitila Flores** → *Sector El Rodeo*<br>**El Bajo** → *Sector El Rodeo* |
+| **El Rodeo II** | **Domitila Flores** → *Sector El Rodeo II* |
+| **El Silencio** | **Domitila Flores** → *Barrio El Silencio* |
+| **El Sol** | **San Francisco** → *Conjunto Residencial El Sol* |
+| **El Soler** | **José Domingo Rus** → *El Soler*<br>**Marcial Hernández** → *Urbanización El Soler* |
+| **Eloy Parraga Villamarín** | **El Bajo** → *Sector Eloy Parraga Villamarín* |
+| **Eloy Praga Villamaría** | **San Francisco** → *Barrio Eloy Praga Villamaría* |
+| **II** | **Marcial Hernández** → *Zona Industrial II* |
+| **Jobo Bajo** | **Marcial Hernández** → *Sector Jobo Bajo* |
+| **José León Mijares** | **Domitila Flores** → *Sector José León Mijares* |
+| **Juan Pablo** | **San Francisco** → *Barrio Juan Pablo* |
+| **La Alambra** | **Francisco Ochoa** → *Sector La Alambra* |
+| **La Coromoto** | **San Francisco** → *La Coromoto* |
+| **La Gloria** | **Domitila Flores** → *Sector La Gloria* · *Urbanización La Gloria* |
+| **La Limpia** | **Domitila Flores** → *Sector La Limpia* |
+| **La Limpia Norte** | **San Francisco** → *Barrio La Limpia Norte* |
+| **La Limpia Sur** | **Domitila Flores** → *Sector La Limpia Sur* |
+| **la Lucha** | **Domitila Flores** → *Barrio la Lucha* |
+| **La Marquita** | **Marcial Hernández** → *Sector La Marquita* |
+| **La Milagrosa** | **Domitila Flores** → *Barrio La Milagrosa* |
+| **La Modelo** | **Domitila Flores** → *Sector La Modelo* · *Urbanización La Modelo* |
+| **La Popular** | **Domitila Flores** → *Barrio La Popular* · *Urbanización La Popular* |
+| **La Portuaria** | **Francisco Ochoa** → *Sector La Portuaria* · *Urbanización La Portuaria* |
+| **La Punta** | **San Francisco** → *Sector La Punta* |
+| **La Violet** | **Francisco Ochoa** → *Conjunto Residencial La Violet* |
+| **Los Cortijos** | **Los Cortijos** → *Sector Los Cortijos* |
+| **Los Manantiales** | **Los Cortijos** → *Sector Los Manantiales* |
+| **Los Pozos** | **Los Cortijos** → *Sector Los Pozos* |
+| **Los Samánes** | **Los Cortijos** → *Urbanización Los Samánes* |
+| **Luis Aparicio** | **Domitila Flores** → *Barrio Luis Aparicio* |
+| **Ma Vieja** | **El Bajo** → *Sector Ma Vieja* |
+| **Mamatia** | **Domitila Flores** → *Conjunto Residencial Mamatia* |
+| **Manzanillo** | **Francisco Ochoa** → *Sector Manzanillo* |
+| **Mariano Parra León** | **Los Cortijos** → *Barrio Mariano Parra León* |
+| **Mavieja** | **San Francisco** → *Barrio Mavieja* |
+| **Milagro Sur** | **Domitila Flores** → *Sector Milagro Sur* |
+| **Monseñor Mariano Parra** | **Marcial Hernández** → *Sector Monseñor Mariano Parra* |
+| **Nectarcio Labarca** | **Marcial Hernández** → *Barrio Nectarcio Labarca* |
+| **Nectario La Barca** | **Marcial Hernández** → *Sector Nectario La Barca* |
+| **Negro Primero** | **San Francisco** → *Barrio Negro Primero* |
+| **Nueva Bandera** | **San Francisco** → *Parcelamiento Nueva Bandera* |
+| **Nueva Democracia** | **Domitila Flores** → *Barrio Nueva Democracia* |
+| **Nuevo Amanecer** | **Domitila Flores** → *Barrio Nuevo Amanecer* |
+| **Palito Blanco** | **Marcial Hernández** → *Sector Palito Blanco* |
+| **Paraíso El Sol** | **El Bajo** → *Urbanización Paraíso El Sol* |
+| **Perú** | **San Francisco** → *Barrio Perú* |
+| **Plaza El Sol** | **El Bajo** → *Urbanización Plaza El Sol* |
+| **Punta de Piedras** | **Francisco Ochoa** → *Sector Punta de Piedras* |
+| **Rafael Urdaneta** | **Domitila Flores** → *Barrio Rafael Urdaneta* |
+| **Riveras del Lago** | **San Francisco** → *Urbanización Riveras del Lago* |
+| **Roberto Trujillo** | **Los Cortijos** → *Sector Roberto Trujillo* |
+| **Roraima** | **San Francisco** → *Conjunto Residencial Roraima* |
+| **Sabana Grande** | **Marcial Hernández** → *Barrio Sabana Grande* · *Sector Sabana Grande* |
+| **Sabana Sur I** | **Marcial Hernández** → *Barrio Sabana Sur I* |
+| **Sabana Sur II** | **Marcial Hernández** → *Barrio Sabana Sur II* |
+| **San Benito** | **El Bajo** → *Sector San Benito*<br>**Marcial Hernández** → *Parcelamiento San Benito*<br>**San Francisco** → *Barrio San Benito* |
+| **San Felipe** | **El Bajo** → *Sector San Felipe*<br>**San Francisco** → *Sector San Felipe* |
+| **San Felipe 1° Etapa** | **San Francisco** → *Urbanización San Felipe 1° Etapa* |
+| **San Felipe 2° Etapa** | **San Francisco** → *Urbanización San Felipe 2° Etapa* |
+| **San Felipe II** | **San Francisco** → *Urbanización San Felipe II* |
+| **San Felipe III** | **San Francisco** → *Urbanización San Felipe III* |
+| **San Francisco** | **Domitila Flores** → *Sector San Francisco* · *Urbanización San Francisco*<br>**San Francisco** → *Caserío San Francisco* · *Urbanización San Francisco* |
+| **San Luis** | **Marcial Hernández** → *Sector San Luis*<br>**San Francisco** → *Barrio San Luis* |
+| **San Miguel** | **El Bajo** → *Sector San Miguel* |
+| **San Ramón** | **San Francisco** → *Barrio San Ramón* |
+| **Santa Ana** | **Domitila Flores** → *Sector Santa Ana* |
+| **Santa Fe I** | **Los Cortijos** → *Barrio Santa Fe I* |
+| **Santa Fe II** | **Los Cortijos** → *Barrio Santa Fe II* |
+| **Santa Mónica** | **Marcial Hernández** → *Santa Mónica* |
+| **Sierra Maestra** | **Francisco Ochoa** → *Sector Sierra Maestra* |
+| **Soler** | **Marcial Hernández** → *Urbanización Soler* |
+| **Sur América** | **Marcial Hernández** → *Barrio Sur América* · *Sector Sur América* |
+| **Universidad** | **Domitila Flores** → *Barrio Universidad* |
+| **Valle Encantado** | **San Francisco** → *Sector Valle Encantado* |
+| **Viila Cristal** | **San Francisco** → *Conjunto Residencial Viila Cristal* |
+| **Villa Bolivariana** | **San Francisco** → *Sector Villa Bolivariana* · *Urbanización Villa Bolivariana* |
+| **Villa Bonita** | **San Francisco** → *Urbanización Villa Bonita* |
+| **Villa Chinita** | **José Domingo Rus** → *Urbanizacion Villa Chinita* |
+| **Villa Clara** | **San Francisco** → *Conjunto Residencial Villa Clara* |
+| **Villa el Silencio** | **Domitila Flores** → *Barrio Villa el Silencio* |
+| **Villa Fabiana** | **San Francisco** → *Conjunto Residencial Villa Fabiana* |
+| **Villa Juan Pablo** | **San Francisco** → *Conjunto Residencial Villa Juan Pablo* |
+| **Villa Luna** | **José Domingo Rus** → *Urbanizacion Villa Luna*<br>**Marcial Hernández** → *Conjunto Residencial Villa Luna* |
+| **Villa Madre** | **San Francisco** → *Conjunto Residencial Villa Madre* |
+| **Villa Mercal** | **Marcial Hernández** → *Conjunto Residencial Villa Mercal* |
+| **Villa Miel** | **San Francisco** → *Conjunto Residencial Villa Miel* |
+| **Villa Nazaret** | **San Francisco** → *Conjunto Residencial Villa Nazaret* |
+| **Villa Rica** | **San Francisco** → *Urbanización Villa Rica* |
+| **Villa Simon Bolivar** | **San Francisco** → *Conjunto Residencial Villa Simon Bolivar* |
+| **Villa Toscana II** | **San Francisco** → *Conjunto Residencial Villa Toscana II* |
+| **Villas del Lago** | **San Francisco** → *Urbanización Villas del Lago* |
+| **Vista al Sol** | **Domitila Flores** → *Barrio Vista al Sol* |
+
 # Fuentes
 
 ### 1. Fuentes oficiales

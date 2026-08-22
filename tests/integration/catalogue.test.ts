@@ -74,7 +74,7 @@ beforeAll(async () => {
   // Inserted out of alphabetical order on purpose: an adapter that returned
   // insertion order would pass a test whose fixtures were already sorted.
   await pool.query(
-    'INSERT INTO "zone" (id, city_id, name) VALUES ($1,$2,$3),($4,$5,$6),($7,$8,$9)',
+    `INSERT INTO "zone" (id, city_id, name, kind, source) VALUES ($1,$2,$3,'parroquia','INE'),($4,$5,$6,'parroquia','INE'),($7,$8,$9,'parroquia','INE')`,
     [
       ALPHA_ZONE_LATE,
       ALPHA_CITY,
@@ -150,11 +150,10 @@ describe("DrizzleCatalogue.listZones", () => {
       doomedCity,
       `Efimera ${doomedCity}`,
     ]);
-    await pool.query('INSERT INTO "zone" (id, city_id, name) VALUES ($1,$2,$3)', [
-      doomedZone,
-      doomedCity,
-      `Zona ${doomedZone}`,
-    ]);
+    await pool.query(
+      `INSERT INTO "zone" (id, city_id, name, kind, source) VALUES ($1,$2,$3,'parroquia','INE')`,
+      [doomedZone, doomedCity, `Zona ${doomedZone}`],
+    );
     await pool.query('DELETE FROM "city" WHERE id = $1', [doomedCity]);
 
     const zones = await catalogue.listZones();

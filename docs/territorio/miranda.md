@@ -2145,6 +2145,727 @@ Se listan **todos** los casos detectados (91).
 | Edificaciones identificadas individualmente | 191 |
 | **Total de elementos sub-parroquiales** | **1184** |
 
+# Índice de topónimos
+
+Índice alfabético de **cómo se busca** cada zona. Un mismo topónimo puede aparecer con varias etiquetas y en varias parroquias: acá se ven todas juntas.
+
+**Este índice no crea zonas.** Cada topónimo se extrae del nombre que la fuente ya publica, quitándole únicamente la palabra de categoría (`Barrio`, `Sector`, `Urbanización`, `Conjunto Residencial`, `Parcelamiento`, `Caserío`, `Casco Central de`, `Centro de`, `Zona Industrial`, `Oficina Postal Telegráfica`). Cuando un nombre entierra un segundo topónimo — por ejemplo *«Barrio Tierra Negra del Sector **Bella Vista**»* — también se indexa el enterrado.
+
+Las *Edificaciones identificadas individualmente* quedan fuera del índice: no son zonas.
+
+| Topónimo | Dónde aparece |
+|---|---|
+| **05 de Julio** | **Petare** → *Barrio 05 de Julio* |
+| **1º de Noviembre** | **Petare** → *Barrio 1º de Noviembre* |
+| **12 de Febrero** | **Petare** → *Barrio 12 de Febrero* |
+| **12 de Octubre** | **Petare** → *Barrio 12 de Octubre* |
+| **19 de Abril** | **Petare** → *Barrio 19 de Abril* |
+| **24 de Julio** | **Petare** → *Barrio 24 de Julio* |
+| **24 de Marzo** | **Petare** → *Barrio 24 de Marzo* |
+| **24 de Noviembre** | **Petare** → *Barrio 24 de Noviembre* |
+| **5 de Julio** | **Petare** → *Barrio 5 de Julio* |
+| **Aeropuerto Francisco de Miranda** | **Chacao** → *Aeropuerto Francisco de Miranda* |
+| **Aeropuerto La Carlota** | **Chacao** → *Sector Aeropuerto La Carlota* |
+| **Agricultura** | **Petare** → *Barrio Agricultura* |
+| **Agropecuaria El Paso del Avestruz** | **El Hatillo** → *Agropecuaria El Paso del Avestruz* |
+| **Agua Amarilla** | **Caucagüita** → *Barrio Agua Amarilla*<br>**Petare** → *Barrio Agua Amarilla* |
+| **Agua de Maíz** | **Leoncio Martínez** → *Barrio Agua de Maíz* |
+| **Aguacatico** | **Caucagüita** → *Barrio Aguacatico* |
+| **Alameda Plaza** | **Nuestra Señora del Rosario de Baruta** → *Alameda Plaza* |
+| **Alcabala** | **Petare** → *Barrio Alcabala* |
+| **Alegría** | **Leoncio Martínez** → *Parcelamiento Alegría* |
+| **Altamira** | **Chacao** → *Altamira* · *Oficina Postal Telegráfica Altamira* · *Sector Altamira* · *Urbanización Altamira*<br>**Petare** → *Parcelamiento Altamira* |
+| **Altamira Norte** | **Chacao** → *Sector Altamira Norte* |
+| **Altamira Sur** | **Chacao** → *Sector Altamira Sur*<br>**Petare** → *Urbanización Altamira Sur* |
+| **Alto de La Boyera** | **El Hatillo** → *Urbanización Alto de La Boyera* |
+| **Alto de La Loma** | **Nuestra Señora del Rosario de Baruta** → *Alto de La Loma* |
+| **Alto del Patio** | **El Hatillo** → *Urbanización Alto del Patio* |
+| **Alto Hatillo** | **El Hatillo** → *Alto Hatillo* · *Urbanización Alto Hatillo* |
+| **Alto La Palua** | **El Hatillo** → *Alto La Palua* |
+| **Alto Prado** | **Nuestra Señora del Rosario de Baruta** → *Alto Prado* · *Sector Alto Prado* · *Urbanización Alto Prado* |
+| **Altos de San Gabriel** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Altos de San Gabriel* |
+| **Altos de Sebucán** | **Leoncio Martínez** → *Conjunto Residencial Altos de Sebucán* |
+| **Altos de Valencia** | **Petare** → *Urbanización Altos de Valencia* |
+| **Altos del Halcón** | **El Hatillo** → *Altos del Halcón* · *Urbanización Altos del Halcón* |
+| **Anfiteatro** | **Petare** → *Anfiteatro* |
+| **Antonio Clemente** | **Caucagüita** → *Barrio Antonio Clemente* |
+| **Antonio José de Sucre** | **Petare** → *Barrio Antonio José de Sucre* |
+| **Araguaney** | **Caucagüita** → *Urbanización Araguaney* |
+| **Arismendi** | **Leoncio Martínez** → *Parcelamiento Arismendi* |
+| **Auyantepui** | **El Hatillo** → *Conjunto Residencial Auyantepui* |
+| **Avenida La Estancia** | **Chacao** → *Avenida La Estancia* |
+| **Avila Humboldt** | **Petare** → *Conjunto Residencial Avila Humboldt* |
+| **Ayala Abajo** | **Petare** → *Ayala Abajo* |
+| **Ayala Arriba** | **Petare** → *Ayala Arriba* |
+| **Balcones de Monterrey** | **Nuestra Señora del Rosario de Baruta** → *Balcones de Monterrey* |
+| **Banco de Venezuela** | **Leoncio Martínez** → *Banco de Venezuela* |
+| **Baruta** | **Nuestra Señora del Rosario de Baruta** → *Baruta* · *Urbanización Baruta* |
+| **Bello Campo** | **Chacao** → *Barrio Bello Campo* · *Bello Campo* · *Sector Bello Campo* · *Urbanización Bello Campo* |
+| **Bello Monte** | **Nuestra Señora del Rosario de Baruta** → *Bello Monte* |
+| **Bloques de La Trinidad** | **Nuestra Señora del Rosario de Baruta** → *Bloques de La Trinidad* |
+| **Boleita** | **Leoncio Martínez** → *Urbanización Boleita* |
+| **Boleita Alta** | **Leoncio Martínez** → *Urbanización Boleita Alta* |
+| **Boleita Norte** | **Leoncio Martínez** → *Boleíta Norte* · *Sector Boleita Norte* |
+| **Boleita Sur** | **Leoncio Martínez** → *Boleíta Sur* · *Sector Boleita Sur* |
+| **Bolívar** | **Chacao** → *Urbanización Bolívar*<br>**Petare** → *Barrio Bolívar* |
+| **Boquerón** | **Nuestra Señora del Rosario de Baruta** → *Boquerón* |
+| **Bosque Encantado** | **El Hatillo** → *Conjunto Residencial Bosque Encantado* |
+| **Bosque La Virgen** | **Nuestra Señora del Rosario de Baruta** → *Bosque La Virgen* · *Urbanización Bosque La Virgen* |
+| **Boulevard de Petare** | **Petare** → *Boulevard de Petare* |
+| **Boulevard El Cafetal** | **Las Minas de Baruta** → *Boulevard El Cafetal* |
+| **Brisas de Araguaney** | **Caucagüita** → *Brisas de Araguaney* |
+| **Brisas de Petare** | **Petare** → *Barrio Brisas de Petare* |
+| **Brisas de Turumo** | **Caucagüita** → *Barrio Brisas de Turumo*<br>**Petare** → *Barrio Brisas de Turumo* |
+| **Brisas del Araguaney** | **Petare** → *Barrio Brisas del Araguaney* |
+| **Bucaral** | **Chacao** → *Barrio Bucaral* |
+| **Buen Pastor** | **Leoncio Martínez** → *Urbanización Buen Pastor* |
+| **Buena Vista** | **Fila de Mariche** → *Barrio Buena Vista*<br>**La Dolorita** → *Urbanización Buena Vista*<br>**Petare** → *Buena Vista* · *Conjunto Residencial Buena Vista* · *Sector Buena Vista* · *Urbanización Buena Vista* |
+| **Buenos Aires** | **Petare** → *Barrio Buenos Aires* |
+| **Caballo Mocho** | **Fila de Mariche** → *Barrio Caballo Mocho* |
+| **Cabeza de Tigre** | **La Dolorita** → *Barrio Cabeza de Tigre* |
+| **Cabeza del Elefante** | **Leoncio Martínez** → *Cabeza del Elefante* |
+| **Cachimbo** | **Leoncio Martínez** → *Cachimbo* |
+| **Caicaguana** | **El Hatillo** → *Caicaguana* · *Urbanización Caicaguana* |
+| **California Norte** | **Leoncio Martínez** → *Urbanización California Norte* |
+| **California Sur** | **Leoncio Martínez** → *Urbanización California Sur* |
+| **Calle Caracas** | **Chacao** → *Calle Caracas* |
+| **Calle Ernesto Blohm** | **Chacao** → *Calle Ernesto Blohm* |
+| **Calle Holanda** | **Chacao** → *Calle Holanda* |
+| **Camacaro** | **Petare** → *Barrio Camacaro* |
+| **Camburi** | **Petare** → *Camburi* |
+| **Campo Alegre** | **Chacao** → *Campo Alegre* · *Sector Campo Alegre* · *Urbanización Campo Alegre* |
+| **Campo Claro** | **Leoncio Martínez** → *Campo Claro* · *Sector Campo Claro* |
+| **Campo Neblina Etapa 1** | **Caucagüita** → *Campo Neblina Etapa 1* |
+| **Campo Neblina etapa 2** | **Caucagüita** → *Campo Neblina etapa 2* |
+| **Campo Rico** | **Petare** → *Campo Rico* · *Sector Campo Rico* |
+| **Cantarrana** | **El Hatillo** → *Parcelamiento Cantarrana* · *Sector Cantarrana* · *Urbanización Cantarrana*<br>**Nuestra Señora del Rosario de Baruta** → *Urbanización Cantarrana* |
+| **Canteras de Miranda** | **Petare** → *Urbanización Canteras de Miranda* |
+| **Capitolio** | **Leoncio Martínez** → *Barrio Capitolio* |
+| **Carimao** | **Caucagüita** → *Carimao* |
+| **Carlos Andrés Pérez** | **Caucagüita** → *Barrio Carlos Andrés Pérez* |
+| **Carpintero** | **Petare** → *Carpintero* |
+| **Casa de Campo** | **Nuestra Señora del Rosario de Baruta** → *Casa de Campo* |
+| **Casa de Tablitas** | **Petare** → *Barrio Casa de Tablitas* |
+| **Casas de Tablitas** | **Petare** → *Sector Casas de Tablitas* |
+| **Casco Histórico de Petare** | **Petare** → *Sector Casco Histórico de Petare* |
+| **Catacaguana** | **El Hatillo** → *Catacaguana* |
+| **Caucagüita** | **El Hatillo** → *Caucagüita* |
+| **Caurimare** | **El Cafetal** → *Caurimare* · *Sector Caurimare*<br>**Las Minas de Baruta** → *Sector Caurimare* |
+| **Cecilio Acosta** | **Petare** → *Barrio Cecilio Acosta* |
+| **Centro Baruta** | **Nuestra Señora del Rosario de Baruta** → *Centro Baruta* |
+| **Centro Catalán** | **Chacao** → *Centro Catalán* |
+| **Centro Caucagüita** | **Caucagüita** → *Centro Caucagüita* |
+| **Centro Ciudad Comercial Tamanaco 1ra. Etapa** | **Chacao** → *Centro Ciudad Comercial Tamanaco 1ra. Etapa* |
+| **Centro Ciudad Comercial Tamanaco 2da. Etapa** | **Chacao** → *Centro Ciudad Comercial Tamanaco 2da. Etapa* |
+| **Centro Comercial Ciudad Tamanaco** | **Chacao** → *Oficina Postal Telegráfica Centro Comercial Ciudad Tamanaco* |
+| **Centro Comercial Plaza Las Américas** | **Las Minas de Baruta** → *Centro Comercial Plaza Las Américas* |
+| **Centro El Hatillo** | **El Hatillo** → *Centro El Hatillo* |
+| **Centro Industrial Turumo** | **Petare** → *Urbanización Centro Industrial Turumo* |
+| **Centro Italo** | **Nuestra Señora del Rosario de Baruta** → *Barrio Centro Italo* |
+| **Centro La Dolorita** | **La Dolorita** → *Centro La Dolorita* |
+| **Centro Médico Docente La Trinidad** | **El Hatillo** → *Centro Médico Docente La Trinidad* |
+| **Centro Parque Boyacá** | **Leoncio Martínez** → *Centro Parque Boyacá* |
+| **Centro Plaza** | **Chacao** → *Centro Plaza* |
+| **Centro Residencial Altamira Sur** | **Chacao** → *Centro Residencial Altamira Sur* |
+| **Centro Residencial La California** | **Petare** → *Centro Residencial La California* |
+| **Cerro Verde** | **El Hatillo** → *Cerro Verde*<br>**Las Minas de Baruta** → *Sector Cerro Verde* · *Urbanización Cerro Verde* |
+| **Chacao** | **Chacao** → *Oficina Postal Telegráfica Chacao* · *Urbanización Chacao* |
+| **Chaguaramos** | **Fila de Mariche** → *Chaguaramos* |
+| **Charallavito** | **Nuestra Señora del Rosario de Baruta** → *Sector Charallavito* |
+| **Chino** | **Chacao** → *Barrio Chino* |
+| **Chuao** | **El Cafetal** → *Chuao*<br>**Las Minas de Baruta** → *Urbanización Chuao* |
+| **Cima Ávila** | **El Hatillo** → *Conjunto Cima Ávila* |
+| **Ciudad Mariches** | **La Dolorita** → *Urbanizacion Ciudad Mariches* |
+| **Club Hípico** | **Nuestra Señora del Rosario de Baruta** → *Sector Club Hípico* |
+| **Club Hípico Terraza A** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Club Hípico Terraza A* |
+| **Club Hípico Terraza D** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Club Hípico Terraza D* |
+| **Colinas 12 de Febrero** | **Petare** → *Barrio Colinas 12 de Febrero* |
+| **Colinas de Bello Monte** | **Nuestra Señora del Rosario de Baruta** → *Colinas de Bello Monte* |
+| **Colinas de Caicar** | **Nuestra Señora del Rosario de Baruta** → *Sector Colinas de Caicar* |
+| **Colinas de Caricar** | **El Hatillo** → *Colinas de Caricar* |
+| **Colinas de La California** | **Leoncio Martínez** → *Urbanización Colinas de la California*<br>**Petare** → *Colinas de La California* |
+| **Colinas de la Tahona** | **El Hatillo** → *Urbanización Colinas de la Tahona*<br>**Nuestra Señora del Rosario de Baruta** → *Colinas de la Tahona* |
+| **Colinas de Las Mercedes** | **Chacao** → *Urbanización Colinas de Las Mercedes* |
+| **Colinas de Los Chorros** | **Leoncio Martínez** → *Colinas de Los Chorros* |
+| **Colinas de Los Ruices** | **Leoncio Martínez** → *Urbanización Colinas de Los Ruices*<br>**Petare** → *Colinas de Los Ruices* · *Sector Colinas de los Ruices* |
+| **Colinas de Monagas** | **Petare** → *Barrio Colinas de Monagas* |
+| **Colinas de Parque Caiza** | **Caucagüita** → *Colinas de Parque Caiza* |
+| **Colinas de Santa Paula** | **Las Minas de Baruta** → *Urbanización Colinas de Santa Paula* |
+| **Colinas de Tamanaco** | **El Cafetal** → *Colinas de Tamanaco* |
+| **Colinas de Turumo** | **Caucagüita** → *Sector Colinas de Turumo*<br>**Petare** → *Urbanización Colinas de Turumo* |
+| **Colinas de Valle Arriba** | **Nuestra Señora del Rosario de Baruta** → *Colinas de Valle Arriba* |
+| **Colinas del Hatillo** | **El Hatillo** → *Urbanización Colinas del Hatillo* |
+| **Colinas del Tamanaco** | **Las Minas de Baruta** → *Sector Colinas del Tamanaco* · *Urbanización Colinas del Tamanaco* |
+| **Colonial de Petare** | **Petare** → *Sector Colonial de Petare* |
+| **Concresa** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Concresa* |
+| **CONJUNTO RESIDENCIAL SEBUCÁN** | **Leoncio Martínez** → *CONJUNTO RESIDENCIAL SEBUCÁN* |
+| **Coracrevi** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Coracrevi* |
+| **Corniza de Altamira** | **Chacao** → *Urbanización Corniza de Altamira* |
+| **Corralito** | **El Hatillo** → *Urbanización Corralito* |
+| **Cotoperí** | **Leoncio Martínez** → *Conjunto Residencial Cotoperí* |
+| **Country Club** | **Chacao** → *Country Club* · *Sector Country Club* |
+| **Country House** | **El Hatillo** → *Conjunto Residencial Country House* |
+| **Cuatricentenario** | **Petare** → *Barrio Cuatricentenario* |
+| **Culebrillas** | **Caucagüita** → *Culebrillas* |
+| **Cumbres de Curumo** | **Nuestra Señora del Rosario de Baruta** → *Cumbres de Curumo* · *Sector Cumbres de Curumo* |
+| **Curiacan El Peñón** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Curiacan El Peñón* |
+| **Décima Transversal** | **Leoncio Martínez** → *Barrio Décima Transversal* |
+| **del Este** | **La Dolorita** → *Zona Industrial del Este*<br>**Petare** → *Zona Industrial del Este* |
+| **Distribuidor Altamira** | **Chacao** → *Distribuidor Altamira* |
+| **Distribuidor Altamira Norte** | **Chacao** → *Distribuidor Altamira Norte* |
+| **Distribuidor Baloa** | **Petare** → *Distribuidor Baloa* |
+| **Distribuidor Boleita** | **Leoncio Martínez** → *Distribuidor Boleita* |
+| **Distribuidor Boyacá** | **Petare** → *Distribuidor Boyacá* |
+| **Distribuidor El Ciempiés** | **Chacao** → *Distribuidor El Ciempiés* |
+| **Distribuidor El Llanito** | **Petare** → *Distribuidor El Llanito* |
+| **Distribuidor El Marqués** | **Petare** → *Distribuidor El Marqués* |
+| **Distribuidor Hoyo de La Puerta** | **Nuestra Señora del Rosario de Baruta** → *Distribuidor Hoyo de La Puerta* |
+| **Distribuidor La Castellana** | **Chacao** → *Distribuidor La Castellana* |
+| **Distribuidor La Urbina** | **Petare** → *Distribuidor La Urbina* |
+| **Distribuidor Los Campitos** | **Nuestra Señora del Rosario de Baruta** → *Distribuidor Los Campitos* |
+| **Distribuidor Los Ruices** | **Leoncio Martínez** → *Distribuidor Los Ruices* |
+| **Distribuidor Mararacuay** | **Petare** → *Distribuidor Mararacuay* |
+| **Distribuidor Metropolitano** | **Petare** → *Distribuidor Metropolitano* |
+| **Distribuidor Parque Caiza** | **Caucagüita** → *Distribuidor Parque Caiza* |
+| **Distribuidor Prados del Este** | **Nuestra Señora del Rosario de Baruta** → *Distribuidor Prados del Este* |
+| **Distribuidor Santa Cecilia** | **Leoncio Martínez** → *Distribuidor Santa Cecilia* |
+| **Distribuidor Santa Fe** | **Nuestra Señora del Rosario de Baruta** → *Distribuidor Santa Fe* |
+| **Distribuidor Santa María** | **Petare** → *Distribuidor Santa María* |
+| **Distribuidor Sebucán** | **Leoncio Martínez** → *Distribuidor Sebucán* |
+| **Don Bosco** | **Leoncio Martínez** → *Parcelamiento Don Bosco* · *Urbanización Don Bosco* |
+| **Dos Banderas** | **Petare** → *Dos Banderas* |
+| **Duple** | **El Hatillo** → *Urbanización Duple* |
+| **Edificios La Montaña** | **Nuestra Señora del Rosario de Baruta** → *Edificios La Montaña* |
+| **El Aguacate** | **Caucagüita** → *Barrio El Aguacate* · *El Aguacate*<br>**El Hatillo** → *El Aguacate* |
+| **El Araguaney** | **Caucagüita** → *Conjunto Residencial El Araguaney*<br>**El Hatillo** → *Urbanización El Araguaney* |
+| **El Arroyo** | **El Hatillo** → *El Arroyo* |
+| **El Banquito** | **Chacao** → *El Banquito* |
+| **El Barrialito** | **Nuestra Señora del Rosario de Baruta** → *Barrio El Barrialito* |
+| **El Bosque** | **Chacao** → *El Bosque* · *Sector El Bosque* |
+| **El Bosque de la Virgen** | **Nuestra Señora del Rosario de Baruta** → *Barrio El Bosque de la Virgen* |
+| **El Brazón** | **Caucagüita** → *Barrio El Brazón* |
+| **El Cafetal** | **Las Minas de Baruta** → *Sector El Cafetal* · *Urbanización El Cafetal* |
+| **El Calvario** | **El Hatillo** → *Barrio El Calvario* · *El Calvario*<br>**Petare** → *El Calvario* |
+| **El Campito** | **Petare** → *Sector El Campito* |
+| **El Carmen** | **Caucagüita** → *Barrio El Carmen*<br>**El Hatillo** → *El Carmen* · *Urbanización El Carmen*<br>**Nuestra Señora del Rosario de Baruta** → *Barrio El Carmen*<br>**Petare** → *Barrio El Carmen* |
+| **El Carpintero** | **Petare** → *Barrio El Carpintero* |
+| **El Caruto** | **Petare** → *Sector El Caruto* |
+| **El Castaño** | **Caucagüita** → *El Castaño* |
+| **El Cedral** | **El Hatillo** → *El Cedral* |
+| **El Cedralito** | **Petare** → *Sector El Cedralito* |
+| **El Cenicero** | **La Dolorita** → *Barrio El Cenicero* |
+| **El Cerrito** | **Petare** → *Barrio El Cerrito* |
+| **El Cigarral** | **El Hatillo** → *El Cigarral* · *Urbanización El Cigarral* |
+| **El Convento I** | **Leoncio Martínez** → *Sector El Convento I* |
+| **El Convento II** | **Leoncio Martínez** → *Sector El Convento II* |
+| **El Convento III** | **Leoncio Martínez** → *Sector El Convento III* |
+| **El Corozo** | **Leoncio Martínez** → *Conjunto Residencial El Corozo* |
+| **El Cují** | **Caucagüita** → *Barrio El Cují*<br>**Petare** → *Barrio El Cují* |
+| **El Dorado** | **Chacao** → *Sector El Dorado*<br>**Petare** → *Barrio El Dorado* |
+| **El Edén** | **Petare** → *El Edén* |
+| **El Encantado** | **El Hatillo** → *El Encantado* |
+| **El Encantado IV** | **El Hatillo** → *Conjunto Residencial El Encantado IV* |
+| **El Encanto** | **Petare** → *Barrio El Encanto* |
+| **El Esfuerzo** | **Petare** → *Barrio El Esfuerzo* |
+| **El Gavilán** | **Nuestra Señora del Rosario de Baruta** → *Urbanización El Gavilán* |
+| **El Güire** | **Nuestra Señora del Rosario de Baruta** → *Barrio El Güire* · *El Güire* |
+| **El Hato** | **Petare** → *El Hato* |
+| **El Horno** | **Petare** → *Sector El Horno* |
+| **El Latón** | **Caucagüita** → *El Latón* |
+| **El Limón** | **Las Minas de Baruta** → *Conjunto Residencial El Limón* |
+| **El Limoncito** | **La Dolorita** → *Sector El Limoncito* |
+| **El Llanito** | **Petare** → *El Llanito* · *Sector El Llanito* · *Urbanización El Llanito* |
+| **El Lucero** | **Fila de Mariche** → *Barrio El Lucero* |
+| **El Manantial** | **El Hatillo** → *Barrio El Manantial* |
+| **El Manguito** | **Petare** → *Barrio El Manguito* |
+| **El Marqués** | **Leoncio Martínez** → *Urbanización El Marqués*<br>**Petare** → *Sector El Marqués* |
+| **El Marqués Norte** | **Petare** → *El Marqués Norte* |
+| **El Marqués Sur** | **Petare** → *El Marqués Sur* |
+| **El Matadero** | **Petare** → *Barrio El Matadero* |
+| **El Mijao** | **El Hatillo** → *El Mijao* |
+| **El Milagro** | **Caucagüita** → *Barrio El Milagro* · *El Milagro* |
+| **El Mirador** | **Las Minas de Baruta** → *Sector El Mirador*<br>**Petare** → *Urbanización El Mirador* |
+| **El Mirador del Cafetal** | **Petare** → *Barrio El Mirador del Cafetal* |
+| **El Mirador del Este** | **Petare** → *Urbanización El Mirador del Este* |
+| **El Morro** | **Petare** → *Barrio El Morro* · *Conjunto Residencial El Morro* |
+| **El Mosquito** | **Petare** → *Barrio El Mosquito* |
+| **El Naranjal** | **Las Minas de Baruta** → *Conjunto Residencial El Naranjal*<br>**Nuestra Señora del Rosario de Baruta** → *Conjunto Residencial El Naranjal* |
+| **El Nazareno** | **Petare** → *Barrio El Nazareno* |
+| **El Parque** | **El Hatillo** → *Urbanización El Parque*<br>**Fila de Mariche** → *El Parque* |
+| **El Patio** | **El Hatillo** → *Urbanización El Patio* |
+| **El Pedregal** | **Chacao** → *Barrio El Pedregal* · *El Pedregal* · *Sector El Pedregal* · *Urbanización El Pedregal* |
+| **El Peñón** | **Caucagüita** → *Barrio El Peñón*<br>**Nuestra Señora del Rosario de Baruta** → *Barrio El Peñón* · *El Peñón* · *Sector El Peñón* · *Urbanización El Peñón* |
+| **El Picacho** | **El Hatillo** → *El Picacho* |
+| **El Placer** | **Caucagüita** → *Barrio El Placer* · *El Placer*<br>**Nuestra Señora del Rosario de Baruta** → *El Placer* · *Sector El Placer* · *Urbanización El Placer*<br>**Petare** → *Barrio El Placer* |
+| **El Placer de María** | **Nuestra Señora del Rosario de Baruta** → *Barrio El Placer de María* · *Urbanización El Placer de María* |
+| **El Portal** | **El Hatillo** → *Urbanización El Portal* |
+| **El Portal de la Lagunita** | **El Hatillo** → *Urbanización El Portal de la Lagunita* |
+| **El Portal del Hatillo** | **El Hatillo** → *Urbanización El Portal del Hatillo* |
+| **El Progreso** | **Nuestra Señora del Rosario de Baruta** → *Urbanización El Progreso*<br>**Petare** → *Barrio El Progreso* |
+| **El Puente** | **Fila de Mariche** → *El Puente*<br>**La Dolorita** → *El Puente* |
+| **El Quemadero** | **Petare** → *Barrio El Quemadero* |
+| **El Ramal** | **Petare** → *Barrio El Ramal* |
+| **El Refugio** | **Nuestra Señora del Rosario de Baruta** → *Sector El Refugio* |
+| **El Respiro** | **Nuestra Señora del Rosario de Baruta** → *El Respiro*<br>**Petare** → *El Respiro* |
+| **El Retiro** | **Chacao** → *El Retiro* · *Sector El Retiro* |
+| **El Rodeo** | **Caucagüita** → *Sector El Rodeo*<br>**La Dolorita** → *Barrio El Rodeo* |
+| **El Rosal** | **Chacao** → *El Rosal* · *Sector El Rosal* · *Urbanización El Rosal* |
+| **El Rosario** | **Fila de Mariche** → *El Rosario*<br>**Leoncio Martínez** → *El Rosario* · *Parcelamiento El Rosario* · *Sector El Rosario* · *Urbanización El Rosario*<br>**Nuestra Señora del Rosario de Baruta** → *Sector El Rosario* |
+| **El Sebucán** | **Leoncio Martínez** → *Urbanización El Sebucán* |
+| **El Sitio** | **La Dolorita** → *Zona Industrial El Sitio* |
+| **El Sol** | **Fila de Mariche** → *Barrio El Sol* |
+| **El Solar de El Hatillo** | **El Hatillo** → *El Solar de El Hatillo* |
+| **El Tanque** | **Petare** → *Barrio El Tanque* · *El Tanque* |
+| **"El timón del gigante"** | **Caucagüita** → *"El timón del gigante"* |
+| **El Topo** | **Caucagüita** → *El Topo* |
+| **El Urquijo** | **Petare** → *El Urquijo* |
+| **El Volcán** | **Nuestra Señora del Rosario de Baruta** → *Urbanización El Volcán* |
+| **El Winche** | **Fila de Mariche** → *Barrio El Winche* |
+| **Enrique Mendoza** | **Caucagüita** → *Barrio Enrique Mendoza* |
+| **Escampadero** | **Nuestra Señora del Rosario de Baruta** → *Escampadero* |
+| **Esmeralda Club** | **Nuestra Señora del Rosario de Baruta** → *Conjunto Residencial Esmeralda Club* |
+| **Estacion 24** | **Fila de Mariche** → *Estacion 24* |
+| **Estado Leal** | **Chacao** → *Estado Leal* · *Sector Estado Leal* |
+| **Estancia de Oritopo** | **El Hatillo** → *Urbanización Estancia de Oritopo* |
+| **Filas de Mariche** | **Fila de Mariche** → *Filas de Mariche* |
+| **Finca Túnel Falso** | **Nuestra Señora del Rosario de Baruta** → *Finca Túnel Falso* |
+| **Fundación Mendoza** | **Petare** → *Barrio Fundación Mendoza* |
+| **Fundo Caiza** | **Caucagüita** → *Sector Fundo Caiza* |
+| **Galindo** | **Petare** → *Galindo* |
+| **Gavilán** | **El Hatillo** → *Gavilán*<br>**Nuestra Señora del Rosario de Baruta** → *Urbanización Gavilán* |
+| **GMVV** | **Petare** → *GMVV* |
+| **Goering** | **Petare** → *Goering* |
+| **Gran Jacamacaro** | **Petare** → *Barrio Gran Jacamacaro* |
+| **Granja Barlovento** | **La Dolorita** → *Granja Barlovento* |
+| **Granjas Barlovento** | **Petare** → *Sector Granjas Barlovento* |
+| **Guaicay** | **Las Minas de Baruta** → *Urbanización Guaicay*<br>**Nuestra Señora del Rosario de Baruta** → *Urbanización Guaicay* |
+| **Guaicoco** | **La Dolorita** → *Sector Guaicoco*<br>**Petare** → *Barrio Guaicoco* · *Sector Guaicoco* · *Urbanización Guaicoco* |
+| **Guanasmita** | **Caucagüita** → *Guanasmita* |
+| **Guanasnita** | **La Dolorita** → *Parcelamiento Guanasnita* |
+| **Guayabito** | **Fila de Mariche** → *Guayabito* |
+| **Guzmán Blanco** | **Petare** → *Barrio Guzmán Blanco* |
+| **Hacienda Carimao** | **Caucagüita** → *Hacienda Carimao*<br>**Petare** → *Hacienda Carimao* |
+| **Hacienda El Encantado** | **Caucagüita** → *Hacienda El Encantado* |
+| **Hacienda El Samán** | **El Hatillo** → *Hacienda El Samán* |
+| **Hacienda El Sitio** | **La Dolorita** → *Hacienda El Sitio* |
+| **Hacienda Guárico** | **Caucagüita** → *Hacienda Guárico* |
+| **Hacienda La Candelaria** | **La Dolorita** → *Hacienda La Candelaria*<br>**Petare** → *Hacienda La Candelaria* |
+| **Hacienda La Estancia** | **La Dolorita** → *Hacienda La Estancia* |
+| **Hacienda La India** | **El Hatillo** → *Hacienda La India* |
+| **Hacienda La Laguna** | **Caucagüita** → *Hacienda La Laguna* |
+| **Hacienda La Lagunita** | **El Hatillo** → *Conjunto Residencial Hacienda La Lagunita* |
+| **Hacienda La Lira** | **La Dolorita** → *Hacienda La Lira* |
+| **Hacienda Las Marías** | **La Dolorita** → *Hacienda Las Marías* · *Urbanización Hacienda Las Marías*<br>**Petare** → *Hacienda Las Marías* |
+| **Hacienda Las Mercedes** | **Caucagüita** → *Hacienda Las Mercedes* |
+| **Hacienda Los Guayabitos** | **Caucagüita** → *Hacienda Los Guayabitos* |
+| **Hacienda Macanillal** | **Caucagüita** → *Hacienda Macanillal* |
+| **Hacienda Mi Refugio** | **La Dolorita** → *Hacienda Mi Refugio* |
+| **Hacienda Negrón** | **La Dolorita** → *Hacienda Negrón* |
+| **Hacienda Parque Caiza** | **Petare** → *Hacienda Parque Caiza* |
+| **Hatillo Hill** | **El Hatillo** → *Conjunto Hatillo Hill* |
+| **Hatillo Tepui** | **El Hatillo** → *Conjunto Hatillo Tepui* |
+| **Hidra** | **El Hatillo** → *Urbanización Hidra* |
+| **Hijas de San Pablo** | **El Hatillo** → *Urbanización Hijas de San Pablo* |
+| **Horizonte** | **Leoncio Martínez** → *Sector Horizonte*<br>**Petare** → *Horizonte* · *Sector Horizonte* |
+| **Hortensia** | **Petare** → *Barrio Hortensia* |
+| **Hoyo de La Puerta** | **Nuestra Señora del Rosario de Baruta** → *Hoyo de La Puerta*<br>**Petare** → *Barrio Hoyo de la Puerta* |
+| **Hoyo de Las Tapias** | **Caucagüita** → *Sector Hoyo de Las Tapias* |
+| **Humboltd** | **Nuestra Señora del Rosario de Baruta** → *Conjunto Residencial Humboltd* |
+| **II La Bombilla** | **Petare** → *Sector II La Bombilla* |
+| **III La Bombilla** | **Petare** → *Sector III La Bombilla* |
+| **Industrial Caucagüita** | **Caucagüita** → *Sector Industrial Caucagüita* |
+| **Industrial El Cedralito** | **Petare** → *Conjunto Industrial El Cedralito* |
+| **Isaías Medina Angarita** | **Petare** → *Barrio Isaías Medina Angarita* |
+| **Izcanagua** | **Petare** → *Sector Izcanagua* |
+| **Jardín Bello Campo** | **Chacao** → *Conjunto Residencial Jardín Bello Campo* |
+| **José Antonio Sucre** | **Petare** → *Barrio José Antonio Sucre* |
+| **José Félix Rivas** | **Petare** → *Barrio José Félix Rivas* |
+| **José Félix Rivas Zona 1** | **Petare** → *Barrio José Félix Rivas Zona 1* |
+| **José Félix Rivas Zona 2** | **Petare** → *Barrio José Félix Rivas Zona 2* |
+| **José Félix Rivas Zona 5** | **Petare** → *Barrio José Félix Rivas Zona 5* |
+| **José Félix Rivas Zona 7** | **Petare** → *Barrio José Félix Rivas Zona 7* |
+| **José Félix Rivas Zona 9** | **Petare** → *Barrio José Félix Rivas Zona 9* |
+| **José Gregorio Hernández** | **Petare** → *Conjunto Residencial José Gregorio Hernández* |
+| **José María Vargas** | **Nuestra Señora del Rosario de Baruta** → *Sector José María Vargas* |
+| **Julián Blanco** | **Petare** → *Barrio Julián Blanco* |
+| **Krom I** | **Las Minas de Baruta** → *Conjunto Krom I* |
+| **Krom II** | **Las Minas de Baruta** → *Conjunto Krom II* |
+| **La Alameda** | **Nuestra Señora del Rosario de Baruta** → *La Alameda* · *Urbanización La Alameda* |
+| **La Alcabala** | **Petare** → *Barrio La Alcabala* |
+| **La Bombilla** | **Petare** → *Barrio La Bombilla* |
+| **La Bonita** | **Nuestra Señora del Rosario de Baruta** → *La Bonita* · *Urbanización La Bonita* |
+| **La Bonita Guaicay** | **Nuestra Señora del Rosario de Baruta** → *Urbanización La Bonita Guaicay* |
+| **La Boyera** | **El Hatillo** → *Conjunto Residencial La Boyera* · *La Boyera* · *Urbanización La Boyera* |
+| **La Cabaña** | **El Hatillo** → *La Cabaña* |
+| **La California Norte** | **Petare** → *La California Norte* · *Sector La California Norte* |
+| **La California Sur** | **Petare** → *La California Sur* · *Sector La California Sur* |
+| **La Candelaria** | **Petare** → *Barrio La Candelaria* |
+| **La Carlota** | **Leoncio Martínez** → *Sector La Carlota* |
+| **La Casona** | **Petare** → *Barrio La Casona* |
+| **La Castellana** | **Chacao** → *Barrio La Castellana* · *La Castellana* · *Sector La Castellana* · *Urbanización La Castellana* |
+| **La Ceiba** | **El Hatillo** → *Conjunto La Ceiba*<br>**Petare** → *Sector La Ceiba* |
+| **La Chivera** | **El Hatillo** → *Urbanización La Chivera* |
+| **La Ciudadela** | **Nuestra Señora del Rosario de Baruta** → *Sector La Ciudadela* · *Urbanización La Ciudadela* |
+| **La Constancia** | **Fila de Mariche** → *La Constancia* |
+| **La Contraloría** | **Caucagüita** → *Barrio La Contraloría* |
+| **La Cortada** | **Petare** → *La Cortada* |
+| **La Cruz** | **Chacao** → *Barrio La Cruz*<br>**Nuestra Señora del Rosario de Baruta** → *Barrio La Cruz*<br>**Petare** → *Barrio La Cruz* |
+| **La Cuesta** | **Caucagüita** → *Barrio La Cuesta*<br>**Fila de Mariche** → *Barrio La Cuesta* |
+| **La Dolorita 1ra Entrada** | **La Dolorita** → *Barrio La Dolorita 1ra Entrada* |
+| **La Dolorita 2da Entrada** | **La Dolorita** → *Barrio La Dolorita 2da Entrada* |
+| **La Esmeralda** | **El Hatillo** → *Urbanización La Esmeralda* |
+| **La Esperanza** | **Fila de Mariche** → *Barrio La Esperanza* |
+| **La Estancia** | **La Dolorita** → *La Estancia*<br>**Petare** → *Barrio La Estancia* |
+| **La Estrella** | **El Hatillo** → *Sector La Estrella* |
+| **La Fe** | **Petare** → *Conjunto Residencial La Fe* |
+| **La Fénix** | **La Dolorita** → *Barrio La Fénix*<br>**Petare** → *Barrio La Fénix* |
+| **La Florencia** | **Petare** → *Sector La Florencia* |
+| **La Floresta** | **Caucagüita** → *La Floresta*<br>**Chacao** → *La Floresta* · *Sector La Floresta* · *Urbanización La Floresta* |
+| **La Guairita** | **Las Minas de Baruta** → *Urbanización La Guairita* |
+| **La Hacienda** | **Caucagüita** → *Urbanización La Hacienda* |
+| **La Horquilla** | **Petare** → *Barrio La Horquilla* |
+| **La Hoyadita** | **Nuestra Señora del Rosario de Baruta** → *La Hoyadita* |
+| **La Iglesia** | **Nuestra Señora del Rosario de Baruta** → *Sector La Iglesia* |
+| **La Industria** | **Petare** → *La Industria* |
+| **La Julia** | **Petare** → *La Julia* |
+| **La Lagunita** | **El Hatillo** → *La Lagunita* · *Sector La Lagunita* · *Urbanización La Lagunita*<br>**Fila de Mariche** → *La Lagunita*<br>**Leoncio Martínez** → *Barrio La Lagunita*<br>**Petare** → *Barrio La Lagunita* |
+| **La Lagunita Country Club** | **El Hatillo** → *Urbanización La Lagunita Country Club* |
+| **La Libertad** | **El Hatillo** → *La Libertad*<br>**Petare** → *Barrio La Libertad* |
+| **La Limonera** | **Nuestra Señora del Rosario de Baruta** → *Conjunto Residencial La Limonera* · *La Limonera* · *Sector La Limonera* |
+| **La Línea** | **Petare** → *Barrio La Línea* |
+| **La Lira** | **Fila de Mariche** → *La Lira*<br>**La Dolorita** → *Barrio La Lira* · *Urbanización La Lira* |
+| **La Loma** | **Nuestra Señora del Rosario de Baruta** → *Sector La Loma* |
+| **La Lomita** | **El Hatillo** → *La Lomita* |
+| **La Lucha** | **Leoncio Martínez** → *Barrio La Lucha* |
+| **La Manguera** | **Chacao** → *Barrio La Manguera* |
+| **La Mapora** | **El Hatillo** → *Conjunto La Mapora* |
+| **La Mata** | **Nuestra Señora del Rosario de Baruta** → *Barrio La Mata* |
+| **La Meceta** | **Nuestra Señora del Rosario de Baruta** → *Urbanización La Meceta* |
+| **La Minita** | **Caucagüita** → *La Minita* |
+| **La Montaña** | **El Hatillo** → *La Montaña* |
+| **La Montañita** | **Petare** → *Barrio La Montañita* |
+| **La Naya** | **Nuestra Señora del Rosario de Baruta** → *Zona Industrial La Naya* |
+| **La Orquídea** | **El Hatillo** → *Parcelamiento La Orquídea* |
+| **La Palomera** | **Nuestra Señora del Rosario de Baruta** → *Barrio La Palomera* |
+| **La Parrilla** | **Petare** → *Barrio La Parrilla* |
+| **La Peña-Las Mercedes** | **Las Minas de Baruta** → *Sector La Peña-Las Mercedes* |
+| **La Planada** | **Petare** → *Barrio La Planada* |
+| **La Plegaria** | **El Hatillo** → *La Plegaria* |
+| **La Pomarrosa** | **Petare** → *Barrio La Pomarrosa* |
+| **La Pradera** | **Petare** → *La Pradera* |
+| **La Rubí** | **Petare** → *Barrio La Rubí* |
+| **La Suiza** | **Petare** → *Barrio La Suiza* |
+| **La Tahona** | **El Hatillo** → *Urbanización La Tahona*<br>**Nuestra Señora del Rosario de Baruta** → *La Tahona* |
+| **La Tiama** | **El Hatillo** → *La Tiama* |
+| **La Toma** | **El Hatillo** → *Sector La Toma* |
+| **La Trinidad** | **Las Minas de Baruta** → *Urbanización La Trinidad*<br>**Nuestra Señora del Rosario de Baruta** → *La Trinidad* · *Sector La Trinidad* · *Urbanización La Trinidad* · *Zona Industrial La Trinidad* |
+| **La Unión** | **El Hatillo** → *La Unión* · *Sector La Unión* · *Urbanización La Unión* |
+| **La Urbina** | **Petare** → *La Urbina* · *Sector La Urbina* · *Zona Industrial La Urbina* |
+| **La Urbina Norte** | **Petare** → *Urbanización La Urbina Norte* |
+| **La Vega** | **Fila de Mariche** → *La Vega* |
+| **La Vega de Petare** | **Petare** → *Urbanización La Vega de Petare* |
+| **La Virgen** | **Petare** → *Sector La Virgen* |
+| **La Vizcaya** | **Las Minas de Baruta** → *Urbanización La Vizcaya* |
+| **La Vuelta** | **Petare** → *Barrio La Vuelta* |
+| **La Vuelta al Aguila** | **Fila de Mariche** → *Barrio La Vuelta al Aguila* |
+| **Las Adjuntas** | **Nuestra Señora del Rosario de Baruta** → *Las Adjuntas* |
+| **Las Brisas** | **Petare** → *Barrio Las Brisas* |
+| **Las Brisas de Petare** | **Petare** → *Barrio Las Brisas de Petare* |
+| **Las Canteras** | **El Hatillo** → *Las Canteras* |
+| **Las Casitas** | **Petare** → *Barrio Las Casitas* · *Las Casitas* · *Sector Las Casitas* |
+| **Las Cocuizas** | **Nuestra Señora del Rosario de Baruta** → *Las Cocuizas* |
+| **Las Danielas** | **Las Minas de Baruta** → *Conjunto Residencial Las Danielas* |
+| **Las Esmeraldas** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Las Esmeraldas* |
+| **Las Flores** | **El Hatillo** → *Urbanización Las Flores* |
+| **Las Lomas** | **El Hatillo** → *Las Lomas* |
+| **Las Lomas Las Minas** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Las Lomas Las Minas* |
+| **Las Lomas Las Minas de Guaicay** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Las Lomas Las Minas de Guaicay* |
+| **Las Marías** | **El Hatillo** → *Barrio Las Marías* · *Las Marías* · *Sector Las Marías* · *Urbanización Las Marías* |
+| **Las Matas** | **El Hatillo** → *Las Matas* |
+| **Las Mercedes** | **Chacao** → *Sector Las Mercedes* · *Urbanización Las Mercedes*<br>**Las Minas de Baruta** → *Sector Las Mercedes*<br>**Nuestra Señora del Rosario de Baruta** → *Las Mercedes* |
+| **Las Mesetas** | **Las Minas de Baruta** → *Las Mesetas* · *Urbanización Las Mesetas* |
+| **Las Minas** | **Las Minas de Baruta** → *Sector Las Minas* · *Urbanización Las Minas*<br>**Nuestra Señora del Rosario de Baruta** → *Barrio Las Minas* |
+| **Las Minas de Baruta** | **Las Minas de Baruta** → *Urbanización Las Minas de Baruta* |
+| **Las Minitas** | **Las Minas de Baruta** → *Las Minitas* |
+| **Las Minitas Arriba** | **Nuestra Señora del Rosario de Baruta** → *Barrio Las Minitas Arriba* |
+| **Las Praderas de Petare** | **Petare** → *Barrio Las Praderas de Petare* |
+| **Las Rocas** | **El Hatillo** → *Conjunto Residencial Las Rocas* |
+| **Las Tápias** | **Fila de Mariche** → *Barrio Las Tápias* |
+| **Las Torres** | **Petare** → *Barrio Las Torres* · *Conjunto Residencial Las Torres* |
+| **Las Vegas** | **Petare** → *Barrio Las Vegas* |
+| **Las Vegas de Petare** | **Petare** → *Urbanización Las Vegas de Petare* |
+| **Las Villas** | **Las Minas de Baruta** → *Conjunto Residencial Las Villas* |
+| **Lebrun** | **Petare** → *Lebrún* · *Urbanización Lebrún* · *Zona Industrial Lebrun* |
+| **Leoncio Martínez** | **Petare** → *Urbanización Leoncio Martínez* |
+| **Lindero municipal** | **Nuestra Señora del Rosario de Baruta** → *Lindero municipal* |
+| **Llano Verde** | **Las Minas de Baruta** → *Urbanización Llano Verde* |
+| **Loma Alta** | **El Hatillo** → *Conjunto Residencial Loma Alta*<br>**Petare** → *Conjunto Residencial Loma Alta* |
+| **Loma Azul** | **El Cafetal** → *Loma Azul* |
+| **Loma Larga** | **El Hatillo** → *Loma Larga* · *Urbanización Loma Larga*<br>**Fila de Mariche** → *Loma Larga* |
+| **Loma Larga de Oritopo** | **El Hatillo** → *Urbanización Loma Larga de Oritopo* |
+| **Loma Linda** | **El Hatillo** → *Loma Linda* |
+| **Lomas Baja** | **Las Minas de Baruta** → *Urbanización Lomas Baja* |
+| **Lomas Club Hípico** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Lomas Club Hípico* |
+| **Lomas de Alto Prado** | **Nuestra Señora del Rosario de Baruta** → *Lomas de Alto Prado* · *Sector Lomas de Alto Prado* |
+| **Lomas de Chispia** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Lomas de Chispia* |
+| **Lomas de Chuao** | **El Cafetal** → *Lomas de Chuao*<br>**Las Minas de Baruta** → *Sector Lomas de Chuao* |
+| **Lomas de Guaicoco** | **La Dolorita** → *Lomas de Guaicoco* |
+| **Lomas de La Alameda** | **Nuestra Señora del Rosario de Baruta** → *Lomas de la Alameda* · *Urbanización Lomas de La Alameda* |
+| **Lomas de La Lagunita** | **El Hatillo** → *Lomas de La Lagunita* · *Urbanización Lomas de La Lagunita* |
+| **Lomas de La Trinidad** | **Las Minas de Baruta** → *Sector Lomas de La Trinidad* · *Urbanización Lomas de La Trinidad*<br>**Nuestra Señora del Rosario de Baruta** → *Urbanización Lomas de La Trinidad* |
+| **Lomas de Las Mercedes** | **Las Minas de Baruta** → *Urbanización Lomas de Las Mercedes* |
+| **Lomas de Los Campitos** | **Nuestra Señora del Rosario de Baruta** → *Lomas de Los Campitos* |
+| **Lomas de Los Chorros** | **Leoncio Martínez** → *Urbanización Lomas de Los Chorros* |
+| **Lomas de Maturín** | **Las Minas de Baruta** → *Urbanización Lomas de Maturín* |
+| **Lomas de San Román** | **Las Minas de Baruta** → *Urbanización Lomas de San Román* |
+| **Lomas de Santa Marta** | **Las Minas de Baruta** → *Urbanización Lomas de Santa Marta* |
+| **Lomas de Sartenejas** | **Nuestra Señora del Rosario de Baruta** → *Lomas de Sartenejas* |
+| **Lomas del Águila** | **Nuestra Señora del Rosario de Baruta** → *Barrio Lomas del Águila* |
+| **Lomas del Ávila** | **Petare** → *Barrio Lomas del Ávila* · *Lomas del Ávila* · *Sector Lomas del Ávila* |
+| **Lomas del Club Hípico** | **Nuestra Señora del Rosario de Baruta** → *Sector Lomas del Club Hípico* |
+| **Lomas del Halcón** | **El Hatillo** → *Urbanización Lomas del Halcón* |
+| **Lomas del Mirador** | **El Cafetal** → *Lomas del Mirador*<br>**Las Minas de Baruta** → *Sector Lomas del Mirador* · *Urbanización Lomas del Mirador* |
+| **Lomas del Sol** | **El Hatillo** → *Lomas del Sol* |
+| **Los Aguacaticos** | **Caucagüita** → *Sector Los Aguacaticos* |
+| **Los Aleros** | **Leoncio Martínez** → *Conjunto Residencial Los Aleros* |
+| **Los Bomberos** | **Petare** → *Parcelamiento Los Bomberos* |
+| **Los Búfalos** | **El Hatillo** → *Los Búfalos* |
+| **Los Cables** | **El Hatillo** → *Los Cables* |
+| **Los Cacaos** | **El Hatillo** → *Urbanización Los Cacaos* |
+| **Los Campitos** | **Nuestra Señora del Rosario de Baruta** → *Los Campitos* · *Sector Los Campitos* |
+| **Los Castaños** | **Leoncio Martínez** → *Los Castaños* |
+| **Los Chaguaramos** | **Fila de Mariche** → *Barrio Los Chaguaramos* |
+| **Los Chalets** | **El Hatillo** → *Urbanización Los Chalets* |
+| **Los Chorros** | **Leoncio Martínez** → *Conjunto Residencial Los Chorros* · *Los Chorros* · *Sector Los Chorros* |
+| **Los Conde** | **Petare** → *Los Conde* |
+| **Los Cortijos** | **Leoncio Martínez** → *Los Cortijos* · *Sector Los Cortijos* |
+| **Los Cortijos de Lourdes** | **Leoncio Martínez** → *Urbanización Los Cortijos de Lourdes* |
+| **Los Curtidores** | **El Hatillo** → *Urbanización Los Curtidores* |
+| **Los Dos Caminos** | **Leoncio Martínez** → *Los Dos Caminos* · *Sector Los Dos Caminos* |
+| **Los Fernández** | **Leoncio Martínez** → *Barrio Los Fernández* |
+| **Los Geranios** | **El Hatillo** → *Los Geranios* · *Urbanización Los Geranios* |
+| **Los Guayabitos** | **Nuestra Señora del Rosario de Baruta** → *Los Guayabitos* · *Sector Los Guayabitos* · *Urbanización Los Guayabitos* |
+| **Los Háticos** | **La Dolorita** → *Parcelamiento Los Háticos*<br>**Petare** → *Barrio Los Háticos* · *Urbanización Los Háticos* |
+| **Los Hormigueros** | **Caucagüita** → *Los Hormigueros* |
+| **Los Jabillos** | **Fila de Mariche** → *Los Jabillos* |
+| **Los Mangos** | **Leoncio Martínez** → *Los Mangos* |
+| **Los Manguitos** | **Nuestra Señora del Rosario de Baruta** → *Barrio Los Manguitos* |
+| **Los Naranjos** | **El Hatillo** → *Caserío Los Naranjos* · *Los Naranjos* · *Urbanización Los Naranjos*<br>**Las Minas de Baruta** → *Sector Los Naranjos* |
+| **Los Naranjos Humboldt** | **El Hatillo** → *Conjunto Los Naranjos Humboldt* |
+| **Los Nardos** | **Petare** → *Urbanización Los Nardos* |
+| **Los Palos Grandes** | **Chacao** → *Los Palos Grandes* · *Sector Los Palos Grandes* · *Urbanización Los Palos Grandes* |
+| **Los Páramos** | **El Hatillo** → *Los Páramos* |
+| **Los Picapiedras** | **Nuestra Señora del Rosario de Baruta** → *Barrio Los Picapiedras* |
+| **Los Pinos** | **El Hatillo** → *Los Pinos* · *Urbanización Los Pinos* |
+| **Los Pomelos** | **El Hatillo** → *Los Pomelos*<br>**Las Minas de Baruta** → *Sector Los Pomelos* · *Urbanización Los Pomelos* |
+| **Los Riscos** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Los Riscos* |
+| **Los Robles** | **Caucagüita** → *Urbanización Los Robles*<br>**El Hatillo** → *Los Robles* · *Urbanización Los Robles* |
+| **Los Ruices** | **Leoncio Martínez** → *Los Ruices* · *Sector Los Ruices* · *Zona Industrial Los Ruices*<br>**Petare** → *Zona Industrial Los Ruices* |
+| **Los Ruices Sur** | **Leoncio Martínez** → *Los Ruices Sur* · *Urbanización Los Ruices Sur* |
+| **Los Samanes** | **Las Minas de Baruta** → *Los Samanes* · *Sector Los Samanes* · *Urbanización Los Samanes* |
+| **Los sueños de Hugo Chavez** | **Caucagüita** → *Los sueños de Hugo Chavez* |
+| **Los Trailer** | **Caucagüita** → *Barrio Los Trailer* |
+| **Los Trailes** | **Caucagüita** → *Barrio Los Trailes* |
+| **Luis Herrera Campins** | **Caucagüita** → *Barrio Luis Herrera Campins* |
+| **Maca** | **Petare** → *Sector Maca* |
+| **Macaracuay** | **Leoncio Martínez** → *Sector Macaracuay*<br>**Petare** → *Macaracuay* |
+| **Mampote** | **Petare** → *Urbanización Mampote* |
+| **Manantial** | **Nuestra Señora del Rosario de Baruta** → *Conjunto Residencial Manantial* |
+| **Manuel González Carvajal** | **Caucagüita** → *Urbanización Manuel González Carvajal* |
+| **Manzanares** | **Nuestra Señora del Rosario de Baruta** → *Sector Manzanares* · *Urbanización Manzanares* |
+| **Manzanares Este** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Manzanares Este* |
+| **Manzanares Oeste** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Manzanares Oeste* |
+| **Margarita** | **El Hatillo** → *Margarita* |
+| **María Bernarda Pérez** | **Leoncio Martínez** → *Barrio María Bernarda Pérez* |
+| **Mata de Coco** | **Chacao** → *Sector Mata de Coco* |
+| **Maturín** | **Caucagüita** → *Urbanización Maturín* |
+| **Medina Angarita** | **Petare** → *Barrio Medina Angarita* |
+| **Mediterráneo** | **El Hatillo** → *Conjunto Residencial Mediterráneo* · *Urbanización Mediterráneo* |
+| **Mesuca** | **Petare** → *Barrio Mesuca* · *Sector Mesuca* |
+| **Metropolitano** | **Petare** → *Barrio Metropolitano* |
+| **Mezteatis** | **Petare** → *Mezteatis* |
+| **Mi Refugio** | **Caucagüita** → *Barrio Mi Refugio* |
+| **Minas de Baruta** | **Las Minas de Baruta** → *Barrio Minas de Baruta* |
+| **Miraclara** | **El Hatillo** → *Urbanización Miraclara* |
+| **Mirador del Cafetal** | **Petare** → *Barrio Mirador del Cafetal* |
+| **Miranda** | **Caucagüita** → *Urbanización Miranda*<br>**Petare** → *Urbanización Miranda* |
+| **Mirávila** | **Caucagüita** → *Urbanización Mirávila* |
+| **Mis Encantos** | **Chacao** → *Urbanización Mis Encantos* |
+| **Monseñor Arias** | **Fila de Mariche** → *Barrio Monseñor Arias* |
+| **Monseñor Lebrún** | **Petare** → *Barrio Monseñor Lebrún* |
+| **Monte Alto** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Monte Alto* |
+| **Monte Cristo** | **Leoncio Martínez** → *Sector Monte Cristo* · *Urbanización Monte Cristo* |
+| **Monte Elena** | **Nuestra Señora del Rosario de Baruta** → *Monte Elena* · *Urbanización Monte Elena* |
+| **Montecristo** | **Leoncio Martínez** → *Montecristo* · *Sector Montecristo* |
+| **Monterrey** | **Nuestra Señora del Rosario de Baruta** → *Conjunto Residencial Monterrey* · *Monterrey* · *Sector Monterrey* · *Urbanización Monterrey* |
+| **Naranjal** | **Petare** → *Barrio Naranjal* |
+| **Nazareno** | **Petare** → *Barrio Nazareno* |
+| **Negro Primero** | **Caucagüita** → *Barrio Negro Primero* · *Conjunto Residencial Negro Primero*<br>**Nuestra Señora del Rosario de Baruta** → *Barrio Negro Primero* |
+| **No Te Apures** | **Chacao** → *No Te Apures* |
+| **Nuestra Señora del Rosario** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Nuestra Señora del Rosario* |
+| **Nuevo** | **Fila de Mariche** → *Barrio Nuevo*<br>**Petare** → *Barrio Nuevo* |
+| **Nuevo Julián Blanco** | **Petare** → *Barrio Nuevo Julián Blanco* |
+| **Ochoa** | **Caucagüita** → *Barrio Ochoa*<br>**Petare** → *Sector Ochoa* |
+| **Ojo de Agua** | **Nuestra Señora del Rosario de Baruta** → *Barrio Ojo de Agua* · *Sector Ojo de Agua* |
+| **Oripoto** | **El Hatillo** → *Oripoto* |
+| **Oritopo** | **El Hatillo** → *Sector Oritopo* |
+| **Pablo VI** | **Petare** → *Conjunto Residencial Pablo VI* · *Urbanización Pablo VI* |
+| **Padrón** | **Fila de Mariche** → *Padrón* |
+| **Palma Real** | **Nuestra Señora del Rosario de Baruta** → *Sector Palma Real* |
+| **Palmarito** | **Nuestra Señora del Rosario de Baruta** → *Palmarito* |
+| **Palo Verde** | **Petare** → *Palo Verde* · *Sector Palo Verde* · *Urbanización Palo Verde* · *Zona Industrial Palo Verde* |
+| **Paraíso** | **Leoncio Martínez** → *Paraíso* |
+| **Parcelamiento El Amparo** | **Leoncio Martínez** → *Urbanización Parcelamiento El Amparo* |
+| **Parque Caiza** | **Caucagüita** → *Parque Caiza* |
+| **Parque Carimao** | **Caucagüita** → *Parque Carimao* |
+| **Parque del Este** | **Leoncio Martínez** → *Sector Parque del Este* |
+| **Parque Humboldt** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Parque Humboldt* |
+| **Parque Humboltd** | **Las Minas de Baruta** → *Sector Parque Humboltd* |
+| **Parque La Cabaña** | **El Hatillo** → *Urbanización Parque La Cabaña* |
+| **Parque La Tahona** | **Nuestra Señora del Rosario de Baruta** → *Parque La Tahona* |
+| **Parque Los Guayabitos** | **Nuestra Señora del Rosario de Baruta** → *Parque Los Guayabitos* |
+| **Parque Miranda** | **Leoncio Martínez** → *Sector Parque Miranda* |
+| **Parque Prado** | **Nuestra Señora del Rosario de Baruta** → *Conjunto Residencial Parque Prado* |
+| **Parque Residencial del Este** | **Leoncio Martínez** → *Parque Residencial del Este* |
+| **Parque Residencial La Lagunita** | **El Hatillo** → *Parque Residencial La Lagunita* |
+| **Parque Residencial Las Californias** | **Petare** → *Parque Residencial Las Californias* |
+| **Parque Residencial Las Islas** | **Petare** → *Parque Residencial Las Islas* |
+| **Parque Residencial Las Villas I** | **El Hatillo** → *Parque Residencial Las Villas I* |
+| **Parque Residencial Las Villas II** | **El Hatillo** → *Parque Residencial Las Villas II* |
+| **Parque Residencial Los Cien** | **Petare** → *Parque Residencial Los Cien* |
+| **Parque Residencial Los Geranios** | **El Hatillo** → *Parque Residencial Los Geranios* |
+| **Parque Residencial Oripoto** | **El Hatillo** → *Parque Residencial Oripoto* |
+| **Parque Residencial Orituco** | **Las Minas de Baruta** → *Parque Residencial Orituco* |
+| **Parque Residencial Valle Arriba** | **Nuestra Señora del Rosario de Baruta** → *Parque Residencial Valle Arriba* |
+| **Parque Sebucán** | **Leoncio Martínez** → *Urbanización Parque Sebucán* |
+| **Paseo Las Mercedes** | **Chacao** → *Urbanización Paseo Las Mercedes* |
+| **Paso Baruta** | **El Hatillo** → *Paso Baruta* |
+| **Petare** | **Petare** → *Casco de Petare* · *Oficina Postal Telegráfica Petare* · *Urbanización Petare* |
+| **Petare-El Llanito** | **Petare** → *Sector Petare-El Llanito* |
+| **Petare Norte** | **Petare** → *Petare Norte* |
+| **Piedra Azul** | **Nuestra Señora del Rosario de Baruta** → *Sector Piedra Azul* · *Urbanización Piedra Azul* |
+| **Piedra del Indio** | **Leoncio Martínez** → *Piedra del Indio* |
+| **Piedras Pintadas** | **El Hatillo** → *Urbanización Piedras Pintadas* |
+| **Píritu** | **Petare** → *Barrio Píritu* · *Píritu* |
+| **Plaza Alfredo Sadel** | **Nuestra Señora del Rosario de Baruta** → *Plaza Alfredo Sadel* |
+| **Plaza Ana Francisca Pérez de León** | **El Hatillo** → *Plaza Ana Francisca Pérez de León* |
+| **Plaza Bolívar** | **El Hatillo** → *Plaza Bolívar*<br>**Nuestra Señora del Rosario de Baruta** → *Plaza Bolívar* |
+| **Plaza Cacique Baruta** | **Nuestra Señora del Rosario de Baruta** → *Plaza Cacique Baruta* |
+| **Plaza Escalona** | **El Hatillo** → *Plaza Escalona* |
+| **Plaza Francia** | **Chacao** → *Plaza Francia* |
+| **Plaza Generalísimo Francisco de Miranda** | **Leoncio Martínez** → *Plaza Generalísimo Francisco de Miranda* |
+| **Plaza Las Américas** | **Las Minas de Baruta** → *Oficina Postal Telegráfica Plaza Las Américas* |
+| **Plaza Luis Brión** | **Chacao** → *Plaza Luis Brión* |
+| **Plaza Renny Otolina** | **Leoncio Martínez** → *Plaza Renny Otolina* |
+| **Plaza San Francisco** | **Petare** → *Plaza San Francisco* |
+| **Plaza Sucre** | **El Hatillo** → *Plaza Sucre* |
+| **Población Chacao** | **Chacao** → *Población Chacao* |
+| **Portón de Los Olivos** | **El Hatillo** → *Urbanización Portón de Los Olivos* |
+| **Potro Redondo 2** | **El Hatillo** → *Urbanización Potro Redondo 2* |
+| **Potro Redondo I** | **El Hatillo** → *Urbanización Potro Redondo I* |
+| **Potro Redondo II** | **El Hatillo** → *Urbanización Potro Redondo II* |
+| **Prado del Este** | **Nuestra Señora del Rosario de Baruta** → *Sector: Prado del Este* |
+| **Prado Humboldt** | **Las Minas de Baruta** → *Urbanización Prado Humboldt* |
+| **Prados del Este** | **Las Minas de Baruta** → *Prados del Este*<br>**Nuestra Señora del Rosario de Baruta** → *Oficina Postal Telegráfica Prados del Este* · *Prados del Este* · *Sector Prados del Este* · *Urbanización Prados del Este* |
+| **Prados Humboltd** | **Las Minas de Baruta** → *Sector Prados Humboltd*<br>**Nuestra Señora del Rosario de Baruta** → *Sector Prados Humboltd* |
+| **Prepo** | **Petare** → *Barrio Prepo* |
+| **Puerta del Este** | **Leoncio Martínez** → *Conjunto Residencial Puerta del Este* |
+| **Puerta Negra** | **El Hatillo** → *Puerta Negra* |
+| **Quebrada de Tocome** | **Leoncio Martínez** → *Barrio Quebrada de Tocome* |
+| **Quinta Altamira** | **Petare** → *Sector Quinta Altamira* · *Urbanización Quinta Altamira* |
+| **Quintana** | **Caucagüita** → *Quintana* · *Sector Quintana* |
+| **Rafael Caldera** | **Caucagüita** → *Barrio Rafael Caldera*<br>**Petare** → *Barrio Rafael Caldera* |
+| **Ramón Brazón** | **Caucagüita** → *Barrio Ramón Brazón* · *Ramón Brazón* |
+| **Rancho Grande** | **Petare** → *Rancho Grande* |
+| **Residencal Los Mangos** | **Leoncio Martínez** → *Conjunto Residencal Los Mangos* |
+| **Residencia Villa Toscana** | **El Hatillo** → *Residencia Villa Toscana* |
+| **Resvalón** | **Petare** → *Resvalón* |
+| **Rómulo Gallegos** | **Leoncio Martínez** → *Urbanización Rómulo Gallegos* |
+| **Rural Caucagüita** | **Caucagüita** → *Sector Rural Caucagüita* |
+| **Sabaneta Abajo** | **El Hatillo** → *Sabaneta Abajo* |
+| **Sabaneta Arriba** | **El Hatillo** → *Sabaneta Arriba* |
+| **Sabaneta de Jacobo** | **El Hatillo** → *Sabaneta de Jacobo* |
+| **Sabas Nieves** | **Chacao** → *Sabas Nieves* |
+| **San Blas** | **La Dolorita** → *San Blas*<br>**Petare** → *Barrio San Blás* |
+| **San Isidro** | **Caucagüita** → *Barrio San Isidro* · *Parcelamiento San Isidro*<br>**La Dolorita** → *Sector San Isidro* |
+| **San Joaquín** | **El Hatillo** → *San Joaquín* |
+| **San José** | **Chacao** → *Barrio San José* · *Urbanización San José*<br>**Petare** → *Barrio San José* |
+| **San José de Turgua** | **El Hatillo** → *San José de Turgua* |
+| **San Luis** | **El Cafetal** → *San Luis*<br>**El Hatillo** → *Parcelamiento San Luis*<br>**Las Minas de Baruta** → *Sector San Luis* |
+| **San Marino** | **Chacao** → *San Marino* · *Sector San Marino* · *Urbanización San Marino* |
+| **San Michele** | **Leoncio Martínez** → *Urbanización San Michele* |
+| **San Miguel** | **Petare** → *Barrio San Miguel* |
+| **San Miguel del Dorado** | **Petare** → *Barrio San Miguel del Dorado* · *Sector San Miguel del Dorado* |
+| **San Pablo** | **El Hatillo** → *Urbanización San Pablo* |
+| **San Pascual** | **Petare** → *Barrio San Pascual* |
+| **San Rafael** | **Fila de Mariche** → *Barrio San Rafael* · *San Rafael* |
+| **San Román** | **Las Minas de Baruta** → *San Román* · *Sector San Román* |
+| **Sans Souci** | **Chacao** → *Conjunto Residencial Sans Souci* · *Sector: Sans Souci* |
+| **Santa Ana** | **El Cafetal** → *Santa Ana*<br>**Las Minas de Baruta** → *Sector Santa Ana* |
+| **Santa Cecilia** | **Leoncio Martínez** → *Santa Cecilia* · *Sector Santa Cecilia* |
+| **Santa Clara** | **El Cafetal** → *Santa Clara*<br>**Las Minas de Baruta** → *Sector Santa Clara* · *Urbanización Santa Clara* |
+| **Santa Cruz del Este** | **Nuestra Señora del Rosario de Baruta** → *Barrio Santa Cruz del Este* · *Urbanización Santa Cruz del Este* |
+| **Santa Edivigis** | **Leoncio Martínez** → *Sector Santa Edivigis* |
+| **Santa Eduvigis** | **Leoncio Martínez** → *Santa Eduvigis* · *Sector Santa Eduvigis* |
+| **Santa Fe** | **Las Minas de Baruta** → *Sector Santa Fe*<br>**Nuestra Señora del Rosario de Baruta** → *Conjunto Residencial Santa Fe* · *Santa Fe* |
+| **Santa Fe Norte** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Santa Fe Norte* |
+| **Santa Fe Sur** | **Nuestra Señora del Rosario de Baruta** → *Santa Fe Sur* · *Urbanización Santa Fe Sur* |
+| **Santa Gertrudis** | **Nuestra Señora del Rosario de Baruta** → *Sector Santa Gertrudis* |
+| **Santa Inés** | **Las Minas de Baruta** → *Santa Inés* · *Sector Santa Inés*<br>**Nuestra Señora del Rosario de Baruta** → *Urbanización Santa Inés* |
+| **Santa Lucía** | **Petare** → *Sector Santa Lucía* · *Urbanización Santa Lucía* |
+| **Santa María** | **Leoncio Martínez** → *Santa María* · *Sector Santa María* |
+| **Santa Marta** | **El Cafetal** → *Santa Marta*<br>**Las Minas de Baruta** → *Sector Santa Marta*<br>**Petare** → *Barrio Santa Marta* |
+| **Santa Paula** | **El Cafetal** → *Santa Paula*<br>**Las Minas de Baruta** → *Sector Santa Paula* · *Urbanización Santa Paula*<br>**Petare** → *Urbanización Santa Paula* |
+| **Santa Rosa** | **Petare** → *Santa Rosa* |
+| **Santa Rosa de Lima** | **Las Minas de Baruta** → *Santa Rosa de Lima* · *Urbanización Santa Rosa de Lima* |
+| **Santa Sofía** | **El Cafetal** → *Santa Sofía*<br>**Las Minas de Baruta** → *Sector Santa Sofía* · *Urbanización Santa Sofía* |
+| **Sartenejas** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Sartenejas* |
+| **Sebucán** | **Leoncio Martínez** → *Sebucán* · *Sector Sebucán* |
+| **Serrucho** | **Nuestra Señora del Rosario de Baruta** → *Serrucho* |
+| **Silla de Caracas** | **Chacao** → *Silla de Caracas* |
+| **Sisipa** | **Nuestra Señora del Rosario de Baruta** → *Barrio Sisipa* |
+| **Solares del Carmen** | **El Hatillo** → *Urbanización Solares del Carmen* |
+| **Sorocaima** | **Nuestra Señora del Rosario de Baruta** → *Sector Sorocaima* · *Urbanización Sorocaima* |
+| **Sucre** | **Petare** → *Barrio Sucre* |
+| **Tamanaco** | **Chacao** → *Urbanización Tamanaco* |
+| **Tenería** | **Leoncio Martínez** → *Tenería* |
+| **Terepaima** | **Petare** → *Urbanización Terepaima* |
+| **Terrazas de Caucagüita** | **Caucagüita** → *Terrazas de Caucagüita* |
+| **Terrazas de Guaicoco** | **La Dolorita** → *Urbanización Terrazas de Guaicoco* |
+| **Terrazas de La Tahona** | **El Hatillo** → *Conjunto Residencial Terrazas de La Tahona* |
+| **Terrazas de Santa Fe** | **Nuestra Señora del Rosario de Baruta** → *Terrazas de Santa Fe* |
+| **Terrazas de Santa Inés** | **Nuestra Señora del Rosario de Baruta** → *Sector Terrazas de Santa Inés* · *Terrazas de Santa Inés* |
+| **Terrazas del Ávila** | **Petare** → *Sector Terrazas del Ávila* · *Terrazas del Ávila* · *Urbanización Terrazas del Ávila* |
+| **Terrazas del Club Hípico** | **Las Minas de Baruta** → *Terrazas del Club Hípico* |
+| **Toda Vista** | **El Cafetal** → *Toda Vista* |
+| **Topo Galindo** | **Petare** → *Topo Galindo* |
+| **Torumo** | **Petare** → *Zona Industrial Torumo* |
+| **Turgua** | **El Hatillo** → *Turgua*<br>**Nuestra Señora del Rosario de Baruta** → *Barrio Turgua* |
+| **Turumito** | **Caucagüita** → *Barrio Turumito* |
+| **Turumo** | **Caucagüita** → *Turumo* · *Zona Industrial Turumo*<br>**Petare** → *Sector Turumo* · *Urbanización Turumo* |
+| **Tusmare** | **El Hatillo** → *Tusmare* · *Urbanización Tusmare* |
+| **Unión** | **Petare** → *Barrio Unión* |
+| **Unión del Terminal** | **Petare** → *Barrio Unión del Terminal* |
+| **Universidad Metropolitana** | **Petare** → *Universidad Metropolitana* |
+| **Universidad Simón Bolívar (USB)** | **Las Minas de Baruta** → *Oficina Postal Telegráfica Universidad Simón Bolívar (USB)* |
+| **URB EL DORADO** | **Petare** → *URB EL DORADO* |
+| **Urbanización Miranda** | **Petare** → *Sector Urbanización Miranda* |
+| **Urbina Norte** | **Petare** → *Barrio Urbina Norte* |
+| **Valle Alto** | **La Dolorita** → *Valle Alto*<br>**Nuestra Señora del Rosario de Baruta** → *Urbanización Valle Alto*<br>**Petare** → *Barrio Valle Alto* |
+| **Valle Arriba** | **Las Minas de Baruta** → *Urbanización Valle Arriba*<br>**Nuestra Señora del Rosario de Baruta** → *Valle Arriba* |
+| **Villa Alameda** | **Nuestra Señora del Rosario de Baruta** → *Conjunto Residencial Villa Alameda* |
+| **Villa Barutaima** | **Nuestra Señora del Rosario de Baruta** → *Urbanización Villa Barutaima* |
+| **Villa Karintia** | **El Hatillo** → *Conjunto Villa Karintia* |
+| **Villa Laura** | **Nuestra Señora del Rosario de Baruta** → *Villa Laura* |
+| **Vista Alegre** | **Petare** → *Barrio Vista Alegre* |
+| **Vista Hermosa** | **El Hatillo** → *Conjunto Residencial Vista Hermosa*<br>**Petare** → *Barrio Vista Hermosa* |
+| **Vizcaya** | **El Cafetal** → *Vizcaya* |
+| **Vuelta La Horquilla** | **Petare** → *Barrio Vuelta La Horquilla* |
+| **Yumare** | **El Hatillo** → *Yumare* |
+| **Yutaje** | **Leoncio Martínez** → *Conjunto Residencial Yutaje* |
+| **Zona Colonial de Petare** | **Petare** → *Zona Colonial de Petare* |
+| **Zurima** | **Nuestra Señora del Rosario de Baruta** → *Barrio Zurima* |
+
 # Fuentes
 
 ### 1. Fuentes oficiales
