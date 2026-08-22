@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isFilteredZoneRoute, resolveZoneRoute } from "./zone-route";
+import { isFilteredZoneRoute, resolveCityRoute, resolveZoneRoute } from "./zone-route";
 
 const cities = [
   { id: "dc", name: "Distrito Capital" },
@@ -95,6 +95,35 @@ describe("isFilteredZoneRoute", () => {
     // `utm_source` llega pegado en cada enlace compartido. Si contara como
     // filtro, compartir la zona por WhatsApp la sacaría del índice.
     expect(isFilteredZoneRoute({ utm_source: "whatsapp" })).toBe(false);
+  });
+});
+
+describe("resolveCityRoute", () => {
+  const CITIES = [
+    { id: "mar", name: "Maracaibo" },
+    { id: "dtto", name: "Distrito Capital" },
+  ];
+
+  it("resuelve el segmento a la ciudad curada", () => {
+    expect(resolveCityRoute(CITIES, "maracaibo")).toEqual({ id: "mar", name: "Maracaibo" });
+  });
+
+  it("resuelve un nombre con espacios por su slug", () => {
+    // La misma `slugify` que arma el enlace. Que las dos direcciones salgan de
+    // la misma función es lo que hace que la placa «Ver los 23» del inicio
+    // caiga siempre en una ruta que resuelve.
+    expect(resolveCityRoute(CITIES, "distrito-capital")?.id).toBe("dtto");
+  });
+
+  it("devuelve null para una ciudad que no está en el catálogo", () => {
+    // **Nunca la primera ciudad.** Responder 200 con los avisos de otra parte
+    // publica contenido duplicado bajo una dirección inventada, y le miente a
+    // quien leyó la URL antes de tocarla.
+    expect(resolveCityRoute(CITIES, "bogota")).toBeNull();
+  });
+
+  it("devuelve null para un segmento vacío", () => {
+    expect(resolveCityRoute(CITIES, "   ")).toBeNull();
   });
 });
 
