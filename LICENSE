@@ -1,0 +1,72 @@
+# Licencia propietaria — Todos los derechos reservados
+
+Copyright (c) 2026 Gian Barboza. Todos los derechos reservados.
+
+Este repositorio es **público para lectura**, no de código abierto.
+
+## Qué se permite
+
+- Leer el código, la documentación y el diseño.
+- Citarlo con atribución, en artículos, charlas o revisiones.
+- Abrir issues y pull requests para este proyecto.
+
+## Qué no se permite
+
+Sin permiso previo y por escrito del titular del copyright, no se permite:
+
+- usar este software, en todo o en parte, en ningún producto ni servicio;
+- copiar, modificar, fusionar, publicar, distribuir, sublicenciar ni vender
+  copias del software;
+- desplegarlo, alojarlo ni ponerlo a disposición de terceros;
+- usar el contenido de `docs/`, `design/` y `openspec/` —incluidas la
+  especificación funcional, el sistema de diseño y la base territorial— para
+  construir un producto derivado o competidor.
+
+Un pull request enviado a este repositorio se entiende como una contribución
+al proyecto, y su autor concede al titular del copyright una licencia
+irrevocable, mundial y libre de regalías para usarla dentro de este proyecto.
+
+## Sin garantía
+
+El software se entrega **"tal cual"**, sin garantía de ningún tipo, expresa o
+implícita, incluidas sin limitación las garantías de comerciabilidad, aptitud
+para un propósito particular y no infracción. En ningún caso el titular del
+copyright será responsable por reclamo, daño u otra responsabilidad derivada
+del software o de su uso.
+
+---
+
+# Proprietary License — All Rights Reserved
+
+Copyright (c) 2026 Gian Barboza. All rights reserved.
+
+This repository is **publicly readable**, not open source.
+
+## Permitted
+
+- Reading the code, documentation and design.
+- Quoting it with attribution, in articles, talks or reviews.
+- Opening issues and pull requests for this project.
+
+## Not permitted
+
+Without the prior written permission of the copyright holder, you may not:
+
+- use this software, in whole or in part, in any product or service;
+- copy, modify, merge, publish, distribute, sublicense or sell copies of it;
+- deploy it, host it or make it available to third parties;
+- use the contents of `docs/`, `design/` or `openspec/` — including the
+  functional specification, the design system and the territorial dataset —
+  to build a derivative or competing product.
+
+A pull request submitted to this repository is understood as a contribution to
+the project, and its author grants the copyright holder an irrevocable,
+worldwide, royalty-free licence to use it within this project.
+
+## No warranty
+
+The software is provided **"as is"**, without warranty of any kind, express or
+implied, including but not limited to the warranties of merchantability,
+fitness for a particular purpose and non-infringement. In no event shall the
+copyright holder be liable for any claim, damages or other liability arising
+from the software or its use.

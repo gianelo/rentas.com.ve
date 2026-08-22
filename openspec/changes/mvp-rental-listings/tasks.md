@@ -586,6 +586,29 @@ The parent being a label is what keeps the filter exactly as shallow as it is to
 - [ ] 17.8 **The área "Caracas" spans several federal entities** (founder, 2026-08-22: "toda la capital cambia porque son varios estados que están dentro de Caracas"). Named `Caracas` because that is what people type, not `Distrito Capital`, which is factually wrong for five of the six seeded zones. Taxonomies for Caracas, Miranda and La Guaira are being prepared by the founder
 - [ ] 17.9 **Open: does La Guaira belong inside the Caracas área or is it its own?** It is a separate state and, for long-stay rental, a different market — someone searching Caracas is unlikely to want Catia La Mar or Macuto, which is a motorway away. Folding it in would make the city-isolation rule return results 40 minutes from what was asked for; keeping it separate costs nothing and can be merged later. **Not to be settled by whoever imports the list first**
 
+### 17e. El dato real llegó, y cambia el modelo (2026-08-22)
+
+The founder had another agent build `docs/territorio/` — 11,017 lines of curated territory, and it is rigorous: hierarchy from INE's DPT, postal codes from IPOSTEL, geometric containment from OSM, provenance tagged per entry, **categories never inferred**, duplicates never merged.
+
+| | |
+|---|---|
+| Entidades federales | 4 — Distrito Capital, Miranda, La Guaira, Zulia |
+| Municipios | 10 |
+| Parroquias | 81 |
+| Elementos sub-parroquiales | **5,705** |
+
+**It independently confirms the seed defect found in 17.2**, and cites the Gaceta for it: *"Cuatro de los cinco no son Distrito Capital"* — Baruta, Chacao, El Hatillo and Sucre are Miranda.
+
+**The collision numbers settle the schema question.** `Buena Vista` appears **12 times**, `San José` **11**, `El Carmen` **10**, `Los Pinos` and `Santa Ana` **9** each. `UNIQUE (city_id, name)` is not merely tight — it is unsatisfiable.
+
+**And the finding that only real data could produce: the searchable unit is not one level of the hierarchy.** *Chacao* is a municipio AND a parroquia; *Altamira* is an urbanización inside that parroquia; *Sabana Grande* sits in parroquia El Recreo and nobody names the parroquia. People name places **across** levels. Four tables — one per level — would force search to UNION four queries and force `listing` to carry four nullable foreign keys.
+
+- [ ] 17.10 **One self-referencing `territory` table**, not four: `id`, `parent_id`, `kind` (estado|municipio|parroquia|elemento), `category` (barrio|sector|urbanizacion|conjunto|parcelamiento|caserio|localidad|otro), `name`, `ubigeo`, `postal_code`, `source`. ~5,800 rows, which is nothing for Postgres
+- [ ] 17.11 **The `area` (Caracas, Maracaibo) is the product's invention and stays separate from the official hierarchy.** Caracas metropolitana crosses two federal entities — the document proves it with Gaceta Oficial 36.906 and its repeal in 41.308 — so no official level can express it. Keeping it apart is what allows the INE data to be re-imported later without overwriting a product decision
+- [ ] 17.12 **D5 survives unchanged, with the same mechanism already in use**: `territory` carries `UNIQUE (id, area_id)` and `listing` keeps its composite foreign key. A Maracaibo listing remains physically unable to hold a Caracas zone — the guarantee is not weakened by the new depth
+- [ ] 17.13 **Keep the provenance columns.** `ubigeo`, `postal_code` and `source` are what make a future re-import possible without losing curation. Dropping them because "the app does not render them" is how a dataset becomes unmaintainable
+- [ ] 17.14 A parser from `docs/territorio/**.md` into the seed, so the taxonomy is regenerated rather than retyped. The source files carry a stable format — `### Parroquia <name>`, `#### <Category> (n)`, `- <Prefix> <Name>  \`[CP nnnn — SOURCE]\`` — and the seed must stay idempotent (task 2.3)
+
 ## Phase 18: Publicar — nueve pasos (founder, 2026-08-22)
 
 The founder delivered the publish specification with mobile and desktop designs, and it **replaces the two-step form that ships today**. The brief's own "es un formulario, no un embudo de cinco pasos" is explicitly overturned: nine steps, one question per screen, with a review screen before publishing.
