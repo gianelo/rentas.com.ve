@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { cache } from "react";
 import { ContactBlock } from "@/../components/molecules/ContactBlock";
 import { DeclaredFeatures } from "@/../components/molecules/DeclaredFeatures";
 import { StatStrip } from "@/../components/molecules/StatStrip";
@@ -9,6 +10,20 @@ import { listingIdFromSlug } from "@/modules/listing-discovery/domain/listing-ur
 import { DrizzleListingDetail } from "@/modules/listing-discovery/infrastructure/drizzle-listing-detail";
 import { db } from "@/shared/db/client";
 import styles from "./ficha.module.css";
+
+/**
+ * **Una consulta por peticion, no dos.** `generateMetadata` y el componente
+ * necesitan el mismo aviso, y sin `cache` cada ficha abierta costaba dos
+ * viajes HTTP identicos a Neon -- en la pantalla mas visitada del sitio. Lo
+ * encontro el agente que construyo la cuadricula, contrastando este archivo
+ * con el suyo.
+ *
+ * `cache` de React deduplica dentro de una misma peticion, que es exactamente
+ * el alcance del problema: dos llamadas, un render.
+ */
+const findDetail = cache(async (listingId: string) =>
+  new DrizzleListingDetail(db).findForDetail(listingId),
+);
 
 interface FichaProps {
   params: Promise<{ ciudad: string; zona: string; slug: string }>;
@@ -34,7 +49,7 @@ export default async function FichaPage({ params }: FichaProps) {
   const listingId = listingIdFromSlug(slug);
   if (!listingId) notFound();
 
-  const detail = await new DrizzleListingDetail(db).findForDetail(listingId);
+  const detail = await findDetail(listingId);
   // `null` cubre inexistente, oculto y borrado por igual: quien sondea URLs no
   // puede distinguir un aviso dado de baja de uno que nunca existió.
   if (!detail) notFound();
@@ -150,7 +165,7 @@ export async function generateMetadata({ params }: FichaProps): Promise<Metadata
   const listingId = listingIdFromSlug(slug);
   if (!listingId) return {};
 
-  const detail = await new DrizzleListingDetail(db).findForDetail(listingId);
+  const detail = await findDetail(listingId);
   if (!detail) return {};
 
   return {

@@ -1,0 +1,112 @@
+/* La tarjeta de la cuadrícula (14.25) y la cuadrícula que la contiene. Toda
+   la geometría sale de tokens (D16): los anchos, la proporción de la foto y
+   los dos cuerpos de tipografía. */
+
+.grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  /* `minmax(0, …)` y no el ancho pelado: por debajo de 360 px la columna
+     tiene que apretarse. `repeat(2, var(--card-w))` desbordaría la pantalla
+     horizontalmente en un teléfono angosto en vez de encogerse. */
+  grid-template-columns: repeat(2, minmax(0, var(--card-w)));
+  gap: var(--card-gap);
+  justify-content: center;
+}
+
+.card {
+  /* El ancla del `::after` que hace tocable toda la tarjeta. */
+  position: relative;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.photo {
+  display: block;
+  width: 100%;
+  /* Por proporción y no por alto: la columna se encoge en un teléfono
+     angosto, y un alto fijo deformaría la foto justo ahí. Reserva el espacio
+     antes de que la imagen llegue, así que la tarjeta no salta. */
+  aspect-ratio: var(--card-photo-ratio);
+  object-fit: cover;
+  background: var(--thumb);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 8px 10px 10px;
+}
+
+.price {
+  margin: 2px 0 0;
+  font-family: var(--disp);
+  font-size: var(--card-price-fs);
+  font-weight: var(--fpw);
+  line-height: 1.15;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--card-title-fs);
+  font-weight: var(--ftw);
+  line-height: 1.35;
+  color: var(--ink);
+  /* Dos líneas y corta. Un título largo empujaría los metadatos fuera de la
+     tarjeta de al lado y rompería la alineación de la fila entera. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.meta {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  font-weight: var(--meta-fw);
+  line-height: 1.4;
+  /* Nunca `opacity`: atenuar así se lleva puesto el borde y el fondo, y deja
+     el contraste fuera de control. El gris del sistema es --soft. */
+  color: var(--soft);
+}
+
+.link {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* El área tocable es la tarjeta entera, aunque el enlace sea el título. Dos
+   líneas de texto no llegan a 44 px de alto de forma confiable, y errarle en
+   una cuadrícula de dos columnas abre el aviso de al lado. El nombre
+   accesible sigue siendo el título: esto agranda el blanco, no el texto. */
+.link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, var(--card-w-desktop)));
+    justify-content: start;
+  }
+}
