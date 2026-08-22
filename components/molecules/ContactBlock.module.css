@@ -1,0 +1,63 @@
+/* Bloque de contacto con llave (F29). Fondo agrupado, como el diseño lo dibuja
+   sobre --bg para separarlo del resto de la ficha. */
+.block {
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--bg);
+  border-radius: var(--r);
+}
+
+.publisher {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  font-size: var(--control-fs);
+  font-weight: var(--meta-fw);
+}
+
+.role {
+  font-family: var(--meta);
+  font-size: var(--meta-fs);
+  color: var(--soft);
+}
+
+.contact {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+/* Monoespaciado y con cifras tabulares: un número de teléfono se lee en
+   bloques, y una fuente proporcional los desalinea. */
+.value {
+  margin: 0;
+  font-family: var(--disp);
+  font-size: var(--ficha-title-fs);
+  font-weight: var(--meta-fw);
+  font-variant-numeric: tabular-nums;
+}
+
+.why {
+  margin: 6px 0 12px;
+  font-size: var(--meta-fs);
+  line-height: var(--ficha-body-lh);
+  color: var(--soft);
+  text-wrap: pretty;
+}
+
+/* Borde y no relleno: la advertencia acompaña al contacto sin competir con el
+   botón de acción, que es lo único que debe pesar en este bloque. */
+.warning {
+  margin: 16px 0 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  font-size: var(--meta-fs);
+  line-height: var(--ficha-body-lh);
+  color: var(--soft);
+  text-wrap: pretty;
+}
