@@ -98,7 +98,7 @@ beforeAll(async () => {
     `Maracaibo ${MARACAIBO}`,
   ]);
   await pool.query(
-    `INSERT INTO "zone" (id, city_id, name, kind, source) VALUES ($1,$2,$3,'parroquia','INE'),($4,$5,$6)`,
+    `INSERT INTO "zone" (id, city_id, name, kind, source) VALUES ($1,$2,$3,'parroquia','INE'),($4,$5,$6,'parroquia','INE')`,
     [CHACAO, CAPITAL, "Chacao", LA_LAGO, MARACAIBO, "La Lago"],
   );
   await pool.query(`INSERT INTO "user" (id, email) VALUES ($1,$2)`, [

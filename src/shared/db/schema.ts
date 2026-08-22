@@ -223,8 +223,13 @@ export const zones = pgTable(
     // each. A barrio is unique inside its parroquia, never inside a city — the
     // old constraint was not merely tight, it was unsatisfiable. This one still
     // keeps the seed idempotent (tasks.md 2.3), which is what it was for.
-    unique("zone_parent_category_name_unique")
-      .on(zone.parentId, zone.category, zone.name)
+    // **`city_id` va PRIMERO, y omitirlo fue un defecto real.** Las filas de
+    // nivel superior tienen `parent_id` NULL, asi que sin la ciudad adentro dos
+    // zonas homonimas en ciudades distintas chocaban: "Centro" no podia existir
+    // en Maracaibo Y en Caracas a la vez. Lo encontro el CI, no la corrida
+    // local -- que ademas leyo la linea equivocada del resumen y canto verde.
+    unique("zone_city_parent_category_name_unique")
+      .on(zone.cityId, zone.parentId, zone.category, zone.name)
       // NULLS NOT DISTINCT, porque sin eso la restricción no diría nada en los
       // tres niveles oficiales: su categoría es NULL, y Postgres considera dos
       // NULL como distintos por omisión. Dos parroquias homónimas bajo un mismo

@@ -55,7 +55,7 @@ ALTER TABLE "zone" ALTER COLUMN "source" SET NOT NULL;--> statement-breakpoint
 --    NULLS NOT DISTINCT porque los tres niveles oficiales tienen `category`
 --    NULL, y sin eso la restricción no diría nada sobre ellos.
 ALTER TABLE "zone" DROP CONSTRAINT "zone_city_id_name_unique";--> statement-breakpoint
-ALTER TABLE "zone" ADD CONSTRAINT "zone_parent_category_name_unique" UNIQUE NULLS NOT DISTINCT("parent_id","category","name");--> statement-breakpoint
+ALTER TABLE "zone" ADD CONSTRAINT "zone_city_parent_category_name_unique" UNIQUE NULLS NOT DISTINCT("city_id","parent_id","category","name");--> statement-breakpoint
 
 -- `zone_id_city_id_unique` NO se toca: es la restricción sobre la que descansa
 -- `listing_zone_city_fk`, y por lo tanto D5 entero.
