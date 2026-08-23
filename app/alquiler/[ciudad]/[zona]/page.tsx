@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
+import { AppLink } from "@/../components/atoms/AppLink";
 import { Container } from "@/../components/layout/Container";
 import { SidebarLayout } from "@/../components/layout/SidebarLayout";
 import { ListingCard, ListingGrid } from "@/../components/molecules/ListingCard";
@@ -221,18 +222,18 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
             dos signos de puntuación que no son pasos de la ruta. */}
         <ol className={styles.crumbs}>
           <li className={styles.crumb}>
-            <a className={styles.crumbLink} href="/">
+            <AppLink className={styles.crumbLink} href="/">
               Inicio
-            </a>
+            </AppLink>
           </li>
           {/* La ciudad **ya lleva enlace**: `/alquiler/<ciudad>` existe desde
               que se construyó la pantalla de ciudad. Antes iba sin enlace, y
               la razón anotada era que una miga de pan que lleva a un 404 es
               peor que una que no lleva a ninguna parte. */}
           <li className={styles.crumb}>
-            <a className={styles.crumbLink} href={cityPath}>
+            <AppLink className={styles.crumbLink} href={cityPath}>
               {place.city.name}
-            </a>
+            </AppLink>
           </li>
           <li className={styles.crumb} aria-current="page">
             {place.zone.name}
@@ -273,9 +274,9 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
           // Se responde con la salida, no con una cuadrícula vacía sin causa.
           <p className={styles.empty}>
             Esa página ya no existe: la búsqueda tiene {pagination.count}.{" "}
-            <a className={styles.pageLink} href={pageHref(pagination.count)}>
+            <AppLink className={styles.pageLink} href={pageHref(pagination.count)}>
               Ver la última
-            </a>
+            </AppLink>
             .
           </p>
         ) : total === 0 ? (
@@ -314,17 +315,17 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
         {pagination.count > 1 && !pagination.beyondEnd ? (
           <nav className={styles.pages} aria-label="Paginación">
             {pagination.previous === null ? null : (
-              <a className={styles.pageLink} href={pageHref(pagination.previous)} rel="prev">
+              <AppLink className={styles.pageLink} href={pageHref(pagination.previous)} rel="prev">
                 ← Anterior
-              </a>
+              </AppLink>
             )}
             <span className={styles.pageStatus}>
               Página {pagination.current} de {pagination.count}
             </span>
             {pagination.next === null ? null : (
-              <a className={styles.pageLink} href={pageHref(pagination.next)} rel="next">
+              <AppLink className={styles.pageLink} href={pageHref(pagination.next)} rel="next">
                 Siguiente →
-              </a>
+              </AppLink>
             )}
           </nav>
         ) : null}
