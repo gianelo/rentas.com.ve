@@ -1,3 +1,4 @@
+import { AppLink } from "../atoms/AppLink";
 import { ListingCard, type ListingCardPhoto } from "./ListingCard";
 import styles from "./ListingStrip.module.css";
 
@@ -78,7 +79,7 @@ export function ListingStrip({ stripKey, title, subtitle, cards, seeAll }: Listi
             también del árbol de accesibilidad — escondiéndolo de otra forma,
             un lector de pantalla anunciaría dos veces la misma salida. */}
         {seeAll ? (
-          <a className={styles.headLink} href={seeAll.href} data-testid="strip-head-link">
+          <AppLink className={styles.headLink} href={seeAll.href} data-testid="strip-head-link">
             {seeAll.label}
             {/* La flecha es decoración: el nombre accesible del enlace ya lo
                 da el texto de al lado, y anunciar "flecha derecha" no agrega
@@ -86,7 +87,7 @@ export function ListingStrip({ stripKey, title, subtitle, cards, seeAll }: Listi
             <span className={styles.arrow} aria-hidden="true">
               →
             </span>
-          </a>
+          </AppLink>
         ) : null}
       </header>
 
@@ -118,9 +119,9 @@ export function ListingStrip({ stripKey, title, subtitle, cards, seeAll }: Listi
         ))}
         {seeAll ? (
           <li className={styles.item}>
-            <a className={styles.plate} href={seeAll.href} data-testid="strip-plate">
+            <AppLink className={styles.plate} href={seeAll.href} data-testid="strip-plate">
               {seeAll.label}
-            </a>
+            </AppLink>
           </li>
         ) : null}
       </ol>

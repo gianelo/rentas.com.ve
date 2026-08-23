@@ -1,3 +1,4 @@
+import { AppLink } from "../atoms/AppLink";
 import { Price } from "../atoms/Price";
 import { PublisherBadge } from "../atoms/PublisherBadge";
 import styles from "./ResultRow.module.css";
@@ -58,9 +59,9 @@ export function ResultRow({
         </div>
         <h3 className={styles.title}>
           {href ? (
-            <a className={styles.link} href={href}>
+            <AppLink className={styles.link} href={href}>
               {title}
-            </a>
+            </AppLink>
           ) : (
             title
           )}

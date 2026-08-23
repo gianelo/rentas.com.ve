@@ -6,6 +6,7 @@ import type {
   SearchPanelModel,
   ZoneChoice,
 } from "@/modules/listing-search/domain/search-panel";
+import { AppLink } from "../atoms/AppLink";
 import styles from "./SearchPanel.module.css";
 
 /**
@@ -84,24 +85,28 @@ export function SearchPanel({ model }: { readonly model: SearchPanelModel }) {
         {/* «Limpiar todo» vuelve al valor por defecto TODO menos la ciudad
             (F8). La dirección ya la calculó el dominio; acá es un enlace
             porque es una dirección, y tiene que poder abrirse y pegarse. */}
-        <a className={styles.clear} href={model.clearAllHref}>
+        <AppLink className={styles.clear} href={model.clearAllHref}>
           Limpiar todo
-        </a>
+        </AppLink>
 
         {model.confirm.kind === "empty" ? (
           <div className={styles.empty}>
             {/* No se deshabilita nada: un botón apagado no explica por qué. */}
             <p className={styles.emptyLabel}>{model.confirm.label}</p>
             {model.confirm.relief === null ? null : (
-              <a className={styles.confirm} href={model.confirm.relief.href}>
+              <AppLink className={styles.confirm} href={model.confirm.relief.href}>
                 {model.confirm.relief.label}
-              </a>
+              </AppLink>
             )}
           </div>
         ) : (
-          <a className={styles.confirm} href={model.confirm.href} data-testid="search-confirm">
+          <AppLink
+            className={styles.confirm}
+            href={model.confirm.href}
+            data-testid="search-confirm"
+          >
             {model.confirm.label}
-          </a>
+          </AppLink>
         )}
       </div>
     </section>
@@ -114,7 +119,7 @@ function CityStep({ cities }: { readonly cities: readonly CityChoice[] }) {
       <ul className={styles.options}>
         {cities.map((city) => (
           <li key={city.id}>
-            <a
+            <AppLink
               className={styles.option}
               href={city.href}
               aria-current={city.chosen ? "true" : undefined}
@@ -122,7 +127,7 @@ function CityStep({ cities }: { readonly cities: readonly CityChoice[] }) {
             >
               <span className={styles.optionName}>{city.name}</span>
               <span className={styles.count}>{city.count}</span>
-            </a>
+            </AppLink>
             {/* **Se avisa ANTES de tocar** (F3): cambiar de ciudad borra las
                 zonas, y perder dos elecciones en silencio es lo que hace
                 desconfiar de un filtro. */}
@@ -201,14 +206,14 @@ function ZoneOptionItem({ zone }: { readonly zone: ZoneChoice }) {
         // pantalla ignora el atributo que el rol no admite, así que la zona
         // elegida se anunciaba igual que una sin elegir — marcado que parece
         // accesible y no lo es. Es el mismo atributo que ya usa la ciudad.
-        <a
+        <AppLink
           className={styles.option}
           href={zone.href}
           aria-current={zone.chosen ? "true" : undefined}
           data-chosen={zone.chosen ? "" : undefined}
         >
           {body}
-        </a>
+        </AppLink>
       )}
     </li>
   );
@@ -267,7 +272,7 @@ function RoomsStep({ model }: { readonly model: SearchPanelModel }) {
 
       <ul className={styles.options}>
         <li>
-          <a
+          <AppLink
             className={styles.option}
             href={model.publisher.href}
             data-chosen={model.publisher.chosen ? "" : undefined}
@@ -278,7 +283,7 @@ function RoomsStep({ model }: { readonly model: SearchPanelModel }) {
               <span className={styles.note}>{model.publisher.note}</span>
             </span>
             <span className={styles.count}>{model.publisher.count}</span>
-          </a>
+          </AppLink>
         </li>
         {model.attributes.map((attribute) => (
           <AttributeOptionItem key={attribute.attribute} attribute={attribute} />
@@ -306,14 +311,14 @@ function RoomOptionItem({ room }: { readonly room: RoomChoice }) {
         // Rol `link`, igual que las zonas: `aria-pressed` no lo admite y no
         // llega a ningún lector de pantalla. El escalón elegido es el actual
         // dentro de la lista de escalones, que es lo que `aria-current` dice.
-        <a
+        <AppLink
           className={styles.roomOption}
           href={room.href}
           aria-current={room.chosen ? "true" : undefined}
           data-chosen={room.chosen ? "" : undefined}
         >
           {body}
-        </a>
+        </AppLink>
       )}
     </li>
   );
@@ -341,14 +346,14 @@ function AttributeOptionItem({ attribute }: { readonly attribute: AttributeChoic
       ) : (
         // Rol `link` otra vez, y el mismo cambio: `aria-pressed` sobre un
         // enlace es marcado que se lee accesible y no lo es.
-        <a
+        <AppLink
           className={styles.option}
           href={attribute.href}
           aria-current={attribute.chosen ? "true" : undefined}
           data-chosen={attribute.chosen ? "" : undefined}
         >
           {body}
-        </a>
+        </AppLink>
       )}
     </li>
   );
