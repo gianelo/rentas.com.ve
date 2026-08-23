@@ -166,3 +166,48 @@ describe("previewRenewal", () => {
     expect(listings.findRenewable).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * **El reloj por defecto, que es el que corre en producción.**
+ *
+ * Los dos casos de uso resuelven `dependencies.now ?? (() => new Date())`, y
+ * hasta acá **ningún test ejecutaba esa segunda mitad**: todos inyectan su
+ * propio reloj, que es lo correcto para que las fechas sean afirmables. El
+ * costo era que la rama que sí corre en producción no la miraba nadie —
+ * cambiarla por `new Date(0)` no habría puesto una sola prueba en rojo.
+ *
+ * No se afirma un instante, que sería irrepetible: se afirma que la fecha
+ * renovada cae donde el reloj real la pone, dentro de una ventana que
+ * cualquier máquina cumple.
+ */
+describe("el reloj por defecto", () => {
+  const TREINTA_DIAS_MS = 30 * 24 * 60 * 60 * 1000;
+
+  it("renueva contra la hora real cuando nadie inyecta un reloj", async () => {
+    // El token tiene que firmar el `expiresAt` de la fila y seguir vigente
+    // ahora, así que se acuña contra una fecha futura real.
+    const expiresAt = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+    const listings = port({ ...ROW, expiresAt });
+    const token = mintRenewalToken({ listingId: LISTING, expiresAt }, SECRET);
+
+    const antes = Date.now();
+    const outcome = await renewListing({ token }, { listings, renewalSecret: SECRET });
+    const despues = Date.now();
+
+    expect(outcome.status).toBe("renewed");
+    if (outcome.status !== "renewed") return;
+    expect(outcome.expiresAt.getTime()).toBeGreaterThanOrEqual(antes + TREINTA_DIAS_MS);
+    expect(outcome.expiresAt.getTime()).toBeLessThanOrEqual(despues + TREINTA_DIAS_MS);
+  });
+
+  it("la vista previa también usa la hora real", async () => {
+    const expiresAt = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+    const listings = port({ ...ROW, expiresAt });
+    const token = mintRenewalToken({ listingId: LISTING, expiresAt }, SECRET);
+
+    const preview = await previewRenewal({ token }, { listings, renewalSecret: SECRET });
+
+    // Con el reloj real y un vencimiento a dos días, el enlace está vigente.
+    expect(preview.status).toBe("ready");
+  });
+});
