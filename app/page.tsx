@@ -158,10 +158,11 @@ export default async function InicioPage({ searchParams }: InicioProps) {
                 <a
                   className={chip.selected ? styles.chipSelected : styles.chip}
                   href={chip.href}
-                  // `page` y no `true`: la ficha activa nombra la vista en la
-                  // que ya estás, y ése es el valor que un lector de pantalla
-                  // anuncia como "página actual".
-                  aria-current={chip.selected ? "page" : undefined}
+                  // `true` y no `page`: la ficha activa es el elemento elegido
+                  // del conjunto, pero su enlace **quita** la ciudad y por lo
+                  // tanto no lleva a la página en la que estás. Anunciarla como
+                  // "página actual" prometería lo contrario de lo que hace.
+                  aria-current={chip.selected ? "true" : undefined}
                 >
                   {chip.label}
                 </a>
