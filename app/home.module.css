@@ -223,3 +223,61 @@
     padding-block: 14px;
   }
 }
+
+/* ---------- Lo que contesta el buscador cuando no puede elegir solo ---------- */
+
+.results {
+  margin-block-start: 20px;
+}
+
+.options {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+/* Cada opción es un par (filtro, valor): la etiqueta arriba y de dónde es
+   debajo. Las dos líneas son el control — sin la segunda, dos zonas homónimas
+   se ven idénticas y elegir una es adivinar. */
+.option {
+  min-block-size: var(--target-min);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  text-decoration: none;
+}
+
+.option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.optionLabel {
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.optionScope {
+  font-family: var(--meta);
+  font-size: var(--meta-fs);
+  line-height: 1.4;
+  color: var(--soft);
+}
+
+.noMatch {
+  margin-block: 20px 0;
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  line-height: 1.6;
+  color: var(--soft);
+}
