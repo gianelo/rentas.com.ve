@@ -20,14 +20,27 @@ const NOTHING: Readonly<Record<RelaxableFilter, number>> = {
   hasAppliances: 0,
 };
 
+/**
+ * **Los ids NO se parecen a los slugs, y eso es la mitad de lo que estas
+ * pruebas verifican.**
+ *
+ * Estas fixtures decían `id: "centro"` y la dirección `?zona=centro`, así que
+ * pasaban leyera el código el id o el slug. Es exactamente la ceguera que dejó
+ * meses publicando hashes en la URL sin que nada fallara. Con ids con forma de
+ * hash, una dirección armada con ids se ve mal a simple vista.
+ */
+const CENTRO = "9f1c0d2e-0000-4000-8000-000000000001";
+const NORTE = "4da5ef52-0000-4000-8000-000000000002";
+const SUR = "aefc8ef8-0000-4000-8000-000000000003";
+
 const PLACE = {
   basePath: "/alquiler/maracaibo",
   cityPath: "/alquiler/maracaibo",
   cityName: "Maracaibo",
   zones: [
-    { id: "centro", name: "Centro", path: "/alquiler/maracaibo/centro" },
-    { id: "norte", name: "Norte", path: "/alquiler/maracaibo/norte" },
-    { id: "sur", name: "Sur", path: "/alquiler/maracaibo/sur" },
+    { id: CENTRO, name: "Centro", slug: "centro", path: "/alquiler/maracaibo/centro" },
+    { id: NORTE, name: "Norte", slug: "norte", path: "/alquiler/maracaibo/norte" },
+    { id: SUR, name: "Sur", slug: "sur", path: "/alquiler/maracaibo/sur" },
   ],
 };
 
@@ -97,8 +110,8 @@ describe("el vacío nombra el filtro que lo causa (F11)", () => {
 describe("hasta tres salidas, cada una con su conteo real (F11)", () => {
   const THREE: Partial<SearchOutcomeInput> = {
     query: { zona: "centro", max: "700" },
-    criteria: { cityId: "mcbo", zoneIds: ["centro"], maxPriceUsd: 700 },
-    chosenZoneIds: ["centro"],
+    criteria: { cityId: "mcbo", zoneIds: [CENTRO], maxPriceUsd: 700 },
+    chosenZoneIds: [CENTRO],
   };
 
   it("ofrece soltar el filtro, ampliar el precio y sumar la zona vecina", () => {
@@ -108,7 +121,7 @@ describe("hasta tres salidas, cada una con su conteo real (F11)", () => {
       counts: {
         total: 0,
         cityTotal: 47,
-        byZone: { centro: 0, norte: 12, sur: 4 },
+        byZone: { [CENTRO]: 0, [NORTE]: 12, [SUR]: 4 },
         withoutFilter: { ...NOTHING, zone: 16, price: 21 },
         withWidenedPrice: 5,
       },
@@ -134,7 +147,7 @@ describe("hasta tres salidas, cada una con su conteo real (F11)", () => {
         cityTotal: 47,
         // `norte` viene antes en el catálogo y tiene menos: elegir la primera
         // ofrecería 4 donde había 12.
-        byZone: { centro: 0, norte: 4, sur: 12 },
+        byZone: { [CENTRO]: 0, [NORTE]: 4, [SUR]: 12 },
         withoutFilter: { ...NOTHING, zone: 16 },
       },
     });
@@ -152,7 +165,7 @@ describe("hasta tres salidas, cada una con su conteo real (F11)", () => {
       counts: {
         total: 0,
         cityTotal: 47,
-        byZone: { centro: 0, norte: 0, sur: 0 },
+        byZone: { [CENTRO]: 0, [NORTE]: 0, [SUR]: 0 },
         withoutFilter: { ...NOTHING, price: 9 },
         // Ampliar al siguiente escalón no suma nada: no es una salida.
         withWidenedPrice: 0,
@@ -172,7 +185,7 @@ describe("hasta tres salidas, cada una con su conteo real (F11)", () => {
       counts: {
         total: 0,
         cityTotal: 47,
-        byZone: { centro: 0, norte: 12 },
+        byZone: { [CENTRO]: 0, [NORTE]: 12 },
         withoutFilter: { ...NOTHING, zone: 16, price: 21 },
         withWidenedPrice: 5,
       },
@@ -233,12 +246,12 @@ describe("el cierre de la lista (F10)", () => {
     const result = outcome({
       total: 9,
       query: { zona: "centro" },
-      criteria: { cityId: "mcbo", zoneIds: ["centro"] },
-      chosenZoneIds: ["centro"],
+      criteria: { cityId: "mcbo", zoneIds: [CENTRO] },
+      chosenZoneIds: [CENTRO],
       counts: {
         total: 9,
         cityTotal: 47,
-        byZone: { centro: 9, norte: 5 },
+        byZone: { [CENTRO]: 9, [NORTE]: 5 },
         withoutFilter: NOTHING,
       },
     });
