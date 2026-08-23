@@ -281,6 +281,16 @@ describe("buildListingStructuredData", () => {
     });
   });
 
+  /** Los niveles de arriba del árbol no tienen padre, y no se les inventa uno. */
+  it("nombra la zona sola cuando no tiene padre", () => {
+    const orphan = buildListingStructuredData(BASE, listing({ zoneParentName: null }));
+
+    expect((orphan.mainEntity as Record<string, unknown>).containedInPlace).toEqual({
+      "@type": "Place",
+      name: "Tierra Negra",
+    });
+  });
+
   /**
    * Sin base pública las direcciones salen relativas, y una imagen relativa en
    * un JSON-LD es una imagen rota declarada como buena.
