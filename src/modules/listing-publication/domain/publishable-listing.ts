@@ -81,6 +81,7 @@ export type PublishViolation =
   | "propertyType.required"
   | "propertyType.invalid"
   | "title.required"
+  | "title.tooLong"
   | "description.required"
   | "description.tooShort"
   | "description.tooLong"
@@ -126,6 +127,19 @@ export const MIN_DESCRIPTION_CHARACTERS = 120;
  * a WhatsApp conversation, which is where the rest of it belongs.
  */
 export const MAX_DESCRIPTION_CHARACTERS = 1_200;
+
+/**
+ * Noventa. El numero es de la especificacion de Publicar (seccion 3, "Maximo
+ * 90 caracteres"), y hasta ahora nada lo aplicaba.
+ *
+ * **El paso 6 dibuja el contador "37 / 90" mientras alguien escribe.** Un
+ * contador que anuncia un tope que el validador no conoce es peor que no
+ * tenerlo: promete un limite y despues acepta el doble, y quien recorta su
+ * titulo para entrar lo hizo por nada. La tarjeta de la lista, ademas,
+ * recorta con `--tclamp` a dos lineas, asi que lo que pase de aca no
+ * desaparece del aviso: desaparece de la unica pantalla donde se elige.
+ */
+export const MAX_TITLE_CHARACTERS = 90;
 
 /**
  * Six. **The number is design.md's, but the enforcement is new here**: D12's
@@ -229,6 +243,12 @@ export function validatePublishableListing(
 
   if (isBlank(draft.title)) {
     violations.push("title.required");
+  } else if (characterCount(draft.title as string) > MAX_TITLE_CHARACTERS) {
+    // Puntos de codigo, igual que la descripcion y por el mismo motivo: el
+    // contador de la pantalla cuenta caracteres, y `String.length` cuenta
+    // unidades UTF-16. Contarlos distinto es como el formulario termina
+    // rechazando un titulo que su propio contador dio por bueno.
+    violations.push("title.tooLong");
   }
 
   if (isBlank(draft.description)) {

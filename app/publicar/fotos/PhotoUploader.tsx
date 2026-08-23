@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { Fragment, useId, useState } from "react";
 import { MAX_PHOTOS_PER_LISTING } from "../../../src/modules/listing-publication/domain/publishable-listing";
 import { SUPPORTED_PHOTO_CONTENT_TYPES } from "../../../src/modules/listing-publication/domain/uploaded-photo";
 import { requestUploadTargets } from "./actions";
@@ -123,9 +123,36 @@ function refusalFor(file: File): string {
   return "✱ No pudimos leer esta foto";
 }
 
-export function PhotoUploader() {
+/**
+ * Las fotos que el borrador ya traía, cuando alguien vuelve al paso 8.
+ *
+ * **Sin miniatura, y no es un descuido.** La vista previa era un `blob:` que
+ * apuntaba a memoria de la pestaña anterior: al volver ya no existe, y la
+ * única forma de recuperarla sería volver a bajar de R2 la foto que ya está
+ * subida — datos móviles gastados en mirar algo que ya se decidió. La fila
+ * lleva el nombre y el tamaño, que es lo que hace falta para reconocerla.
+ */
+export interface UploadedPhoto {
+  readonly key: string;
+  readonly name: string;
+  readonly bytes: number;
+}
+
+export function PhotoUploader({ initial = [] }: { initial?: readonly UploadedPhoto[] }) {
   const inputId = useId();
-  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [photos, setPhotos] = useState<Photo[]>(() =>
+    initial.map((photo) => ({
+      id: photo.key,
+      name: photo.name,
+      // Ya comprimida: el original quedó en el teléfono de la sesión anterior,
+      // así que los dos tamaños son el mismo y la fila no miente sobre lo
+      // ahorrado.
+      originalBytes: photo.bytes,
+      compressedBytes: photo.bytes,
+      status: "ready" as PhotoStatus,
+      key: photo.key,
+    })),
+  );
   const [notice, setNotice] = useState("");
 
   const update = (id: string, patch: Partial<Photo>) =>
@@ -195,6 +222,35 @@ export function PhotoUploader() {
         update(entry.photo.id, { status: "failed", error: "✱ No pudimos subirla" });
       }
     }
+  }
+
+  /**
+   * Mover una foto un lugar.
+   *
+   * **Acciones nombradas y no un agarre**, y eso es del diseño: arrastrar con
+   * el pulgar en un teléfono lento no es confiable. La primera es la portada,
+   * así que "mover arriba" desde la segunda posición ES "hacer portada" — una
+   * sola mecánica en vez de dos que hay que explicar por separado.
+   */
+  function move(id: string, direction: -1 | 1) {
+    setPhotos((current) => {
+      const from = current.findIndex((photo) => photo.id === id);
+      const to = from + direction;
+      if (from < 0 || to < 0 || to >= current.length) return current;
+
+      const next = [...current];
+      const [moved] = next.splice(from, 1);
+      if (moved) next.splice(to, 0, moved);
+      return next;
+    });
+  }
+
+  function makeCover(id: string) {
+    setPhotos((current) => {
+      const photo = current.find((entry) => entry.id === id);
+      if (!photo) return current;
+      return [photo, ...current.filter((entry) => entry.id !== id)];
+    });
   }
 
   function remove(id: string) {
@@ -303,6 +359,41 @@ export function PhotoUploader() {
                 )}
               </div>
 
+              {/* Una acción por fila, con nombre: nada que adivinar ni
+                  arrastrar. Los dos textos largos no son decorativos —
+                  "quitar" sin la aclaración hace dudar antes de tocarlo, y
+                  "portada" sola no significa nada. */}
+              {photo.status === "ready" && index > 0 ? (
+                <button
+                  type="button"
+                  className={styles.remove}
+                  onClick={() => makeCover(photo.id)}
+                  title="Se ve en la lista y arriba del aviso"
+                  aria-label={`Hacer portada: ${photo.name}. Se ve en la lista y arriba del aviso`}
+                >
+                  ◆
+                </button>
+              ) : null}
+              {photo.status === "ready" && index > 0 ? (
+                <button
+                  type="button"
+                  className={styles.remove}
+                  onClick={() => move(photo.id, -1)}
+                  aria-label={`Mover arriba: ${photo.name}`}
+                >
+                  ↑
+                </button>
+              ) : null}
+              {photo.status === "ready" && index < photos.length - 1 ? (
+                <button
+                  type="button"
+                  className={styles.remove}
+                  onClick={() => move(photo.id, 1)}
+                  aria-label={`Mover abajo: ${photo.name}`}
+                >
+                  ↓
+                </button>
+              ) : null}
               <button
                 type="button"
                 className={
@@ -311,7 +402,8 @@ export function PhotoUploader() {
                     : styles.remove
                 }
                 onClick={() => remove(photo.id)}
-                aria-label={`Quitar ${photo.name}`}
+                aria-label={`Quitar ${photo.name} del aviso. No borra la foto de tu teléfono`}
+                title="No borra la foto de tu teléfono"
               >
                 ×
               </button>
@@ -340,8 +432,22 @@ export function PhotoUploader() {
         </p>
       </div>
 
+      {/* Lo que el formulario del paso 8 envía. **El nombre y el tamaño viajan
+          al lado de la clave** porque la pantalla de revisar los muestra
+          ("3 fotos · 449 KB") y no hay forma de recuperarlos después sin
+          volver a bajar los archivos. Los tres campos van en el mismo orden,
+          que es como `readStepAnswers` los vuelve a emparejar — y ese orden es
+          el que eligió quien publica, así que tiene que sobrevivir. */}
       {ready.map((photo) => (
-        <input key={photo.id} type="hidden" name="photoKey" value={photo.key} />
+        <Fragment key={photo.id}>
+          <input type="hidden" name="photoKey" value={photo.key} />
+          <input type="hidden" name="photoName" value={photo.name} />
+          <input
+            type="hidden"
+            name="photoBytes"
+            value={String(photo.compressedBytes ?? photo.originalBytes)}
+          />
+        </Fragment>
       ))}
     </div>
   );

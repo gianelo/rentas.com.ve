@@ -28,6 +28,17 @@ export default defineConfig({
       // Only this webServer sets it — see app/measure/page.tsx. A real
       // deploy never sets this, so the route 404s outside this harness.
       MEASURE_HARNESS_ENABLED: "true",
+      // Un destino que no existe, a propósito.
+      //
+      // El arnés monta `PublishStep`, que arrastra la Server Action del paso,
+      // que importa `src/shared/db/client.ts` — y ese módulo lanza al cargarse
+      // si `DATABASE_URL` no está. El arnés dibuja y no consulta nada, así que
+      // basta con que la cadena tenga la forma que `assertPooledConnectionString`
+      // exige. Declarada acá y no leída de `.env`, el arnés queda además
+      // incapaz de tocar una base real: gana la del entorno del webServer,
+      // porque Next no pisa una variable que ya está puesta.
+      DATABASE_URL:
+        "postgresql://harness:harness@ep-measure-harness-pooler.us-east-2.aws.neon.tech/rentas?sslmode=require",
     },
   },
   projects: [

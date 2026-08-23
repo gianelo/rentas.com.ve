@@ -1,6 +1,7 @@
 import {
   MAX_DESCRIPTION_CHARACTERS,
   MAX_PHOTOS_PER_LISTING,
+  MAX_TITLE_CHARACTERS,
   MIN_DESCRIPTION_CHARACTERS,
   type PublishViolation,
 } from "../../src/modules/listing-publication/domain/publishable-listing";
@@ -47,6 +48,8 @@ export interface PublishCopyContext {
   readonly description?: string;
   /** Pre-counted alternative, for callers that already measured. */
   readonly descriptionLength?: number;
+  /** El titulo enviado, por el mismo motivo: el paso 6 tambien cuenta. */
+  readonly title?: string;
 }
 
 export interface ViolationCopy {
@@ -65,6 +68,11 @@ const REQUIRED = "✱ obligatorio";
 function countCharacters(context: PublishCopyContext): number {
   if (context.descriptionLength !== undefined) return context.descriptionLength;
   return [...(context.description ?? "")].length;
+}
+
+/** Puntos de codigo, igual que el validador y por la misma razon. */
+function countTitleCharacters(context: PublishCopyContext): number {
+  return [...(context.title ?? "")].length;
 }
 
 export const PUBLISH_VIOLATION_COPY: Record<PublishViolation, ViolationCopy> = {
@@ -89,6 +97,14 @@ export const PUBLISH_VIOLATION_COPY: Record<PublishViolation, ViolationCopy> = {
   "title.required": {
     field: "title",
     message: () => `${REQUIRED}. Escribí un título, como lo dirías vos.`,
+  },
+  // Se dice cuanto sobra, no "acortalo". El paso 6 ya dibuja "37 / 90"
+  // mientras se escribe, asi que el mensaje no puede ser menos preciso que el
+  // contador que lo acompana.
+  "title.tooLong": {
+    field: "title",
+    message: (context) =>
+      `Máximo ${MAX_TITLE_CHARACTERS} caracteres. Vas ${countTitleCharacters(context)}.`,
   },
   "description.required": {
     field: "description",

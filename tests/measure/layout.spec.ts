@@ -89,161 +89,236 @@ test.describe("layout measurement", () => {
 });
 
 /**
- * Screen 3 (artboard 2c). These exist because the publish form shipped with
- * eleven green tests and nine layout differences from the design: every one
- * of those tests read markup, and none could see geometry. Markup assertions
- * prove a field exists; only a browser proves where it is.
+ * Los nueve pasos, medidos sobre la pantalla que se sirve (3.9).
+ *
+ * Estas pruebas existen porque el formulario de publicar llegó a producción con
+ * once pruebas en verde y nueve diferencias de maquetación: todas leían markup
+ * y ninguna podía ver dónde estaba nada.
+ *
+ * **Y volvieron a existir por la misma razón, un nivel más arriba.** Cuando el
+ * formulario de una sola pantalla se retiró en favor de nueve pasos, el arnés
+ * quedó dibujando un formulario de ejemplo escrito a mano: `#cityId`, `#zoneId`
+ * y `#title` ya no existían en ninguna parte del producto, así que estas
+ * medidas o fallaban o medían una pantalla que nadie iba a ver nunca. Ahora
+ * `app/measure` monta el `PublishStep` real, el mismo que sirve
+ * `/publicar/paso/[paso]`, con el borrador y el riel entrando por props.
+ *
+ * Se miden dos de los nueve, que son los dos que pueden romperse por geometría:
+ * el paso 4, único con cuatro controles, y el paso 2, donde la fila de búsqueda
+ * y la lista de resultados reemplazaron al par ciudad/zona.
  */
-test.describe("publish form measurement (3.9)", () => {
-  test("3.9: city and zone sit on one row at 360px, not stacked", async ({ page }) => {
-    await page.setViewportSize({ width: 360, height: 900 });
-    await page.goto("/measure");
-
-    const city = await page.locator("#cityId").boundingBox();
-    const zone = await page.locator("#zoneId").boundingBox();
-    if (!city || !zone) throw new Error("city/zone selects did not render a measurable box");
-
-    console.log(`[3.9] 360px city.y=${city.y} zone.y=${zone.y} (bound: same row)`);
-    // Same row means the same top edge, within a pixel of rounding. The
-    // mobile artboard pairs them exactly as the desktop one does, so a
-    // stacked pair at 360 is a defect on the viewport designed for first.
-    expect(Math.abs(city.y - zone.y)).toBeLessThanOrEqual(1);
-    expect(zone.x).toBeGreaterThan(city.x);
-  });
-
-  test("3.9: the form column stays within 600px at 1280px", async ({ page }) => {
+test.describe("paso 4 — los cuatro números (3.9)", () => {
+  test("3.9: la columna del paso no pasa de 520px a 1280px", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 1000 });
     await page.goto("/measure");
 
-    const box = await page.getByTestId("publish-column").locator("form").boundingBox();
-    if (!box) throw new Error("publish form did not render a measurable box");
+    const column = await page.getByTestId("publish-step-tamano").locator("main").boundingBox();
+    if (!column) throw new Error("la columna del paso no dibujó una caja medible");
 
-    console.log(`[3.9] measured form width at 1280px: ${box.width}px (bound: <= 600px)`);
-    // "Una columna de 600" — a wide form loses the relationship between label
-    // and field (D14), which is why this is a bound and not a preference.
-    expect(box.width).toBeLessThanOrEqual(600);
+    console.log(`[3.9] ancho de columna a 1280px: ${column.width}px (cota: <= 520px)`);
+    // 520 y no 600: los nueve pasos tienen su propia composición, con riel de
+    // 240px al lado. Una columna ancha pierde la relación entre etiqueta y
+    // campo (D14), y por eso es una cota y no una preferencia.
+    expect(column.width).toBeLessThanOrEqual(520);
   });
 
-  test("3.9: no horizontal overflow at 360px, selects included", async ({ page }) => {
+  test("3.9: el riel de nueve pasos ocupa 240px a la izquierda de la columna", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.goto("/measure");
+
+    const step = page.getByTestId("publish-step-tamano");
+    // La LISTA y no el `<nav>` que la envuelve: el nav es la celda de 240px de
+    // la grilla y sigue midiendo 240 aunque el riel esté oculto. Ocultarlo es
+    // justamente la forma en que esta pantalla pierde lo que la hace soportable
+    // en escritorio, así que es lo que hay que medir.
+    const rail = await step.locator('nav[aria-label="Progreso"] ol').boundingBox();
+    const column = await step.locator("main").boundingBox();
+    if (!rail || !column) throw new Error("riel/columna no dibujaron una caja medible");
+
+    const steps = await step.locator('nav[aria-label="Progreso"] ol li').count();
+    console.log(
+      `[3.9] riel x=${rail.x} ancho=${rail.width} · ${steps} pasos · columna x=${column.x}`,
+    );
+    // El riel es lo que en 1280 reemplaza a la barra de 3px: se ven los nueve y
+    // se puede volver a cualquiera con un clic. Es la diferencia entre saber
+    // cuánto falta y poder hacer algo al respecto.
+    expect(steps).toBe(9);
+    expect(rail.width).toBeLessThanOrEqual(240);
+    expect(column.x).toBeGreaterThan(rail.x + rail.width - 1);
+  });
+
+  test("3.9: los cuatro números caben en la columna a 360px", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 900 });
     await page.goto("/measure");
 
-    const overflow = await page.evaluate(() => ({
-      scrollWidth: document.documentElement.scrollWidth,
-      clientWidth: document.documentElement.clientWidth,
-    }));
+    const overflow = await page
+      .getByTestId("publish-step-tamano")
+      .locator("main")
+      .evaluate((node) => ({ scrollWidth: node.scrollWidth, clientWidth: node.clientWidth }));
 
     console.log(
-      `[3.9] 360px scrollWidth=${overflow.scrollWidth} clientWidth=${overflow.clientWidth}`,
+      `[3.9] paso 4 a 360px: scrollWidth=${overflow.scrollWidth} clientWidth=${overflow.clientWidth}`,
     );
-    // Two selects side by side is the likeliest way this breaks: a select
-    // sizes to its widest option unless something stops it.
+    // Etiqueta y control de 120px en la misma fila, cuatro veces: es la forma
+    // más probable de que esta pantalla se desborde de costado, y una columna
+    // que se va de lado es una que nadie termina de llenar.
     expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
   });
 
-  test("3.9: every form control is a real 44px target at 360px", async ({ page }) => {
+  test("3.9: cada uno de los cuatro campos es un objetivo real de 44px a 360px", async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 360, height: 900 });
     await page.goto("/measure");
 
-    for (const selector of ["#title", "#priceUsd", "#cityId", "#rooms"]) {
+    for (const selector of ["#rooms", "#bathrooms", "#parkingSpots", "#areaM2"]) {
       const box = await page.locator(selector).boundingBox();
-      if (!box) throw new Error(`${selector} did not render a measurable box`);
-      console.log(`[3.9] mobile ${selector}: height ${box.height}px (bound: >= 44px)`);
-      // Declared in CSS is not the same as rendered: a flex parent, a
-      // conflicting reset, or a shorthand later in the cascade all silently
-      // shrink this, and nobody notices until a thumb misses.
+      if (!box) throw new Error(`${selector} no dibujó una caja medible`);
+      console.log(`[3.9] móvil ${selector}: alto ${box.height}px (cota: >= 44px)`);
+      // Declarado en CSS no es lo mismo que dibujado: un padre flex, un reset
+      // que compite o una abreviatura más abajo en la cascada lo encogen en
+      // silencio, y nadie se entera hasta que un pulgar falla.
       expect(box.height).toBeGreaterThanOrEqual(44);
     }
   });
-});
 
-/**
- * The zone cascade (3.9). This is the spec that should have existed before
- * the form shipped: every other test on this screen hands `cityId` in as a
- * prop, so none of them ever walked the path a person walks — open the page,
- * choose a city, choose a zone. In production the city `<select>` sat inside
- * the POST form with nothing to reload the page, so the zone list stayed
- * empty for every city and the form could never be submitted at all.
- */
-test.describe("zone selection (3.9)", () => {
-  test("3.9: choosing a city offers that city's zones, with no JavaScript", async ({ browser }) => {
-    // Scripting off, because step 1 must work before any bundle arrives —
-    // and because a cascade that only works with JS is exactly the defect
-    // this test exists to catch.
-    const context = await browser.newContext({ javaScriptEnabled: false });
-    const page = await context.newPage();
+  test("3.9: el botón principal también es un objetivo de 44px a 360px", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 900 });
     await page.goto("/measure");
 
-    await page.selectOption("#cityId", { label: "Maracaibo" });
+    const box = await page
+      .getByTestId("publish-step-tamano")
+      .locator('button[type="submit"]')
+      .boundingBox();
+    if (!box) throw new Error("el botón principal no dibujó una caja medible");
 
-    const zoneOptions = await page.locator("#zoneId option").allTextContents();
-    console.log(`[3.9] zone options after choosing Maracaibo: ${JSON.stringify(zoneOptions)}`);
-
-    expect(zoneOptions).toContain("La Lago");
-    await context.close();
+    console.log(`[3.9] móvil botón principal: alto ${box.height}px (cota: >= 44px)`);
+    // Es el único camino hacia adelante en una pantalla de una sola pregunta.
+    expect(box.height).toBeGreaterThanOrEqual(44);
   });
 
-  test("3.9: every curated zone is reachable, grouped by its city", async ({ page }) => {
-    await page.goto("/measure");
-
-    const groups = await page
-      .locator("#zoneId optgroup")
-      .evaluateAll((nodes) => nodes.map((node) => (node as HTMLOptGroupElement).label));
-    console.log(`[3.9] zone groups: ${JSON.stringify(groups)}`);
-
-    // Grouping is what lets one static select serve both cities without
-    // JavaScript: the label says which city a zone belongs to, so a
-    // mismatched pair is visible before the validator has to explain it.
-    expect(groups).toEqual(["Distrito Capital", "Maracaibo"]);
-  });
-});
-
-/**
- * The column, not just the form (3.9). The first version of these
- * measurements bounded the `<form>` — which `FormShell` already capped — and
- * nothing bounded the column around it. On a 1280 screen the heading sat
- * against the left edge while the fields floated centred, and every test
- * passed. The bound was on the wrong element.
- */
-test.describe("publish column measurement (3.9)", () => {
-  test("3.9: the whole column is 600px and centred at 1280px, heading included", async ({
-    page,
-  }) => {
+  test("3.9: la pregunta y las etiquetas comparten el borde izquierdo", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 1000 });
     await page.goto("/measure");
 
-    // The SHELL, not the <main> around it. The page is fluid on purpose --
-    // it carries vertical rhythm and a safety margin -- and FormShell is the
-    // thing that owns the 600px column. Pointing this at the page was the
-    // same mis-aimed bound as before, in the other direction.
-    const column = await page.getByTestId("publish-column").locator("> div").boundingBox();
-    const title = await page.getByTestId("publish-title").boundingBox();
-    if (!column || !title) throw new Error("shell/title did not render a measurable box");
+    const step = page.getByTestId("publish-step-tamano");
+    const title = await step.locator("h1").boundingBox();
+    const label = await step.locator('label[for="rooms"]').boundingBox();
+    if (!title || !label) throw new Error("título/etiqueta no dibujaron una caja medible");
 
-    console.log(`[3.9] shell x=${column.x} width=${column.width} (bound: <= 600, centred)`);
-    expect(column.width).toBeLessThanOrEqual(600);
-    // Centred: equal space either side of a 1280 viewport.
-    expect(Math.abs(column.x - (1280 - column.x - column.width))).toBeLessThanOrEqual(2);
-
-    // The heading starts where the column starts. If the column were fluid
-    // this would be near zero while the form sat in the middle — which is
-    // exactly what shipped.
-    expect(Math.abs(title.x - column.x)).toBeLessThanOrEqual(20);
+    console.log(`[3.9] title.x=${title.x} label.x=${label.x} (cota: mismo borde)`);
+    // Contra la ETIQUETA y no contra el campo: en el paso 4 la etiqueta va a la
+    // izquierda y el número a la derecha, así que apuntar al `<input>` mediría
+    // el borde contrario y llamaría defecto a lo que el diseño pide. Una
+    // pantalla cuyo encabezado y contenido no se alinean se lee como dos
+    // pantallas apiladas.
+    expect(Math.abs(title.x - label.x)).toBeLessThanOrEqual(20);
   });
 
-  test("3.9: the heading and the fields share a left edge", async ({ page }) => {
+  test("3.9: los cuatro números quedan alineados contra el borde derecho", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 1000 });
     await page.goto("/measure");
 
-    const title = await page.getByTestId("publish-title").boundingBox();
-    const field = await page.locator("#title").boundingBox();
-    if (!title || !field) throw new Error("title/field did not render a measurable box");
+    const step = page.getByTestId("publish-step-tamano");
+    const column = await step.locator("main").boundingBox();
+    if (!column) throw new Error("la columna no dibujó una caja medible");
 
-    console.log(`[3.9] title.x=${title.x} field.x=${field.x} (bound: same edge)`);
-    // A page whose heading and inputs do not line up reads as two screens
-    // stacked, and that is what a fluid container around a capped form looks
-    // like from the outside.
-    expect(Math.abs(title.x - field.x)).toBeLessThanOrEqual(20);
+    const rights: number[] = [];
+    for (const selector of ["#rooms", "#bathrooms", "#parkingSpots", "#areaM2"]) {
+      const box = await page.locator(selector).boundingBox();
+      if (!box) throw new Error(`${selector} no dibujó una caja medible`);
+      rights.push(Math.round(box.x + box.width));
+    }
+
+    const columnRight = Math.round(column.x + column.width);
+    console.log(
+      `[3.9] bordes derechos: ${JSON.stringify(rights)} · columna termina en ${columnRight}`,
+    );
+    // Los cuatro números forman una columna que se lee de un vistazo. Si uno se
+    // corriera —porque su etiqueta es más larga, o porque una fila dejó de ser
+    // `space-between`— dejarían de compararse entre sí, que es para lo que
+    // están puestos uno debajo del otro.
+    expect(new Set(rights).size).toBe(1);
+    expect(Math.abs(Math.max(...rights) - columnRight)).toBeLessThanOrEqual(2);
+  });
+});
+
+/**
+ * El paso 2, que es lo que reemplazó al par ciudad/zona (3.9).
+ *
+ * Las dos pruebas que vivían acá medían un `<select>` de ciudad que recargaba
+ * la página para ofrecer las zonas de esa ciudad. **Ese control ya no existe, y
+ * su ausencia es una decisión, no una omisión**: la ciudad se deriva de la zona
+ * elegida (criterio de aceptación 7), así que preguntarla por separado traía de
+ * vuelta el caso borde de cambiar la ciudad después de la zona. Lo que hay en
+ * su lugar es una caja de búsqueda y una lista cerrada de resultados, y eso es
+ * lo que corresponde medir.
+ */
+test.describe("paso 2 — elegir la zona (3.9)", () => {
+  test("3.9: la caja de búsqueda y su botón van en una fila a 360px", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 900 });
+    await page.goto("/measure");
+
+    const step = page.getByTestId("publish-step-zona");
+    const input = await page.locator("#q").boundingBox();
+    const button = await step.locator('form[method="get"] button').boundingBox();
+    if (!input || !button) throw new Error("buscador/botón no dibujaron una caja medible");
+
+    console.log(`[3.9] 360px buscador y=${input.y} botón y=${button.y} (cota: misma fila)`);
+    // Apilados, el botón queda debajo del pliegue en un teléfono y la búsqueda
+    // parece no tener con qué dispararse.
+    expect(Math.abs(input.y - button.y)).toBeLessThanOrEqual(1);
+    expect(button.x).toBeGreaterThan(input.x);
+  });
+
+  test("3.9: la ciudad no se pregunta en ninguna parte del paso", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 900 });
+    await page.goto("/measure");
+
+    const cityControls = await page.getByTestId("publish-step-zona").locator("#cityId").count();
+
+    console.log(`[3.9] controles de ciudad en el paso 2: ${cityControls} (cota: 0)`);
+    // La ciudad la determina la zona. Un control propio para la ciudad es el
+    // camino de vuelta al caso que la especificación da por resuelto —
+    // cambiarla después de haber elegido la zona— y por eso su ausencia se
+    // verifica en vez de darse por sentada.
+    expect(cityControls).toBe(0);
+  });
+
+  test("3.9: cada resultado de zona es un objetivo real de 44px a 360px", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 900 });
+    await page.goto("/measure");
+
+    const results = page.getByTestId("publish-step-zona").locator("ul li label");
+    const count = await results.count();
+    expect(count).toBeGreaterThan(0);
+
+    for (let index = 0; index < count; index += 1) {
+      const box = await results.nth(index).boundingBox();
+      if (!box) throw new Error(`el resultado ${index} no dibujó una caja medible`);
+      console.log(`[3.9] móvil resultado ${index}: alto ${box.height}px (cota: >= 44px)`);
+      // La pastilla lleva el nombre y debajo el municipio y la ciudad: es lo
+      // único que separa dos zonas homónimas, y se toca de pie con una mano.
+      expect(box.height).toBeGreaterThanOrEqual(44);
+    }
+  });
+
+  test("3.9: el paso 2 no se desborda de costado a 360px", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 900 });
+    await page.goto("/measure");
+
+    const overflow = await page
+      .getByTestId("publish-step-zona")
+      .locator("main")
+      .evaluate((node) => ({ scrollWidth: node.scrollWidth, clientWidth: node.clientWidth }));
+
+    console.log(
+      `[3.9] paso 2 a 360px: scrollWidth=${overflow.scrollWidth} clientWidth=${overflow.clientWidth}`,
+    );
+    // El renglón de alcance —"Municipio Chacao · Distrito Capital"— es texto
+    // largo dentro de una pastilla, y es lo que más fácilmente empuja la
+    // columna hacia afuera.
+    expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
   });
 });
 
