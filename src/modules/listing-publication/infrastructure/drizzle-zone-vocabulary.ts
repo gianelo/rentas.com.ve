@@ -1,4 +1,4 @@
-import { asc, eq, ilike, or, sql } from "drizzle-orm";
+import { asc, eq, ilike, inArray, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { cities, zoneAliases, zones } from "../../../shared/db/schema";
 import type { SuggestionVocabulary } from "../../listing-catalogue/domain/suggest-filters";
@@ -111,7 +111,13 @@ export class DrizzleZoneVocabulary implements ZoneVocabularyPort {
             })
             .from(zones)
             .leftJoin(parent, eq(zones.parentId, parent.id))
-            .where(sql`${zones.id} = ANY(${missing})`)
+            // `inArray` y no un `= ANY(...)` escrito a mano: la plantilla `sql`
+            // desarma el arreglo en parametros sueltos, asi que Postgres recibia
+            // un escalar donde esperaba un arreglo y contestaba "malformed array
+            // literal". Buscar por un toponimo que solo vive en `zone_alias`
+            // —«Bella Vista», el caso para el que esa tabla existe— reventaba la
+            // pantalla entera del paso 2, y ningun doble podia verlo.
+            .where(inArray(zones.id, missing))
             .limit(LOOKUP_LIMIT);
 
     return {
