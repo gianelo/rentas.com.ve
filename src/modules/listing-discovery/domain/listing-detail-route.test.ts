@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveListingRoute } from "./listing-detail-route";
+import { RETURN_PARAM } from "./return-to-results";
 
 const ID = "3f2a91cb-04d7-b8e0-1a55-9c7e2d4f6b03";
 
@@ -78,5 +79,59 @@ describe("resolveListingRoute", () => {
       "/alquiler/caracas/chacao/apartamento-2-habitaciones-con-puesto-de-estacionamiento-" + ID;
 
     expect(resolveListingRoute(LISTING, `${canonical}/`)).toEqual({ kind: "render" });
+  });
+
+  /**
+   * **La redirección canónica y el origen de la vuelta (16.9), que se pisan.**
+   * El origen viaja en la query de la ficha; la canonicalización compara rutas.
+   * Con la query adentro de la comparación, la ruta canónica *con* parámetro no
+   * sería nunca igual a la canónica y la ficha se redirigiría a sí misma para
+   * siempre — un bucle que sólo aparece cuando alguien llega desde una
+   * búsqueda, es decir, en el camino normal del producto.
+   */
+  it("sirve la ruta canónica aunque traiga el parámetro de vuelta", () => {
+    const canonical = `/alquiler/caracas/chacao/apartamento-2-habitaciones-con-puesto-de-estacionamiento-${ID}`;
+
+    expect(
+      resolveListingRoute(LISTING, `${canonical}?${RETURN_PARAM}=%2Falquiler%2Fx%2Fy`),
+    ).toEqual({ kind: "render" });
+  });
+
+  it("conserva el origen al redirigir: la vuelta no se pierde en el camino", () => {
+    const resolution = resolveListingRoute(
+      LISTING,
+      `/alquiler/caracas/chacao/titulo-viejo-${ID}`,
+      "/alquiler/caracas/chacao?min=200&hab=2",
+    );
+
+    expect(resolution.kind).toBe("redirect");
+    expect(
+      resolution.kind === "redirect" &&
+        new URL(resolution.to, "https://rentas.com.ve").searchParams.get(RETURN_PARAM),
+    ).toBe("/alquiler/caracas/chacao?min=200&hab=2");
+  });
+
+  it("el destino de la redirección ya no redirige: una sola vez y para", () => {
+    const first = resolveListingRoute(
+      LISTING,
+      `/alquiler/caracas/chacao/titulo-viejo-${ID}`,
+      "/alquiler/caracas/chacao?min=200",
+    );
+    const second =
+      first.kind === "redirect"
+        ? resolveListingRoute(LISTING, first.to, "/alquiler/caracas/chacao?min=200")
+        : first;
+
+    expect(second).toEqual({ kind: "render" });
+  });
+
+  it("un origen inseguro no se lleva puesto en la redirección", () => {
+    const resolution = resolveListingRoute(
+      LISTING,
+      `/alquiler/caracas/chacao/titulo-viejo-${ID}`,
+      "https://evil.test/alquiler/x",
+    );
+
+    expect(resolution.kind === "redirect" && resolution.to).not.toContain("evil.test");
   });
 });
