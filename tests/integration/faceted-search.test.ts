@@ -2,6 +2,10 @@ import { randomUUID } from "node:crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import {
+  buildFilterPanel,
+  type FilterPanelRequest,
+} from "../../src/modules/listing-search/application/build-filter-panel";
 import type { SearchCriteria } from "../../src/modules/listing-search/domain/search-criteria";
 import {
   DrizzleFacetedSearch,
@@ -656,5 +660,187 @@ describe("los criterios nuevos también son facetas (tasks 14.6 a 14.9)", () => 
     // A2 y A3 también están amoblados, y son de Maracaibo.
     expect(enCaracas.total).toBe(1);
     expect(enCaracas.byZone).toEqual({ [DC_CENTRO]: 1 });
+  });
+});
+
+/**
+ * **El panel entero contra Postgres real**, que es lo que las dos pantallas de
+ * búsqueda dibujan.
+ *
+ * `buildFilterPanel.test.ts` ya prueba estas reglas contra un doble en
+ * memoria, y ese doble cuenta porque fue escrito para contar. Acá se prueba lo
+ * que ningún doble puede: que **el número de la placa de cada ciudad salga de
+ * las filas de esa ciudad** (F3, regla transversal 3) y que **las zonas que se
+ * ofrecen sean las que el conteo nombra** — no la taxonomía entera, que son
+ * miles de filas por ciudad.
+ */
+const PANEL_CIUDADES = [
+  { id: MARACAIBO, name: "Maracaibo", path: "/alquiler/maracaibo" },
+  { id: DISTRITO, name: "Distrito Capital", path: "/alquiler/distrito-capital" },
+] as const;
+
+const PANEL_ZONAS = [
+  { id: MCBO_CENTRO, name: "Centro", path: "/alquiler/maracaibo/centro" },
+  { id: MCBO_NORTE, name: "Norte", path: "/alquiler/maracaibo/norte" },
+  { id: MCBO_VACIA, name: "Sin avisos", path: "/alquiler/maracaibo/sin-avisos" },
+] as const;
+
+function panelRequest(overrides: Partial<FilterPanelRequest> = {}): FilterPanelRequest {
+  return {
+    basePath: "/alquiler/maracaibo",
+    cityPath: "/alquiler/maracaibo",
+    query: {},
+    cityId: MARACAIBO,
+    cities: PANEL_CIUDADES,
+    zones: PANEL_ZONAS,
+    chosenZoneIds: [],
+    criteria: { cityId: MARACAIBO },
+    ...overrides,
+  };
+}
+
+describe("el panel armado contra la base: el conteo por ciudad (F3)", () => {
+  it("cada ciudad lleva SU número, contado sobre sus propias filas", async () => {
+    const { panel } = await buildFilterPanel(facets, panelRequest());
+
+    const maracaibo = panel.cities.find((city) => city.id === MARACAIBO);
+    const distrito = panel.cities.find((city) => city.id === DISTRITO);
+
+    // Los mismos cinco y uno que cuenta `countFacets`, ahora en la placa.
+    expect(maracaibo?.count).toBe(5);
+    expect(distrito?.count).toBe(1);
+    // Un solo número repetido en las dos placas es el bug que este caso
+    // atrapa: se ve razonable y no lo desmiente nada.
+    expect(maracaibo?.count).not.toBe(distrito?.count);
+  });
+
+  it("el conteo de la otra ciudad se calcula SIN las zonas de ésta", async () => {
+    // Las zonas pertenecen a la ciudad que se está mirando. Arrastradas a la
+    // otra dan cero sobre una ciudad llena de avisos, y la placa invitaría a
+    // un vacío — lo que la regla transversal 4 prohíbe.
+    const { panel } = await buildFilterPanel(
+      facets,
+      panelRequest({
+        chosenZoneIds: [MCBO_CENTRO],
+        criteria: { cityId: MARACAIBO, zoneIds: [MCBO_CENTRO] },
+      }),
+    );
+
+    expect(panel.cities.find((city) => city.id === MARACAIBO)?.count).toBe(3);
+    expect(panel.cities.find((city) => city.id === DISTRITO)?.count).toBe(1);
+  });
+
+  it("los demás filtros SÍ viajan a la otra ciudad: no dependen del lugar", async () => {
+    // Quien busca amoblado sigue buscando amoblado en la otra punta del país.
+    // D1, el único de Distrito Capital, está amoblado.
+    const { panel } = await buildFilterPanel(
+      facets,
+      panelRequest({ criteria: { cityId: MARACAIBO, attributes: ["isFurnished"] } }),
+    );
+
+    expect(panel.cities.find((city) => city.id === MARACAIBO)?.count).toBe(2); // A2 y A3
+    expect(panel.cities.find((city) => city.id === DISTRITO)?.count).toBe(1); // D1
+
+    const sinNada = await buildFilterPanel(
+      facets,
+      panelRequest({ criteria: { cityId: MARACAIBO, minPriceUsd: 100000 } }),
+    );
+
+    // Y si el filtro tampoco encuentra nada allá, la placa dice cero en vez de
+    // inventar el total de la ciudad.
+    expect(sinNada.panel.cities.find((city) => city.id === DISTRITO)?.count).toBe(0);
+  });
+});
+
+describe("el panel armado contra la base: las zonas ofrecidas salen del conteo", () => {
+  it("se ofrecen las zonas que el conteo nombra, no la taxonomía entera", async () => {
+    const { panel, counts } = await buildFilterPanel(facets, panelRequest());
+
+    // La zona curada sin un solo aviso no se ofrece cuando nadie la eligió:
+    // ofrecerla sería una opción que lleva a un vacío.
+    expect(panel.zones.map((zone) => zone.id)).toEqual([MCBO_CENTRO, MCBO_NORTE]);
+    expect(counts.byZone[MCBO_CENTRO]).toBe(3);
+    expect(counts.byZone[MCBO_NORTE]).toBe(2);
+  });
+
+  it("cada zona ofrecida lleva su número real, y el cero no se dibuja", async () => {
+    const { panel } = await buildFilterPanel(facets, panelRequest());
+
+    const centro = panel.zones.find((zone) => zone.id === MCBO_CENTRO);
+    const norte = panel.zones.find((zone) => zone.id === MCBO_NORTE);
+
+    expect(centro?.count).toBe(3);
+    expect(centro?.countLabel).toBe("3");
+    expect(norte?.count).toBe(2);
+    expect(centro?.disabled).toBe(false);
+  });
+
+  it("la zona elegida se ofrece aunque su conteo sea cero, o quedaría marcada para siempre", async () => {
+    const { panel } = await buildFilterPanel(
+      facets,
+      panelRequest({
+        chosenZoneIds: [MCBO_VACIA],
+        criteria: { cityId: MARACAIBO, zoneIds: [MCBO_VACIA] },
+      }),
+    );
+
+    const vacia = panel.zones.find((zone) => zone.id === MCBO_VACIA);
+
+    expect(vacia).toBeDefined();
+    expect(vacia?.chosen).toBe(true);
+    // El cero existe en el conteo —hace falta para saber que no hay nada— y no
+    // se dibuja: un «0» pegado a una opción se lee como un contador roto.
+    expect(vacia?.count).toBe(0);
+    expect(vacia?.countLabel).toBeNull();
+    // Y sigue tocable: si no, no habría forma de soltarla.
+    expect(vacia?.disabled).toBe(false);
+  });
+
+  it("una zona no se cuenta contra su propio filtro, o cambiar de idea sería imposible", async () => {
+    // Con Centro elegido, el número al lado de Norte tiene que decir cuántos
+    // habría *si se cambiara*, no cero. Un motor que aplica cada filtro a cada
+    // conteo apaga todas las opciones menos la ya elegida.
+    const { panel } = await buildFilterPanel(
+      facets,
+      panelRequest({
+        chosenZoneIds: [MCBO_CENTRO],
+        criteria: { cityId: MARACAIBO, zoneIds: [MCBO_CENTRO] },
+      }),
+    );
+
+    expect(panel.zones.find((zone) => zone.id === MCBO_NORTE)?.count).toBe(2);
+  });
+
+  it("el botón dice el total de la búsqueda, y es el mismo que devuelve la lista", async () => {
+    const criteria: SearchCriteria = { cityId: MARACAIBO, zoneIds: [MCBO_CENTRO, MCBO_NORTE] };
+    const [{ panel }, rows] = await Promise.all([
+      buildFilterPanel(facets, panelRequest({ criteria, chosenZoneIds: criteria.zoneIds ?? [] })),
+      search.search(criteria),
+    ]);
+
+    expect(panel.confirm.kind).toBe("results");
+    expect(panel.confirm).toMatchObject({ label: `Ver ${rows.length} avisos` });
+  });
+
+  it("sin resultados ofrece UNA salida con su número real, traído de la base", async () => {
+    // El precio imposible es el filtro que más destraba, y el número que
+    // acompaña la oferta lo cuenta Postgres: una salida que promete 5 y
+    // entrega 0 manda a otro vacío.
+    const { panel } = await buildFilterPanel(
+      facets,
+      panelRequest({
+        chosenZoneIds: [MCBO_CENTRO],
+        criteria: { cityId: MARACAIBO, zoneIds: [MCBO_CENTRO], minPriceUsd: 100000 },
+      }),
+    );
+
+    expect(panel.confirm.kind).toBe("empty");
+    if (panel.confirm.kind !== "empty") return;
+
+    expect(panel.confirm.relief).not.toBeNull();
+    expect(panel.confirm.relief?.filter).toBe("price");
+    // Soltar el precio deja las tres de Centro; soltar la zona deja cero,
+    // porque el precio imposible sigue puesto.
+    expect(panel.confirm.relief?.resultCount).toBe(3);
   });
 });

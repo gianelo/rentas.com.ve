@@ -194,4 +194,39 @@ describe("buildFilterPanel", () => {
 
     expect(counts.total).toBe(16);
   });
+
+  it("con un solo resultado el botón lleva a la ficha, no a una lista de uno (F7)", async () => {
+    // La ficha la trae la pantalla, porque sale de las filas y no del conteo.
+    // Que llegue hasta el botón es lo que evita una pantalla intermedia que
+    // ya no informa nada: quien la abre acaba de leer que hay uno.
+    const { port } = fakeFacets({ dc: { total: 1 }, mcbo: {} });
+
+    const { panel } = await buildFilterPanel(port, {
+      ...PLACE,
+      query: {},
+      chosenZoneIds: [],
+      criteria: { cityId: "dc" },
+      onlyListingHref: "/alquiler/distrito-capital/chacao/apto-84512",
+    });
+
+    expect(panel.confirm.kind).toBe("listing");
+    expect(panel.confirm).toMatchObject({ href: "/alquiler/distrito-capital/chacao/apto-84512" });
+  });
+
+  it("sin la ficha a mano cae a la lista en vez de romperse", async () => {
+    // Es el caso real de F9: el único resultado no tiene portada, así que no
+    // entra en la cuadrícula y la pantalla no tiene una dirección que pasar.
+    // Una pantalla de más es mejor que un botón que no lleva a ninguna parte.
+    const { port } = fakeFacets({ dc: { total: 1 }, mcbo: {} });
+
+    const { panel } = await buildFilterPanel(port, {
+      ...PLACE,
+      query: {},
+      chosenZoneIds: [],
+      criteria: { cityId: "dc" },
+    });
+
+    expect(panel.confirm.kind).toBe("results");
+    expect(panel.confirm).toMatchObject({ label: "Ver 1 aviso" });
+  });
 });

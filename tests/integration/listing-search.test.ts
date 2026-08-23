@@ -2,7 +2,10 @@ import { randomUUID } from "node:crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { RESULTS_PER_PAGE } from "../../src/modules/listing-search/domain/pagination";
+import {
+  RESULTS_PER_PAGE,
+  resolvePagination,
+} from "../../src/modules/listing-search/domain/pagination";
 import {
   DrizzleListingSearch,
   type SearchDatabase,
@@ -543,5 +546,71 @@ describe("paginación (task 14.10, F10)", () => {
     const results = await search.search({ cityId: MARACAIBO, page: 2 });
 
     expect(results).toEqual([]);
+  });
+});
+
+describe("la placa de la ciudad y sus páginas, atadas (F3 + F10)", () => {
+  /**
+   * **El bug que la pantalla de ciudad tuvo publicado.** `pageWindow` recorta
+   * a 24 por su cuenta, sin que la pantalla lo pida, y esa pantalla no ofrecía
+   * ni un enlace: el aviso 25 en adelante existía, se contaba en la placa «Ver
+   * los N», y no había forma de llegar. Nada fallaba — se dibujaba perfecta
+   * con las primeras 24.
+   *
+   * Se prueba acá y no en un test de pantalla porque la relación es entre dos
+   * cosas del motor: **cuántos hay** y **cuántos alcanza la paginación**. Si
+   * las dos no cierran, la placa promete avisos que nadie puede abrir.
+   */
+  it("recorriendo todas las páginas se llega a todos los avisos, sin repetir ni perder", async () => {
+    const paginacion = resolvePagination(undefined, PAGINADOS);
+
+    // Guarda: con una sola página este test no probaría nada y pasaría por eso.
+    expect(paginacion.count).toBeGreaterThan(1);
+
+    const ids = new Set<string>();
+    for (let page = 1; page <= paginacion.count; page += 1) {
+      const rows = await search.search({
+        cityId: PAGINADA,
+        // La primera página es la ausencia del parámetro, igual que en la URL.
+        ...(page === 1 ? {} : { page }),
+      });
+      for (const row of rows) ids.add(row.id);
+    }
+
+    expect(ids.size).toBe(PAGINADOS);
+  });
+
+  it("la última página no queda vacía: no se cuenta una página de más", async () => {
+    // Una página final vacía es la forma amable del mismo bug: el enlace
+    // existe, lleva a una cuadrícula sin nada, y no hay causa visible.
+    const ultima = resolvePagination(undefined, PAGINADOS).count;
+
+    expect(await search.search({ cityId: PAGINADA, page: ultima })).not.toHaveLength(0);
+  });
+
+  it("una página más allá del final se dice, no se dibuja vacía", async () => {
+    // Es el enlace viejo pegado en un chat: la búsqueda existe y tiene menos
+    // páginas que la última vez. `beyondEnd` es lo que deja decirlo, y
+    // `current` recortado es adónde ofrecer volver.
+    const paginacion = resolvePagination(400, PAGINADOS);
+
+    expect(paginacion.beyondEnd).toBe(true);
+    expect(paginacion.current).toBe(paginacion.count);
+    expect(await search.search({ cityId: PAGINADA, page: 400 })).toEqual([]);
+    expect(await search.search({ cityId: PAGINADA, page: paginacion.current })).not.toHaveLength(0);
+  });
+
+  it("el conteo de una ciudad no se lo lleva la ventana de otra", async () => {
+    // La placa de cada ciudad es una consulta propia — el puerto exige una
+    // ciudad por consulta, que es la garantía de aislamiento del D5. Maracaibo
+    // entra entera en una página; la paginada no.
+    const maracaibo = await search.search({ cityId: MARACAIBO });
+    const paginada = await search.search({ cityId: PAGINADA });
+
+    expect(maracaibo.length).toBeLessThan(RESULTS_PER_PAGE);
+    expect(paginada).toHaveLength(RESULTS_PER_PAGE);
+
+    const deMaracaibo = new Set(maracaibo.map((row) => row.id));
+    for (const row of paginada) expect(deMaracaibo.has(row.id)).toBe(false);
   });
 });

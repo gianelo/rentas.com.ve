@@ -283,6 +283,19 @@ describe("la salida del vacío (F7 · F11)", () => {
     expect(reliefHref(place, "hasPowerPlant")).not.toContain("planta=");
   });
 
+  it("soltar «sólo de dueños» se queda en la misma ruta, porque no es un lugar", () => {
+    // La zona es el único filtro que además cambia de ruta. Este no: quitarlo
+    // desde la página de una zona tiene que dejar a quien busca donde estaba,
+    // y no devolverlo a la ciudad entera por un filtro que no es un sitio.
+    const place = {
+      basePath: "/alquiler/distrito-capital/chacao",
+      cityPath: "/alquiler/distrito-capital",
+      query: { pub: "owner", hab: "2" },
+    };
+
+    expect(reliefHref(place, "publisherType")).toBe("/alquiler/distrito-capital/chacao?hab=2");
+  });
+
   it("soltar un filtro deja el criterio sin él y con todo lo demás intacto", () => {
     const criteria = {
       cityId: "dc",
