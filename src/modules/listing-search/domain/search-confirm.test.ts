@@ -139,14 +139,16 @@ describe("cuál es el filtro más restrictivo", () => {
     expect(chooseRelief([{ filter: "publisherType", resultCount: 12, href: "/pub" }])?.label).toBe(
       "Quitar quién publica y ver 12",
     );
-    expect(chooseRelief([{ filter: "hasPowerPlant", resultCount: 5, href: "/planta" }])?.label).toBe(
-      "Quitar planta eléctrica y ver 5",
-    );
+    expect(
+      chooseRelief([{ filter: "hasPowerPlant", resultCount: 5, href: "/planta" }])?.label,
+    ).toBe("Quitar planta eléctrica y ver 5");
   });
 
   it("sirve también con resultados, para el cierre de la lista (F10)", () => {
     // F10 pide UN solo cambio propuesto con su número al final de la lista, y
     // es exactamente la misma pregunta que la del vacío.
-    expect(chooseRelief([{ filter: "price", resultCount: 14, href: "/alquiler/dc" }])?.resultCount).toBe(14);
+    expect(
+      chooseRelief([{ filter: "price", resultCount: 14, href: "/alquiler/dc" }])?.resultCount,
+    ).toBe(14);
   });
 });

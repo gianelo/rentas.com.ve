@@ -116,9 +116,7 @@ describe("el buscador del paso 2 sólo autocompleta zonas conocidas (F4)", () =>
   });
 
   it("las ya elegidas siguen a la vista, porque si no no se pueden soltar", () => {
-    const options = narrowZoneOptions(resolveZoneOptions(ZONES, BY_ZONE, ["altamira"]), [
-      "chacao",
-    ]);
+    const options = narrowZoneOptions(resolveZoneOptions(ZONES, BY_ZONE, ["altamira"]), ["chacao"]);
 
     expect(options.map((option) => option.id)).toEqual(["altamira", "chacao"]);
   });
@@ -165,8 +163,9 @@ describe("los escalones de habitaciones (F6)", () => {
   });
 
   it("el escalón elegido nunca se deshabilita, porque habría que poder soltarlo", () => {
-    expect(resolveRoomOptions({ 1: 0, 2: 0, 3: 0, 4: 0 }, 2).find((o) => o.step === 2)?.disabled)
-      .toBe(false);
+    expect(
+      resolveRoomOptions({ 1: 0, 2: 0, 3: 0, 4: 0 }, 2).find((o) => o.step === 2)?.disabled,
+    ).toBe(false);
   });
 });
 
@@ -221,10 +220,7 @@ describe("los atributos declarados (F6)", () => {
       "hasRegularWater",
     ]).filter((option) => option.chosen);
 
-    expect(chosen.map((option) => option.attribute)).toEqual([
-      "hasPowerPlant",
-      "hasRegularWater",
-    ]);
+    expect(chosen.map((option) => option.attribute)).toEqual(["hasPowerPlant", "hasRegularWater"]);
   });
 
   it("marcar un atributo no desmarca al anterior", () => {

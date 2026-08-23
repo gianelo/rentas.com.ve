@@ -174,9 +174,7 @@ export function readZoneList(raw: string | null | undefined): readonly string[] 
  * que la gente hace todo el tiempo.
  */
 export function toggleZone(selected: readonly string[], zoneId: string): readonly string[] {
-  return selected.includes(zoneId)
-    ? selected.filter((id) => id !== zoneId)
-    : [...selected, zoneId];
+  return selected.includes(zoneId) ? selected.filter((id) => id !== zoneId) : [...selected, zoneId];
 }
 
 /**
@@ -247,7 +245,9 @@ export function planCityChange(
 
   const listed = chosenZoneNames.join(", ");
   const quantity =
-    chosenZoneNames.length === 1 ? "la zona elegida" : `las ${chosenZoneNames.length} zonas elegidas`;
+    chosenZoneNames.length === 1
+      ? "la zona elegida"
+      : `las ${chosenZoneNames.length} zonas elegidas`;
 
   return {
     href,

@@ -12,7 +12,11 @@ import {
 
 const CARACAS: SearchSelection = { cityName: "Distrito Capital", zoneNames: [] };
 
-function step(selection: SearchSelection, id: string, open?: Parameters<typeof resolveSearchSteps>[1]) {
+function step(
+  selection: SearchSelection,
+  id: string,
+  open?: Parameters<typeof resolveSearchSteps>[1],
+) {
   const found = resolveSearchSteps(selection, open).find((candidate) => candidate.id === id);
   if (!found) throw new Error(`el paso ${id} no existe`);
   return found;

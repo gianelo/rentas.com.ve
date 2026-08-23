@@ -19,10 +19,10 @@ import type { ListingAttribute, PublisherType, SearchCriteria } from "./search-c
 import {
   type AttributeOption,
   narrowZoneOptions,
+  type RoomOption,
   resolveAttributeOptions,
   resolveRoomOptions,
   resolveZoneOptions,
-  type RoomOption,
   type ZoneOption,
   type ZoneSuggestion,
   zoneIdsFromSuggestions,
@@ -162,10 +162,7 @@ export function withoutFilter(criteria: SearchCriteria, filter: RelaxableFilter)
     ...maybe("maxPriceUsd", keep(maxPriceUsd, filter === "price")),
     ...maybe("minRooms", keep(minRooms, filter === "rooms")),
     ...maybe("publisherType", keep(publisherType, filter === "publisherType")),
-    ...maybe(
-      "attributes",
-      dropAttribute(attributes, filter),
-    ),
+    ...maybe("attributes", dropAttribute(attributes, filter)),
   };
 }
 
@@ -361,7 +358,6 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
     activeFilters: countActiveFilters(selection),
   };
 }
-
 
 function toCityChoice(
   candidate: PanelCity,

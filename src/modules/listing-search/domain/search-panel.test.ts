@@ -74,7 +74,11 @@ describe("paso 1 · la ciudad (F3)", () => {
   });
 
   it("la ciudad activa se ve elegida, y sólo ella", () => {
-    expect(panel().cities.filter((city) => city.chosen).map((city) => city.id)).toEqual(["dc"]);
+    expect(
+      panel()
+        .cities.filter((city) => city.chosen)
+        .map((city) => city.id),
+    ).toEqual(["dc"]);
   });
 
   it("cambiar de ciudad avisa que se pierden las zonas, antes de tocarla", () => {
@@ -250,9 +254,11 @@ describe("paso 4 · habitaciones y atributos (F6)", () => {
 
 describe("la salida del vacío (F7 · F11)", () => {
   it("sólo se pregunta por los filtros que están puestos", () => {
-    expect(
-      relaxableFilters({ minRooms: 2, attributes: ["hasPowerPlant"] }, ["chacao"]),
-    ).toEqual(["zone", "rooms", "hasPowerPlant"]);
+    expect(relaxableFilters({ minRooms: 2, attributes: ["hasPowerPlant"] }, ["chacao"])).toEqual([
+      "zone",
+      "rooms",
+      "hasPowerPlant",
+    ]);
     expect(relaxableFilters({}, [])).toEqual([]);
   });
 
@@ -268,7 +274,9 @@ describe("la salida del vacío (F7 · F11)", () => {
     };
 
     // La zona vuelve a la ciudad entera: la de la RUTA también es un filtro.
-    expect(reliefHref(place, "zone")).toBe("/alquiler/distrito-capital?min=250&max=700&hab=2&planta=1");
+    expect(reliefHref(place, "zone")).toBe(
+      "/alquiler/distrito-capital?min=250&max=700&hab=2&planta=1",
+    );
     expect(reliefHref(place, "price")).not.toContain("min=");
     expect(reliefHref(place, "price")).toContain("hab=2");
     expect(reliefHref(place, "rooms")).not.toContain("hab=");

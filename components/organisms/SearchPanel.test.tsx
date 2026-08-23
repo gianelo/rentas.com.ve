@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { buildSearchPanel, type SearchPanelInput } from "@/modules/listing-search/domain/search-panel";
+import {
+  buildSearchPanel,
+  type SearchPanelInput,
+} from "@/modules/listing-search/domain/search-panel";
 import { SearchPanel } from "./SearchPanel";
 
 const COUNTS = {
@@ -152,5 +155,24 @@ describe("lo que cada paso muestra", () => {
 
   it("«Limpiar todo» está siempre a la vista (F8)", () => {
     expect(render()).toContain("Limpiar todo");
+  });
+});
+
+describe("el ancla del engranaje", () => {
+  it("el panel se llama «filtros», que es adónde apunta la barra resumen", () => {
+    // En el teléfono el panel queda debajo de la cuadrícula. El engranaje de
+    // `SearchSummaryBar` lleva a `…#filtros`: sin este `id` el enlace recarga
+    // la misma pantalla y no lleva a ninguna parte visible.
+    expect(render()).toContain('id="filtros"');
+  });
+
+  it("ninguna opción marca su estado con un atributo que su rol no admite", () => {
+    // Un enlace tiene rol `link`, y `aria-pressed` pertenece al rol `button`:
+    // ningún lector de pantalla lo anuncia. Es marcado que parece accesible y
+    // no lo es, y por eso el estado elegido viaja en `aria-current`.
+    const markup = render({ chosenZoneIds: ["chacao"], criteria: { minRooms: 2 } });
+
+    expect(markup).not.toContain("aria-pressed");
+    expect(markup).toContain('aria-current="true"');
   });
 });

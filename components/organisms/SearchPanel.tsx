@@ -44,7 +44,15 @@ import styles from "./SearchPanel.module.css";
  */
 export function SearchPanel({ model }: { readonly model: SearchPanelModel }) {
   return (
-    <section className={styles.panel} aria-label="Filtros de búsqueda" data-testid="search-panel">
+    // El `id` es el destino del engranaje de `SearchSummaryBar`: en el
+    // teléfono el panel queda debajo de la cuadrícula, y sin ancla el botón
+    // recarga la misma pantalla sin llevar a ninguna parte visible.
+    <section
+      className={styles.panel}
+      id="filtros"
+      aria-label="Filtros de búsqueda"
+      data-testid="search-panel"
+    >
       {model.steps.map((step) => (
         <details
           key={step.id}
@@ -188,10 +196,15 @@ function ZoneOptionItem({ zone }: { readonly zone: ZoneChoice }) {
           {body}
         </span>
       ) : (
+        // `aria-current` y no `aria-pressed`: esto es un enlace, o sea rol
+        // `link`, y `aria-pressed` pertenece al rol `button`. Un lector de
+        // pantalla ignora el atributo que el rol no admite, así que la zona
+        // elegida se anunciaba igual que una sin elegir — marcado que parece
+        // accesible y no lo es. Es el mismo atributo que ya usa la ciudad.
         <a
           className={styles.option}
           href={zone.href}
-          aria-pressed={zone.chosen ? "true" : undefined}
+          aria-current={zone.chosen ? "true" : undefined}
           data-chosen={zone.chosen ? "" : undefined}
         >
           {body}
@@ -290,10 +303,13 @@ function RoomOptionItem({ room }: { readonly room: RoomChoice }) {
           {body}
         </span>
       ) : (
+        // Rol `link`, igual que las zonas: `aria-pressed` no lo admite y no
+        // llega a ningún lector de pantalla. El escalón elegido es el actual
+        // dentro de la lista de escalones, que es lo que `aria-current` dice.
         <a
           className={styles.roomOption}
           href={room.href}
-          aria-pressed={room.chosen ? "true" : undefined}
+          aria-current={room.chosen ? "true" : undefined}
           data-chosen={room.chosen ? "" : undefined}
         >
           {body}
@@ -323,10 +339,12 @@ function AttributeOptionItem({ attribute }: { readonly attribute: AttributeChoic
           {body}
         </span>
       ) : (
+        // Rol `link` otra vez, y el mismo cambio: `aria-pressed` sobre un
+        // enlace es marcado que se lee accesible y no lo es.
         <a
           className={styles.option}
           href={attribute.href}
-          aria-pressed={attribute.chosen ? "true" : undefined}
+          aria-current={attribute.chosen ? "true" : undefined}
           data-chosen={attribute.chosen ? "" : undefined}
         >
           {body}
