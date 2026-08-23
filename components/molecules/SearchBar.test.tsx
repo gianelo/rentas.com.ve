@@ -12,11 +12,17 @@ function block(css: string, selector: string): string {
   return match[1] ?? "";
 }
 
-describe("SearchBar — la barra del inicio", () => {
+const FORM = {
+  label: "¿En qué zona buscás?",
+  action: "/",
+  name: "q",
+  value: "",
+  submitLabel: "Buscar",
+};
+
+describe("SearchBar — la caja del inicio", () => {
   it("dibuja el texto que le dan, sin escribir uno propio", () => {
-    const html = renderToStaticMarkup(
-      <SearchBar label="¿En qué zona buscás?" href="/alquiler/maracaibo" />,
-    );
+    const html = renderToStaticMarkup(<SearchBar {...FORM} />);
 
     expect(html).toContain("¿En qué zona buscás?");
     // El texto llega del dominio: escribirlo acá sería una segunda copia que
@@ -24,46 +30,67 @@ describe("SearchBar — la barra del inicio", () => {
     expect(barSource).not.toContain("En qué zona");
   });
 
-  it("es un enlace a donde el dominio dijo", () => {
-    const html = renderToStaticMarkup(
-      <SearchBar label="¿En qué zona buscás?" href="/alquiler/maracaibo" />,
-    );
-
-    expect(html).toContain('href="/alquiler/maracaibo"');
-  });
-
   /**
-   * **Sin destino no es un enlace.** Un ancla vacía o hacia `#` se ve
-   * exactamente igual que una que funciona, y quien la toca no llega a ninguna
-   * parte — que es el enlace roto que este repositorio ya se negó a publicar
-   * dos veces. Cuando el dominio no tiene a dónde mandar, la barra sigue en
-   * pantalla como lo que es: una frase.
+   * **El mecanismo entero, y la razón de que sea un formulario y no un enlace.**
+   *
+   * F14: sin JavaScript esto tiene que funcionar igual. Un `<form method="get">`
+   * lo hace el navegador solo — se escribe, se envía, el servidor traduce y
+   * redirige. Sugerir mientras se escribe es una mejora ENCIMA de esto.
    */
-  it("no dibuja un ancla cuando no hay destino", () => {
-    const html = renderToStaticMarkup(<SearchBar label="¿En qué zona buscás?" href={null} />);
+  it("es un GET que vuelve al servidor, no un enlace", () => {
+    const html = renderToStaticMarkup(<SearchBar {...FORM} />);
 
-    expect(html).toContain("¿En qué zona buscás?");
-    expect(html).not.toContain("<a ");
+    expect(html).toContain('method="get"');
+    expect(html).toContain('action="/"');
+    expect(html).toContain('name="q"');
+    expect(html).toContain("<button");
   });
 
   /**
-   * El glifo `◎` de la lámina es decoración: el nombre accesible del enlace ya
-   * lo da el texto de al lado, y anunciar un círculo no le agrega nada a quien
-   * no lo ve. Es la misma decisión que la flecha de `ListingStrip`.
+   * **Una etiqueta de verdad, no un `placeholder`.** El `placeholder`
+   * desaparece en cuanto se escribe una letra, y los lectores de pantalla, el
+   * modo de contraste forzado y el autocompletado del navegador se apoyan en la
+   * asociación `for`/`id`, nunca en él.
+   */
+  it("asocia una etiqueta real con el campo", () => {
+    const html = renderToStaticMarkup(<SearchBar {...FORM} />);
+    const forAttribute = html.match(/<label[^>]*for="([^"]+)"/)?.[1];
+
+    expect(forAttribute).toBeDefined();
+    expect(html).toContain(`id="${forAttribute}"`);
+  });
+
+  it("devuelve lo escrito para que el campo no se vacíe al volver del servidor", () => {
+    const html = renderToStaticMarkup(<SearchBar {...FORM} value="altamira" />);
+
+    expect(html).toContain('value="altamira"');
+  });
+
+  /**
+   * `<search>` y no `role="search"`: es el elemento de referencia real, y un rol
+   * pegado a mano es una promesa que el marcado ya cumple.
+   */
+  it("se anuncia como la búsqueda de la página", () => {
+    expect(renderToStaticMarkup(<SearchBar {...FORM} />)).toContain("<search>");
+  });
+
+  /**
+   * El glifo `◎` de la lámina es decoración: el nombre accesible del campo ya
+   * lo da su etiqueta, y anunciar un círculo no le agrega nada a quien no lo ve.
    */
   it("marca el glifo como decorativo", () => {
-    const html = renderToStaticMarkup(<SearchBar label="Buscar" href="/alquiler/maracaibo" />);
-
-    expect(html).toMatch(/aria-hidden="true"/);
+    expect(renderToStaticMarkup(<SearchBar {...FORM} />)).toMatch(/aria-hidden="true"/);
   });
 
   /** El camino de lectura no tiene runtime (D13), y esto lo mantiene así. */
   it("no declara JavaScript de cliente", () => {
     expect(barSource).not.toContain("use client");
+    // Un `onChange`/`onSubmit` volvería el mecanismo dependiente del script.
+    expect(barSource).not.toMatch(/on(Change|Submit|Input|Click)=/);
   });
 
   it("tiene foco visible, como todo control del sistema", () => {
-    const rule = barCss.match(/\.bar:focus-visible\s*\{([^}]*)\}/);
+    const rule = barCss.match(/\.bar:focus-within\s*\{([^}]*)\}/);
     const outline = rule?.[1]?.match(/outline:\s*([^;]+);/)?.[1]?.trim();
 
     expect(outline).toBeDefined();

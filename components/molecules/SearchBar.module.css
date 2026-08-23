@@ -43,9 +43,65 @@
   white-space: nowrap;
 }
 
-.bar:focus-visible {
+/* `:focus-within` y no `:focus-visible`: ahora el foco lo recibe el campo o el
+   botón de adentro, no la píldora. Marcar la píldora entera es lo que hace que
+   se vea dónde está parado el teclado, igual que cuando era un enlace. */
+.bar:focus-within {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+.input {
+  /* Se come el aire que queda entre el glifo y el botón. */
+  flex: 1;
+  min-inline-size: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.input::placeholder {
+  /* La lámina escribe la pregunta en el gris de apoyo, no en el del texto. */
+  color: var(--soft);
+  opacity: 1;
+}
+
+.input:focus {
+  /* El anillo lo dibuja la píldora con `:focus-within`; dos anillos
+     concéntricos serían ruido. */
+  outline: none;
+}
+
+.submit {
+  flex: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--accent);
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  font-weight: 700;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+/* Visible para el documento, no para la vista: la lámina dibuja la pregunta
+   DENTRO de la píldora, y el `placeholder` la muestra ahí. La etiqueta de
+   verdad sigue existiendo porque el `placeholder` se va con la primera letra. */
+.srOnly {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Dónde se para la barra —ancho entero debajo de la marca en el teléfono, 460

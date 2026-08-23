@@ -1,5 +1,8 @@
 import styles from "./SearchBar.module.css";
 
+/** El `id` que ata la etiqueta con el campo. Uno solo: hay una caja por página. */
+const FIELD_ID = "buscador";
+
 export interface SearchBarProps {
   /**
    * Lo que la barra pregunta, compuesto en el dominio. Llega hecho y no se
@@ -8,54 +11,73 @@ export interface SearchBarProps {
    * primera en cuanto alguien corrija una sola.
    */
   readonly label: string;
-  /**
-   * A dónde lleva, o `null` cuando el producto no tiene ninguna búsqueda que
-   * ofrecer. Lo decide `homeSearchBar`, no este archivo.
-   */
-  readonly href: string | null;
+  /** A dónde vuelve el `GET`. Lo decide `homeSearchForm`, no este archivo. */
+  readonly action: string;
+  /** El nombre del parámetro. También del dominio: es contrato de la URL. */
+  readonly name: string;
+  /** Lo escrito la vez anterior, para que el campo no vuelva vacío. */
+  readonly value: string;
+  readonly submitLabel: string;
 }
 
 /**
- * La barra de búsqueda del inicio.
+ * La caja de búsqueda del inicio.
  *
- * **Va siempre, y eso corrige un error de lectura anterior.** El texto de la
- * F1 sólo la menciona describiendo el inicio sin ningún aviso, y de ahí salió
- * una barra que aparecía únicamente en ese estado. La lámina la dibuja arriba
- * de todo en el artboard `inicio`, con las cuatro tiras debajo: es la primera
- * cosa de la pantalla, haya oferta o no.
+ * **Un formulario y no un enlace, y eso corrige lo que había.** La versión
+ * anterior era un `<a>` hacia `/alquiler/<primera ciudad>`, con este comentario
+ * al lado: «no se escribe dentro, se toca y se abre el acordeón». Esa lectura
+ * de la lámina dejaba el mecanismo entero sin construir — la barra no traducía
+ * nada, sólo mandaba a una ciudad elegida por el `ORDER BY`.
  *
- * **Un enlace y no un formulario, que es como la lámina la dibuja.** En los
- * tres estados del artboard «los tres estados de la barra» es un `<a>`: no se
- * escribe dentro, se toca y se abre el acordeón de cuatro pasos. Ese acordeón
- * es otra pantalla y no vive en este archivo; acá sólo está la puerta.
+ * **F14: sin JavaScript esto tiene que funcionar igual.** Un `<form
+ * method="get">` lo hace el navegador solo: se escribe, se envía, el servidor
+ * traduce lo escrito a filtros y **redirige a la dirección canónica**. Las
+ * sugerencias mientras se escribe son una mejora encima, nunca el mecanismo —
+ * por eso acá no hay ni un manejador de eventos.
  *
- * **Sin destino deja de ser un enlace.** Un ancla vacía o hacia `#` se ve
- * idéntica a una que funciona y no lleva a ninguna parte — el enlace roto que
- * este repositorio ya se negó a publicar dos veces. En ese estado la barra
- * sigue en pantalla como lo que realmente es: una frase.
+ * **Etiqueta real y además `placeholder`.** El `placeholder` desaparece con la
+ * primera letra; los lectores de pantalla, el modo de contraste forzado y el
+ * autocompletado se apoyan en la asociación `for`/`id`. La lámina dibuja la
+ * frase dentro de la píldora, así que la etiqueta va oculta a la vista y
+ * presente en el documento.
  *
- * **Sin JavaScript**, como todo el camino de lectura (D13).
+ * **Ni una regla acá.** Qué se pregunta, a dónde vuelve, cómo se llama el
+ * parámetro y qué pasa con lo escrito: todo llega resuelto de
+ * `listing-catalogue/domain/search-destination.ts`.
  */
-export function SearchBar({ label, href }: SearchBarProps) {
-  const content = (
-    <>
-      {/* Decoración: el nombre accesible ya lo da el texto de al lado, y
-          anunciar un círculo no le agrega nada a quien no lo ve. Es la misma
-          decisión que la flecha de `ListingStrip`. */}
-      <span className={styles.glyph} aria-hidden="true">
-        ◎
-      </span>
-      <span className={styles.label}>{label}</span>
-    </>
-  );
-
-  if (href === null) {
-    return <p className={styles.bar}>{content}</p>;
-  }
-
+export function SearchBar({ label, action, name, value, submitLabel }: SearchBarProps) {
   return (
-    <a className={styles.bar} href={href} data-testid="search-bar">
-      {content}
-    </a>
+    // `<search>` y no `role="search"`: es el elemento de referencia real desde
+    // 2023, y el linter de accesibilidad rechaza el rol cuando existe el
+    // elemento — un rol pegado a mano es una promesa que el marcado ya cumple.
+    <search>
+      <form className={styles.bar} method="get" action={action}>
+        {/* Decoración: el nombre accesible ya lo da la etiqueta del campo, y
+            anunciar un círculo no le agrega nada a quien no lo ve. Es la misma
+            decisión que la flecha de `ListingStrip`. */}
+        <span className={styles.glyph} aria-hidden="true">
+          ◎
+        </span>
+
+        <label className={styles.srOnly} htmlFor={FIELD_ID}>
+          {label}
+        </label>
+        <input
+          className={styles.input}
+          id={FIELD_ID}
+          name={name}
+          // `search` y no `text`: el teclado del teléfono trae la tecla «buscar»,
+          // que es como se envía un formulario de una sola línea sin botón.
+          type="search"
+          defaultValue={value}
+          placeholder={label}
+          autoComplete="off"
+        />
+
+        <button className={styles.submit} type="submit">
+          {submitLabel}
+        </button>
+      </form>
+    </search>
   );
 }
