@@ -4,6 +4,7 @@ import { cache } from "react";
 import { Container } from "@/../components/layout/Container";
 import { SidebarLayout } from "@/../components/layout/SidebarLayout";
 import { ListingCard, ListingGrid } from "@/../components/molecules/ListingCard";
+import { SearchOutcome } from "@/../components/organisms/SearchOutcome";
 import { SearchPanel } from "@/../components/organisms/SearchPanel";
 import { SearchSummaryBar } from "@/../components/organisms/SearchSummaryBar";
 import { DrizzleCatalogue } from "@/modules/listing-catalogue/infrastructure/drizzle-catalogue";
@@ -167,7 +168,7 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
   // Que la ficha se pase cuando hay UNA tarjeta y no cuando el total es 1 es
   // lo mismo dicho antes: `resolveSearchConfirm` sólo la mira con el total en
   // 1, y con el total en 1 la única página trae esa única tarjeta.
-  const { panel, counts } = await buildFilterPanel(new DrizzleFacetedSearch(db), {
+  const { panel, counts, outcome } = await buildFilterPanel(new DrizzleFacetedSearch(db), {
     basePath,
     cityPath,
     query,
@@ -277,12 +278,17 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
             </a>
             .
           </p>
+        ) : total === 0 ? (
+          // **El vacío explicado, con sus salidas** (F11). El aviso genérico
+          // que estaba acá proponía ampliar el precio sin saber si ampliarlo
+          // devolvía algo; ahora qué filtro lo causó y cuántos avisos hay del
+          // otro lado de cada salida los cuenta el dominio contra la base — y
+          // ninguna de esas salidas se va de la ciudad.
+          <SearchOutcome model={outcome} />
         ) : cards.length === 0 ? (
-          <p className={styles.empty}>
-            {isFilteredZoneRoute(query)
-              ? `No hay avisos en ${place.zone.name} con esos filtros. Probá ampliando el rango de precio o quitando las habitaciones.`
-              : `Todavía no hay avisos publicados en ${place.zone.name}.`}
-          </p>
+          // Contados pero no dibujados: un aviso sin portada no entra en la
+          // cuadrícula (F9). El número de arriba sigue siendo el verdadero.
+          <p className={styles.empty}>Los avisos de esta página todavía no tienen foto.</p>
         ) : (
           <ListingGrid>
             {cards.map((card) => (
@@ -322,6 +328,12 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
             )}
           </nav>
         ) : null}
+
+        {/* **El cierre de la lista** (F10): «Son los 9 avisos que coinciden»
+            más el único cambio que más suma, con su número. A mitad de una
+            lista paginada el dominio devuelve `partial` y esto no dibuja nada,
+            porque todavía faltan avisos. */}
+        {total > 0 ? <SearchOutcome model={outcome} /> : null}
       </SidebarLayout>
     </Container>
   );
