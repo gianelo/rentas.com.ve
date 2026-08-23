@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   MAX_DESCRIPTION_CHARACTERS,
+  MAX_TITLE_CHARACTERS,
   MIN_DESCRIPTION_CHARACTERS,
   type PublishViolation,
   validatePublishableListing,
@@ -60,6 +61,9 @@ const EVERY_VIOLATION: readonly PublishViolation[] = [
     [],
   ),
   ...validatePublishableListing({ contactMethod: "email", contactValue: "sin-arroba" }, []),
+  // Y un septimo para el tope de 90 del titulo, por el mismo motivo que el de
+  // la descripcion: un titulo no puede estar vacio y pasarse a la vez.
+  ...validatePublishableListing({ title: "t".repeat(MAX_TITLE_CHARACTERS + 1) }, []),
 ];
 
 describe("publish violation copy", () => {
@@ -86,7 +90,8 @@ describe("publish violation copy", () => {
     // numero se afirma a mano y no se deriva: `written` y `reachable` salen
     // los dos del codigo, asi que una regla BORRADA del dominio vaciaria una
     // y haria coincidir la otra. Esta linea es la que nota que falta una.
-    expect(reachable).toHaveLength(27);
+    // 28, up from 27 cuando el paso 6 trajo el tope de 90 del titulo.
+    expect(reachable).toHaveLength(28);
   });
 
   it("gives every code a real sentence, not a placeholder", () => {

@@ -1,0 +1,629 @@
+/* Publicar — los nueve pasos, revisar y la barra que los acompaña.
+
+   Dos composiciones de la misma pantalla, y la diferencia NO es la misma cosa
+   más grande: en 360 hay una barra de 3px y hay que confiar en un porcentaje;
+   en 1280 se ve el riel de nueve pasos entero y se puede volver a cualquiera
+   con un clic. Es la diferencia entre saber cuánto falta y poder hacer algo
+   al respecto, y por eso son dos bloques y no un `font-size` distinto.
+
+   Ningún valor literal de color, radio ni tipografía: todo resuelve por
+   `src/styles/tokens.css` (D16, `pnpm lint:tokens`). Las medidas van en
+   propiedades lógicas — `inline-size`, `block-size` — que además es lo que
+   mantiene el gate mirando geometría de miniatura y no cada caja del flujo. */
+
+.shell {
+  min-block-size: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* ---------- la barra superior ---------- */
+
+.bar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 2;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.barInner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-inline-size: 1100px;
+  margin: 0 auto;
+  padding: 0 16px;
+  min-block-size: var(--brandbar-h);
+}
+
+.brand {
+  font-family: var(--disp);
+  font-size: var(--title-fs);
+  font-weight: var(--title-fw);
+  letter-spacing: var(--brand-ls);
+  margin: 0;
+}
+
+/* La flecha de volver un paso. 44px de área táctil, incluida acá: la regla
+   transversal 5 dice "incluidas las flechas de volver", y es justamente la
+   que se olvida. */
+.back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--target-min);
+  min-block-size: var(--target-min);
+  margin-inline-start: -8px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: var(--control-fs);
+}
+
+.counter {
+  margin-inline-start: auto;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  font-weight: var(--meta-fw);
+  color: var(--soft);
+  letter-spacing: var(--badge-ls);
+}
+
+/* "Guardado". Es lo único que comunica que el borrador sobrevive, y sin eso
+   nadie sabe si puede cerrar la pantalla. */
+.saved {
+  margin-inline-start: auto;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  font-weight: var(--meta-fw);
+  color: var(--soft);
+}
+
+.exit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--target-min);
+  min-block-size: var(--target-min);
+  margin-inline-end: -8px;
+  color: var(--soft);
+  text-decoration: none;
+  font-size: var(--control-fs);
+}
+
+/* La barra de progreso de móvil: 3px, y desaparece en escritorio, donde el
+   riel dice lo mismo con más detalle. */
+.progress {
+  block-size: 3px;
+  background: var(--line);
+}
+
+.progressFill {
+  block-size: 3px;
+  background: var(--accent);
+}
+
+/* ---------- la composición ---------- */
+
+.layout {
+  display: grid;
+  gap: 24px;
+  max-inline-size: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px 96px;
+}
+
+/* El riel de nueve pasos. No existe en móvil: no hay lugar. */
+.rail {
+  display: none;
+}
+
+.column {
+  min-inline-size: 0;
+}
+
+.title {
+  font-size: var(--ficha-price-fs);
+  font-weight: var(--title-fw);
+  line-height: var(--title-lh);
+  margin: 0 0 8px;
+}
+
+.help {
+  color: var(--soft);
+  font-size: var(--ficha-body-fs);
+  line-height: var(--ficha-body-lh);
+  margin: 0 0 20px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---------- controles ---------- */
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.legend {
+  padding: 0;
+  font-size: var(--control-fs);
+  font-weight: var(--meta-fw);
+}
+
+/* Una pastilla / casilla. 56px de alto: se toca sin apuntar, de pie y con una
+   mano. `opacity` no se usa nunca para atenuar — todo pasa AA. */
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-block-size: 56px;
+  padding: 0 16px;
+  border: 1px solid var(--strong);
+  border-radius: var(--r);
+  font-size: var(--control-fs);
+  cursor: pointer;
+}
+
+/* El estado elegido se dibuja con `:has()`, así el control real sigue siendo
+   un radio/checkbox nativo: es lo que hace que el grupo se envíe y se opere
+   sin una línea de JavaScript. */
+.choice:has(input:checked) {
+  background: var(--tint);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: var(--meta-fw);
+}
+
+.choice:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.choiceInput {
+  inline-size: 20px;
+  block-size: 20px;
+  accent-color: var(--accent);
+}
+
+.control {
+  inline-size: 100%;
+  min-block-size: 56px;
+  padding: 0 14px;
+  border: 1px solid var(--strong);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+}
+
+.controlInvalid {
+  border-width: 2px;
+  border-color: var(--err);
+}
+
+/* El campo de precio: 72px de alto y la cifra en la fuente de display, como
+   el resto de los precios del producto. */
+.price {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.priceSign {
+  font-family: var(--disp);
+  font-size: var(--ficha-price-fs);
+  font-weight: var(--ficha-price-fw);
+  color: var(--soft);
+}
+
+.priceControl {
+  min-block-size: 72px;
+  font-family: var(--disp);
+  font-size: var(--ficha-price-fs);
+  font-weight: var(--ficha-price-fw);
+  font-variant-numeric: tabular-nums;
+}
+
+.textarea {
+  min-block-size: 160px;
+  padding: 12px 14px;
+  line-height: var(--ficha-body-lh);
+  resize: vertical;
+}
+
+.label {
+  display: block;
+  font-size: var(--control-fs);
+  font-weight: var(--meta-fw);
+  margin-block-end: 6px;
+}
+
+.numbers {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.numberRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.numberControl {
+  inline-size: 120px;
+  min-block-size: 56px;
+  text-align: center;
+  font-family: var(--disp);
+  font-variant-numeric: tabular-nums;
+}
+
+/* El contador del paso 6 y del 7. Es un progreso, no un castigo: dice cuánto
+   falta, no que se hizo mal. */
+.counterLine {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--meta);
+  font-size: var(--meta-fs);
+  color: var(--soft);
+}
+
+.counterShort {
+  color: var(--warn);
+  font-weight: var(--meta-fw);
+}
+
+.meter {
+  block-size: 4px;
+  background: var(--line);
+  border-radius: var(--rs);
+  overflow: hidden;
+}
+
+.meterFill {
+  block-size: 4px;
+  background: var(--accent);
+}
+
+/* ---------- el buscador de zona ---------- */
+
+.search {
+  display: flex;
+  gap: 8px;
+  margin-block-end: 12px;
+}
+
+.searchButton {
+  min-block-size: 56px;
+  padding: 0 16px;
+  border: 1px solid var(--strong);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--control-fs);
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.resultScope {
+  display: block;
+  font-family: var(--meta);
+  font-size: var(--meta-fs);
+  color: var(--soft);
+}
+
+/* "¿No está la tuya? Avisanos". No es decorativa: con lista cerrada, una zona
+   faltante deja al dueño trabado. */
+.escape {
+  font-size: var(--ficha-body-fs);
+  color: var(--soft);
+  margin: 0;
+}
+
+.escapeLink {
+  color: var(--accent);
+}
+
+/* ---------- avisos y errores ---------- */
+
+.error {
+  color: var(--err);
+  font-size: var(--ficha-body-fs);
+  margin: 0;
+}
+
+.notice {
+  background: var(--bg);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  font-size: var(--ficha-body-fs);
+  color: var(--ink);
+  margin: 0 0 16px;
+}
+
+.warning {
+  background: var(--warn-bg);
+  color: var(--warn);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  font-size: var(--ficha-body-fs);
+  margin: 0;
+}
+
+/* ---------- las acciones ---------- */
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-block-start: 8px;
+}
+
+.primary {
+  min-block-size: 56px;
+  inline-size: 100%;
+  border: 0;
+  border-radius: var(--r);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  font-weight: var(--meta-fw);
+  cursor: pointer;
+}
+
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: var(--target-min);
+  border: 1px solid var(--strong);
+  border-radius: var(--r);
+  background: none;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* ---------- la tarjeta en vivo del paso 6 ---------- */
+
+.preview {
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 12px;
+  margin-block-start: 16px;
+}
+
+.previewLabel {
+  font-family: var(--meta);
+  font-size: var(--badge-fs);
+  font-weight: var(--badge-fw);
+  letter-spacing: var(--badge-ls);
+  text-transform: uppercase;
+  color: var(--soft);
+  margin: 0 0 8px;
+}
+
+.previewPrice {
+  font-family: var(--disp);
+  font-size: var(--card-price-fs);
+  font-weight: var(--ficha-price-fw);
+  margin: 0;
+}
+
+.previewTitle {
+  font-size: var(--card-title-fs);
+  margin: 4px 0 0;
+}
+
+.previewMeta {
+  font-family: var(--meta);
+  font-size: var(--meta-fs);
+  color: var(--soft);
+  margin: 4px 0 0;
+}
+
+/* ---------- revisar ---------- */
+
+.review {
+  display: grid;
+  gap: 24px;
+  max-inline-size: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px 96px;
+}
+
+.reviewList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+}
+
+.reviewRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.reviewTerm {
+  font-family: var(--meta);
+  font-size: var(--meta-fs);
+  font-weight: var(--meta-fw);
+  color: var(--soft);
+  text-transform: uppercase;
+  letter-spacing: var(--badge-ls);
+  grid-column: 1;
+}
+
+.reviewValue {
+  grid-column: 1;
+  margin: 0;
+  font-size: var(--ficha-body-fs);
+  line-height: var(--ficha-body-lh);
+}
+
+.reviewChange {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+  color: var(--accent);
+  font-size: var(--ficha-body-fs);
+}
+
+/* ---------- 768 en adelante: manda la versión de escritorio ---------- */
+
+@media (min-width: 768px) {
+  .barInner {
+    min-block-size: var(--brandbar-h-desktop);
+    padding: 0 24px;
+  }
+
+  /* El riel reemplaza la barra, no la acompaña. */
+  .progress {
+    display: none;
+  }
+
+  .layout,
+  .review {
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 40px;
+    padding: 32px 24px 64px;
+  }
+
+  .rail {
+    display: block;
+    position: sticky;
+    inset-block-start: calc(var(--brandbar-h-desktop) + 16px);
+    align-self: start;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .railItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-block-size: var(--target-min-desktop);
+    font-size: var(--ficha-body-fs);
+    color: var(--soft);
+  }
+
+  /* Un paso hecho muestra SU VALOR y es un enlace. */
+  .railDone {
+    color: var(--ink);
+  }
+
+  .railCurrent {
+    color: var(--accent);
+    font-weight: var(--meta-fw);
+  }
+
+  .railNumber {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 22px;
+    block-size: 22px;
+    border-radius: var(--rs);
+    background: var(--bg);
+    font-family: var(--meta);
+    font-size: var(--meta-fs-sm);
+    flex: none;
+  }
+
+  .railDone .railNumber {
+    background: var(--tint);
+    color: var(--accent);
+  }
+
+  /* "Volver a revisar", fijo al pie del riel: la salida siempre visible. */
+  .railExit {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target-min-desktop);
+    margin-block-start: 12px;
+    color: var(--accent);
+    font-size: var(--ficha-body-fs);
+  }
+
+  .column {
+    max-inline-size: 520px;
+  }
+
+  .title {
+    font-size: var(--ficha-price-fs-desktop);
+  }
+
+  .choice,
+  .control,
+  .searchButton,
+  .numberControl,
+  .primary {
+    min-block-size: 52px;
+  }
+
+  .priceControl {
+    inline-size: 280px;
+    min-block-size: 68px;
+  }
+
+  .actions {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .primary {
+    inline-size: auto;
+    min-inline-size: 200px;
+    padding: 0 24px;
+  }
+
+  .secondary {
+    padding: 0 16px;
+  }
+
+  .reviewRow {
+    grid-template-columns: 200px minmax(0, 1fr) auto;
+  }
+
+  .reviewTerm {
+    grid-column: 1;
+  }
+
+  .reviewValue {
+    grid-column: 2;
+  }
+
+  .reviewChange {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}

@@ -4,6 +4,7 @@ import {
   type DraftListing,
   MAX_DESCRIPTION_CHARACTERS,
   MAX_PHOTOS_PER_LISTING,
+  MAX_TITLE_CHARACTERS,
   validatePublishableListing,
 } from "./publishable-listing";
 
@@ -235,6 +236,62 @@ describe("validatePublishableListing", () => {
       expect(validatePublishableListing(draft({ title: "   " }), ZONES)).toContain(
         "title.required",
       );
+    });
+
+    it("no publica un aviso sin tipo de propiedad, y lo dice con ese codigo", () => {
+      // Criterio de aceptacion 1, y hasta ahora ningun test lo tocaba: la
+      // verificacion por mutacion apago `propertyType.required` y la suite
+      // entera siguio verde. El codigo importa tanto como la negativa —
+      // `propertyType.invalid` manda a "elegi una de las cinco" a alguien que
+      // no eligio ninguna, que es una instruccion para un problema distinto.
+      expect(validatePublishableListing(draft({ propertyType: undefined }), ZONES)).toContain(
+        "propertyType.required",
+      );
+    });
+
+    it("no aplica ningun valor por defecto al tipo de propiedad", () => {
+      // Un default convierte "al que se le olvido" en "todos son
+      // apartamentos", y el tipo es lo que separa un anexo de $150 de un
+      // apartamento de $150: sin el, el filtro de precio miente.
+      const violations = validatePublishableListing(draft({ propertyType: undefined }), ZONES);
+
+      expect(violations).not.toEqual([]);
+      expect(violations).not.toContain("propertyType.invalid");
+    });
+
+    it("acepta los cinco de la lista cerrada y nada mas", () => {
+      for (const type of ["apartamento", "casa", "quinta", "anexo", "habitacion"] as const) {
+        expect(validatePublishableListing(draft({ propertyType: type }), ZONES)).toEqual([]);
+      }
+
+      expect(
+        validatePublishableListing(
+          draft({ propertyType: "local" as unknown as DraftListing["propertyType"] }),
+          ZONES,
+        ),
+      ).toContain("propertyType.invalid");
+    });
+
+    it("rechaza un titulo de mas de 90 caracteres, que es lo que el contador cuenta", () => {
+      // Seccion 3 de la especificacion de Publicar: "Maximo 90 caracteres".
+      // El paso 6 dibuja "37 / 90" mientras se escribe, asi que sin esta
+      // regla el contador anunciaria un tope que nada aplica -- y la tarjeta
+      // de la lista recorta lo que sobra sin decirlo.
+      expect(
+        validatePublishableListing(draft({ title: "a".repeat(MAX_TITLE_CHARACTERS) }), ZONES),
+      ).toEqual([]);
+      expect(
+        validatePublishableListing(draft({ title: "a".repeat(MAX_TITLE_CHARACTERS + 1) }), ZONES),
+      ).toContain("title.tooLong");
+    });
+
+    it("cuenta el titulo en puntos de codigo, igual que la descripcion", () => {
+      // 90 emoji son 90 caracteres para quien escribe y 180 unidades UTF-16
+      // para `String.length`. Contarlos mal rechaza un titulo que el propio
+      // contador de la pantalla dio por bueno.
+      const noventaEmoji = "\u{1F3E0}".repeat(MAX_TITLE_CHARACTERS);
+
+      expect(validatePublishableListing(draft({ title: noventaEmoji }), ZONES)).toEqual([]);
     });
 
     it("rejects a description shorter than the 120 characters the form promises", () => {
