@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SearchCriteria } from "../domain/search-criteria";
 import { buildFilterPanel } from "./build-filter-panel";
-import type { FacetCounts, FacetedSearchPort } from "./ports/faceted-search.port";
+import type { FacetCounts, FacetedSearchPort, PriceRange } from "./ports/faceted-search.port";
 
 const EMPTY: FacetCounts = {
   total: 0,
@@ -16,6 +16,18 @@ const EMPTY: FacetCounts = {
   },
   byPropertyType: { apartamento: 0, casa: 0, quinta: 0, anexo: 0, habitacion: 0 },
   byPublisherType: { owner: 0, broker: 0 },
+  withoutFilter: {
+    zone: 0,
+    price: 0,
+    rooms: 0,
+    publisherType: 0,
+    hasPowerPlant: 0,
+    hasRegularWater: 0,
+    isFurnished: 0,
+    hasSecurity: 0,
+    hasAppliances: 0,
+  },
+  cityTotal: 0,
 };
 
 /**
@@ -25,11 +37,19 @@ const EMPTY: FacetCounts = {
  * ciudad, y que no se pida un conteo por un filtro que nadie puso.
  */
 function fakeFacets(byCity: Readonly<Record<string, Partial<FacetCounts>>>) {
-  const calls: { criteria: SearchCriteria; offeredZoneIds: readonly string[] }[] = [];
+  const calls: {
+    criteria: SearchCriteria;
+    offeredZoneIds: readonly string[];
+    widenedPrice?: PriceRange;
+  }[] = [];
 
   const port: FacetedSearchPort = {
-    async countFacets(criteria, offeredZoneIds) {
-      calls.push({ criteria, offeredZoneIds });
+    async countFacets(criteria, offeredZoneIds, widenedPrice) {
+      calls.push({
+        criteria,
+        offeredZoneIds,
+        ...(widenedPrice === undefined ? {} : { widenedPrice }),
+      });
       return { ...EMPTY, ...byCity[criteria.cityId] };
     },
   };
@@ -129,40 +149,49 @@ describe("buildFilterPanel", () => {
     expect(panel.zones.map((zone) => zone.id)).toEqual(["chacao"]);
   });
 
-  it("con resultados no gasta una consulta buscando salidas", async () => {
-    const { port, calls } = fakeFacets({ dc: { total: 16 }, mcbo: { total: 23 } });
+  it("las salidas no cuestan una consulta: una por ciudad, con vacío o sin él", async () => {
+    // **Es la restricción que decide todo el diseño.** Preguntar "¿cuántos
+    // habría sin el precio?" de a un filtro eran nueve viajes de red sobre
+    // Neon, y con el cierre de la lista harían falta en TODA búsqueda, no sólo
+    // en el vacío. Los nueve números vienen ahora en la misma consulta.
+    const { port, calls } = fakeFacets({
+      dc: { total: 0, withoutFilter: { ...EMPTY.withoutFilter, price: 14 } },
+      mcbo: { total: 23 },
+    });
 
     await buildFilterPanel(port, {
       ...PLACE,
-      query: { min: "250" },
+      query: { min: "250", hab: "2" },
       chosenZoneIds: [],
-      criteria: { cityId: "dc", minPriceUsd: 250 },
+      criteria: { cityId: "dc", minPriceUsd: 250, minRooms: 2 },
     });
 
-    // Una por ciudad, y ni una más: la salida del vacío sólo se calcula cuando
-    // hay un vacío.
     expect(calls).toHaveLength(2);
   });
 
-  it("con cero resultados pregunta por cada filtro puesto y ofrece el que más destraba", async () => {
-    const totals: Record<string, number> = {};
-    const port: FacetedSearchPort = {
-      async countFacets(criteria) {
-        if (criteria.cityId === "mcbo") return { ...EMPTY, total: 23 };
-        // La búsqueda completa da cero; sin el precio hay 14, sin las
-        // habitaciones hay 3.
-        const key =
-          criteria.minPriceUsd === undefined
-            ? "sin-precio"
-            : criteria.minRooms === undefined
-              ? "sin-habitaciones"
-              : "completa";
-        totals[key] = (totals[key] ?? 0) + 1;
-        return { ...EMPTY, total: { completa: 0, "sin-precio": 14, "sin-habitaciones": 3 }[key] };
-      },
-    };
+  it("el escalón siguiente de precio viaja en la misma pregunta", async () => {
+    const { port, calls } = fakeFacets({ dc: { total: 3 }, mcbo: {} });
 
-    const { panel } = await buildFilterPanel(port, {
+    await buildFilterPanel(port, {
+      ...PLACE,
+      query: { max: "700" },
+      chosenZoneIds: [],
+      criteria: { cityId: "dc", maxPriceUsd: 700 },
+    });
+
+    const own = calls.find((call) => call.criteria.cityId === "dc");
+
+    expect(own?.widenedPrice).toEqual({ maxPriceUsd: 900 });
+  });
+
+  it("con cero resultados ofrece el filtro que más destraba, con su número", async () => {
+    const { port } = fakeFacets({
+      // Sin el precio hay 14; sin las habitaciones, 3.
+      dc: { total: 0, withoutFilter: { ...EMPTY.withoutFilter, price: 14, rooms: 3 } },
+      mcbo: { total: 23 },
+    });
+
+    const { panel, outcome } = await buildFilterPanel(port, {
       ...PLACE,
       query: { min: "250", hab: "2" },
       chosenZoneIds: [],
@@ -172,9 +201,11 @@ describe("buildFilterPanel", () => {
     expect(panel.confirm.kind).toBe("empty");
     const relief = panel.confirm.kind === "empty" ? panel.confirm.relief : null;
 
-    expect(relief?.filter).toBe("price");
     expect(relief?.label).toBe("Quitar el precio y ver 14");
     expect(relief?.href).not.toContain("min=");
+    // Y la pantalla recibe la misma salida que el botón del acordeón: dos
+    // consejos distintos para el mismo cero es uno de más.
+    expect(outcome.kind === "empty" && outcome.exits[0]?.label).toBe("Quitar el precio y ver 14");
   });
 
   it("con cero resultados y ningún filtro puesto no inventa una salida", async () => {
@@ -190,6 +221,29 @@ describe("buildFilterPanel", () => {
     expect(panel.confirm.kind).toBe("empty");
     expect(panel.confirm.kind === "empty" && panel.confirm.relief).toBeNull();
     expect(calls).toHaveLength(2);
+  });
+
+  it("con todos los avisos en pantalla, la lista cierra con el cambio que más suma (F10)", async () => {
+    const { port } = fakeFacets({
+      dc: {
+        total: 9,
+        cityTotal: 47,
+        withoutFilter: { ...EMPTY.withoutFilter, price: 12, rooms: 11 },
+        withWidenedPrice: 14,
+      },
+      mcbo: {},
+    });
+
+    const { outcome } = await buildFilterPanel(port, {
+      ...PLACE,
+      query: { max: "700", hab: "3" },
+      chosenZoneIds: [],
+      criteria: { cityId: "dc", maxPriceUsd: 700, minRooms: 3 },
+    });
+
+    expect(outcome.kind).toBe("complete");
+    expect(outcome.kind === "complete" && outcome.closing).toBe("Son los 9 avisos que coinciden");
+    expect(outcome.kind === "complete" && outcome.exit?.label).toBe("Ampliar a $900 y ver 14");
   });
 
   it("devuelve los conteos crudos, para que la pantalla no vuelva a pedirlos", async () => {

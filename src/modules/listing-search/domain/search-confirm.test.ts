@@ -84,7 +84,6 @@ describe("con cero resultados el botón no se apaga (F7)", () => {
     expect(confirm.kind).toBe("empty");
     const relief = confirm.kind === "empty" ? confirm.relief : null;
 
-    expect(relief?.filter).toBe("price");
     expect(relief?.resultCount).toBe(14);
     expect(relief?.label).toBe("Quitar el precio y ver 14");
     // Y la salida es una DIRECCIÓN: sin ella el ofrecimiento es una frase

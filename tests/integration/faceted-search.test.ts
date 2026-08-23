@@ -7,6 +7,7 @@ import {
   type FilterPanelRequest,
 } from "../../src/modules/listing-search/application/build-filter-panel";
 import type { SearchCriteria } from "../../src/modules/listing-search/domain/search-criteria";
+import { withoutFilter } from "../../src/modules/listing-search/domain/search-panel";
 import {
   DrizzleFacetedSearch,
   type FacetedSearchDatabase,
@@ -539,10 +540,108 @@ describe("una sola consulta (task 14.11: el costo son los viajes de red)", () =>
     const counted = new DrizzleFacetedSearch(
       drizzle(counting, { schema }) as unknown as FacetedSearchDatabase,
     );
-    await counted.countFacets({ cityId: MARACAIBO, minRooms: 2 }, ZONAS_OFRECIDAS);
+    // Con las nueve relajaciones, el escalón siguiente de precio y la ciudad
+    // pelada adentro: es la pregunta completa que hace la pantalla, no una
+    // reducida escrita para que el número dé.
+    await counted.countFacets(
+      {
+        cityId: MARACAIBO,
+        zoneIds: [MCBO_CENTRO],
+        minPriceUsd: 200,
+        maxPriceUsd: 400,
+        minRooms: 2,
+      },
+      ZONAS_OFRECIDAS,
+      { minPriceUsd: 200, maxPriceUsd: 900 },
+    );
     await counting.end();
 
     expect(queries).toBe(1);
+  });
+});
+
+describe("las salidas del vacío salen de la misma consulta (F10 y F11)", () => {
+  /**
+   * **Contar cuántos daría cada relajación no puede volverse una consulta por
+   * filtro.** Cada `withoutFilter` de acá se compara contra soltar el filtro
+   * DE VERDAD y volver a contar: si la columna del `COUNT(*) FILTER` y el
+   * criterio relajado no dan lo mismo, el botón promete un número que la
+   * lista no va a entregar.
+   */
+  const CRITERIO: SearchCriteria = {
+    cityId: MARACAIBO,
+    zoneIds: [MCBO_CENTRO],
+    minPriceUsd: 100,
+    maxPriceUsd: 250,
+    minRooms: 2,
+  };
+
+  it("cada relajación trae el número que traería soltar ese filtro de verdad", async () => {
+    const counts = await facets.countFacets(CRITERIO, ZONAS_OFRECIDAS);
+
+    // La búsqueda entera no encuentra nada: Centro no tiene ningún aviso de
+    // dos habitaciones bajo $250.
+    expect(counts.total).toBe(0);
+
+    for (const filter of ["zone", "price", "rooms"] as const) {
+      const soltado = await facets.countFacets(withoutFilter(CRITERIO, filter), []);
+      expect([filter, counts.withoutFilter[filter]]).toEqual([filter, soltado.total]);
+    }
+  });
+
+  it("y ese número es el de las filas que la lista realmente trae", async () => {
+    const counts = await facets.countFacets(CRITERIO, ZONAS_OFRECIDAS);
+    const rows = await search.search(withoutFilter(CRITERIO, "price"));
+
+    // Sin el precio quedan A2 y A3 en Centro con dos habitaciones o más.
+    expect(counts.withoutFilter.price).toBe(rows.length);
+    expect(counts.withoutFilter.price).toBeGreaterThan(0);
+  });
+
+  it("un filtro que nadie puso no promete nada: devuelve el total", async () => {
+    const counts = await facets.countFacets({ cityId: MARACAIBO, minRooms: 2 }, ZONAS_OFRECIDAS);
+
+    expect(counts.withoutFilter.publisherType).toBe(counts.total);
+    expect(counts.withoutFilter.isFurnished).toBe(counts.total);
+  });
+
+  it("«Limpiar todo» promete la ciudad entera, y sigue siendo esta ciudad", async () => {
+    const counts = await facets.countFacets(CRITERIO, ZONAS_OFRECIDAS);
+    const enLaCiudad = await search.search({ cityId: MARACAIBO });
+
+    expect(counts.cityTotal).toBe(enLaCiudad.length);
+    // Los seis de Caracas y los inactivos quedan afuera: el aislamiento no
+    // tiene excepción para el vacío.
+    expect(counts.cityTotal).toBe(5);
+  });
+
+  it("el escalón siguiente de precio se cuenta con los demás filtros puestos", async () => {
+    const counts = await facets.countFacets(CRITERIO, ZONAS_OFRECIDAS, {
+      minPriceUsd: 100,
+      maxPriceUsd: 400,
+    });
+    const rows = await search.search({ ...CRITERIO, maxPriceUsd: 400 });
+
+    // A2: Centro, dos habitaciones, $300. Entra al ampliar y no antes.
+    expect(counts.withWidenedPrice).toBe(rows.length);
+    expect(counts.withWidenedPrice).toBe(1);
+  });
+
+  it("una zona sin nada dentro del precio no se ofrece por haber salido del WHERE", async () => {
+    // El precio dejó de vivir en el `WHERE` compartido para poder contarse
+    // soltado, así que ahora llega una fila por cada zona con avisos a
+    // cualquier precio. Norte no tiene nada bajo $300 y no es una opción:
+    // ofrecerla sería invitar a un vacío (regla 4).
+    const counts = await facets.countFacets({ cityId: MARACAIBO, maxPriceUsd: 300 }, [MCBO_CENTRO]);
+
+    expect(counts.byZone).toEqual({ [MCBO_CENTRO]: 2 });
+  });
+
+  it("sin preguntar por el escalón siguiente, no hay respuesta que leer", async () => {
+    const counts = await facets.countFacets(CRITERIO, ZONAS_OFRECIDAS);
+
+    // Un cero diría "no hay ninguno", que es una respuesta. Esto es silencio.
+    expect(counts.withWidenedPrice).toBeUndefined();
   });
 });
 
@@ -830,7 +929,8 @@ describe("el panel armado contra la base: las zonas ofrecidas salen del conteo",
   it("sin resultados ofrece UNA salida con su número real, traído de la base", async () => {
     // El precio imposible es el filtro que más destraba, y el número que
     // acompaña la oferta lo cuenta Postgres: una salida que promete 5 y
-    // entrega 0 manda a otro vacío.
+    // entrega 0 manda a otro vacío. La etiqueta lo nombra, que es lo que la
+    // pantalla realmente muestra.
     const { panel } = await buildFilterPanel(
       facets,
       panelRequest({
@@ -843,9 +943,72 @@ describe("el panel armado contra la base: las zonas ofrecidas salen del conteo",
     if (panel.confirm.kind !== "empty") return;
 
     expect(panel.confirm.relief).not.toBeNull();
-    expect(panel.confirm.relief?.filter).toBe("price");
     // Soltar el precio deja las tres de Centro; soltar la zona deja cero,
     // porque el precio imposible sigue puesto.
+    expect(panel.confirm.relief?.label).toBe("Quitar el precio y ver 3");
     expect(panel.confirm.relief?.resultCount).toBe(3);
+  });
+});
+
+describe("ninguna pantalla termina en un vacío sin salida (F10 y F11)", () => {
+  it("el vacío nombra el filtro que lo causa y ofrece salidas que existen", async () => {
+    // La zona curada sin un solo aviso: el vacío no es un accidente de datos,
+    // es un filtro concreto y se puede nombrar.
+    const { outcome } = await buildFilterPanel(
+      facets,
+      panelRequest({
+        chosenZoneIds: [MCBO_VACIA],
+        criteria: { cityId: MARACAIBO, zoneIds: [MCBO_VACIA] },
+      }),
+    );
+
+    expect(outcome.kind).toBe("empty");
+    if (outcome.kind !== "empty") return;
+
+    expect(outcome.cause).toContain("Sin avisos");
+    expect(outcome.exits.map((exit) => [exit.kind, exit.resultCount])).toEqual([
+      ["drop", 5],
+      ["add-zone", 3],
+    ]);
+    // **Nunca otra ciudad**: toda salida se queda dentro de ésta.
+    expect(outcome.exits.every((exit) => exit.href.startsWith("/alquiler/maracaibo"))).toBe(true);
+    expect(outcome.exits.some((exit) => exit.href.includes("distrito"))).toBe(false);
+  });
+
+  it("y el número que promete cada salida es el que la lista entrega", async () => {
+    const { outcome } = await buildFilterPanel(
+      facets,
+      panelRequest({
+        chosenZoneIds: [MCBO_VACIA],
+        criteria: { cityId: MARACAIBO, zoneIds: [MCBO_VACIA] },
+      }),
+    );
+    if (outcome.kind !== "empty") throw new Error("se esperaba un vacío");
+
+    const soltarZonas = await search.search({ cityId: MARACAIBO });
+    // Sumar Centro a la zona vacía: las zonas se combinan con O.
+    const sumarCentro = await search.search({
+      cityId: MARACAIBO,
+      zoneIds: [MCBO_VACIA, MCBO_CENTRO],
+    });
+
+    expect(outcome.exits[0]?.resultCount).toBe(soltarZonas.length);
+    expect(outcome.exits[1]?.resultCount).toBe(sumarCentro.length);
+  });
+
+  it("con todos los avisos en pantalla, la lista cierra proponiendo un cambio (F10)", async () => {
+    const { outcome } = await buildFilterPanel(
+      facets,
+      panelRequest({ criteria: { cityId: MARACAIBO, minRooms: 2 } }),
+    );
+
+    expect(outcome.kind).toBe("complete");
+    if (outcome.kind !== "complete") return;
+
+    const conDosOMas = await search.search({ cityId: MARACAIBO, minRooms: 2 });
+    const sinHabitaciones = await search.search({ cityId: MARACAIBO });
+
+    expect(outcome.closing).toBe(`Son los ${conDosOMas.length} avisos que coinciden`);
+    expect(outcome.exit?.label).toBe(`Quitar las habitaciones y ver ${sinHabitaciones.length}`);
   });
 });

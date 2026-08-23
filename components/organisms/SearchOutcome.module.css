@@ -1,0 +1,66 @@
+/* El cierre de la lista y la pantalla del vacío. El mismo bloque para los dos
+   porque son la misma pregunta —«¿y ahora qué?»— contestada en dos momentos, y
+   dos cajas distintas para la misma respuesta se separarían con el tiempo. */
+
+.outcome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding-block: var(--gap);
+  border-block-start: 1px solid var(--line);
+}
+
+/* Qué filtro dejó la búsqueda en cero. Va primero y en el color del texto
+   normal: es la explicación, no una advertencia. */
+.cause {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.closing {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  color: var(--ink);
+}
+
+.lead {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  color: var(--soft);
+}
+
+.exits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap);
+}
+
+/* 44 px de área táctil (regla transversal 7), y con la forma del botón que
+   confirma: es la misma acción —ver esos avisos— desde el otro lado. */
+.exit {
+  min-block-size: var(--action-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 16px;
+  border-radius: var(--r);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.exit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

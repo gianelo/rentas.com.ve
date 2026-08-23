@@ -5,6 +5,7 @@ import { AppLink } from "@/../components/atoms/AppLink";
 import { Container } from "@/../components/layout/Container";
 import { SidebarLayout } from "@/../components/layout/SidebarLayout";
 import { ListingCard, ListingGrid } from "@/../components/molecules/ListingCard";
+import { SearchOutcome } from "@/../components/organisms/SearchOutcome";
 import { SearchPanel } from "@/../components/organisms/SearchPanel";
 import { SearchSummaryBar } from "@/../components/organisms/SearchSummaryBar";
 import { DrizzleCatalogue } from "@/modules/listing-catalogue/infrastructure/drizzle-catalogue";
@@ -150,7 +151,7 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
   // El panel va después de las filas por la misma razón que en la página de
   // zona: el atajo de F7 —con un solo resultado el botón lleva a la ficha—
   // necesita la dirección de esa ficha, y la arma `buildListingGrid`.
-  const { panel, counts } = await buildFilterPanel(new DrizzleFacetedSearch(db), {
+  const { panel, counts, outcome } = await buildFilterPanel(new DrizzleFacetedSearch(db), {
     basePath: cityPath,
     cityPath,
     query,
@@ -234,12 +235,16 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
             </AppLink>
             .
           </p>
+        ) : total === 0 ? (
+          // **El vacío explicado, con sus salidas** (F11). Reemplaza al aviso
+          // genérico que decía «probá ampliando el precio» sin saber si ampliar
+          // el precio devolvía algo: qué filtro lo causó y cuántos avisos hay
+          // del otro lado de cada salida lo cuenta el dominio contra la base.
+          <SearchOutcome model={outcome} />
         ) : cards.length === 0 ? (
-          <p className={styles.empty}>
-            {isFilteredZoneRoute(query)
-              ? `No hay avisos en ${city.name} con esos filtros. Probá ampliando el rango de precio o quitando las habitaciones.`
-              : `Todavía no hay avisos publicados en ${city.name}.`}
-          </p>
+          // Contados pero no dibujados: un aviso sin portada no entra en la
+          // cuadrícula (F9). El número de arriba sigue siendo el verdadero.
+          <p className={styles.empty}>Los avisos de esta página todavía no tienen foto.</p>
         ) : (
           <ListingGrid>
             {cards.map((card) => (
@@ -283,6 +288,12 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
             )}
           </nav>
         ) : null}
+
+        {/* **El cierre de la lista** (F10): «Son los 9 avisos que coinciden»
+            más el único cambio que más suma, con su número. A mitad de una
+            lista paginada el dominio devuelve `partial` y esto no dibuja nada,
+            porque todavía faltan avisos. */}
+        {total > 0 ? <SearchOutcome model={outcome} /> : null}
       </SidebarLayout>
     </Container>
   );
