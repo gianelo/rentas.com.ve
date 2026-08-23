@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { MIN_INDEXABLE_DESCRIPTION_LENGTH } from "../../src/modules/listing-discovery/domain/listing-structured-data";
 import { buildSitemap } from "../../src/modules/listing-discovery/domain/sitemap";
 import {
   DrizzleSitemap,
@@ -16,6 +17,11 @@ import * as schema from "../../src/shared/db/schema";
  * un aviso cuya fila todavía dice `active` pero cuyo `expires_at` ya pasó. Esa
  * es la ventana que abre el cron cuando se atrasa, y un fake que filtra por
  * `status` porque lo escribieron así nunca la vería.
+ *
+ * Y la tercera condición (11.15): que el SQL mida el contenido igual que
+ * `resolveListingIndexing`, blancos colapsados incluidos. El número vive en el
+ * dominio; que las dos escrituras del mismo predicado no se separen lo sostiene
+ * este archivo.
  */
 
 function getTestDatabaseUrl(): string {
@@ -42,9 +48,20 @@ const OLDER = randomUUID();
 const EXPIRED_STATUS = randomUUID();
 const HIDDEN = randomUUID();
 const LAPSED = randomUUID();
+const THIN = randomUUID();
+const PADDED = randomUUID();
+const THIN_ZONE = randomUUID();
 
 const CITY_NAME = `Ciudad ${CITY}`;
 const ZONE_NAME = `Zona ${ZONE}`;
+
+/** Una descripción que pasa el umbral de contenido, para no ser el sujeto. */
+const LONG_DESCRIPTION =
+  "Apartamento luminoso en un edificio de cuatro pisos, con balcón hacia el " +
+  "patio interno y cocina independiente. El condominio incluye el agua y la " +
+  "vigilancia nocturna. Queda a dos cuadras del mercado y a una parada del " +
+  "corredor vial, y el estacionamiento es techado. Se alquila desde el primero " +
+  "del mes que viene, con contrato de un año.";
 
 async function insertListing(
   id: string,
@@ -52,6 +69,7 @@ async function insertListing(
   status: string,
   publishedInterval: string,
   expiresInterval: string,
+  description: string = LONG_DESCRIPTION,
 ): Promise<void> {
   await pool.query(
     `INSERT INTO "listing"
@@ -59,10 +77,10 @@ async function insertListing(
         price_usd, rooms, area_m2, bathrooms, parking_spots,
         has_power_plant, has_regular_water, is_furnished, has_security, has_appliances,
         contact_method, contact_value, status, published_at, expires_at)
-     VALUES ($1,$2,'owner','apartamento',$3,$4,'Apartamento 2 habitaciones','Descripción larga.',
+     VALUES ($1,$2,'owner','apartamento',$3,$4,'Apartamento 2 habitaciones',$8,
              450,2,78,1,0, false,false,false,false,false,
              'email','sin-contacto',$5, now() - $6::interval, now() + $7::interval)`,
-    [id, PUBLISHER, CITY, zoneId, status, publishedInterval, expiresInterval],
+    [id, PUBLISHER, CITY, zoneId, status, publishedInterval, expiresInterval, description],
   );
 }
 
@@ -75,6 +93,10 @@ beforeAll(async () => {
   await pool.query(
     `INSERT INTO "zone" (id, city_id, name, kind, source) VALUES ($1,$2,$3,'parroquia','INE')`,
     [OTHER_ZONE, CITY, `Zona ${OTHER_ZONE}`],
+  );
+  await pool.query(
+    `INSERT INTO "zone" (id, city_id, name, kind, source) VALUES ($1,$2,$3,'parroquia','INE')`,
+    [THIN_ZONE, CITY, `Zona ${THIN_ZONE}`],
   );
   await pool.query('INSERT INTO "user" (id, name, email) VALUES ($1,$2,$3)', [
     PUBLISHER,
@@ -89,6 +111,18 @@ beforeAll(async () => {
   // La ventana del cron atrasado: la fila todavía dice `active` y la fecha ya
   // pasó. `-1 day` como intervalo positivo deja `expires_at` en el pasado.
   await insertListing(LAPSED, OTHER_ZONE, "active", "40 days", "-1 day");
+  // Vigente y de dos líneas: la forma que llega por importación masiva, que
+  // nunca pasó por el piso de 120 caracteres del formulario de publicar.
+  await insertListing(THIN, THIN_ZONE, "active", "3 days", "27 days", "Apartamento. Llamar.");
+  // El mismo texto corto, inflado con blancos hasta pasar el umbral en crudo.
+  await insertListing(
+    PADDED,
+    ZONE,
+    "active",
+    "4 days",
+    "26 days",
+    `Apartamento.${"\n \t".repeat(MIN_INDEXABLE_DESCRIPTION_LENGTH)}`,
+  );
 });
 
 afterAll(async () => {
@@ -131,6 +165,26 @@ describe("activeListings", () => {
     expect(ids).not.toContain(LAPSED);
   });
 
+  /**
+   * **La coherencia con la propia ficha** (11.15). Un aviso de contenido
+   * delgado se sirve, pero su ficha lleva `noindex`: dejarlo en el sitemap
+   * sería pedirle a Google que indexe una página que la propia página le pide
+   * no indexar, y eso Search Console lo reporta como un error. Servir no es lo
+   * mismo que recomendar.
+   */
+  it("deja fuera un aviso vigente cuya descripción no llega al umbral", async () => {
+    const ids = await idsForThisFixture();
+
+    expect(ids).not.toContain(THIN);
+  });
+
+  /** Los blancos no compran una entrada, igual que no compran indexación. */
+  it("no cuenta el relleno de espacios como contenido", async () => {
+    const ids = await idsForThisFixture();
+
+    expect(ids).not.toContain(PADDED);
+  });
+
   it("devuelve el más reciente primero", async () => {
     const ids = await idsForThisFixture();
 
@@ -148,5 +202,8 @@ describe("activeListings", () => {
 
     expect(urls.some((url) => url.includes(`zona-${ZONE}`))).toBe(true);
     expect(urls.some((url) => url.includes(`zona-${OTHER_ZONE}`))).toBe(false);
+    // Lo mismo del otro lado de la tercera condición: la zona cuyo único aviso
+    // es delgado tampoco se publica, porque las zonas se derivan de estas filas.
+    expect(urls.some((url) => url.includes(`zona-${THIN_ZONE}`))).toBe(false);
   });
 });
