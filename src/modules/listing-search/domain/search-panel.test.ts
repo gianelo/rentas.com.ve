@@ -4,6 +4,7 @@ import {
   relaxableFilters,
   reliefHref,
   type SearchPanelInput,
+  withoutFilter,
 } from "./search-panel";
 
 const COUNTS = {
@@ -272,6 +273,34 @@ describe("la salida del vacío (F7 · F11)", () => {
     expect(reliefHref(place, "price")).toContain("hab=2");
     expect(reliefHref(place, "rooms")).not.toContain("hab=");
     expect(reliefHref(place, "hasPowerPlant")).not.toContain("planta=");
+  });
+
+  it("soltar un filtro deja el criterio sin él y con todo lo demás intacto", () => {
+    const criteria = {
+      cityId: "dc",
+      zoneIds: ["chacao"],
+      minPriceUsd: 250,
+      maxPriceUsd: 700,
+      minRooms: 2,
+      publisherType: "owner",
+      attributes: ["hasPowerPlant", "hasRegularWater"],
+    } as const;
+
+    expect(withoutFilter(criteria, "zone").zoneIds).toBeUndefined();
+    expect(withoutFilter(criteria, "zone").minRooms).toBe(2);
+    // El precio se suelta entero: soltar sólo un extremo es media salida.
+    expect(withoutFilter(criteria, "price").minPriceUsd).toBeUndefined();
+    expect(withoutFilter(criteria, "price").maxPriceUsd).toBeUndefined();
+    expect(withoutFilter(criteria, "rooms").minRooms).toBeUndefined();
+    expect(withoutFilter(criteria, "publisherType").publisherType).toBeUndefined();
+    // Un atributo se cae solo, y los otros siguen: se combinan con Y.
+    expect(withoutFilter(criteria, "hasPowerPlant").attributes).toEqual(["hasRegularWater"]);
+  });
+
+  it("la ciudad sobrevive a cualquier soltada: no es un filtro", () => {
+    const criteria = { cityId: "dc", zoneIds: ["chacao"] } as const;
+
+    expect(withoutFilter(criteria, "zone").cityId).toBe("dc");
   });
 
   it("con cero resultados el panel ofrece la salida elegida", () => {

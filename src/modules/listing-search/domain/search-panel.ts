@@ -137,6 +137,54 @@ export function relaxableFilters(
 }
 
 /**
+ * El mismo criterio **sin ese filtro**, para preguntarle a la base cuántos
+ * habría al soltarlo.
+ *
+ * **La ciudad sobrevive siempre**, y no porque esta función la respete: no
+ * está en la lista de lo que se puede soltar, y `SearchCriteria.cityId` es
+ * obligatorio y no nulable. El aislamiento de ciudad no es un filtro que se
+ * pueda aflojar para conseguir resultados — ofrecer «quitá Caracas y ver 23»
+ * sería mandar a alguien a mirar apartamentos a mil kilómetros.
+ */
+export function withoutFilter(criteria: SearchCriteria, filter: RelaxableFilter): SearchCriteria {
+  const { zoneIds, minPriceUsd, maxPriceUsd, minRooms, publisherType, attributes, ...rest } =
+    criteria;
+
+  const keep = <T>(value: T | undefined, dropped: boolean): T | undefined =>
+    dropped ? undefined : value;
+
+  return {
+    ...rest,
+    // El precio se suelta entero: dejar un extremo es media salida, y la regla
+    // pide UN cambio, no medio.
+    ...maybe("zoneIds", keep(zoneIds, filter === "zone")),
+    ...maybe("minPriceUsd", keep(minPriceUsd, filter === "price")),
+    ...maybe("maxPriceUsd", keep(maxPriceUsd, filter === "price")),
+    ...maybe("minRooms", keep(minRooms, filter === "rooms")),
+    ...maybe("publisherType", keep(publisherType, filter === "publisherType")),
+    ...maybe(
+      "attributes",
+      dropAttribute(attributes, filter),
+    ),
+  };
+}
+
+/** El atributo soltado se cae solo; los otros siguen, porque se combinan con Y. */
+function dropAttribute(
+  attributes: readonly ListingAttribute[] | undefined,
+  filter: RelaxableFilter,
+): readonly ListingAttribute[] | undefined {
+  if (attributes === undefined) return undefined;
+  const kept = attributes.filter((attribute) => attribute !== filter);
+  return kept.length === 0 ? undefined : kept;
+}
+
+/** Deja los filtros ausentes ausentes, en vez de presentes-y-`undefined`. */
+function maybe<K extends string, V>(key: K, value: V | undefined) {
+  return value === undefined ? {} : ({ [key]: value } as Record<K, V>);
+}
+
+/**
  * La misma búsqueda **sin ese filtro y sin tocar ningún otro** (F7 y F10: «un
  * solo cambio»).
  *
