@@ -1,4 +1,5 @@
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes } from "react";
+import { AppLink } from "./AppLink";
 import styles from "./Button.module.css";
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement>;
@@ -32,6 +33,13 @@ export function NeutralButton(props: Props) {
  * navega. El bloque de contacto necesita ir a la pantalla de entrar, así que
  * necesita un enlace.
  */
-export function ActionLink(props: AnchorHTMLAttributes<HTMLAnchorElement>) {
-  return <a {...props} className={`${styles.base} ${styles.action}`} />;
+export function ActionLink({
+  href,
+  ...rest
+}: AnchorHTMLAttributes<HTMLAnchorElement> & { readonly href: string }) {
+  // `href` pasa a ser obligatorio, y no es un requisito nuevo del tipo: un
+  // enlace sin destino no navega a ninguna parte. `AppLink` lo necesita
+  // presente para decidir si la ruta es nuestra —y por lo tanto si merece
+  // navegación de cliente— o si abre otra aplicación.
+  return <AppLink href={href} {...rest} className={`${styles.base} ${styles.action}`} />;
 }

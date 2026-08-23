@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
+import { AppLink } from "@/../components/atoms/AppLink";
 import type { ListingPhotoView } from "@/modules/listing-discovery/application/ports/listing-photos.port";
 import { photoAltText, photoUrl } from "@/modules/listing-discovery/domain/listing-photo-view";
 import { listingIdFromSlug } from "@/modules/listing-discovery/domain/listing-url";
@@ -107,10 +108,10 @@ export default async function VisorPage({ params }: VisorProps) {
       <header className={styles.bar}>
         {/* El nombre va como texto y el glifo queda decorativo: "×" leído en
             voz alta es "signo de multiplicación", no "cerrar". */}
-        <a className={styles.close} href={view.exitHref} data-viewer-key="exit">
+        <AppLink className={styles.close} href={view.exitHref} data-viewer-key="exit">
           <span aria-hidden="true">×</span>
           <span className={styles.srOnly}>Cerrar el visor y volver al aviso</span>
-        </a>
+        </AppLink>
         {/* El contador va en base uno porque es el número de la URL: quien
             comparte "/foto/2" y lee "2 / 6" está mirando el mismo dato. */}
         <span className={styles.counter}>
@@ -138,11 +139,11 @@ export default async function VisorPage({ params }: VisorProps) {
 
         {/* Enlaces reales, no estado de cliente. De ahí sale, sin programar
             nada, que "atrás" retroceda una foto. En la primera y en la última
-            NO se dibuja un enlace apagado: un `<a>` sin `href` no es un
+            NO se dibuja un enlace apagado: un `<AppLink>` sin `href` no es un
             control deshabilitado, es uno que el teclado no alcanza y que el
             lector de pantalla anuncia igual. */}
         {view.previousHref ? (
-          <a
+          <AppLink
             className={styles.previous}
             href={view.previousHref}
             rel="prev"
@@ -152,15 +153,15 @@ export default async function VisorPage({ params }: VisorProps) {
               ‹
             </span>
             <span className={styles.srOnly}>Foto anterior</span>
-          </a>
+          </AppLink>
         ) : null}
         {view.nextHref ? (
-          <a className={styles.next} href={view.nextHref} rel="next" data-viewer-key="next">
+          <AppLink className={styles.next} href={view.nextHref} rel="next" data-viewer-key="next">
             <span className={styles.arrow} aria-hidden="true">
               ›
             </span>
             <span className={styles.srOnly}>Foto siguiente</span>
-          </a>
+          </AppLink>
         ) : null}
       </div>
 
@@ -178,7 +179,7 @@ export default async function VisorPage({ params }: VisorProps) {
           const thumb = frames[item.position];
           if (!thumb) return null;
           return (
-            <a
+            <AppLink
               className={item.current ? styles.thumbCurrent : styles.thumb}
               href={item.href}
               key={item.number}
@@ -194,7 +195,7 @@ export default async function VisorPage({ params }: VisorProps) {
                 loading="lazy"
               />
               <span className={styles.srOnly}>{`Ver la foto ${item.number} de ${view.total}`}</span>
-            </a>
+            </AppLink>
           );
         })}
       </nav>
@@ -205,9 +206,9 @@ export default async function VisorPage({ params }: VisorProps) {
           <span className={styles.price}>${detail.priceUsd}</span>
           <span className={styles.perMonth}>al mes</span>
         </span>
-        <a className={styles.exit} href={view.exitHref}>
+        <AppLink className={styles.exit} href={view.exitHref}>
           Ver el aviso
-        </a>
+        </AppLink>
       </footer>
 
       {/* El teclado, encima de todo lo anterior. Si no llega, la pantalla que
