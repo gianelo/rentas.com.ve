@@ -680,9 +680,14 @@ const PANEL_CIUDADES = [
 ] as const;
 
 const PANEL_ZONAS = [
-  { id: MCBO_CENTRO, name: "Centro", path: "/alquiler/maracaibo/centro" },
-  { id: MCBO_NORTE, name: "Norte", path: "/alquiler/maracaibo/norte" },
-  { id: MCBO_VACIA, name: "Sin avisos", path: "/alquiler/maracaibo/sin-avisos" },
+  { id: MCBO_CENTRO, name: "Centro", slug: "centro", path: "/alquiler/maracaibo/centro" },
+  { id: MCBO_NORTE, name: "Norte", slug: "norte", path: "/alquiler/maracaibo/norte" },
+  {
+    id: MCBO_VACIA,
+    name: "Sin avisos",
+    slug: "sin-avisos",
+    path: "/alquiler/maracaibo/sin-avisos",
+  },
 ] as const;
 
 function panelRequest(overrides: Partial<FilterPanelRequest> = {}): FilterPanelRequest {

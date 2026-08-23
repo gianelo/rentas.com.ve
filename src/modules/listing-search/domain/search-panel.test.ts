@@ -4,8 +4,10 @@ import {
   relaxableFilters,
   reliefHref,
   type SearchPanelInput,
+  toPanelZones,
   withoutFilter,
 } from "./search-panel";
+import { toSearchZones } from "./zone-catalogue";
 
 const COUNTS = {
   total: 16,
@@ -32,10 +34,25 @@ const BASE: SearchPanelInput = {
     { id: "mcbo", name: "Maracaibo", path: "/alquiler/maracaibo", count: 23 },
   ],
   zones: [
-    { id: "chacao", name: "Chacao", path: "/alquiler/distrito-capital/chacao" },
-    { id: "altamira", name: "Altamira", path: "/alquiler/distrito-capital/altamira" },
-    { id: "castellana", name: "La Castellana", path: "/alquiler/distrito-capital/la-castellana" },
-    { id: "rosal", name: "El Rosal", path: "/alquiler/distrito-capital/el-rosal" },
+    { id: "chacao", name: "Chacao", slug: "chacao", path: "/alquiler/distrito-capital/chacao" },
+    {
+      id: "altamira",
+      name: "Altamira",
+      slug: "altamira",
+      path: "/alquiler/distrito-capital/altamira",
+    },
+    {
+      id: "castellana",
+      name: "La Castellana",
+      slug: "la-castellana",
+      path: "/alquiler/distrito-capital/la-castellana",
+    },
+    {
+      id: "rosal",
+      name: "El Rosal",
+      slug: "el-rosal",
+      path: "/alquiler/distrito-capital/el-rosal",
+    },
   ],
   chosenZoneIds: [],
   counts: COUNTS,
@@ -177,6 +194,103 @@ describe("paso 2 · las zonas (F4)", () => {
 
     expect(result.zones).toEqual([]);
     expect(result.zoneSearch.noMatches).toBe(true);
+  });
+});
+
+/**
+ * Los ids de este bloque tienen forma de hash porque los de verdad la tienen:
+ * `territoryId` los emite así. El fixture de arriba usa ids legibles, y por eso
+ * este defecto vivió meses sin que nadie lo viera — con `id === slug` una
+ * dirección armada con ids se lee igual de bien que una armada con slugs.
+ */
+describe("paso 2 · qué viaja en `?zona=` cuando el id es un hash (F12)", () => {
+  const CHACAO = "9f1c0d2e-0000-4000-8000-000000000001";
+  const ALTAMIRA = "4da5ef52-0000-4000-8000-000000000002";
+
+  const HASHED: SearchPanelInput = {
+    ...BASE,
+    zones: [
+      { id: CHACAO, name: "Chacao", slug: "chacao", path: "/alquiler/distrito-capital/chacao" },
+      {
+        id: ALTAMIRA,
+        name: "Altamira",
+        slug: "altamira",
+        path: "/alquiler/distrito-capital/altamira",
+      },
+    ],
+    counts: { ...COUNTS, byZone: { [CHACAO]: 12, [ALTAMIRA]: 9 } },
+  };
+
+  it("la dirección de dos zonas se lee: `?zona=chacao,altamira`, no dos hashes", () => {
+    const altamira = buildSearchPanel({ ...HASHED, chosenZoneIds: [CHACAO] }).zones.find(
+      (zone) => zone.id === ALTAMIRA,
+    );
+
+    expect(altamira?.href).toContain("zona=chacao%2Caltamira");
+    expect(altamira?.href).not.toContain(CHACAO);
+    expect(altamira?.href).not.toContain(ALTAMIRA);
+  });
+
+  it("el id sigue siendo la clave del conteo, y por eso no se puede reemplazar", () => {
+    // Si el slug hubiera reemplazado al id, `byZone` no encontraría la entrada
+    // y las dos zonas quedarían en cero — deshabilitadas y sin número.
+    const zones = buildSearchPanel(HASHED).zones;
+
+    expect(zones.find((zone) => zone.id === CHACAO)?.countLabel).toBe("12");
+    expect(zones.find((zone) => zone.id === ALTAMIRA)?.countLabel).toBe("9");
+  });
+
+  it("`toPanelZones` conserva el id y le suma el slug, y recorta por ciudad", () => {
+    const panelZones = toPanelZones(
+      "/alquiler/distrito-capital",
+      toSearchZones([
+        { id: CHACAO, cityId: "dc", name: "Chacao" },
+        { id: ALTAMIRA, cityId: "dc", name: "Altamira" },
+        { id: "otra-ciudad", cityId: "mcbo", name: "Centro" },
+      ]),
+      "dc",
+    );
+
+    expect(panelZones).toEqual([
+      { id: CHACAO, name: "Chacao", slug: "chacao", path: "/alquiler/distrito-capital/chacao" },
+      {
+        id: ALTAMIRA,
+        name: "Altamira",
+        slug: "altamira",
+        path: "/alquiler/distrito-capital/altamira",
+      },
+    ]);
+  });
+
+  it("armado con `toPanelZones`, el conteo sigue encontrándose por id", () => {
+    // **La mutación que esto pone en rojo**: reemplazar el id por el slug en
+    // `toPanelZones`. `byZone` está indexado por el id real, así que las dos
+    // zonas quedarían en cero — deshabilitadas y sin número — sin que nada más
+    // falle.
+    const zones = buildSearchPanel({
+      ...HASHED,
+      zones: toPanelZones(
+        "/alquiler/distrito-capital",
+        toSearchZones([
+          { id: CHACAO, cityId: "dc", name: "Chacao" },
+          { id: ALTAMIRA, cityId: "dc", name: "Altamira" },
+        ]),
+        "dc",
+      ),
+    }).zones;
+
+    expect(zones.find((zone) => zone.id === CHACAO)?.countLabel).toBe("12");
+    expect(zones.find((zone) => zone.id === ALTAMIRA)?.countLabel).toBe("9");
+    expect(zones.every((zone) => zone.disabled)).toBe(false);
+  });
+
+  it("con una sola zona sigue cayendo en su ruta canónica, sin parámetro", () => {
+    // Éste es el caso que escondía el defecto: con UNA zona el parámetro
+    // desaparece, así que el hash nunca llegaba a verse.
+    const chacao = buildSearchPanel(HASHED).zones.find((zone) => zone.id === CHACAO);
+
+    expect(chacao?.href).toContain("/alquiler/distrito-capital/chacao");
+    expect(chacao?.href).not.toContain("zona=");
   });
 });
 

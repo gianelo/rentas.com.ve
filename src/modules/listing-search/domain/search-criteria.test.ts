@@ -4,11 +4,15 @@ import { buildSearchCriteria, type CuratedZone } from "./search-criteria";
 const MARACAIBO = "city-maracaibo";
 const DISTRITO = "city-distrito";
 
-/** Both cities have a zone called "Centro"; only the ids differ. */
+/**
+ * Both cities have a zone called "Centro" — so both carry the same `slug`, and
+ * only the ids differ. That is the whole point: a slug alone does not tell the
+ * two apart, and the city always does.
+ */
 const ZONES: readonly CuratedZone[] = [
-  { id: "zone-mcbo-centro", cityId: MARACAIBO },
-  { id: "zone-mcbo-norte", cityId: MARACAIBO },
-  { id: "zone-dc-centro", cityId: DISTRITO },
+  { id: "zone-mcbo-centro", cityId: MARACAIBO, slug: "centro" },
+  { id: "zone-mcbo-norte", cityId: MARACAIBO, slug: "norte" },
+  { id: "zone-dc-centro", cityId: DISTRITO, slug: "centro" },
 ];
 
 describe("buildSearchCriteria — city scope (task 5.1, design.md D5)", () => {
@@ -124,6 +128,47 @@ describe("buildSearchCriteria — varias zonas a la vez (task 14.6, F4)", () => 
     expect(
       buildSearchCriteria({ city: MARACAIBO, zone: "zone-dc-centro,zone-mcbo-norte" }, ZONES),
     ).toEqual({ cityId: MARACAIBO, zoneIds: ["zone-mcbo-norte"] });
+  });
+});
+
+describe("buildSearchCriteria — `?zona=` escrita con slugs (F12)", () => {
+  it("lee el slug, que es la forma que el panel emite", () => {
+    expect(buildSearchCriteria({ city: MARACAIBO, zone: "centro,norte" }, ZONES)).toEqual({
+      cityId: MARACAIBO,
+      zoneIds: ["zone-mcbo-centro", "zone-mcbo-norte"],
+    });
+  });
+
+  it("el mismo slug resuelve a otra zona en otra ciudad, y ésa es la trampa", () => {
+    // «Centro» existe en las dos. El slug solo no las distingue; la ciudad,
+    // que siempre está en la ruta, sí.
+    expect(buildSearchCriteria({ city: DISTRITO, zone: "centro" }, ZONES)).toEqual({
+      cityId: DISTRITO,
+      zoneIds: ["zone-dc-centro"],
+    });
+  });
+
+  it("no cruza la homónima de la otra ciudad ni cuando la suya no existe", () => {
+    // Distrito Capital no tiene «Norte». La respuesta honesta es la ciudad
+    // entera, nunca el «Norte» de Maracaibo.
+    expect(buildSearchCriteria({ city: DISTRITO, zone: "norte" }, ZONES)).toEqual({
+      cityId: DISTRITO,
+    });
+  });
+
+  it("sigue leyendo el id, porque hay direcciones compartidas que lo llevan", () => {
+    // La dirección es el estado de la búsqueda: romper los enlaces que ya
+    // circulan por WhatsApp devolvería la ciudad entera sin decir por qué.
+    expect(buildSearchCriteria({ city: MARACAIBO, zone: "zone-mcbo-centro" }, ZONES)).toEqual({
+      cityId: MARACAIBO,
+      zoneIds: ["zone-mcbo-centro"],
+    });
+  });
+
+  it("mezcla las dos formas sin marcar dos veces la misma zona", () => {
+    expect(
+      buildSearchCriteria({ city: MARACAIBO, zone: "zone-mcbo-centro,centro" }, ZONES),
+    ).toEqual({ cityId: MARACAIBO, zoneIds: ["zone-mcbo-centro"] });
   });
 
   it("cae en toda la ciudad cuando no sobrevive ni una zona", () => {

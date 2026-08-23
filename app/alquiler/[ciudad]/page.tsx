@@ -19,11 +19,13 @@ import { readPhotoPublicBaseUrl } from "@/modules/listing-discovery/infrastructu
 import { buildFilterPanel } from "@/modules/listing-search/application/build-filter-panel";
 import { resolvePagination } from "@/modules/listing-search/domain/pagination";
 import { buildSearchCriteria } from "@/modules/listing-search/domain/search-criteria";
+import { toPanelZones } from "@/modules/listing-search/domain/search-panel";
 import {
   buildSearchHref,
   readZoneList,
   SEARCH_QUERY_NAMES,
 } from "@/modules/listing-search/domain/search-query";
+import { resolveZoneTokens, toSearchZones } from "@/modules/listing-search/domain/zone-catalogue";
 import { DrizzleFacetedSearch } from "@/modules/listing-search/infrastructure/drizzle-faceted-search";
 import { DrizzleListingSearch } from "@/modules/listing-search/infrastructure/drizzle-listing-search";
 import { db } from "@/shared/db/client";
@@ -82,13 +84,20 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
   // filtros.
   const cityPath = `/alquiler/${ciudad}`;
 
+  // El catálogo con el slug de cada zona ya calculado por el dominio. La
+  // página no formatea nada: el slug es un dato de la zona, no un formateo de
+  // la pantalla.
+  const searchZones = toSearchZones(zones);
+
   // **La única diferencia real con la página de zona**: no hay zona afirmada
   // por la ruta, así que las elegidas salen enteras de `?zona=`. Cuáles
-  // sobreviven lo decide `buildSearchCriteria`, que deja caer la que no
-  // pertenece a esta ciudad sin llevarse la búsqueda entera.
-  const askedZoneIds = readZoneList(query[SEARCH_QUERY_NAMES.zone]);
-  const chosenZones = zones.filter(
-    (candidate) => candidate.cityId === city.id && askedZoneIds.includes(candidate.id),
+  // sobreviven lo decide el dominio, que deja caer la que no pertenece a esta
+  // ciudad sin llevarse la búsqueda entera — y que acepta tanto el slug (F12)
+  // como el id de las direcciones ya compartidas.
+  const chosenZones = resolveZoneTokens(
+    readZoneList(query[SEARCH_QUERY_NAMES.zone]),
+    searchZones,
+    city.id,
   );
   const chosenZoneIds = chosenZones.map((zone) => zone.id);
 
@@ -114,7 +123,7 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
       hasAppliances: query[SEARCH_QUERY_NAMES.hasAppliances],
       page: query[SEARCH_QUERY_NAMES.page],
     },
-    zones,
+    searchZones,
   ) ?? { cityId: city.id };
 
   const results = await new DrizzleListingSearch(db).search(criteria);
@@ -151,13 +160,11 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
       name: candidate.name,
       path: `/alquiler/${slugify(candidate.name)}`,
     })),
-    zones: zones
-      .filter((candidate) => candidate.cityId === city.id)
-      .map((candidate) => ({
-        id: candidate.id,
-        name: candidate.name,
-        path: `${cityPath}/${slugify(candidate.name)}`,
-      })),
+    // El recorte por ciudad y la ruta canónica de cada zona los arma el
+    // dominio sobre el mismo slug que viaja en `?zona=`: dos derivaciones
+    // distintas del nombre es cómo la query deja de nombrar lo que nombra la
+    // ruta.
+    zones: toPanelZones(cityPath, searchZones, city.id),
     chosenZoneIds,
     criteria,
     onlyListingHref: cards.length === 1 ? cards[0]?.href : undefined,

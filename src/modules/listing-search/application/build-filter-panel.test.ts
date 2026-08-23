@@ -46,9 +46,19 @@ const PLACE = {
     { id: "mcbo", name: "Maracaibo", path: "/alquiler/maracaibo" },
   ],
   zones: [
-    { id: "chacao", name: "Chacao", path: "/alquiler/distrito-capital/chacao" },
-    { id: "altamira", name: "Altamira", path: "/alquiler/distrito-capital/altamira" },
-    { id: "rosal", name: "El Rosal", path: "/alquiler/distrito-capital/el-rosal" },
+    { id: "chacao", name: "Chacao", slug: "chacao", path: "/alquiler/distrito-capital/chacao" },
+    {
+      id: "altamira",
+      name: "Altamira",
+      slug: "altamira",
+      path: "/alquiler/distrito-capital/altamira",
+    },
+    {
+      id: "rosal",
+      name: "El Rosal",
+      slug: "el-rosal",
+      path: "/alquiler/distrito-capital/el-rosal",
+    },
   ],
 };
 
