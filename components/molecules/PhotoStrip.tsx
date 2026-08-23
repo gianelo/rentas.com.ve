@@ -2,6 +2,7 @@ import type { ListingPhotoView } from "@/modules/listing-discovery/application/p
 import { photoAltText, photoUrl } from "@/modules/listing-discovery/domain/listing-photo-view";
 import { photoNumberOf, photoViewerPath } from "@/modules/listing-discovery/domain/photo-viewer";
 import { MAX_PHOTOS_PER_LISTING } from "@/modules/listing-publication/domain/publishable-listing";
+import { AppLink } from "../atoms/AppLink";
 import styles from "./PhotoStrip.module.css";
 
 export interface PhotoStripProps {
@@ -68,7 +69,7 @@ export function PhotoStrip({ photos, publicBaseUrl, title, zone, href }: PhotoSt
                   uno. Se numera sobre lo que se DIBUJA — igual que el
                   alternativo — para que "/foto/2" y "Foto 2 de 5" hablen de la
                   misma fotografía cuando una fila rota quedó salteada. */}
-              <a className={styles.frame} href={photoViewerPath(href, photoNumberOf(index))}>
+              <AppLink className={styles.frame} href={photoViewerPath(href, photoNumberOf(index))}>
                 <picture>
                   {/* La derivada de escritorio, elegida por el navegador antes
                       de pedir nada: la principal es la de 640×360 y las demás
@@ -84,7 +85,7 @@ export function PhotoStrip({ photos, publicBaseUrl, title, zone, href }: PhotoSt
                     loading={lead ? "eager" : "lazy"}
                   />
                 </picture>
-              </a>
+              </AppLink>
             </li>
           );
         })}

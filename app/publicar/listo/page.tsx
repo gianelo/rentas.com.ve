@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AppLink } from "@/../components/atoms/AppLink";
 import { requireSession } from "../../_lib/require-session";
 import styles from "../publish-page.module.css";
 
@@ -48,7 +49,7 @@ export default async function PublishDonePage({ searchParams }: DonePageProps) {
         </p>
 
         <p>
-          <a href="/publicar">Publicar otro</a>
+          <AppLink href="/publicar">Publicar otro</AppLink>
         </p>
       </main>
     </>

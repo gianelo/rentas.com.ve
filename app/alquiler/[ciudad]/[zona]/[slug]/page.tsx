@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
+import { AppLink } from "@/../components/atoms/AppLink";
 import { PublisherBadge } from "@/../components/atoms/PublisherBadge";
 import { Container } from "@/../components/layout/Container";
 import { DetailSplit } from "@/../components/layout/DetailSplit";
@@ -178,9 +179,9 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
       />
       <Container>
         <header className={styles.bar}>
-          <a className={styles.back} href={back.href}>
+          <AppLink className={styles.back} href={back.href}>
             {back.label}
-          </a>
+          </AppLink>
         </header>
 
         <DetailSplit
@@ -283,9 +284,9 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
         />
 
         <footer className={styles.footer}>
-          <a className={styles.report} href="#reportar">
+          <AppLink className={styles.report} href="#reportar">
             Reportar este aviso
-          </a>
+          </AppLink>
           <span className={styles.meta}>
             ID {detail.id.slice(0, 8)} · vence {formatDate(detail.expiresAt)}
           </span>

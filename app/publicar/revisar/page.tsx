@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { AppLink } from "@/../components/atoms/AppLink";
 import {
   type ChangedField,
   isDraftReadyForReview,
@@ -101,9 +102,9 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
         <div className={styles.barInner}>
           <p className={styles.brand}>rentas.</p>
           <span className={styles.saved}>Guardado</span>
-          <a className={styles.exit} href="/" aria-label="Salir de publicar">
+          <AppLink className={styles.exit} href="/" aria-label="Salir de publicar">
             ×
-          </a>
+          </AppLink>
         </div>
       </header>
 
@@ -141,13 +142,13 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
                 <dt className={styles.reviewTerm}>{row.term}</dt>
                 <dd className={styles.reviewValue}>{row.value}</dd>
                 {/* Vuelve AL PASO, no al principio, y avisa de dónde vino. */}
-                <a
+                <AppLink
                   className={styles.reviewChange}
                   href={`/publicar/paso/${row.step}?volver=revisar`}
                   aria-label={`Cambiar ${STEP_COPY[row.step].railLabel}`}
                 >
                   Cambiar
-                </a>
+                </AppLink>
               </div>
             ))}
           </dl>
@@ -163,9 +164,9 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
             <button type="submit" className={styles.primary}>
               Publicar aviso
             </button>
-            <a className={styles.secondary} href={`/publicar/paso/${PUBLISH_STEP_ORDER[0]}`}>
+            <AppLink className={styles.secondary} href={`/publicar/paso/${PUBLISH_STEP_ORDER[0]}`}>
               Volver al formulario
-            </a>
+            </AppLink>
           </form>
         </main>
       </div>
