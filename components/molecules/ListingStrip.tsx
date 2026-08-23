@@ -27,6 +27,13 @@ export interface ListingStripProps {
   /** La clave de la colección, que es lo que hace único el id del encabezado. */
   readonly stripKey: string;
   readonly title: string;
+  /**
+   * «23 avisos activos en cuatro zonas.», compuesto en el dominio, o `null`
+   * cuando esta tira no tiene nada que contar. Llega hecho por la misma razón
+   * que la placa: los dos números son los de la colección entera, y armarlos
+   * acá los volvería los de las cinco tarjetas dibujadas.
+   */
+  readonly subtitle: string | null;
   readonly cards: readonly ListingStripCard[];
   /** `null` cuando la tira no promete nada más de lo que muestra. */
   readonly seeAll: ListingStripLink | null;
@@ -55,7 +62,7 @@ export interface ListingStripProps {
  * trae, si lleva placa y qué dice esa placa lo decidió `home-collections.ts`.
  * Este archivo dibuja lo que le dan.
  */
-export function ListingStrip({ stripKey, title, cards, seeAll }: ListingStripProps) {
+export function ListingStrip({ stripKey, title, subtitle, cards, seeAll }: ListingStripProps) {
   // El `:` de una clave como `ciudad:dc` es válido en un id de HTML pero hay
   // que escaparlo en cualquier selector; cambiarlo acá es formato, no regla.
   const headingId = `tira-${stripKey.replace(/[^a-zA-Z0-9-]/g, "-")}`;
@@ -82,6 +89,12 @@ export function ListingStrip({ stripKey, title, cards, seeAll }: ListingStripPro
           </a>
         ) : null}
       </header>
+
+      {/* La línea de conteo, entre el encabezado y el riel — que es donde la
+          lámina la dibuja en los dos anchos. Se omite entera cuando no hay
+          nada que contar: un `<p>` vacío separaría el encabezado del riel con
+          un hueco que se lee como un error de maquetado. */}
+      {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
 
       {/* `<ol>` y no `<div>`: el orden importa — las colecciones llegan por
           fecha de publicación descendente — y un lector de pantalla anuncia

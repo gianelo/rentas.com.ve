@@ -62,6 +62,22 @@ export interface HomeCollectionRequest {
 export interface HomeCollectionPage {
   readonly rows: readonly HomeCollectionRow[];
   readonly total: number;
+  /**
+   * **Cuántas zonas distintas hay detrás de la colección, y por qué también es
+   * del puerto.**
+   *
+   * El subtítulo de la tira de ciudad dice «23 avisos activos en **cuatro**
+   * zonas», y ese cuatro cae bajo la misma regla transversal que el 23: tiene
+   * que ser verdad. Contarlo sobre `rows` daría como mucho cinco zonas —el
+   * `LIMIT` de la tira— y en la práctica daría el número de zonas que
+   * casualmente tocaron los cinco avisos más nuevos, que no es ninguna
+   * respuesta.
+   *
+   * Cuenta bajo **exactamente el mismo predicado** que produjo `rows` y
+   * `total`, portada incluida: una zona cuyos únicos avisos están vencidos o
+   * sin foto no es una zona donde haya algo que ver.
+   */
+  readonly zoneCount: number;
 }
 
 export interface HomeCollectionsPort {

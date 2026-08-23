@@ -38,6 +38,20 @@ const collections = new DrizzleHomeCollections(db);
 const CITY_A = randomUUID();
 const CITY_B = randomUUID();
 const ZONE_A = randomUUID();
+/**
+ * La segunda zona de la ciudad A. Existe para que el conteo de zonas del
+ * subtítulo tenga algo que distinguir: con una sola zona, un `count(*)` y un
+ * `count(distinct zone_id)` devuelven lo mismo y el test pasaría con el
+ * conteo equivocado.
+ */
+const ZONE_A2 = randomUUID();
+/**
+ * La tercera zona de la ciudad A, y sólo tiene el aviso sin portada. Prueba la
+ * otra mitad de la regla: una zona donde no hay nada que ver **no cuenta**, y
+ * el subtítulo diría una zona de más si el conteo no pasara por el mismo
+ * `WHERE` que las filas.
+ */
+const ZONE_A3 = randomUUID();
 const ZONE_B = randomUUID();
 const PUBLISHER = randomUUID();
 
@@ -127,8 +141,24 @@ beforeAll(async () => {
   ]);
   await pool.query(
     `INSERT INTO "zone" (id, city_id, name, kind, source)
-     VALUES ($1,$2,$3,'parroquia','INE'), ($4,$5,$6,'parroquia','INE')`,
-    [ZONE_A, CITY_A, `Zona A ${ZONE_A}`, ZONE_B, CITY_B, `Zona B ${ZONE_B}`],
+     VALUES ($1,$2,$3,'parroquia','INE'),
+            ($4,$5,$6,'parroquia','INE'),
+            ($7,$8,$9,'parroquia','INE'),
+            ($10,$11,$12,'parroquia','INE')`,
+    [
+      ZONE_A,
+      CITY_A,
+      `Zona A ${ZONE_A}`,
+      ZONE_A2,
+      CITY_A,
+      `Zona A2 ${ZONE_A2}`,
+      ZONE_A3,
+      CITY_A,
+      `Zona A3 ${ZONE_A3}`,
+      ZONE_B,
+      CITY_B,
+      `Zona B ${ZONE_B}`,
+    ],
   );
   await pool.query('INSERT INTO "user" (id, name, email) VALUES ($1,$2,$3)', [
     PUBLISHER,
@@ -137,10 +167,15 @@ beforeAll(async () => {
   ]);
 
   // Seis publicables caros en la ciudad A. Con NEWEST y CHEAP, ocho en total.
+  //
+  // El primero va en la SEGUNDA zona. No cambia ningún total —sigue siendo un
+  // aviso publicable de la ciudad A— y es lo que le da al conteo de zonas algo
+  // que distinguir: con las ocho filas en una sola zona, un `count(distinct
+  // zone_id)` equivocado por un `count(*)` daría 8 y también pasaría por 1.
   for (let index = 0; index < 6; index += 1) {
     await insert({
       id: randomUUID(),
-      zoneId: ZONE_A,
+      zoneId: index === 0 ? ZONE_A2 : ZONE_A,
       cityId: CITY_A,
       priceUsd: 900,
       publishedMinutesAgo: 100 + index,
@@ -168,7 +203,9 @@ beforeAll(async () => {
   await insert({ id: EXPIRED_STATUS, zoneId: ZONE_A, cityId: CITY_A, status: "expired" });
   await insert({ id: HIDDEN, zoneId: ZONE_A, cityId: CITY_A, status: "hidden" });
   await insert({ id: PAST_EXPIRY, zoneId: ZONE_A, cityId: CITY_A, expiresInDays: -1 });
-  await insert({ id: NO_COVER, zoneId: ZONE_A, cityId: CITY_A, cover: [] });
+  // En una zona propia: así el conteo de zonas tiene que excluirla, y no le
+  // alcanza con excluir la fila.
+  await insert({ id: NO_COVER, zoneId: ZONE_A3, cityId: CITY_A, cover: [] });
   await insert({ id: HALF_COVER, zoneId: ZONE_A, cityId: CITY_A, cover: ["thumb"] });
 });
 
@@ -314,5 +351,74 @@ describe("collectionsFor — varias colecciones en una consulta", () => {
 
   it("sin colecciones no consulta nada", async () => {
     expect((await collections.collectionsFor([])).size).toBe(0);
+  });
+});
+
+/**
+ * **El segundo número del subtítulo, y sólo Postgres puede contestarlo.**
+ *
+ * «23 avisos activos en **cuatro** zonas» cae bajo la misma regla transversal
+ * que la placa: ese cuatro tiene que ser verdad. Un doble en memoria devolvería
+ * el número que quien lo escribió esperaba; acá lo produce el mismo `WHERE` que
+ * dejó pasar las filas, que es la única forma de que la frase no prometa zonas
+ * donde no hay nada que ver.
+ */
+describe("collectionsFor — cuántas zonas hay detrás de la colección", () => {
+  it("cuenta zonas distintas, no filas", async () => {
+    // Ocho avisos publicables de la ciudad A repartidos en dos zonas. Si esto
+    // contara filas diría 8, y si contara las de la tira diría como mucho 5.
+    const pages = await collections.collectionsFor([cityRequest("a", CITY_A)]);
+
+    expect(pages.get("a")?.total).toBe(8);
+    expect(pages.get("a")?.zoneCount).toBe(2);
+  });
+
+  /**
+   * **La zona cuyo único aviso quedó fuera no cuenta.** El aviso sin portada
+   * vive solo en su zona: si el conteo no pasara por el mismo predicado que las
+   * filas, el subtítulo diría tres zonas y la tercera estaría vacía.
+   */
+  it("no cuenta una zona cuyos avisos el predicado descarta", async () => {
+    const pages = await collections.collectionsFor([
+      { key: "todos", cityId: CITY_A, maxPriceUsd: null, limit: 50 },
+    ]);
+
+    expect(pages.get("todos")?.rows.map((row) => row.id)).not.toContain(NO_COVER);
+    expect(pages.get("todos")?.zoneCount).toBe(2);
+  });
+
+  it("devuelve el conteo como número y no como el string del bigint", async () => {
+    // El mismo tropiezo que `total`: `count(…)` es `bigint` y los drivers de
+    // Postgres lo entregan como texto.
+    const pages = await collections.collectionsFor([cityRequest("a", CITY_A)]);
+
+    expect(typeof pages.get("a")?.zoneCount).toBe("number");
+  });
+
+  it("cada colección cuenta sus propias zonas, no las de la consulta entera", async () => {
+    const pages = await collections.collectionsFor([
+      cityRequest("ciudad-a", CITY_A),
+      cityRequest("ciudad-b", CITY_B),
+    ]);
+
+    expect(pages.get("ciudad-a")?.zoneCount).toBe(2);
+    expect(pages.get("ciudad-b")?.zoneCount).toBe(1);
+  });
+
+  /**
+   * **El aislamiento de ciudad, del lado de la consulta.** El dominio ata las
+   * tres colecciones a la ciudad elegida; esto comprueba que el adaptador lo
+   * obedece — una colección de presupuesto con ciudad no puede devolver el
+   * aviso barato de la otra, y hasta ahora ninguna prueba miraba esa
+   * combinación.
+   */
+  it("una colección con ciudad Y techo no deja entrar el aviso barato de la otra ciudad", async () => {
+    const pages = await collections.collectionsFor([
+      { key: "presupuesto-a", cityId: CITY_A, maxPriceUsd: 400, limit: 50 },
+    ]);
+    const ids = pages.get("presupuesto-a")?.rows.map((row) => row.id) ?? [];
+
+    expect(ids).toContain(NEWEST);
+    expect(ids).not.toContain(IN_CITY_B);
   });
 });

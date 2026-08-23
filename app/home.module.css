@@ -11,9 +11,25 @@
   margin-inline: auto;
   min-block-size: var(--brandbar-h);
   display: flex;
+  /* El punto entero del encabezado: un solo orden en el DOM (marca, búsqueda,
+     publicar) y dos disposiciones. En el teléfono la búsqueda se va a su
+     propio renglón; en escritorio vuelve a la fila. */
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   padding-inline: 16px;
+  padding-block-end: 10px;
+}
+
+/* La búsqueda, envuelta: el envoltorio pone dónde se para y el componente
+   pone cómo se ve. Separados porque la barra es la misma en cualquier
+   pantalla que la use, y su sitio no. */
+.search {
+  /* `order` y no un segundo bloque de JSX. Sin esto el renglón quedaría
+     "marca / búsqueda" y "Publicar" caería solo a la tercera línea. */
+  order: 1;
+  flex-basis: 100%;
 }
 
 .brand {
@@ -59,6 +75,67 @@
   clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
+}
+
+/* ---------- Las fichas de ciudad (F2) ---------- */
+
+.cities {
+  border-block-end: 1px solid var(--line);
+}
+
+.chips {
+  max-inline-size: 1100px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  list-style: none;
+  display: flex;
+  gap: 6px;
+  /* Se arrastra en vez de recortarse. La lámina dibuja dos fichas y con dos
+     entran; el día que abra una tercera ciudad, `overflow: hidden` la haría
+     desaparecer sin que nadie lo notara — que es el mismo defecto que
+     `homeCollections` evita sacando las ciudades del catálogo. Es el mismo
+     mecanismo del riel de la tira, y también sin una línea de JavaScript. */
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.chip,
+.chipSelected {
+  flex: none;
+  min-block-size: var(--target-min-desktop);
+  display: flex;
+  align-items: center;
+  padding-inline: 14px;
+  border-radius: var(--rs);
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  line-height: 1.4;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.chip {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--soft);
+}
+
+/* El estado activo, con el mismo idioma que el sistema ya usa para una
+   selección: relleno `--tint` y borde `--accent`, igual que `SelectionButton`.
+   **Estructural antes que cromático**: el borde teñido y el relleno se
+   distinguen en escala de grises, que es el criterio que la insignia de
+   publicador ya cumple del otro lado del producto. */
+.chipSelected {
+  border: 1px solid var(--accent);
+  background: var(--tint);
+  color: var(--accent);
+  font-weight: var(--meta-fw);
+}
+
+.chip:focus-visible,
+.chipSelected:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .strips {
@@ -117,4 +194,32 @@
 .inviteAction:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
+}
+
+/* ---------- 768 px en adelante: la disposición de escritorio ----------
+
+   El mismo marcado, otra disposición. La lámina de 1280 pone la búsqueda entre
+   la marca y las acciones, y las fichas en una fila propia bajo el encabezado.
+   Nada de esto duplica un componente: es el mismo DOM leído distinto. */
+@media (min-width: 768px) {
+  .barInner {
+    min-block-size: var(--brandbar-h-desktop);
+    /* Ya no hay segundo renglón que dejar respirar. */
+    padding-block-end: 0;
+    gap: 24px;
+  }
+
+  .search {
+    /* Vuelve a su sitio en la fila y deja de ocupar el ancho entero. El tope
+       de 460 px es el de la lámina: la búsqueda es el centro del encabezado,
+       no una caja que empuja a la marca contra el borde. */
+    order: 0;
+    flex: 1;
+    flex-basis: auto;
+    max-inline-size: 460px;
+  }
+
+  .chips {
+    padding-block: 14px;
+  }
 }

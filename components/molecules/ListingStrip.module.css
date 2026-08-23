@@ -25,6 +25,20 @@
   color: var(--ink);
 }
 
+/* La línea de conteo debajo del encabezado. `margin: 0` y el aire lo pone el
+   `gap` de la tira, igual que el resto: dos fuentes de separación en la misma
+   columna es cómo un ajuste mueve lo que no se estaba tocando. */
+.subtitle {
+  margin: 0;
+  font-family: var(--sans);
+  /* La lámina la escribe en 12,5 px (móvil) y 13 px (1280); el conjunto de
+     tokens no tiene ninguno de los dos, y --meta-fs es el que el sistema
+     define para un metadato. */
+  font-size: var(--meta-fs);
+  line-height: 1.5;
+  color: var(--soft);
+}
+
 /* El mecanismo de escritorio, oculto en el teléfono. `display: none` y no
    `visibility` ni un `sr-only`: los dos dejarían el enlace en el árbol de
    accesibilidad, y un lector de pantalla anunciaría dos veces la misma salida
