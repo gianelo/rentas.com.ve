@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import {
   type ChangedField,
-  currentStepId,
+  isDraftReadyForReview,
   PUBLISH_STEP_ORDER,
   type PublishStepId,
 } from "@/modules/listing-publication/domain/publication-steps";
@@ -39,13 +39,12 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
   const { campo, antes, ahora } = await searchParams;
   const { draft, violations, currentStep, zoneName } = await readPublicationContext();
 
-  // Llegar a revisar con algo sin contestar no es un estado que esta pantalla
-  // pueda dibujar honestamente: mostraría un hueco donde debería haber un
-  // dato, y un hueco se lee como un dato que el sitio perdió.
-  if (
-    currentStepId(draft, violations) !== PUBLISH_STEP_ORDER[PUBLISH_STEP_ORDER.length - 1] ||
-    violations.length > 0
-  ) {
+  // La regla la contesta el dominio: acá no se decide quién puede ver esta
+  // pantalla, sólo qué se hace con la respuesta. Escrita a ojo tenía dos casos
+  // borde que fallan en direcciones opuestas — el paso 5, que no produce
+  // violaciones, y el paso 9, que es el mismo que `currentStepId` devuelve
+  // cuando ya no falta ninguno.
+  if (!isDraftReadyForReview(draft, violations)) {
     redirect(`/publicar/paso/${currentStep}`);
   }
 

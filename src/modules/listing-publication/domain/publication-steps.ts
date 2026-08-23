@@ -211,6 +211,35 @@ export function currentStepId(
 }
 
 /**
+ * **La puerta de la pantalla de revisar.**
+ *
+ * Llegar a revisar con algo sin contestar no es un estado que esa pantalla
+ * pueda dibujar honestamente: mostraria un hueco donde deberia haber un dato, y
+ * un hueco se lee como un dato que el sitio perdio.
+ *
+ * Vive aca y no en la pagina porque es una regla de producto — quien puede ver
+ * el resumen del aviso — y porque escrita a ojo tiene dos casos borde que
+ * fallan en direcciones opuestas y ninguno es evidente:
+ *
+ * - **"no hay violaciones" no alcanza.** El paso 5 no produce ninguna: los
+ *   cinco atributos son opcionales, asi que un borrador que nunca abrio esa
+ *   pantalla valida perfecto y entraria.
+ * - **"el paso actual es el ultimo" tampoco.** `currentStepId` devuelve el
+ *   ultimo tanto cuando ya no falta ninguno como cuando el unico que falta es
+ *   justamente el ultimo, y eso dejaria llegar a revisar un aviso sin dueno ni
+ *   contacto — el unico dato que despues no se puede corregir.
+ *
+ * Los nueve ✓ del riel son la unica condicion, y por eso se pregunta por los
+ * nueve ✓ del riel: una segunda condicion es una que puede discrepar de el.
+ */
+export function isDraftReadyForReview(
+  draft: PublicationDraft,
+  violations: readonly PublishViolation[],
+): boolean {
+  return PUBLISH_STEP_ORDER.every((step) => isStepComplete(step, draft, violations));
+}
+
+/**
  * **Hacia atras si, hacia adelante no** (criterio de aceptacion 10).
  *
  * Los pasos ya hechos son enlaces; los que faltan, no. Saltar a algo sin

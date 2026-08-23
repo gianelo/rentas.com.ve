@@ -5,6 +5,7 @@ import {
   currentStepId,
   describeDraftChange,
   draftListingOf,
+  isDraftReadyForReview,
   isStepComplete,
   isStepNavigable,
   nextStepAfter,
@@ -438,5 +439,86 @@ describe("describeDraftChange — se dice que cambio", () => {
       before: "1",
       after: "2",
     });
+  });
+});
+
+/**
+ * **La puerta de la pantalla de revisar.**
+ *
+ * Es una regla de producto y no de maquetacion: decide quien puede ver la
+ * pantalla que resume el aviso. Redirigiendo de mas deja a alguien encerrado
+ * sin poder publicar; redirigiendo de menos, revisar dibuja un hueco donde
+ * deberia haber un dato — y un hueco se lee como un dato que el sitio perdio.
+ *
+ * Los dos casos borde de abajo son los que la vuelven dificil de escribir a
+ * ojo, y fallan en direcciones opuestas: uno no produce ninguna violacion, el
+ * otro no mueve el paso actual.
+ */
+describe("isDraftReadyForReview — la puerta de revisar", () => {
+  it("deja pasar un borrador con los nueve pasos contestados", () => {
+    const draft = completeDraft();
+    expect(isDraftReadyForReview(draft, violationsOf(draft))).toBe(true);
+  });
+
+  /**
+   * **El paso 5 no produce violaciones.** Los cinco atributos son opcionales,
+   * asi que un borrador que nunca abrio esa pantalla valida perfecto. Una
+   * puerta escrita solo como "no hay violaciones" lo dejaria entrar, y revisar
+   * diria "Ninguno" sobre una pregunta que nadie contesto.
+   */
+  it("no deja pasar cuando solo falta declarar los atributos", () => {
+    const draft: PublicationDraft = { ...completeDraft(), featuresDeclared: undefined };
+    const violations = violationsOf(draft);
+
+    expect(violations).toEqual([]);
+    expect(isDraftReadyForReview(draft, violations)).toBe(false);
+  });
+
+  /**
+   * **El paso 9 es el ultimo, y el ultimo es tambien el que `currentStepId`
+   * devuelve cuando ya no falta ninguno.** Una puerta escrita solo como "el
+   * paso actual es el ultimo" confunde las dos cosas y deja llegar a revisar un
+   * aviso sin dueno ni contacto declarados — justo el dato que despues no se
+   * puede corregir.
+   */
+  it("no deja pasar cuando solo falta el paso 9, que es el ultimo", () => {
+    const complete = completeDraft();
+    const draft: PublicationDraft = {
+      ...complete,
+      listing: {
+        ...complete.listing,
+        publisherType: undefined,
+        contactMethod: undefined,
+        contactValue: undefined,
+      },
+    };
+    const violations = violationsOf(draft);
+
+    expect(currentStepId(draft, violations)).toBe(
+      PUBLISH_STEP_ORDER[PUBLISH_STEP_ORDER.length - 1],
+    );
+    expect(isDraftReadyForReview(draft, violations)).toBe(false);
+  });
+
+  it("no deja pasar cuando falta un paso del medio", () => {
+    const complete = completeDraft();
+    const draft: PublicationDraft = {
+      ...complete,
+      listing: { ...complete.listing, priceUsd: undefined },
+    };
+
+    expect(isDraftReadyForReview(draft, violationsOf(draft))).toBe(false);
+  });
+
+  /**
+   * La regla dicha una sola vez. Revisar se abre exactamente cuando el riel
+   * muestra los nueve ✓: sin una segunda condicion que pueda discrepar de el.
+   */
+  it("coincide con lo que el riel marca hecho, sin fotos", () => {
+    const draft: PublicationDraft = { ...completeDraft(), photos: [] };
+    const violations = violationsOf(draft);
+
+    expect(completedSteps(draft, violations)).not.toContain("fotos");
+    expect(isDraftReadyForReview(draft, violations)).toBe(false);
   });
 });
