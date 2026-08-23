@@ -43,12 +43,16 @@
   order: 1;
 }
 
+/* **El aire lo pone cada pieza, no un `gap` parejo.** El precio pesa más que
+   el título y el título más que la ubicación (regla transversal 2), y ese peso
+   también se dice con la distancia: la lámina los separa 14, 12 y 6, no 10 y
+   10 y 10. Un `gap` uniforme deja los tres a la misma distancia y aplana
+   justamente la jerarquía que esta columna existe para mostrar. */
 .summary {
   order: 2;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
 }
 
 .body {
@@ -64,8 +68,11 @@
 
 /* El precio pesa más que el título, en orden de documento y en peso visual
    (regla transversal 2). Es la primera cifra que se lee. */
+/* Separado de la insignia de quien publica, que es lo que tiene encima. La
+   lámina móvil no da un segundo valor porque allá la insignia vive en la
+   barra: acá está en las dos, así que el aire también. */
 .price {
-  margin: 0;
+  margin: 14px 0 0;
   font-family: var(--disp);
   font-weight: var(--ficha-price-fw);
   font-size: var(--ficha-price-fs);
@@ -83,7 +90,7 @@
 }
 
 .title {
-  margin: 0;
+  margin: 10px 0 0;
   font-size: var(--ficha-title-fs);
   font-weight: var(--ficha-title-fw);
   line-height: 1.35;
@@ -91,7 +98,7 @@
 }
 
 .location {
-  margin: 0;
+  margin: 6px 0 0;
   font-family: var(--meta);
   font-size: var(--meta-fs-sm);
   color: var(--soft);
@@ -158,7 +165,11 @@
     font-size: var(--ficha-price-fs-desktop);
   }
 
+  /* Dos más que en el teléfono, y por la misma razón que la tipografía crece:
+     el título de escritorio es más grande y necesita más aire arriba para no
+     pegarse al precio, que también creció. */
   .title {
+    margin-top: 12px;
     font-size: var(--ficha-title-fs-desktop);
   }
 }

@@ -1,4 +1,5 @@
 import { buildListingPath, type ListingUrlParts } from "./listing-url";
+import { withResultsOrigin } from "./return-to-results";
 
 /**
  * Decide si una ruta se sirve o se redirige — **y es la deuda que la tarea 11.1
@@ -29,12 +30,29 @@ export interface ResolvableListing extends ListingUrlParts {}
 export function resolveListingRoute(
   listing: ResolvableListing,
   requestedPath: string,
+  /**
+   * De dónde vino quien mira (16.9). No participa de la canonicalización — es
+   * estado de la visita, no de la dirección del aviso — pero **tiene que
+   * sobrevivir a la redirección**: perderlo acá deja sin vuelta justo a quien
+   * llegó desde una búsqueda con el título viejo, que es el enlace que circula
+   * por WhatsApp. Opcional porque una ficha abierta desde Google no lo trae.
+   */
+  resultsOrigin?: string | readonly string[],
 ): ListingRouteResolution {
   const canonical = buildListingPath(listing);
 
-  // La barra final no es otra ruta: es la misma escrita distinto, y tratarla
-  // como diferente duplicaría cada aviso por dos.
-  const requested = requestedPath.replace(/\/+$/, "");
+  // **La query se descarta ANTES de comparar, y de ahí sale que no haya
+  // bucle.** Adentro de la comparación, la ruta canónica *con* el parámetro de
+  // vuelta nunca sería igual a la canónica y la ficha se redirigiría a sí
+  // misma para siempre — un bucle que sólo aparece llegando desde una
+  // búsqueda, es decir, en el camino normal del producto. La barra final se
+  // quita por el mismo motivo de siempre: es la misma ruta escrita distinto, y
+  // tratarla como otra duplicaría cada aviso por dos.
+  const requested = requestedPath.split(/[?#]/)[0]?.replace(/\/+$/, "") ?? "";
 
-  return requested === canonical ? { kind: "render" } : { kind: "redirect", to: canonical };
+  return requested === canonical
+    ? { kind: "render" }
+    : // `withResultsOrigin` valida antes de escribir, así que un origen hostil
+      // no se cuelga del destino de la redirección.
+      { kind: "redirect", to: withResultsOrigin(canonical, resultsOrigin) };
 }

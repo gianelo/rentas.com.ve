@@ -1,10 +1,23 @@
 /* Bloque de contacto con llave (F29). Fondo agrupado, como el diseño lo dibuja
-   sobre --bg para separarlo del resto de la ficha. */
+   sobre --bg para separarlo del resto de la ficha.
+
+   **Sin margen propio, y no es un descuido.** La rejilla de la ficha ya separa
+   a sus hijos; con un margen acá el aire tenía dos dueños y se sumaba — 24 del
+   contenedor más 20 de este bloque daban 44, contra los 20 que dibuja la
+   lámina. Cuánto se separan dos bloques lo decide quien los contiene, que es lo
+   único que puede saber qué hay arriba. */
 .block {
-  margin-top: 20px;
   padding: 16px;
   background: var(--bg);
   border-radius: var(--r);
+}
+
+/* La lámina abre el relleno de 16 a 18 en escritorio: la tarjeta ocupa una
+   columna de 420 y el mismo aire de un teléfono la deja apretada. */
+@media (min-width: 768px) {
+  .block {
+    padding: 18px;
+  }
 }
 
 .publisher {

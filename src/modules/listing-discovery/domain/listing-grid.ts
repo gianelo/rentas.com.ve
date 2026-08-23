@@ -1,5 +1,6 @@
 import { photoAltText, photoUrl } from "./listing-photo-view";
 import { buildListingPath } from "./listing-url";
+import { withResultsOrigin } from "./return-to-results";
 
 /**
  * Qué avisos entran en la cuadrícula, y con qué.
@@ -91,6 +92,15 @@ export function buildListingGrid(
   listings: readonly GridListing[],
   covers: ReadonlyMap<string, GridCover>,
   photoBaseUrl: string,
+  /**
+   * La pantalla desde la que se toca la tarjeta — su ruta con los filtros
+   * puestos —, que viaja en el enlace para que la ficha sepa a dónde devolver
+   * (tarea 16.9). **Opcional a propósito**: el inicio llega hasta acá por
+   * `home-collections` y una cuadrícula sin origen no está rota, sólo no sabe
+   * de dónde salió. Un origen que la ficha fuera a rechazar no se cuelga —
+   * `withResultsOrigin` lo valida antes de escribirlo.
+   */
+  resultsOrigin?: string,
 ): readonly GridCard[] {
   const cards: GridCard[] = [];
 
@@ -101,12 +111,15 @@ export function buildListingGrid(
 
     cards.push({
       id: listing.id,
-      href: buildListingPath({
-        cityName: listing.cityName,
-        zoneName: listing.zoneName,
-        title: listing.title,
-        id: listing.id,
-      }),
+      href: withResultsOrigin(
+        buildListingPath({
+          cityName: listing.cityName,
+          zoneName: listing.zoneName,
+          title: listing.title,
+          id: listing.id,
+        }),
+        resultsOrigin,
+      ),
       priceUsd: listing.priceUsd,
       title: listing.title,
       zoneName: listing.zoneName,

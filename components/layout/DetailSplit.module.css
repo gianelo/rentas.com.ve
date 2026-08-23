@@ -24,9 +24,14 @@
 }
 
 @media (min-width: 768px) {
+  /* 640 + 40 + 420 = 1100, que es el contenedor entero. La lámina de la ficha
+     lo escribe como `640px 1fr; gap:40px` dentro de 1100 y sale la misma
+     columna derecha de 420. Con los 32 de antes el conjunto medía 1092 y
+     sobraban 8px del contenedor: una desalineación que no rompe nada y que se
+     arrastra a cada pantalla que reuse esta rejilla. */
   .split {
     grid-template-columns: 640px 420px;
-    gap: 32px;
+    gap: 40px;
     align-items: start;
   }
 

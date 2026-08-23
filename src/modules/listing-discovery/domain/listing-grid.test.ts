@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildListingGrid, type GridCover, type GridListing } from "./listing-grid";
+import { RETURN_PARAM } from "./return-to-results";
 
 const BASE = "https://fotos.rentas.com.ve";
 
@@ -118,5 +119,50 @@ describe("buildListingGrid", () => {
 
   it("no consulta nada con una lista vacía", () => {
     expect(buildListingGrid([], new Map(), BASE)).toEqual([]);
+  });
+
+  /**
+   * **De dónde vino el visitante viaja en el enlace de ida** (tarea 16.9). La
+   * URL de la ficha es canónica y no lleva estado de búsqueda, así que la ficha
+   * no puede deducir el origen: o se lo cuenta el enlace, o el «← Resultados»
+   * queda adivinando — que es el defecto que el fundador encontró usando el
+   * sitio.
+   */
+  it("cuelga de cada tarjeta el origen que la ficha va a leer", () => {
+    const [card] = buildListingGrid(
+      [listing()],
+      new Map([[listing().id, fullCover]]),
+      BASE,
+      "/alquiler/distrito-capital/chacao?min=200&hab=2",
+    );
+
+    const href = new URL(card?.href as string, "https://rentas.com.ve");
+    expect(href.searchParams.get(RETURN_PARAM)).toBe(
+      "/alquiler/distrito-capital/chacao?min=200&hab=2",
+    );
+  });
+
+  /**
+   * **El cuarto argumento es opcional, y tiene que seguir siéndolo.** El inicio
+   * llama a esta función a través de `home-collections`, y una cuadrícula sin
+   * origen es una cuadrícula que no sabe de dónde salió — no una rota.
+   */
+  it("sin origen deja la ruta canónica intacta", () => {
+    const [card] = buildListingGrid([listing()], new Map([[listing().id, fullCover]]), BASE);
+
+    expect(card?.href).toBe(
+      "/alquiler/distrito-capital/chacao/apartamento-2-habitaciones-11111111-2222-3333-4444-555555555555",
+    );
+  });
+
+  it("no cuelga un origen que la ficha rechazaría", () => {
+    const [card] = buildListingGrid(
+      [listing()],
+      new Map([[listing().id, fullCover]]),
+      BASE,
+      "https://evil.test/alquiler/x",
+    );
+
+    expect(card?.href).not.toContain(RETURN_PARAM);
   });
 });
