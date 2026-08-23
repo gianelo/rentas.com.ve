@@ -136,14 +136,61 @@ const ROOMS = /(\d)-(?:habitaciones|habitacion|hab|cuartos|cuarto)(?:-|$)/u;
  * quita acentos con NFD y baja a minúsculas. Escribir un segundo normalizador
  * acá es cómo dos partes del sistema empiezan a discrepar sobre si «Chacao» y
  * «chacao» son la misma palabra.
+ *
+ * **Palabra por palabra, y eso corrige un defecto que no fallaba a la vista.**
+ * `slugify` corta a 60 caracteres (`MAX_SLUG_LENGTH`), y ese tope es de las
+ * URL: sesenta caracteres mantienen la primera cláusula de un título en un
+ * enlace que se pega en un WhatsApp. Aplicado a una frase escrita entera,
+ * cortaba justo donde la gente pone el precio y las habitaciones — «… hasta 400
+ * y 2 hab» desaparecía y el filtro simplemente no aparecía, sin error. Cada
+ * palabra sola nunca llega al tope, así que las reglas de caracteres se siguen
+ * reusando y el tope de las URL se queda donde pertenece.
  */
 function normalize(value: string): string {
-  return slugify(value);
+  return value
+    .split(/\s+/)
+    .map((word) => slugify(word))
+    .filter((word) => word !== "")
+    .join("-");
 }
 
-function matches(haystack: string, needle: string): boolean {
+/**
+ * **Tres letras, y ése es el piso que hace que autocompletar signifique algo.**
+ *
+ * Sobre una lista cerrada, `nombre.includes("a")` acierta en casi todo: eso no
+ * es una sugerencia, es el vocabulario entero — y encima entierra las
+ * coincidencias reales de quien ya escribió una palabra completa.
+ */
+const MIN_PREFIX = 3;
+
+/**
+ * **Las dos direcciones, y ninguna es opcional.**
+ *
+ * Esta función comparaba en una sola: preguntaba si el término del vocabulario
+ * estaba DENTRO de lo escrito. Eso alcanza para traducir una frase entera
+ * («arriendo en altamira» → Altamira) y no alcanza para lo que alguien hace
+ * mientras escribe: «alta» no devolvía nada, con Altamira en la lista, y la
+ * caja parecía rota.
+ *
+ * `searchPublicationZones` (listing-publication) había resuelto exactamente
+ * esto para el buscador de zona del paso 2, y su comentario deja escrito por
+ * qué no reusaba a `suggestFilters`: por esta misma asimetría. Con las dos
+ * direcciones acá, esa razón deja de existir y la regla queda en un solo lugar
+ * — el módulo del que las dos partes ya toman el vocabulario.
+ *
+ * - `normalized.includes(term)` es la frase entera.
+ * - `term.includes(token)` es el autocompletado, palabra por palabra.
+ *
+ * Lo que deliberadamente NO hay es coincidencia difusa. «Altos de Sucre» no
+ * aparece al escribir «alta»: sobre una lista cerrada, un resultado difuso
+ * ofrece un vecino que nadie escribió, y acá cada sugerencia aplica un filtro.
+ */
+function matches(haystack: string, normalized: string, tokens: readonly string[]): boolean {
   const target = normalize(haystack);
-  return target !== "" && needle.includes(target);
+  if (target === "") return false;
+  if (normalized.includes(target)) return true;
+
+  return tokens.some((token) => token.length >= MIN_PREFIX && target.includes(token));
 }
 
 export function suggestFilters(
@@ -170,7 +217,7 @@ export function suggestFilters(
   };
 
   for (const city of vocabulary.cities) {
-    if (matches(city.name, normalized)) {
+    if (matches(city.name, normalized, meaningful)) {
       push({ kind: "city", id: city.id, label: city.name, scope: null });
     }
   }
@@ -180,17 +227,24 @@ export function suggestFilters(
   const zoneById = new Map(vocabulary.zones.map((zone) => [zone.id, zone]));
   for (const { zoneId, alias } of vocabulary.aliases) {
     const zone = zoneById.get(zoneId);
-    if (zone && matches(alias, normalized)) {
+    if (zone && matches(alias, normalized, meaningful)) {
       push({ kind: "zone", id: zone.id, label: alias, scope: zone.parentName });
     }
   }
 
   for (const zone of vocabulary.zones) {
-    if (matches(zone.name, normalized)) {
+    if (matches(zone.name, normalized, meaningful)) {
       push({ kind: "zone", id: zone.id, label: zone.name, scope: zone.parentName });
     }
   }
 
+  // **Sin la dirección de autocompletado, y eso lo decidió un test en rojo.**
+  // Estas dos listas ya SON las abreviaturas que la gente escribe («apto»,
+  // «hab», «cuarto»), así que completarlas por prefijo no agrega nada y sí
+  // rompe: en «2 hab» el token `hab` cae dentro de `habitacion` y la frase
+  // pasaba a pedir el tipo Habitación en vez de dos habitaciones. Autocompletar
+  // es para la parte abierta del vocabulario —miles de lugares—, no para una
+  // lista cerrada de siete palabras.
   for (const [term, label] of PROPERTY_TYPES) {
     if (normalized.includes(term)) {
       push({ kind: "propertyType", id: PROPERTY_TYPE_IDS[label] ?? label, label, scope: null });

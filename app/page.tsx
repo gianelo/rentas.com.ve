@@ -1,12 +1,21 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { AppLink } from "@/../components/atoms/AppLink";
+import {
+  HOME_SEARCH_PARAM,
+  HOME_SEARCH_RESULTS_LABEL,
+  homeSearchForm,
+  noMatchMessage,
+  resolveSearchDestination,
+  type SearchDestination,
+} from "@/modules/listing-catalogue/domain/search-destination";
 import { DrizzleCatalogue } from "@/modules/listing-catalogue/infrastructure/drizzle-catalogue";
+import { DrizzleSearchVocabulary } from "@/modules/listing-catalogue/infrastructure/drizzle-search-vocabulary";
 import {
   buildHome,
   HOME_CITY_PARAM,
   homeCityChips,
   homeCollections,
-  homeSearchBar,
   resolveHomeCity,
 } from "@/modules/listing-discovery/domain/home-collections";
 import { DrizzleHomeCollections } from "@/modules/listing-discovery/infrastructure/drizzle-home-collections";
@@ -77,6 +86,10 @@ interface InicioProps {
  * todas las tarjetas de todas las tiras. Neon es HTTP, así que cada consulta es
  * un viaje de red — una quinta ciudad agrega una tira sin agregar un viaje.
  *
+ * Con `?q=` hay una cuarta, la del vocabulario, y va **antes** que las otras
+ * tres: cuando lo escrito nombra un solo lugar la respuesta es una redirección
+ * y todo lo demás se descartaría sin dibujarse.
+ *
  * Son tres y no dos porque las colecciones dependen del catálogo: qué tiras hay
  * sale de las ciudades, así que esa lectura no puede ir en paralelo con la que
  * la usa. Las otras dos tampoco: las portadas se piden por los ids que devuelve
@@ -87,7 +100,26 @@ interface InicioProps {
  * con `scroll-snap` del navegador y no con un carrusel embarcado.
  */
 export default async function InicioPage({ searchParams }: InicioProps) {
-  const [query, cities] = await Promise.all([searchParams, new DrizzleCatalogue(db).listCities()]);
+  const query = await searchParams;
+
+  // **El buscador, y el mecanismo entero pasa acá — en el servidor.** El
+  // formulario es un `GET` que vuelve a esta misma dirección con `?q=`; el
+  // dominio traduce lo escrito a filtros y dice a dónde lleva. Con un solo
+  // lugar se redirige y nadie ve esta página; con varios se dibujan los
+  // enlaces más abajo. Ninguna de las dos ramas necesita JavaScript (F14).
+  //
+  // Va ANTES del catálogo y de las tres consultas de las tiras: en el camino
+  // de redirección todo eso se descarta, y son cuatro viajes de red a Neon.
+  const typed = (query[HOME_SEARCH_PARAM] ?? "").trim();
+  let searched: SearchDestination | null = null;
+  if (typed !== "") {
+    const vocabulary = await new DrizzleSearchVocabulary(db).lookup(typed);
+    searched = resolveSearchDestination(typed, vocabulary);
+    // `redirect` lanza; tiene que quedar fuera de cualquier `try`.
+    if (searched.kind === "route") redirect(searched.href);
+  }
+
+  const cities = await new DrizzleCatalogue(db).listCities();
 
   // Qué ciudad nombra `?ciudad=maracaibo` lo traduce el dominio, contra el
   // catálogo. `null` es "ninguna", nunca la primera: una desconocida deja el
@@ -116,9 +148,9 @@ export default async function InicioPage({ searchParams }: InicioProps) {
 
   const home = buildHome(specs, collections, covers, readPhotoPublicBaseUrl());
 
-  // Qué dice la barra y a dónde lleva, y cuál ficha está activa: las tres son
-  // decisiones de producto y las tres llegan resueltas.
-  const searchBar = homeSearchBar(cities, selectedCity?.id ?? null);
+  // Qué pregunta la caja, cómo se llama su parámetro y a dónde vuelve, y cuál
+  // ficha de ciudad está activa: son decisiones de producto y llegan resueltas.
+  const searchForm = homeSearchForm(typed);
   const cityChips = homeCityChips(cities, selectedCity?.id ?? null);
 
   return (
@@ -137,7 +169,7 @@ export default async function InicioPage({ searchParams }: InicioProps) {
         <div className={styles.barInner}>
           <p className={styles.brand}>rentas.</p>
           <div className={styles.search}>
-            <SearchBar label={searchBar.label} href={searchBar.href} />
+            <SearchBar {...searchForm} />
           </div>
           <AppLink className={styles.publish} href="/publicar">
             Publicar
@@ -171,6 +203,40 @@ export default async function InicioPage({ searchParams }: InicioProps) {
             ))}
           </ul>
         </nav>
+      )}
+
+      {/* Lo que el buscador contestó cuando no pudo elegir por su cuenta.
+
+          **Cada opción es un par (filtro, valor), nunca una palabra.** `Centro`
+          existe en Maracaibo y en Distrito Capital: ofrecer sólo «Centro»
+          aplicaría el filtro de la ciudad equivocada y devolvería cero avisos
+          sin que nadie entienda por qué. El `scope` lleva la ciudad adentro por
+          eso, y quién lo compone es el dominio.
+
+          Acá no se decide nada: cuántas opciones hay, en qué orden y a qué
+          dirección lleva cada una salen de `resolveSearchDestination`. */}
+      {searched === null ? null : (
+        <Container>
+          {searched.kind === "choices" ? (
+            <nav className={styles.results} aria-label={HOME_SEARCH_RESULTS_LABEL}>
+              <ul className={styles.options}>
+                {searched.options.map((option) => (
+                  <li key={option.href}>
+                    <a className={styles.option} href={option.href}>
+                      <span className={styles.optionLabel}>{option.label}</span>
+                      <span className={styles.optionScope}>{option.scope}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ) : (
+            // El texto lo compone el dominio: es lo que el producto le contesta
+            // a quien llega, no una cadena de maquetado. Y dice «no entendí»,
+            // nunca «no hay avisos» — acá no se mira la oferta.
+            <p className={styles.noMatch}>{noMatchMessage(typed)}</p>
+          )}
+        </Container>
       )}
 
       <Container>

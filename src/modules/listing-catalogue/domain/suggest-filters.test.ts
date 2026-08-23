@@ -24,6 +24,7 @@ const VOCABULARY: SuggestionVocabulary = {
     { id: "z-centro-coq", name: "Centro", cityId: "area-mcbo", parentName: "Coquivacoa" },
     { id: "z-centro-ccs", name: "Centro", cityId: "area-ccs", parentName: "Catedral" },
     { id: "z-chacao", name: "Urbanización Chacao", cityId: "area-ccs", parentName: "Chacao" },
+    { id: "z-altamira", name: "Altamira", cityId: "area-ccs", parentName: "Chacao" },
   ],
   // Los alias son el aporte del índice de topónimos: el nombre por el que la
   // gente busca, no el que la fuente publica.
@@ -132,6 +133,66 @@ describe("suggestFilters", () => {
     // Para probar el vacío hace falta texto que no toque el vocabulario.
     expect(suggestFilters("vista al espacio exterior", VOCABULARY)).toEqual([]);
     expect(suggestFilters("", VOCABULARY)).toEqual([]);
+  });
+
+  /**
+   * **El defecto que este archivo tenía, escrito como test.**
+   *
+   * `matches` comparaba en una sola dirección: preguntaba si el nombre de la
+   * zona estaba DENTRO de lo escrito. Eso alcanza para traducir una frase
+   * entera («arriendo en altamira»), y no alcanza para lo que alguien hace
+   * mientras escribe — «alta» no devolvía nada aunque Altamira exista, y la
+   * caja parecía rota.
+   *
+   * `searchPublicationZones` (listing-publication) ya había resuelto el mismo
+   * problema para el paso 2 comparando en las dos direcciones. La regla se
+   * unificó acá, que es de donde las dos partes toman el vocabulario.
+   */
+  it("encuentra Altamira escribiendo «alta», que es lo que alguien teclea", () => {
+    const suggestions = suggestFilters("alta", VOCABULARY);
+
+    expect(suggestions.some((s) => s.kind === "zone" && s.id === "z-altamira")).toBe(true);
+  });
+
+  it("sigue traduciendo la frase entera, que era la dirección que ya andaba", () => {
+    const suggestions = suggestFilters("apartamento en altamira", VOCABULARY);
+
+    expect(suggestions.some((s) => s.kind === "zone" && s.id === "z-altamira")).toBe(true);
+    expect(suggestions.some((s) => s.kind === "propertyType" && s.id === "apartamento")).toBe(true);
+  });
+
+  it("encuentra un alias por su comienzo, no sólo entero", () => {
+    // «tierr» es lo que hay escrito cuando todavía falta media palabra.
+    expect(suggestFilters("tierr", VOCABULARY).some((s) => s.id === "z-tierra")).toBe(true);
+  });
+
+  /**
+   * **Una o dos letras no son una sugerencia, son la lista entera.** Sobre un
+   * vocabulario cerrado, `nombre.includes("a")` acierta en casi todo: ofrecer
+   * eso no ayuda a elegir, y encima esconde las coincidencias reales de quien
+   * ya escribió una palabra completa.
+   */
+  it("no autocompleta con una sola letra", () => {
+    expect(suggestFilters("a", VOCABULARY)).toEqual([]);
+    expect(suggestFilters("al", VOCABULARY)).toEqual([]);
+  });
+
+  /**
+   * **`slugify` corta a 60 caracteres, y ese tope es de las URL, no del texto
+   * que alguien escribe.** Sesenta caracteres mantienen la primera cláusula de
+   * un título en un enlace que se pega en un WhatsApp; acá cortarían la frase
+   * justo donde la gente pone el precio y las habitaciones, que van al final.
+   * Se descubrió con una zona de nombre largo: el `hasta 400` quedaba afuera y
+   * el filtro de precio desaparecía sin que nada fallara.
+   */
+  it("no pierde el final de una frase larga", () => {
+    const text = "apartamento amoblado con vigilancia en urbanizacion chacao hasta 400 y 2 hab";
+    expect(text.length).toBeGreaterThan(60);
+
+    const suggestions = suggestFilters(text, VOCABULARY);
+
+    expect(suggestions.some((s) => s.kind === "maxPrice" && s.id === "400")).toBe(true);
+    expect(suggestions.some((s) => s.kind === "rooms" && s.id === "2")).toBe(true);
   });
 
   it("no repite la misma sugerencia dos veces", () => {
