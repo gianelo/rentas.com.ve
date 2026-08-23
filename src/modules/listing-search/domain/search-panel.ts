@@ -35,6 +35,7 @@ import {
   type SearchQuery,
   toggleZone,
 } from "./search-query";
+import type { SearchZone } from "./zone-catalogue";
 
 /**
  * **El acordeón entero, armado de una sola vez y sin tocar una pantalla.**
@@ -72,10 +73,46 @@ export interface PanelCity {
 }
 
 export interface PanelZone {
+  /**
+   * **La clave de verdad, y por eso el slug no la reemplaza.** Es lo que indexa
+   * `counts.byZone` y lo que viaja a `countFacets`: cambiarla por el slug
+   * dejaría cada zona en cero, deshabilitada y sin número.
+   */
   readonly id: string;
   readonly name: string;
+  /**
+   * El nombre legible que viaja en `?zona=` (F12: `?zona=chacao,altamira`). Lo
+   * calcula `toSearchZones` en el dominio; la página no lo formatea.
+   */
+  readonly slug: string;
   /** Su ruta canónica: `/alquiler/distrito-capital/chacao`. */
   readonly path: string;
+}
+
+/**
+ * Las zonas de UNA ciudad como las pide el panel, con su ruta canónica ya
+ * armada sobre el mismo slug que viaja en la query.
+ *
+ * El recorte por ciudad va acá y no en la página por la razón de siempre: es
+ * la garantía de aislamiento del D5, y una regla escrita en `app/` queda fuera
+ * del suelo de cobertura del 90 %.
+ */
+export function toPanelZones(
+  cityPath: string,
+  zones: readonly SearchZone[],
+  cityId: string,
+): readonly PanelZone[] {
+  return zones
+    .filter((zone) => zone.cityId === cityId)
+    .map((zone) => ({
+      id: zone.id,
+      name: zone.name,
+      slug: zone.slug,
+      // La ruta y la query salen del MISMO slug. Que sean dos derivaciones
+      // distintas del nombre es cómo `?zona=` deja de nombrar la zona que la
+      // ruta nombra.
+      path: `${cityPath}/${zone.slug}`,
+    }));
 }
 
 export interface SearchPanelInput {
@@ -401,9 +438,27 @@ function zoneHref(input: SearchPanelInput, zoneId: string): string {
   }
 
   return buildSearchHref(input.cityPath, input.query, {
-    zone: next.length === 0 ? null : next.join(","),
+    zone: zoneParam(input.zones, next),
     step: "zona",
   });
+}
+
+/**
+ * **El valor de `?zona=`: slugs, no ids.**
+ *
+ * La dirección es el estado de la búsqueda y se pega en un chat, así que tiene
+ * que poder leerse: `?zona=chacao,altamira` y no dos hashes de treinta y seis
+ * caracteres (F12). Adentro se sigue trabajando con ids —son la clave de
+ * `byZone` y lo que recibe `countFacets`—; el slug es sólo cómo se escribe.
+ *
+ * Un id que este catálogo de ciudad no nombra viaja tal cual antes que
+ * desaparecer: perder una zona elegida es devolver una búsqueda más ancha que
+ * la pedida, y eso el visitante lo ve como resultados de más sin causa.
+ */
+function zoneParam(zones: readonly PanelZone[], zoneIds: readonly string[]): string | null {
+  if (zoneIds.length === 0) return null;
+
+  return zoneIds.map((id) => zones.find((zone) => zone.id === id)?.slug ?? id).join(",");
 }
 
 function toPublisherChoice(input: SearchPanelInput): PublisherChoice {

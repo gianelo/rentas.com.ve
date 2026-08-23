@@ -1,4 +1,5 @@
 import { readPage } from "./pagination";
+import { zoneMatchesToken } from "./zone-catalogue";
 
 /**
  * What a search IS, decided before anything touches the database
@@ -43,6 +44,11 @@ export type SearchablePropertyType = "apartamento" | "casa" | "quinta" | "anexo"
 export interface CuratedZone {
   readonly id: string;
   readonly cityId: string;
+  /**
+   * El nombre legible con el que la zona viaja en `?zona=` (F12). Lo calcula
+   * `toSearchZones`; acá sólo se compara. El `id` sigue siendo la clave.
+   */
+  readonly slug: string;
 }
 
 /**
@@ -194,10 +200,16 @@ function readFlag(raw: string | null | undefined): true | undefined {
 /**
  * Las zonas que sobreviven, en el orden en que llegaron y sin repetir.
  *
- * Cada id se juzga solo: la que no pertenece a esta ciudad o ya no existe en
- * la taxonomía se cae, y las demás siguen. Perder la búsqueda entera por una
+ * Cada valor se juzga solo: el que no pertenece a esta ciudad o ya no existe en
+ * la taxonomía se cae, y los demás siguen. Perder la búsqueda entera por una
  * zona vieja sería una página vacía sin explicación; perder esa zona es una
  * búsqueda más ancha que la pedida, y eso el visitante lo ve.
+ *
+ * **Se aceptan el slug y el id, y se devuelve siempre el id.** El slug es la
+ * forma canónica y la única que el panel emite; el id se sigue reconociendo
+ * porque ya hay direcciones con ids compartidas por WhatsApp desde que existe
+ * la selección múltiple, y la dirección ES el estado de la búsqueda (F12).
+ * `zoneMatchesToken` documenta por qué las dos formas no pueden chocar.
  */
 function readZoneIds(
   raw: string | null | undefined,
@@ -207,10 +219,14 @@ function readZoneIds(
   if (raw === null || raw === undefined) return undefined;
 
   const kept: string[] = [];
-  for (const candidate of raw.split(",")) {
-    const zoneId = candidate.trim();
-    if (zoneId === "" || kept.includes(zoneId)) continue;
-    if (zones.some((zone) => zone.id === zoneId && zone.cityId === cityId)) kept.push(zoneId);
+  for (const piece of raw.split(",")) {
+    const token = piece.trim();
+    // El recorte por ciudad es la mitad de la regla: «Centro» existe en
+    // Maracaibo y en Distrito Capital, y el slug solo no las distingue.
+    const zone = zones.find(
+      (candidate) => candidate.cityId === cityId && zoneMatchesToken(candidate, token),
+    );
+    if (zone && !kept.includes(zone.id)) kept.push(zone.id);
   }
 
   return kept.length === 0 ? undefined : kept;

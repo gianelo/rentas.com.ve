@@ -19,11 +19,13 @@ import { readPhotoPublicBaseUrl } from "@/modules/listing-discovery/infrastructu
 import { buildFilterPanel } from "@/modules/listing-search/application/build-filter-panel";
 import { resolvePagination } from "@/modules/listing-search/domain/pagination";
 import { buildSearchCriteria } from "@/modules/listing-search/domain/search-criteria";
+import { toPanelZones } from "@/modules/listing-search/domain/search-panel";
 import {
   buildSearchHref,
   readZoneList,
   SEARCH_QUERY_NAMES,
 } from "@/modules/listing-search/domain/search-query";
+import { resolveZoneTokens, toSearchZones } from "@/modules/listing-search/domain/zone-catalogue";
 import { DrizzleFacetedSearch } from "@/modules/listing-search/infrastructure/drizzle-faceted-search";
 import { DrizzleListingSearch } from "@/modules/listing-search/infrastructure/drizzle-listing-search";
 import { db } from "@/shared/db/client";
@@ -92,18 +94,21 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
   const cityPath = `/alquiler/${ciudad}`;
   const basePath = `${cityPath}/${zona}`;
 
-  // Las zonas extra de F4. Acá sólo se traducen los ids de la dirección a
-  // filas del catálogo, igual que `resolveZoneRoute` hace con los dos
-  // segmentos de la ruta; **cuál sobrevive lo decide `buildSearchCriteria`**,
-  // que ya deja caer la que no pertenece a esta ciudad sin llevarse la
-  // búsqueda entera.
-  const askedZoneIds = readZoneList(query[SEARCH_QUERY_NAMES.zone]);
-  const extraZones = zones.filter(
-    (candidate) =>
-      candidate.cityId === place.city.id &&
-      candidate.id !== place.zone.id &&
-      askedZoneIds.includes(candidate.id),
-  );
+  // El catálogo con el slug de cada zona ya calculado por el dominio. La
+  // página no formatea nada: el slug es un dato de la zona, no un formateo de
+  // la pantalla.
+  const searchZones = toSearchZones(zones);
+
+  // Las zonas extra de F4. Traducir un valor de `?zona=` a una fila del
+  // catálogo es la misma regla que `resolveZoneRoute` aplica a los segmentos
+  // de la ruta, y vive en el dominio por lo mismo: acepta el slug (F12) y el
+  // id de las direcciones ya compartidas, y recorta por ciudad — «Centro»
+  // existe en Maracaibo y en Distrito Capital.
+  const extraZones = resolveZoneTokens(
+    readZoneList(query[SEARCH_QUERY_NAMES.zone]),
+    searchZones,
+    place.city.id,
+  ).filter((candidate) => candidate.id !== place.zone.id);
 
   // La zona de la ruta siempre entra, y las extra se suman con O. La ruta
   // afirma un lugar; la query sólo puede ensanchar la búsqueda dentro de la
@@ -136,7 +141,7 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
       hasAppliances: query[SEARCH_QUERY_NAMES.hasAppliances],
       page: query[SEARCH_QUERY_NAMES.page],
     },
-    zones,
+    searchZones,
   ) ?? { cityId: place.city.id };
 
   const results = await new DrizzleListingSearch(db).search(criteria);
@@ -178,16 +183,10 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
       name: candidate.name,
       path: `/alquiler/${slugify(candidate.name)}`,
     })),
-    // Las de esta ciudad, con la misma `slugify` que resuelve la ruta: es lo
-    // que hace que tocar una sola zona caiga en su dirección canónica en vez
-    // de en la ciudad con un parámetro.
-    zones: zones
-      .filter((candidate) => candidate.cityId === place.city.id)
-      .map((candidate) => ({
-        id: candidate.id,
-        name: candidate.name,
-        path: `${cityPath}/${slugify(candidate.name)}`,
-      })),
+    // Las de esta ciudad, con el mismo slug que resuelve la ruta y que viaja
+    // en `?zona=`: es lo que hace que tocar una sola zona caiga en su
+    // dirección canónica en vez de en la ciudad con un parámetro.
+    zones: toPanelZones(cityPath, searchZones, place.city.id),
     chosenZoneIds,
     criteria,
     onlyListingHref: cards.length === 1 ? cards[0]?.href : undefined,

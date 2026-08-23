@@ -41,7 +41,35 @@
      shipped reference tokens.css — added here because PR1b-b's buttons
      need it and D16 forbids inlining a size the token set doesn't name. */
   --target-min: 44px;
+  /* **36 y no 40, y es una decisión pendiente del fundador, no un descuido.**
+     La especificación de la ficha §8 fija el área táctil mínima de escritorio
+     en 40 px; este conjunto ship*a* 36. Uno de los dos está mal y el cambio es
+     global — todo control de toda pantalla— así que se deja anotado en vez de
+     resuelto de paso. `design-contract.test.tsx` lo ancla en 36 para que nadie
+     lo mueva sin querer mientras toca los tokens de al lado (tasks.md 16.24). */
   --target-min-desktop: 36px;
+
+  /* ---------- La barra de búsqueda del inicio (16.23) ----------
+
+     Dos medidas que el conjunto no nombraba, y que la hoja de la barra estaba
+     resolviendo con el token *vecino*: `--target-min` (44) por el alto y
+     `--control-fs` (15) por el texto. Los dos se leían bien y los dos eran el
+     valor equivocado — que es exactamente el defecto que este archivo ya
+     documenta más abajo con el `<h1>` del inicio agarrando `--fpb`.
+
+     Propios y no alias: la barra es la pieza más grande de la pantalla y la
+     primera que un pulgar busca, así que su alto es una decisión de esa pieza.
+     Atarlo a `--target-min` haría que subir el mínimo táctil del sistema
+     redimensionara la barra, y bajarlo la encogiera por debajo de lo dibujado. */
+  --searchbar-h: 50px;
+  --searchbar-fs: 14px;
+
+  /* La línea de conteo debajo del encabezado de una tira. 12,5 en el teléfono
+     y 13 en 1280 — el diseño da los dos, y una sola escala obligaría a elegir
+     cuál de las dos pantallas se ve mal. Separado de `--meta-fs` (12) porque
+     no es un metadato de fila: es el subtítulo de una sección. */
+  --strip-subtitle-fs: 12.5px;
+  --strip-subtitle-fs-desktop: 13px;
 
   /* Badge and metadata typography (SISTEMA.md "Badge / etiqueta",
      "Metadato"). Fixed across all layout/theme sets in the design
@@ -215,8 +243,23 @@
   --dark-accent: #bae8e8;
   --dark-accent-ink: #272343;
   --dark-tint: #332e52;
-  --dark-warn: #bae8e8;
-  --dark-warn-bg: #332e52;
+  /* **El ámbar de la spec NO sirve acá, y este es el número.** `#8a5a00` da
+     2,52:1 sobre `--dark-surface` y 2,90:1 sobre `--dark-bg`: los dos por
+     debajo de 4,5, y el contrato de tema exige AA en `menta` Y en `oscuro`.
+     Un ámbar oscuro sobre un fondo oscuro es texto ilegible, no una
+     advertencia más discreta.
+
+     El valor propuesto es el que el propio archivo de referencia del diseño
+     le da a `oscuro` (`design/reference/sistema/tokens.css`), así que no se
+     inventa un color: 7,73:1 sobre `--dark-surface`, 8,92:1 sobre
+     `--dark-bg`, 7,86:1 sobre su propio fondo. Es el mismo ámbar de `menta`
+     subido de luminancia para el tema de noche — la misma señal, no otra. */
+  --dark-warn: #e0b464;
+  --dark-warn-bg: #2c2517;
+  /* Sobre un fondo oscuro una sombra clara no levanta nada: se ve como una
+     mancha. La misma geometría con negro casi opaco, que es lo que sí separa
+     una lámina del fondo cuando el fondo ya es oscuro. */
+  --dark-shadow-raised: 0 2px 6px rgba(0, 0, 0, 0.45);
   --dark-err: #f0a39a;
   --dark-err-bg: #43283a;
   --dark-thumb: repeating-linear-gradient(135deg, #3b3663 0 7px, #332e52 7px 14px);
@@ -259,13 +302,31 @@
   --accent: #272343;
   --accent-ink: #ffffff;
   --tint: #e3f6f5;
-  /* Both repainted from the palette itself (design update, 2026-08-18). The
-     mustard pair was the only colour on this screen belonging to no theme;
-     `--warn` is now the accent navy and `--warn-bg` the mint, so "vence
-     pronto" reads as part of the product rather than a borrowed browser
-     warning. */
-  --warn: #272343;
-  --warn-bg: #bae8e8;
+  /* **Ámbar, y el azul del acento era el error.** El repintado del 2026-08-18
+     llevó `--warn` al azul del acento y `--warn-bg` a la menta, para que
+     "vence pronto" perteneciera a la paleta. El resultado fue que un aviso
+     quedó pintado con el color de TODO lo demás: el contador de caracteres en
+     falta de publicar y el aviso de que cambiar de ciudad borra las zonas se
+     leen como texto, no como advertencia. Un aviso que no se distingue no es
+     un aviso.
+
+     `#8a5a00` es el valor de la especificación de publicar §8, textual.
+     Medido: 5,93:1 sobre `--surface` y 5,32:1 sobre `--warn-bg` — los dos
+     pasan AA. La medición la hace `components/design-contract.test.tsx`
+     contra este archivo, no contra una copia.
+
+     `--warn-bg` vuelve al lavado ámbar de SISTEMA.md por una razón medida y
+     no estética: `#8a5a00` sobre la menta `#bae8e8` da 4,46:1, que NO llega a
+     4,5. */
+  --warn: #8a5a00;
+  --warn-bg: #faf2e1;
+  /* **El conjunto no tenía token de sombra**, y la consecuencia estaba escrita
+     en la hoja de la barra de búsqueda: `box-shadow: 0 2px 6px var(--line)` —
+     el color del BORDE haciendo de sombra, porque el diseño escribe
+     `rgba(30,32,34,.1)` y D16 prohíbe el literal en un componente. Acá el
+     literal es legítimo: éste es el archivo donde los valores se declaran.
+     Es un color y por lo tanto se repinta con el tema, como todo lo demás. */
+  --shadow-raised: 0 2px 6px rgba(30, 32, 34, 0.1);
   --err: #9c2b20;
   --err-bg: #fbecea;
   --thumb: repeating-linear-gradient(135deg, #bae8e8 0 7px, #e3f6f5 7px 14px);
@@ -287,6 +348,7 @@
   --tint: var(--dark-tint);
   --warn: var(--dark-warn);
   --warn-bg: var(--dark-warn-bg);
+  --shadow-raised: var(--dark-shadow-raised);
   --err: var(--dark-err);
   --err-bg: var(--dark-err-bg);
   --thumb: var(--dark-thumb);

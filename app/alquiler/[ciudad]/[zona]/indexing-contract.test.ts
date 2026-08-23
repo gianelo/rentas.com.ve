@@ -62,4 +62,18 @@ describe("el contrato de indexación de la ruta de zona", () => {
     // otra cara: coincide hoy y deja de coincidir en el próximo parámetro.
     expect(PAGE).not.toMatch(/const QUERY_NAMES/);
   });
+
+  it("el slug de la zona lo da el dominio: la página no lo deriva ni recorta por ciudad", () => {
+    // «Nunca más coloques una regla de negocio en el front, nunca». El slug de
+    // una zona es un dato del dominio, no un formateo de la pantalla — y la
+    // ruta canónica y el `?zona=` tienen que salir del MISMO slug, o la query
+    // deja de nombrar lo que nombra la ruta.
+    expect(PAGE).toContain("toSearchZones");
+    expect(PAGE).toContain("toPanelZones");
+    expect(PAGE).not.toMatch(/\$\{cityPath\}\/\$\{slugify/);
+    // Recortar las zonas a la ciudad es la garantía de aislamiento del D5 y
+    // vive en `toPanelZones`. Escrita acá quedaría fuera del suelo de
+    // cobertura del 90 %, que llega a `domain/` y no llega a `app/`.
+    expect(PAGE).not.toMatch(/cityId === place\.city\.id/);
+  });
 });

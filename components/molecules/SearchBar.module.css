@@ -7,18 +7,19 @@
   align-items: center;
   gap: 10px;
   /* La píldora completa: es el control más grande de la pantalla y el primero
-     que un pulgar busca. `--target-min` y no la altura dibujada (50 px), que
-     el conjunto de tokens no nombra — el mínimo táctil ya la cubre y es la
-     medida que el sistema sí define. */
-  min-block-size: var(--target-min);
+     que un pulgar busca, así que su alto es una decisión de esta pieza y tiene
+     token propio. Antes apuntaba a `--target-min` porque el conjunto no
+     nombraba los 50 px dibujados; se leía bien y era el número equivocado. */
+  min-block-size: var(--searchbar-h);
   padding-inline: 18px;
   border: 1px solid var(--line);
   border-radius: var(--rs);
   background: var(--surface);
-  /* La sombra de la lámina, con el color del sistema. El diseño escribe
-     `rgba(30,32,34,.1)`, que es un literal y D16 lo prohíbe; no hay token de
-     sombra, así que se levanta con la misma línea que dibuja el borde. */
-  box-shadow: 0 2px 6px var(--line);
+  /* La sombra de la lámina. Antes era el color del BORDE haciendo de sombra,
+     porque no existía un token de sombra y el literal del diseño está
+     prohibido en un componente (D16). Ahora el literal vive donde los valores
+     se declaran, y la sombra se repinta con el tema. */
+  box-shadow: var(--shadow-raised);
   color: var(--soft);
   text-decoration: none;
 }
@@ -30,11 +31,11 @@
 }
 
 .label {
-  /* La lámina la escribe en 14 px, que el conjunto de tokens no tiene.
-     `--control-fs` es el tamaño de los controles del sistema y esto es un
-     control — inventar el literal sería justo lo que D16 prohíbe. */
+  /* Los 14 px de la lámina, ahora con nombre. Apuntaba a `--control-fs` (15)
+     por no tener el suyo: un token que se parece no es el token correcto, y
+     `lint:tokens` no puede ver la diferencia. */
   font-family: var(--sans);
-  font-size: var(--control-fs);
+  font-size: var(--searchbar-fs);
   font-weight: 600;
   line-height: 1.4;
   /* Un nombre de zona largo no puede empujar la píldora fuera de la pantalla. */
