@@ -45,7 +45,10 @@ const SOURCE = readFileSync(new URL("./SearchPanel.tsx", import.meta.url), "utf8
 
 describe("el acordeón funciona con JavaScript apagado (F14)", () => {
   it("no es un componente de cliente", () => {
-    expect(SOURCE).not.toContain('"use client"');
+    // La directiva sólo cuenta al principio del archivo; nombrarla dentro de
+    // un comentario que explica por qué NO está no la convierte en una.
+    expect(SOURCE.trimStart().startsWith('"use client"')).toBe(false);
+    expect(SOURCE.trimStart().startsWith("'use client'")).toBe(false);
   });
 
   it("abre y cierra con `<details>` nativo", () => {
@@ -76,10 +79,14 @@ describe("el acordeón funciona con JavaScript apagado (F14)", () => {
 describe("el conteo en vivo (F7)", () => {
   it("el botón lleva el número adentro y nunca dice «Aplicar»", () => {
     const markup = render();
+    // Sólo el botón de confirmar: el buscador de zonas tiene su propio
+    // «Buscar», que es otro control y otra pregunta.
+    const confirm = /data-testid="search-confirm"[^>]*>([^<]*)</.exec(markup)?.[1];
 
-    expect(markup).toContain("Ver 16 avisos");
-    expect(markup).not.toContain(">Aplicar<");
-    expect(markup).not.toContain(">Buscar<");
+    expect(confirm).toBe("Ver 16 avisos");
+    for (const forbidden of ["Aplicar", "Buscar", "Filtrar"]) {
+      expect(confirm).not.toBe(forbidden);
+    }
   });
 
   it("con cero resultados no se apaga: explica y ofrece una salida", () => {
@@ -96,7 +103,10 @@ describe("el conteo en vivo (F7)", () => {
 
     expect(markup).toContain("Ningún aviso coincide");
     expect(markup).toContain("Quitar el precio y ver 14");
-    expect(markup).not.toContain("disabled");
+    // Y la salida es un enlace de verdad, no un botón apagado. `aria-disabled`
+    // sí aparece en el marcado — es de una opción con cero, que es otra cosa.
+    expect(markup).not.toContain("<button disabled");
+    expect(markup).toMatch(/<a[^>]*>Quitar el precio y ver 14</);
   });
 
   it("con un solo resultado el botón lleva a la ficha", () => {
