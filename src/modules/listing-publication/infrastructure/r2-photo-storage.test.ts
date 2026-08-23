@@ -287,6 +287,42 @@ describe("readR2Config", () => {
     );
   });
 
+  /**
+   * **El bug que costó un día, y que no fallaba: corrompía.**
+   *
+   * Con el bucket puesto DENTRO del endpoint, el SDK arma
+   * `endpoint + /bucket + /clave`, así que R2 recibe el nombre dos veces: lee
+   * el primero como bucket y **el segundo pasa a ser parte de la clave**. Cada
+   * subida termina en `rentas-photos/photos/…` mientras la base guarda
+   * `photos/…`, y el objeto queda a un lugar de distancia de donde toda
+   * pantalla lo busca.
+   *
+   * No lanza ningún error en ningún lado. Sube bien, se guarda bien, y la foto
+   * da 404 para siempre. Por eso esto es una guarda de arranque y no una nota:
+   * es exactamente el mismo razonamiento que ya justifica el cruce con
+   * `R2_BUCKET_ACCOUNT_ID` unas líneas más abajo.
+   */
+  it("refuses an endpoint carrying the bucket in its path", () => {
+    expect(() =>
+      readR2Config({ ...ENV, R2_BUCKET_URL: `${CONFIG.endpoint}/${CONFIG.bucket}` }),
+    ).toThrow(/R2_BUCKET_URL/);
+  });
+
+  it("refuses an endpoint with any path at all, not only the bucket name", () => {
+    // La ruta entera es el problema, no la palabra: cualquier segmento se
+    // antepone a la clave igual.
+    expect(() =>
+      readR2Config({ ...ENV, R2_BUCKET_URL: `${CONFIG.endpoint}/cualquier-cosa` }),
+    ).toThrow(/R2_BUCKET_URL/);
+  });
+
+  it("accepts an endpoint whose path is just a trailing slash", () => {
+    // Una barra final es una forma de escribir el origen, no una ruta.
+    expect(readR2Config({ ...ENV, R2_BUCKET_URL: `${CONFIG.endpoint}/` }).endpoint).toBe(
+      `${CONFIG.endpoint}/`,
+    );
+  });
+
   it("refuses an endpoint that belongs to a different account", () => {
     // One credential pair pointed at the wrong Cloudflare account: otherwise
     // a 403 at the first publisher's first upload, in production.
