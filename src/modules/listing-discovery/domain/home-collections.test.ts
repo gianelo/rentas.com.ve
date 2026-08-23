@@ -2,9 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   buildHome,
   HOME_BUDGET_CEILING_USD,
+  HOME_SEARCH_LABEL,
   HOME_STRIP_SIZE,
   type HomeCollectionPage,
+  homeCityChips,
   homeCollections,
+  homeSearchBar,
+  resolveHomeCity,
 } from "./home-collections";
 import type { GridCover, GridListing } from "./listing-grid";
 import { slugify } from "./listing-url";
@@ -36,8 +40,13 @@ function listing(id: string, overrides: Partial<GridListing> = {}): GridListing 
   };
 }
 
-function page(ids: readonly string[], total: number): HomeCollectionPage {
-  return { rows: ids.map((id) => listing(id)), total };
+/**
+ * `zoneCount` por defecto en 1: la mayoría de estos casos no habla del
+ * subtítulo, y dejarlo en 0 apagaría esa línea en todos ellos sin que el caso
+ * lo estuviera pidiendo.
+ */
+function page(ids: readonly string[], total: number, zoneCount = 1): HomeCollectionPage {
+  return { rows: ids.map((id) => listing(id)), total, zoneCount };
 }
 
 function coversFor(...ids: readonly string[]): ReadonlyMap<string, GridCover> {
@@ -333,6 +342,7 @@ describe("buildHome — lo que la tira no decide", () => {
           {
             rows: [listing("abc", { title: "Apartamento en la avenida", zoneName: "Altamira" })],
             total: 1,
+            zoneCount: 1,
           } as HomeCollectionPage,
         ],
       ]),
@@ -371,5 +381,263 @@ describe("la placa de ciudad cae en una ruta que resuelve", () => {
       const segment = (spec?.href ?? "").split("/").pop() ?? "";
       expect(resolveCityRoute(CITIES, segment)?.id).toBe(city.id);
     }
+  });
+});
+
+/**
+ * **El aislamiento de ciudad, que es la regla no negociable de esta pantalla.**
+ *
+ * Con una ciudad elegida, ninguna superficie del inicio puede devolver un aviso
+ * de la otra. No alcanza con que la tira de la otra ciudad desaparezca: si
+ * «Recién publicados» o «Hasta $400» siguieran cruzando el catálogo, un aviso
+ * de Distrito Capital aparecería en la portada de alguien que dijo Maracaibo —
+ * y ésa es exactamente la fuga que el resto del producto cierra dos veces (el
+ * puerto de búsqueda no sabe expresar una consulta sin ciudad, y la clave
+ * foránea `listing_zone_city_fk` hace imposible una fila cruzada).
+ *
+ * Acá el aislamiento no puede apoyarse en ninguna de esas dos: estas
+ * colecciones NO pasan por `ListingSearchPort` y `cityId` es nulable a
+ * propósito, porque sin ciudad elegida la tira barata sí cruza el país. Eso
+ * deja la garantía enteramente en estas líneas, que es la razón de que estén
+ * escritas como una afirmación sobre TODAS las colecciones y no sobre la que
+ * uno se acuerde de mirar.
+ */
+describe("homeCollections — el aislamiento de ciudad", () => {
+  it("con una ciudad elegida, TODA colección queda atada a esa ciudad", () => {
+    const specs = homeCollections(CITIES, "mcbo");
+
+    expect(specs).not.toHaveLength(0);
+    for (const spec of specs) {
+      expect(spec.cityId).toBe("mcbo");
+    }
+  });
+
+  /**
+   * La tira de la otra ciudad **desaparece**, no queda vacía. Una tira
+   * «Distrito Capital» sin tarjetas dentro de una portada que dice Maracaibo
+   * es la contradicción visible de la regla de arriba.
+   */
+  it("borra la tira de la otra ciudad en vez de dejarla vacía", () => {
+    const keys = homeCollections(CITIES, "mcbo").map((spec) => spec.key);
+
+    expect(keys).toContain("ciudad:mcbo");
+    expect(keys).not.toContain("ciudad:dc");
+  });
+
+  it("deja las otras dos tiras, ahora recortadas a la ciudad elegida", () => {
+    const kinds = homeCollections(CITIES, "mcbo").map((spec) => spec.kind);
+
+    // Recientes y presupuesto siguen existiendo: son preguntas distintas y las
+    // dos tienen respuesta dentro de una ciudad.
+    expect(kinds).toEqual(["recent", "city", "budget"]);
+  });
+
+  it("el techo de precio sobrevive al recorte por ciudad", () => {
+    const budget = homeCollections(CITIES, "mcbo").find((spec) => spec.kind === "budget");
+
+    // Las dos condiciones a la vez, no una en lugar de la otra: «hasta $400 en
+    // Maracaibo» es la tira, y perder cualquiera de las dos la vuelve otra.
+    expect(budget).toMatchObject({ cityId: "mcbo", maxPriceUsd: HOME_BUDGET_CEILING_USD });
+  });
+
+  /**
+   * **Una ciudad que el catálogo no tiene se ignora, y el inicio sigue siendo
+   * el inicio.** `?ciudad=cualquier-cosa` no puede producir una portada vacía
+   * —indistinguible, para quien la mira, de «no hay nada publicado»— ni un
+   * `WHERE city_id = 'cualquier-cosa'` garantizado a cero.
+   */
+  it("ignora una ciudad que el catálogo no reconoce", () => {
+    expect(homeCollections(CITIES, "narnia")).toEqual(homeCollections(CITIES));
+  });
+
+  it("sin ciudad elegida ninguna colección afirma una", () => {
+    const specs = homeCollections(CITIES);
+
+    expect(specs.find((spec) => spec.kind === "recent")?.cityId).toBeNull();
+    expect(specs.find((spec) => spec.kind === "budget")?.cityId).toBeNull();
+  });
+});
+
+/**
+ * **De `?ciudad=maracaibo` a la ciudad del catálogo.**
+ *
+ * La URL lleva el slug del nombre y no el id, por la misma razón que
+ * `/alquiler/<ciudad>`: un id es un dato interno y no significa nada para
+ * quien lee la dirección antes de tocarla. La traducción reusa
+ * `resolveCityRoute` en vez de escribir una segunda regla de acentos.
+ */
+describe("resolveHomeCity — qué ciudad nombra el parámetro", () => {
+  it("resuelve el slug del nombre, acentos y mayúsculas incluidos", () => {
+    expect(resolveHomeCity(CITIES, "distrito-capital")?.id).toBe("dc");
+  });
+
+  it("sin parámetro no hay ciudad elegida, y eso es el inicio completo", () => {
+    expect(resolveHomeCity(CITIES, undefined)).toBeNull();
+    expect(resolveHomeCity(CITIES, "")).toBeNull();
+  });
+
+  it("una ciudad desconocida es ninguna, nunca la primera", () => {
+    // La asimetría que `resolveZoneRoute` ya documenta: caer a la primera
+    // ciudad acá dibujaría las fichas con Maracaibo marcada cuando alguien
+    // pidió otra cosa.
+    expect(resolveHomeCity(CITIES, "narnia")).toBeNull();
+  });
+});
+
+/**
+ * **Las fichas de ciudad (F2).** Son la única forma de elegir ciudad sin
+ * JavaScript: cada una es un enlace a una dirección que ya existe.
+ */
+describe("homeCityChips — las fichas de ciudad", () => {
+  it("emite una ficha por ciudad del catálogo, en su orden", () => {
+    expect(homeCityChips(CITIES, null).map((chip) => chip.label)).toEqual([
+      "Distrito Capital",
+      "Maracaibo",
+    ]);
+  });
+
+  it("sin ciudad elegida ninguna ficha está activa", () => {
+    expect(homeCityChips(CITIES, null).every((chip) => !chip.selected)).toBe(true);
+  });
+
+  it("marca activa exactamente la ciudad elegida", () => {
+    const chips = homeCityChips(CITIES, "mcbo");
+
+    expect(chips.filter((chip) => chip.selected).map((chip) => chip.cityId)).toEqual(["mcbo"]);
+  });
+
+  it("una ficha inactiva lleva a su ciudad, con el slug del nombre", () => {
+    const dc = homeCityChips(CITIES, "mcbo").find((chip) => chip.cityId === "dc");
+
+    expect(dc?.href).toBe("/?ciudad=distrito-capital");
+  });
+
+  /**
+   * **La ficha activa quita la ciudad en vez de repetirla.** Es la única salida
+   * sin JavaScript: sin esto, elegir una ciudad es un camino de ida y volver al
+   * inicio completo depende del botón «atrás» del navegador.
+   */
+  it("la ficha activa vuelve al inicio sin ciudad", () => {
+    const mcbo = homeCityChips(CITIES, "mcbo").find((chip) => chip.cityId === "mcbo");
+
+    expect(mcbo?.href).toBe("/");
+  });
+
+  it("sin catálogo no hay fichas que dibujar", () => {
+    expect(homeCityChips([], null)).toEqual([]);
+  });
+});
+
+/**
+ * **La barra de búsqueda va siempre, y su destino es una decisión de producto.**
+ *
+ * La lámina la dibuja como un enlace al acordeón de cuatro pasos, que hoy no
+ * existe como ruta. Mientras no exista, la barra apunta a la superficie de
+ * búsqueda que el producto **sí** sirve: `/alquiler/<ciudad>`, que desde la
+ * 14.24 *es* la búsqueda de esa ciudad. El día que el acordeón aterrice, lo
+ * único que cambia es esta función.
+ */
+describe("homeSearchBar — la barra y a dónde lleva", () => {
+  it("dice siempre lo mismo, que es lo que la lámina escribe", () => {
+    expect(homeSearchBar(CITIES, null).label).toBe(HOME_SEARCH_LABEL);
+  });
+
+  it("con una ciudad elegida lleva a la búsqueda de esa ciudad", () => {
+    expect(homeSearchBar(CITIES, "mcbo").href).toBe("/alquiler/maracaibo");
+  });
+
+  /**
+   * Antes de que nadie elija, la primera del catálogo. Es la regla que
+   * `resolveSelectedCity` ya dejó escrita del otro lado del producto —«¿qué ve
+   * alguien antes de elegir?»— y lo que importa es que sea una regla dicha en
+   * un lugar y no el resultado accidental de un `ORDER BY name`.
+   */
+  it("sin ciudad elegida lleva a la primera del catálogo", () => {
+    expect(homeSearchBar(CITIES, null).href).toBe("/alquiler/distrito-capital");
+  });
+
+  /**
+   * **Sin catálogo la barra no es un enlace.** Un ancla hacia una ruta que
+   * nadie sirve es el enlace roto que este repositorio ya se negó a publicar
+   * dos veces; la barra se sigue dibujando, pero no promete un destino.
+   */
+  it("sin ninguna ciudad no promete ningún destino", () => {
+    expect(homeSearchBar([], null).href).toBeNull();
+  });
+});
+
+/**
+ * **El subtítulo de la tira, y el número que dice.**
+ *
+ * «23 avisos activos en cuatro zonas.» Los dos números salen de la colección
+ * entera y no de las cinco tarjetas dibujadas, por la misma razón que la placa
+ * «Ver los 23»: contar lo que hay en pantalla daría siempre cinco.
+ */
+describe("buildHome — el subtítulo y su conteo", () => {
+  function homeWith(key: string, collection: HomeCollectionPage) {
+    return buildHome(
+      homeCollections(CITIES),
+      new Map([[key, collection]]),
+      coversFor(...collection.rows.map((row) => row.id)),
+      BASE_URL,
+    );
+  }
+
+  it("dice el total de la colección y sus zonas, no las tarjetas en pantalla", () => {
+    const home = homeWith(MCBO, page(["a", "b", "c", "d", "e"], 23, 4));
+
+    expect(home.strips[0]?.cards).toHaveLength(5);
+    expect(home.strips[0]?.subtitle).toBe("23 avisos activos en cuatro zonas.");
+  });
+
+  /**
+   * **Sólo la tira de una ciudad lo lleva, y la lámina lo dibuja así en los dos
+   * anchos.** Contar zonas sólo significa algo cuando la colección está
+   * confinada a un lugar: «cuatro zonas» debajo de «Recién publicados», que
+   * cruza el país, no le dice nada a nadie.
+   */
+  it.each([
+    ["recientes", () => RECENT],
+    ["presupuesto", () => BUDGET],
+  ])("no lo pone en la tira de %s", (_caso, key) => {
+    const home = homeWith(key(), page(["a"], 40, 6));
+
+    expect(home.strips[0]?.subtitle).toBeNull();
+  });
+
+  it("un solo aviso y una sola zona van en singular", () => {
+    const home = homeWith(MCBO, page(["a"], 1, 1));
+
+    expect(home.strips[0]?.subtitle).toBe("1 aviso activo en una zona.");
+  });
+
+  /**
+   * El número de avisos va en cifra y el de zonas en palabra, que es como la
+   * lámina lo escribe: «23 avisos activos en cuatro zonas». Es una regla de
+   * redacción, y por eso está probada en vez de quedar a criterio del que
+   * escriba la próxima tira.
+   */
+  it.each([
+    [2, "dos"],
+    [4, "cuatro"],
+    [9, "nueve"],
+  ])("deletrea %i zonas como «%s»", (zoneCount, word) => {
+    const home = homeWith(MCBO, page(["a"], 30, zoneCount));
+
+    expect(home.strips[0]?.subtitle).toBe(`30 avisos activos en ${word} zonas.`);
+  });
+
+  it("de diez zonas en adelante vuelve a la cifra", () => {
+    // La palabra deja de ayudar a leer y empieza a estorbar: «doce» exige
+    // convertirla de vuelta a un número para compararla con la de al lado.
+    const home = homeWith(MCBO, page(["a"], 30, 12));
+
+    expect(home.strips[0]?.subtitle).toBe("30 avisos activos en 12 zonas.");
+  });
+
+  it("sin zonas no inventa una frase", () => {
+    const home = homeWith(MCBO, page(["a"], 1, 0));
+
+    expect(home.strips[0]?.subtitle).toBeNull();
   });
 });

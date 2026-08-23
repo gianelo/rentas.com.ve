@@ -17,12 +17,13 @@ import { REQUIRED_SIZES } from "../domain/listing-grid";
  * resueltas por separado son cuatro viajes, y ninguna tira puede empezar a
  * dibujarse hasta que llega la última. El precedente del repo es
  * `drizzle-faceted-search.ts`, que resuelve seis facetas y un total en una sola
- * pasada con `COUNT(*) FILTER`; acá el instrumento es el otro miembro de la
- * misma familia, `COUNT(*) OVER (PARTITION BY …)`.
+ * pasada con `COUNT(*) FILTER`; acá el instrumento son sus dos primos: un
+ * `ROW_NUMBER() OVER (PARTITION BY …)` que recorta cada colección a su tira, y
+ * un `GROUP BY` sobre el mismo resultado intermedio que da los dos conteos.
  *
  * **Ésta es UNA consulta, y es la segunda de las tres que sirven el inicio**:
  * el catálogo de ciudades, ésta —las filas de todas las colecciones **y** el
- * total de cada una— y `ListingPhotosPort.coversFor(ids)`, que trae las
+ * total y las zonas de cada una— y `ListingPhotosPort.coversFor(ids)`, que trae las
  * portadas de todas las tarjetas de todas las tiras en una llamada. Ninguna de
  * las tres crece con el catálogo: una quinta ciudad agrega una fila a un
  * `VALUES`, no un viaje de red.
@@ -37,12 +38,13 @@ import { REQUIRED_SIZES } from "../domain/listing-grid";
  * `UNION ALL` de cuatro ramas daría el mismo resultado repitiendo el `WHERE`
  * base cuatro veces, que es donde los predicados se separan con el tiempo.
  *
- * **`total` y `rows` salen del MISMO predicado, y ése es el punto entero.** La
- * ventana cuenta sobre las filas que ya pasaron el `WHERE`, antes de que
- * `row_number()` recorte a cinco. Contar aparte —otra consulta, otro `WHERE`—
- * es cómo "Ver los 23" termina encima de una página de 21: dos predicados son
- * dos respuestas, y la diferencia entre ellas es la mentira que la regla
- * transversal del producto prohíbe.
+ * **`total`, `zonas` y `rows` salen del MISMO predicado, y ése es el punto
+ * entero.** Los dos conteos se toman sobre las filas que ya pasaron el `WHERE`,
+ * antes de que `row_number()` recorte a cinco. Contar aparte —otra consulta,
+ * otro `WHERE`— es cómo "Ver los 23" termina encima de una página de 21: dos
+ * predicados son dos respuestas, y la diferencia entre ellas es la mentira que
+ * la regla transversal del producto prohíbe. `zonas` es el segundo número del
+ * subtítulo («23 avisos activos en **cuatro** zonas») y vale lo mismo para él.
  *
  * El handle es argumento del constructor y no un import, igual que en los demás
  * adaptadores: este mismo código corre contra Neon en producción y contra un
@@ -62,6 +64,7 @@ interface RawRow {
   readonly city_name: string;
   readonly zone_name: string;
   readonly total: number | string;
+  readonly zonas: number | string;
 }
 
 export class DrizzleHomeCollections implements HomeCollectionsPort {
@@ -98,6 +101,15 @@ export class DrizzleHomeCollections implements HomeCollectionsPort {
     // plantilla, y estas dos razones se pierden si se escriben sin nombrar el
     // código al que se refieren.
     //
+    // *Los dos conteos son un `group by` sobre `emparejado`, no dos ventanas.*
+    // `count(*) over (partition by …)` servía para el total, pero
+    // `count(distinct …) over (…)` **no existe**: Postgres rechaza `DISTINCT`
+    // dentro de una función de ventana, y el conteo de zonas del subtítulo lo
+    // necesita. Agrupar sobre `emparejado` —y no repetir el `JOIN` en un CTE
+    // aparte— es lo que mantiene un solo predicado detrás de los tres valores:
+    // dos predicados son dos respuestas, y la diferencia entre ellas es la
+    // mentira que la regla transversal prohíbe.
+    //
     // *Ni ocultos ni vencidos (14.22), y son dos condiciones y no una.*
     // `hidden` es el estado al que llega un aviso reportado. `expired` lo pone
     // un trabajo periódico que todavía no existe: sin mirar `expires_at`, un
@@ -115,7 +127,7 @@ export class DrizzleHomeCollections implements HomeCollectionsPort {
       publicable as (
         select
           l.id, l.title, l.price_usd, l.rooms, l.area_m2, l.publisher_type,
-          l.city_id, l.published_at,
+          l.city_id, l.zone_id, l.published_at,
           c.name as city_name,
           z.name as zone_name
         from "listing" l
@@ -142,10 +154,7 @@ export class DrizzleHomeCollections implements HomeCollectionsPort {
           co.clave,
           co.tope,
           p.id, p.title, p.price_usd, p.rooms, p.area_m2, p.publisher_type,
-          p.city_name, p.zone_name,
-          -- El total de la colección, sobre las mismas filas que las de abajo
-          -- y antes de recortarlas.
-          count(*) over (partition by co.clave) as total,
+          p.city_name, p.zone_name, p.zone_id,
           -- Lo más nuevo primero, con el id de desempate: los avisos de una
           -- misma carga comparten un mismo now(), y sin desempate Postgres devuelve
           -- el que alcanzó primero — un test que pasa por suerte de orden es
@@ -158,12 +167,20 @@ export class DrizzleHomeCollections implements HomeCollectionsPort {
         join publicable p
           on (co.ciudad is null or p.city_id = co.ciudad)
          and (co.techo is null or p.price_usd <= co.techo)
+      ),
+      -- Los dos números que la tira dice. Ver la nota de arriba sobre por qué
+      -- se agrupa sobre emparejado en vez de contar con una ventana.
+      conteo as (
+        select clave, count(*) as total, count(distinct zone_id) as zonas
+        from emparejado
+        group by clave
       )
-      select clave, id, title, price_usd, rooms, area_m2, publisher_type,
-             city_name, zone_name, total
-      from emparejado
-      where puesto <= tope
-      order by clave, puesto
+      select e.clave, e.id, e.title, e.price_usd, e.rooms, e.area_m2, e.publisher_type,
+             e.city_name, e.zone_name, c.total, c.zonas
+      from emparejado e
+      join conteo c on c.clave = e.clave
+      where e.puesto <= e.tope
+      order by e.clave, e.puesto
     `;
 
     // `execute` devuelve la forma cruda del driver, y las dos que este proyecto
@@ -172,15 +189,20 @@ export class DrizzleHomeCollections implements HomeCollectionsPort {
     // conversión se hace una vez, acá, en vez de repartir `any` por el archivo.
     const result = (await this.db.execute(query)) as unknown as { rows: readonly RawRow[] };
 
-    const pages = new Map<string, { rows: HomeCollectionRow[]; total: number }>();
+    const pages = new Map<
+      string,
+      { rows: HomeCollectionRow[]; total: number; zoneCount: number }
+    >();
     for (const row of result.rows) {
-      const page = pages.get(row.clave) ?? { rows: [], total: 0 };
+      const page = pages.get(row.clave) ?? { rows: [], total: 0, zoneCount: 0 };
       // **`Number` y no el valor pelado.** `count(*)` es `bigint`, y los
       // drivers de Postgres lo devuelven como string: sin esto la placa diría
       // "Ver los 23" con un 23 que es texto, y cualquier aritmética sobre él
       // concatenaría en silencio. Es el mismo tropiezo que `countWhere`
-      // documenta en la búsqueda facetada.
+      // documenta en la búsqueda facetada. Vale igual para el conteo de zonas,
+      // que también sale de un `count(…)`.
       page.total = Number(row.total);
+      page.zoneCount = Number(row.zonas);
       page.rows.push({
         id: row.id,
         title: row.title,

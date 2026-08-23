@@ -1,0 +1,53 @@
+/* La barra de búsqueda del inicio. Geometría de la lámina (artboard `inicio`,
+   móvil y 1280), toda a través de tokens (D16). */
+
+.bar {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* La píldora completa: es el control más grande de la pantalla y el primero
+     que un pulgar busca. `--target-min` y no la altura dibujada (50 px), que
+     el conjunto de tokens no nombra — el mínimo táctil ya la cubre y es la
+     medida que el sistema sí define. */
+  min-block-size: var(--target-min);
+  padding-inline: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--rs);
+  background: var(--surface);
+  /* La sombra de la lámina, con el color del sistema. El diseño escribe
+     `rgba(30,32,34,.1)`, que es un literal y D16 lo prohíbe; no hay token de
+     sombra, así que se levanta con la misma línea que dibuja el borde. */
+  box-shadow: 0 2px 6px var(--line);
+  color: var(--soft);
+  text-decoration: none;
+}
+
+.glyph {
+  font-family: var(--meta);
+  font-size: var(--meta-fs);
+  line-height: 1;
+}
+
+.label {
+  /* La lámina la escribe en 14 px, que el conjunto de tokens no tiene.
+     `--control-fs` es el tamaño de los controles del sistema y esto es un
+     control — inventar el literal sería justo lo que D16 prohíbe. */
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  font-weight: 600;
+  line-height: 1.4;
+  /* Un nombre de zona largo no puede empujar la píldora fuera de la pantalla. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Dónde se para la barra —ancho entero debajo de la marca en el teléfono, 460
+   px entre la marca y las acciones en escritorio— es de la pantalla que la
+   usa, y vive en `app/home.module.css`. Acá está sólo cómo se ve. */

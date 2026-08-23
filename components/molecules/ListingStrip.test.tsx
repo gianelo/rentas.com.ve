@@ -29,6 +29,7 @@ function render(overrides: Partial<ListingStripProps> = {}) {
     <ListingStrip
       stripKey="ciudad:dc"
       title="Distrito Capital"
+      subtitle={null}
       cards={[card("a"), card("b"), card("c"), card("d"), card("e")]}
       seeAll={{ href: "/alquiler/distrito-capital", label: "Ver los 23" }}
       {...overrides}
@@ -214,5 +215,46 @@ describe("ListingStrip — cómo se anuncia", () => {
 
   it("no atenúa texto con opacity — el gris del sistema es --soft", () => {
     expect(stripCss).not.toMatch(/opacity\s*:/);
+  });
+});
+
+/**
+ * **El subtítulo de conteo, y de dónde sale su número.**
+ *
+ * «23 avisos activos en cuatro zonas.» llega compuesto desde
+ * `home-collections.ts`. Este componente no lo arma ni decide qué tira lo
+ * lleva: si lo compusiera acá, el número sería el de las tarjetas dibujadas —
+ * cinco en toda tira llena — y la frase diría algo que ya está a la vista.
+ */
+describe("ListingStrip — el subtítulo de conteo", () => {
+  it("dibuja la línea que le dan, debajo del encabezado", () => {
+    const markup = render({ subtitle: "23 avisos activos en cuatro zonas." });
+
+    expect(markup).toContain("23 avisos activos en cuatro zonas.");
+    // Debajo del encabezado y encima del riel: el orden del documento es el
+    // orden en que se lee, también para un lector de pantalla.
+    expect(markup.indexOf("</h2>")).toBeLessThan(markup.indexOf("23 avisos"));
+    expect(markup.indexOf("23 avisos")).toBeLessThan(markup.indexOf("<ol"));
+  });
+
+  it("no deja un renglón vacío cuando la tira no tiene nada que contar", () => {
+    const markup = render({ subtitle: null });
+
+    // Un `<p>` vacío separa el encabezado del riel con un hueco que se lee
+    // como un error de maquetado, no como una tira sin subtítulo.
+    expect(markup).not.toMatch(/<p[^>]*><\/p>/);
+    expect(markup).not.toContain("avisos activos");
+  });
+
+  /**
+   * El número NO se compone acá. La prueba mira el archivo y no el render
+   * porque lo que hay que impedir es que alguien lo escriba, no un valor
+   * concreto: `cards.length` dentro de una plantilla de texto sería la regla
+   * transversal derogada en silencio.
+   */
+  it("no compone ningún conteo por su cuenta", () => {
+    // Se dibuja tal cual llega, sin interpolar nada dentro.
+    expect(stripSource).toContain("{subtitle}");
+    expect(stripSource).not.toMatch(/cards\.length/);
   });
 });
