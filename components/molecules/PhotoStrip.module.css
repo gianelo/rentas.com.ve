@@ -82,6 +82,9 @@
     flex-wrap: wrap;
     overflow-x: visible;
     scroll-snap-type: none;
+    /* 10 y no los 8 del teléfono, como los dibuja la lámina: acá el aire no
+       cuesta ancho de tira — cuesta ancho de columna, y sobra. */
+    gap: 10px;
   }
 
   .item:first-child {
