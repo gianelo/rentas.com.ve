@@ -26,6 +26,18 @@ const VACIO: FacetCounts = {
   },
   byPropertyType: { apartamento: 0, casa: 0, quinta: 0, anexo: 0, habitacion: 0 },
   byPublisherType: { owner: 0, broker: 0 },
+  withoutFilter: {
+    zone: 0,
+    price: 0,
+    rooms: 0,
+    publisherType: 0,
+    hasPowerPlant: 0,
+    hasRegularWater: 0,
+    isFurnished: 0,
+    hasSecurity: 0,
+    hasAppliances: 0,
+  },
+  cityTotal: 0,
 };
 
 const port: FacetedSearchPort = { countFacets: async () => VACIO };

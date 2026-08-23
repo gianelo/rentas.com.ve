@@ -328,7 +328,6 @@ describe("la salida del vacío (F7 · F11)", () => {
     const result = panel({
       counts: { ...COUNTS, total: 0 },
       relief: {
-        filter: "price",
         label: "Quitar el precio y ver 14",
         resultCount: 14,
         href: "/alquiler/distrito-capital",

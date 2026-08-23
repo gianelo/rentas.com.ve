@@ -97,7 +97,6 @@ describe("el conteo en vivo (F7)", () => {
       counts: { ...COUNTS, total: 0 },
       criteria: { minPriceUsd: 900 },
       relief: {
-        filter: "price",
         label: "Quitar el precio y ver 14",
         resultCount: 14,
         href: "/alquiler/distrito-capital",

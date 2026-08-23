@@ -1,5 +1,6 @@
 import type { PropertyType } from "../../../../shared/db/schema";
 import type { RoomStep } from "../../domain/room-steps";
+import type { RelaxableFilter } from "../../domain/search-confirm";
 import type { ListingAttribute, PublisherType, SearchCriteria } from "../../domain/search-criteria";
 
 /**
@@ -50,6 +51,7 @@ import type { ListingAttribute, PublisherType, SearchCriteria } from "../../doma
  * que la etiqueta y el resultado discrepen.
  */
 export type { RoomStep } from "../../domain/room-steps";
+export type { RelaxableFilter } from "../../domain/search-confirm";
 export type { ListingAttribute, PublisherType } from "../../domain/search-criteria";
 
 export interface FacetCounts {
@@ -81,6 +83,39 @@ export interface FacetCounts {
   readonly byAttribute: Readonly<Record<ListingAttribute, number>>;
   readonly byPropertyType: Readonly<Record<PropertyType, number>>;
   readonly byPublisherType: Readonly<Record<PublisherType, number>>;
+  /**
+   * **Cuántos quedarían al soltar ese filtro y ningún otro** — el número que
+   * F10 y F11 ponen adentro del botón: «Quitar el precio y ver 21».
+   *
+   * Viene de esta misma consulta, y ésa es toda la razón por la que existe
+   * como faceta en vez de como pregunta aparte. Nueve relajaciones preguntadas
+   * de a una son nueve viajes de red sobre Neon —y ahora en CADA búsqueda, no
+   * sólo en el vacío, porque el cierre de la lista también las necesita—. Es
+   * la misma columna que la faceta ya calcula, con su propio filtro apagado.
+   *
+   * Un filtro que no está puesto devuelve el total: soltarlo no cambia nada, y
+   * el dominio descarta las salidas que no suman antes de ofrecer ninguna.
+   */
+  readonly withoutFilter: Readonly<Record<RelaxableFilter, number>>;
+  /**
+   * La ciudad entera sin un solo filtro del panel — el número de «Limpiar
+   * todo». Es la última salida cuando ningún cambio de a uno destraba nada, y
+   * sigue siendo esta ciudad: el aislamiento de D5 no tiene excepción para el
+   * vacío.
+   */
+  readonly cityTotal: number;
+  /**
+   * El total con el precio ampliado al siguiente escalón, sólo si se preguntó.
+   * Ausente y no cero cuando nadie lo pidió: un cero significaría "no hay
+   * ninguno", que es una respuesta y no un silencio.
+   */
+  readonly withWidenedPrice?: number;
+}
+
+/** Los dos extremos del precio, para preguntar por un rango que todavía no es criterio. */
+export interface PriceRange {
+  readonly minPriceUsd?: number;
+  readonly maxPriceUsd?: number;
 }
 
 export interface FacetedSearchPort {
@@ -105,5 +140,17 @@ export interface FacetedSearchPort {
    * cased: it comes back as zero, because the count belongs to the city in
    * `criteria` and not to the id it was handed (D5).
    */
-  countFacets(criteria: SearchCriteria, offeredZoneIds: readonly string[]): Promise<FacetCounts>;
+  /**
+   * `widenedPrice` es el único rango que el criterio todavía no tiene y la
+   * pantalla igual necesita contado: el escalón siguiente de precio, para
+   * poder decir «Ampliar a $900 y ver 14» antes de que nadie lo toque. Es
+   * opcional porque no toda pantalla ofrece esa salida, y va acá adentro —en
+   * vez de en una segunda llamada— porque una segunda llamada es un segundo
+   * viaje de red por un solo número.
+   */
+  countFacets(
+    criteria: SearchCriteria,
+    offeredZoneIds: readonly string[],
+    widenedPrice?: PriceRange,
+  ): Promise<FacetCounts>;
 }

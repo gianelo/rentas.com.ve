@@ -7,7 +7,9 @@ import type {
   FacetCounts,
   FacetedSearchPort,
   ListingAttribute,
+  PriceRange,
   PublisherType,
+  RelaxableFilter,
   RoomStep,
 } from "../application/ports/faceted-search.port";
 import { LISTING_ATTRIBUTES, type SearchCriteria } from "../domain/search-criteria";
@@ -46,10 +48,16 @@ import { LISTING_ATTRIBUTES, type SearchCriteria } from "../domain/search-criter
 export type FacetedSearchDatabase = PgDatabase<PgQueryResultHKT, typeof schema>;
 
 /**
- * Las seis dimensiones que tienen faceta propia, o sea las seis que pueden
- * pedir que se ignore su propio filtro.
+ * Las dimensiones que pueden pedir que se ignore su propio filtro.
+ *
+ * **El precio entró a esta lista con F10/F11.** Antes vivía en el `WHERE` de
+ * afuera junto con la ciudad y el estado, porque no era faceta de nadie; ahora
+ * el vacío tiene que poder decir «sin el precio hay 21», y desde el `WHERE`
+ * esas filas ya no existen. Que esté acá no cambia ninguna cuenta anterior:
+ * toda faceta que no sea la del precio lo sigue respetando, porque `others`
+ * sólo apaga el eje que se le nombra.
  */
-type FacetAxis = "zone" | "rooms" | "type" | "publisher" | ListingAttribute;
+type FacetAxis = "zone" | "rooms" | "type" | "publisher" | "price" | ListingAttribute;
 
 /** Cada atributo con su columna, igual que en `DrizzleListingSearch`. */
 const ATTRIBUTE_COLUMNS: Readonly<Record<ListingAttribute, PgColumn>> = {
@@ -82,22 +90,21 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
   async countFacets(
     criteria: SearchCriteria,
     offeredZoneIds: readonly string[],
+    widenedPrice?: PriceRange,
   ): Promise<FacetCounts> {
     // Lo que TODA faceta comparte, y por eso va en el `WHERE` de afuera: la
     // ciudad y el estado son incondicionales — `cityId` es obligatorio en el
-    // criterio y el estado no está en el criterio en absoluto (5.5/5.6) — y
-    // precio y área no son facetas de este puerto, así que ninguna cuenta
-    // tiene motivo para ignorarlos.
+    // criterio y el estado no está en el criterio en absoluto (5.5/5.6) — y el
+    // área no es faceta de este puerto ni filtro que el panel pueda soltar, así
+    // que ninguna cuenta tiene motivo para ignorarla.
     const shared = [eq(listings.cityId, criteria.cityId), eq(listings.status, "active")];
-    if (criteria.minPriceUsd !== undefined) {
-      shared.push(gte(listings.priceUsd, criteria.minPriceUsd));
-    }
-    if (criteria.maxPriceUsd !== undefined) {
-      shared.push(lte(listings.priceUsd, criteria.maxPriceUsd));
-    }
     if (criteria.minAreaM2 !== undefined) {
       shared.push(gte(listings.areaM2, criteria.minAreaM2));
     }
+
+    // El precio se salió del `WHERE` compartido: es soltable, y un filtro que
+    // vive afuera no puede contar cuántos habría sin él.
+    const priceFilter = priceWithin(criteria);
 
     // Los filtros que SÍ tienen faceta propia quedan fuera del `WHERE` y
     // entran columna por columna. Es la única forma de que la faceta de zona
@@ -139,10 +146,21 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       except === "rooms" ? undefined : byRoomsFilter,
       except === "type" ? undefined : byTypeFilter,
       except === "publisher" ? undefined : byPublisherFilter,
+      except === "price" ? undefined : priceFilter,
       ...LISTING_ATTRIBUTES.filter((attribute) => attribute !== except && asked.has(attribute)).map(
         (attribute) => eq(ATTRIBUTE_COLUMNS[attribute], true),
       ),
     ];
+
+    /**
+     * Cuántos quedarían **soltando ese filtro y ningún otro** (F10 y F11).
+     *
+     * Es literalmente `others(eje)` sin la condición de la faceta: la misma
+     * columna que ya se calcula para "cuántos habría si cambiaras a 2
+     * habitaciones", preguntada sin escalón. Nueve números más en la misma
+     * pasada, contra nueve viajes de red si se preguntaran de a uno.
+     */
+    const without = (axis: FacetAxis) => countWhere(...others(axis));
 
     const rows = await this.db
       .select({
@@ -172,6 +190,26 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
         habitacion: countWhere(...others("type"), eq(listings.propertyType, "habitacion")),
         owner: countWhere(...others("publisher"), eq(listings.publisherType, "owner")),
         broker: countWhere(...others("publisher"), eq(listings.publisherType, "broker")),
+        // Las nueve relajaciones, más el techo siguiente y la ciudad pelada.
+        withoutZone: without("zone"),
+        withoutPrice: without("price"),
+        withoutRooms: without("rooms"),
+        withoutPublisher: without("publisher"),
+        withoutPowerPlant: without("hasPowerPlant"),
+        withoutRegularWater: without("hasRegularWater"),
+        withoutFurnished: without("isFurnished"),
+        withoutSecurity: without("hasSecurity"),
+        withoutAppliances: without("hasAppliances"),
+        // El precio ampliado un escalón: el resto de los filtros siguen. Sin
+        // pedido, repite el total y nadie lo lee — la respuesta se omite.
+        widened: countWhere(...others("price"), priceWithin(widenedPrice ?? criteria)),
+        // La ciudad sin un solo filtro del panel: el número de «Limpiar todo».
+        cityTotal: countWhere(),
+        // **Sólo para decidir si esta zona se ofrece**, no para ofrecerla con
+        // un número: una zona entra en `byZone` cuando tiene algún aviso
+        // dentro del precio y el área, que es la fila que este `GROUP BY`
+        // devolvía cuando el precio todavía vivía en el `WHERE` de afuera.
+        withinPrice: countWhere(priceFilter),
       })
       .from(listings)
       .where(and(...shared))
@@ -179,6 +217,17 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
 
     const sums = {
       total: 0,
+      withoutZone: 0,
+      withoutPrice: 0,
+      withoutRooms: 0,
+      withoutPublisher: 0,
+      withoutPowerPlant: 0,
+      withoutRegularWater: 0,
+      withoutFurnished: 0,
+      withoutSecurity: 0,
+      withoutAppliances: 0,
+      widened: 0,
+      cityTotal: 0,
       rooms1: 0,
       rooms2: 0,
       rooms3: 0,
@@ -205,7 +254,10 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
     for (const zoneId of offeredZoneIds) byZone[zoneId] = 0;
 
     for (const row of rows) {
-      byZone[row.zoneId] = row.inZone;
+      // La zona se ofrece si tiene algo dentro del precio — con cero avisos
+      // dentro nunca fue una opción, y ahora que el precio salió del `WHERE`
+      // su fila igual llega. Las ofrecidas ya están puestas en cero arriba.
+      if (row.withinPrice > 0) byZone[row.zoneId] = row.inZone;
       for (const key of scalarKeys) sums[key] += row[key];
     }
 
@@ -237,6 +289,21 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       broker: sums.broker,
     };
 
+    // Otro `Record<…>` que es el chequeo: un filtro soltable nuevo en el
+    // dominio rompe la compilación acá en vez de dejar una salida que promete
+    // un número que nadie contó.
+    const withoutFilter: Record<RelaxableFilter, number> = {
+      zone: sums.withoutZone,
+      price: sums.withoutPrice,
+      rooms: sums.withoutRooms,
+      publisherType: sums.withoutPublisher,
+      hasPowerPlant: sums.withoutPowerPlant,
+      hasRegularWater: sums.withoutRegularWater,
+      isFurnished: sums.withoutFurnished,
+      hasSecurity: sums.withoutSecurity,
+      hasAppliances: sums.withoutAppliances,
+    };
+
     return {
       total: sums.total,
       byZone,
@@ -244,6 +311,17 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       byAttribute,
       byPropertyType,
       byPublisherType,
+      withoutFilter,
+      cityTotal: sums.cityTotal,
+      ...(widenedPrice === undefined ? {} : { withWidenedPrice: sums.widened }),
     };
   }
+}
+
+/** Los dos extremos del precio como una condición, o `undefined` si no hay ninguno. */
+function priceWithin(range: PriceRange): SQL | undefined {
+  return and(
+    range.minPriceUsd === undefined ? undefined : gte(listings.priceUsd, range.minPriceUsd),
+    range.maxPriceUsd === undefined ? undefined : lte(listings.priceUsd, range.maxPriceUsd),
+  );
 }

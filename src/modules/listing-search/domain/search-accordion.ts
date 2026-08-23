@@ -1,5 +1,6 @@
 import { isRoomStep, roomStepLabel } from "./room-steps";
-import type { ListingAttribute, PublisherType } from "./search-criteria";
+import type { RelaxableFilter } from "./search-confirm";
+import type { ListingAttribute, PublisherType, SearchCriteria } from "./search-criteria";
 
 /**
  * **Los cuatro pasos del acordeón, y qué dice cada uno cuando está cerrado.**
@@ -206,6 +207,53 @@ export function summariseSearch(selection: SearchSelection, total: number): stri
   for (const attribute of selection.attributes ?? []) parts.push(ATTRIBUTE_SUMMARY[attribute]);
 
   return parts.join(" · ");
+}
+
+/**
+ * **Cómo se nombra UN filtro suelto, con su valor adentro** — «Hasta $700»,
+ * «2 hab», «Chacao».
+ *
+ * Es el vocabulario de `summariseSearch` partido en pedazos, y a propósito el
+ * MISMO: la pantalla del vacío tiene que decir «"2 hab" es lo que deja la
+ * búsqueda en cero» con las palabras que la barra resumen ya viene mostrando.
+ * Dos tablas de copia para los mismos filtros es cómo empiezan a discrepar, y
+ * una explicación que nombra el filtro distinto de como se ve en pantalla
+ * obliga a adivinar de cuál está hablando.
+ */
+export function describeFilter(selection: SearchSelection, filter: RelaxableFilter): string {
+  if (filter === "zone") return selection.zoneNames.join(", ");
+  if (filter === "price") return priceSummary(selection);
+  if (filter === "rooms") return roomsSummary(selection.minRooms);
+  if (filter === "publisherType") {
+    return selection.publisherType === undefined ? "" : PUBLISHER_SUMMARY[selection.publisherType];
+  }
+  return ATTRIBUTE_SUMMARY[filter];
+}
+
+/**
+ * Los criterios más los nombres, que es lo único que el criterio no trae.
+ *
+ * `SearchCriteria` guarda ids —`cityId`, `zoneIds`— porque es lo que la
+ * consulta necesita; el resumen necesita nombres. La traducción se escribe una
+ * vez acá en vez de en cada pantalla que quiera decir qué se eligió.
+ */
+export function toSearchSelection(
+  cityName: string,
+  zoneNames: readonly string[],
+  criteria: Pick<
+    SearchCriteria,
+    "minPriceUsd" | "maxPriceUsd" | "minRooms" | "publisherType" | "attributes"
+  >,
+): SearchSelection {
+  return {
+    cityName,
+    zoneNames,
+    ...(criteria.minPriceUsd === undefined ? {} : { minPriceUsd: criteria.minPriceUsd }),
+    ...(criteria.maxPriceUsd === undefined ? {} : { maxPriceUsd: criteria.maxPriceUsd }),
+    ...(criteria.minRooms === undefined ? {} : { minRooms: criteria.minRooms }),
+    ...(criteria.publisherType === undefined ? {} : { publisherType: criteria.publisherType }),
+    ...(criteria.attributes === undefined ? {} : { attributes: criteria.attributes }),
+  };
 }
 
 /**

@@ -69,12 +69,24 @@ export interface ReliefCandidate {
   readonly href: string;
 }
 
-export interface SearchRelief {
-  readonly filter: RelaxableFilter;
+/**
+ * Lo mínimo que una salida ofrecida trae: qué dice, cuántos hay del otro lado
+ * y adónde lleva.
+ *
+ * Es un tipo aparte del de abajo para que el botón del acordeón pueda mostrar
+ * **cualquiera** de las salidas de F11 —soltar un filtro, ampliar el precio,
+ * sumar una zona— sin que este archivo tenga que conocerlas: ampliar el precio
+ * no suelta ningún filtro, así que no tiene un `filter` que declarar.
+ */
+export interface ReliefOffer {
   /** «Quitar el precio y ver 14» — el número va adentro, igual que en el botón. */
   readonly label: string;
   readonly resultCount: number;
   readonly href: string;
+}
+
+export interface SearchRelief extends ReliefOffer {
+  readonly filter: RelaxableFilter;
 }
 
 /**
@@ -133,7 +145,7 @@ export function chooseRelief(candidates: readonly ReliefCandidate[]): SearchReli
 export type SearchConfirm =
   | { readonly kind: "results"; readonly label: string; readonly href: string }
   | { readonly kind: "listing"; readonly label: string; readonly href: string }
-  | { readonly kind: "empty"; readonly label: string; readonly relief: SearchRelief | null };
+  | { readonly kind: "empty"; readonly label: string; readonly relief: ReliefOffer | null };
 
 export interface SearchConfirmInput {
   readonly total: number;
@@ -147,7 +159,7 @@ export interface SearchConfirmInput {
    * la rota existe.
    */
   readonly onlyListingHref?: string;
-  readonly relief?: SearchRelief | null;
+  readonly relief?: ReliefOffer | null;
 }
 
 export function resolveSearchConfirm(input: SearchConfirmInput): SearchConfirm {

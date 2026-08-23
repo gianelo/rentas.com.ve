@@ -8,12 +8,13 @@ import {
   type SearchStepView,
   searchHeadline,
   summariseSearch,
+  toSearchSelection,
 } from "./search-accordion";
 import {
   type RelaxableFilter,
+  type ReliefOffer,
   resolveSearchConfirm,
   type SearchConfirm,
-  type SearchRelief,
 } from "./search-confirm";
 import type { ListingAttribute, PublisherType, SearchCriteria } from "./search-criteria";
 import {
@@ -107,7 +108,7 @@ export interface SearchPanelInput {
    * La salida que se ofrece cuando no coincide nada (F7). Llega calculada
    * porque necesita conteos de la base: cuántos habría al soltar cada filtro.
    */
-  readonly relief?: SearchRelief | null;
+  readonly relief?: ReliefOffer | null;
 }
 
 /**
@@ -278,15 +279,11 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
     .map((id) => input.zones.find((zone) => zone.id === id))
     .filter((zone): zone is PanelZone => zone !== undefined);
 
-  const selection: SearchSelection = {
-    cityName: city?.name ?? "",
-    zoneNames: chosenZones.map((zone) => zone.name),
-    ...(criteria.minPriceUsd === undefined ? {} : { minPriceUsd: criteria.minPriceUsd }),
-    ...(criteria.maxPriceUsd === undefined ? {} : { maxPriceUsd: criteria.maxPriceUsd }),
-    ...(criteria.minRooms === undefined ? {} : { minRooms: criteria.minRooms }),
-    ...(criteria.publisherType === undefined ? {} : { publisherType: criteria.publisherType }),
-    ...(criteria.attributes === undefined ? {} : { attributes: criteria.attributes }),
-  };
+  const selection: SearchSelection = toSearchSelection(
+    city?.name ?? "",
+    chosenZones.map((zone) => zone.name),
+    criteria,
+  );
 
   const zoneSearchText = query[SEARCH_QUERY_NAMES.zoneSearch] ?? "";
   const matchedZoneIds = zoneIdsFromSuggestions(input.zoneSuggestions ?? [], zoneSearchText);
@@ -391,8 +388,16 @@ function toCityChoice(
  * ciudad con la lista en la query. La regla se escribe una vez acá para que la
  * dirección canónica sobreviva a la selección múltiple en vez de perderse en
  * cuanto alguien toca la segunda zona.
+ *
+ * Lo exporta para la salida «Agregar Norte y ver 12» de `search-exits.ts`:
+ * sumar una zona desde el vacío es exactamente tocar esa zona en el panel, y
+ * una segunda copia de esta regla daría dos direcciones distintas para la misma
+ * acción — una indexable y la otra no.
  */
-function zoneHref(input: SearchPanelInput, zoneId: string): string {
+export function zoneHref(
+  input: Pick<SearchPanelInput, "cityPath" | "query" | "zones" | "chosenZoneIds">,
+  zoneId: string,
+): string {
   const next = toggleZone(input.chosenZoneIds, zoneId);
 
   if (next.length === 1) {

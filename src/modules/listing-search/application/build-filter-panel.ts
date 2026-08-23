@@ -1,13 +1,16 @@
-import { chooseRelief, type SearchRelief } from "../domain/search-confirm";
+import { resolvePagination } from "../domain/pagination";
 import type { SearchCriteria } from "../domain/search-criteria";
+import {
+  bestExit,
+  resolveSearchOutcome,
+  type SearchOutcome,
+  widenPrice,
+} from "../domain/search-exits";
 import {
   buildSearchPanel,
   type PanelCity,
   type PanelZone,
-  relaxableFilters,
-  reliefHref,
   type SearchPanelModel,
-  withoutFilter,
 } from "../domain/search-panel";
 import type { SearchQuery } from "../domain/search-query";
 import type { FacetCounts, FacetedSearchPort } from "./ports/faceted-search.port";
@@ -32,10 +35,12 @@ import type { FacetCounts, FacetedSearchPort } from "./ports/faceted-search.port
  *    una lista que nadie puede recorrer. El conteo devuelve una entrada por
  *    zona con avisos más las elegidas en cero, que es exactamente el conjunto
  *    que tiene sentido mostrar.
- * 3. **La salida del vacío se calcula sólo cuando hay un vacío** (F7). Cada
- *    candidata es una consulta más, y preguntar "¿cuántos habría sin el
- *    precio?" sobre una búsqueda con 16 resultados es pagar por una respuesta
- *    que nadie va a leer.
+ * 3. **Las salidas no cuestan una consulta** (F10 y F11). Antes eran una por
+ *    filtro puesto y sólo en el vacío, porque cada candidata era un viaje más.
+ *    Ahora los nueve números vienen en la misma consulta que las facetas
+ *    —`FacetCounts.withoutFilter`— y por eso se pueden ofrecer también con
+ *    resultados en pantalla: el cierre de la lista los necesita en TODA
+ *    búsqueda, y una consulta por filtro en cada búsqueda no era pagable.
  */
 export interface FilterPanelRequest {
   /** La ruta que se está viendo. Conserva la zona de la ruta, si hay. */
@@ -61,6 +66,12 @@ export interface FilterPanelResult {
    * son dos viajes a Neon por el mismo dato.
    */
   readonly counts: FacetCounts;
+  /**
+   * Qué le pasa a la lista: el vacío con su causa y sus salidas, o el cierre
+   * con el cambio que más suma (F10 y F11). Lo decide el dominio; la pantalla
+   * lo dibuja.
+   */
+  readonly outcome: SearchOutcome;
 }
 
 export async function buildFilterPanel(
@@ -70,7 +81,9 @@ export async function buildFilterPanel(
   const { criteria, chosenZoneIds } = request;
 
   const [counts, ...cityCounts] = await Promise.all([
-    facets.countFacets(criteria, chosenZoneIds),
+    // El escalón siguiente de precio viaja con la pregunta: es un número más
+    // en la misma consulta, y la alternativa es un viaje entero para él solo.
+    facets.countFacets(criteria, chosenZoneIds, widenPrice(criteria) ?? undefined),
     ...request.cities.map(async (city) => {
       if (city.id === criteria.cityId) return null;
       // **Sin las zonas**: pertenecen a la ciudad que se está mirando, y
@@ -90,8 +103,23 @@ export async function buildFilterPanel(
   // la ciudad del criterio, pero el nombre para dibujarlo sale de acá.
   const zones = request.zones.filter((zone) => zone.id in counts.byZone);
 
+  // La misma paginación que la pantalla arma para sus enlaces, porque la
+  // pregunta «¿están todos?» es «¿hay página siguiente?» y no otra cosa.
+  const outcome = resolveSearchOutcome({
+    basePath: request.basePath,
+    cityPath: request.cityPath,
+    query: request.query,
+    cityName: cities.find((city) => city.id === criteria.cityId)?.name ?? "",
+    criteria,
+    chosenZoneIds,
+    zones,
+    counts,
+    pagination: resolvePagination(criteria.page, counts.total),
+  });
+
   return {
     counts,
+    outcome,
     panel: buildSearchPanel({
       basePath: request.basePath,
       cityPath: request.cityPath,
@@ -102,39 +130,13 @@ export async function buildFilterPanel(
       chosenZoneIds,
       counts,
       criteria,
-      relief: await findRelief(facets, request, counts.total),
+      // El botón del acordeón ofrece **la misma** salida que encabeza la lista
+      // vacía: dos pantallas proponiendo cambios distintos para el mismo cero
+      // son dos consejos, y uno de los dos sobra.
+      relief: outcome.kind === "empty" ? bestExit(outcome.exits) : null,
       ...(request.onlyListingHref === undefined
         ? {}
         : { onlyListingHref: request.onlyListingHref }),
     }),
   };
-}
-
-/**
- * Qué filtro soltar cuando no coincide nada, con su número real.
- *
- * Una consulta por filtro puesto, y sólo en el vacío. Sin filtros puestos no
- * hay nada que soltar: la ciudad no se afloja —no es un filtro, es el alcance—
- * así que la respuesta honesta es que no hay salida por acá, y la pantalla lo
- * dice en vez de inventar una.
- */
-async function findRelief(
-  facets: FacetedSearchPort,
-  request: FilterPanelRequest,
-  total: number,
-): Promise<SearchRelief | null> {
-  if (total > 0) return null;
-
-  const filters = relaxableFilters(request.criteria, request.chosenZoneIds);
-  if (filters.length === 0) return null;
-
-  const candidates = await Promise.all(
-    filters.map(async (filter) => ({
-      filter,
-      resultCount: (await facets.countFacets(withoutFilter(request.criteria, filter), [])).total,
-      href: reliefHref(request, filter),
-    })),
-  );
-
-  return chooseRelief(candidates);
 }
