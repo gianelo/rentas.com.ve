@@ -107,6 +107,15 @@ export const FILTER_KEYS = [
   // 1, y no se pierde nada indexándola: va con `follow`, así que Google llega
   // igual a cada ficha — y cada ficha está en el sitemap por su cuenta.
   "pag",
+  // **Los dos del acordeón, que no filtran nada** (`SEARCH_QUERY_NAMES` de
+  // listing-search). `filtros` dice qué paso está abierto y `busca` es el texto
+  // del buscador de zonas: sin JavaScript el estado del panel tiene que viajar
+  // en la dirección, porque el navegador no puede recordarlo al volver del
+  // servidor. Devuelven exactamente los mismos avisos que sin ellos, y
+  // justamente por eso entran acá: son otra dirección para la misma página, y
+  // dos direcciones para una página es contenido duplicado.
+  "filtros",
+  "busca",
 ] as const;
 
 /**

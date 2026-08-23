@@ -161,14 +161,24 @@ describe("buildSearchCriteria — price and characteristics", () => {
     expect(criteria).toEqual({ cityId: MARACAIBO });
   });
 
-  it("keeps an inverted price range instead of silently widening it", () => {
-    // Unlike the stale zone, an inverted range is what the visitor typed and
-    // can see in the two inputs. "Nothing costs between 900 and 200" is a
-    // true answer; quietly swapping the bounds would answer a question
-    // nobody asked.
+  /**
+   * **Este test afirmaba lo contrario, y lo contrario era la decisión vieja.**
+   *
+   * Decía «keeps an inverted price range instead of silently widening it», con
+   * el argumento de que "nada cuesta entre 900 y 200" es una respuesta
+   * verdadera. El documento maestro decide al revés y es explícito — F5: «si
+   * el mínimo supera al máximo, **se intercambian en vez de dar error**» — y
+   * donde el maestro difiere, manda el maestro.
+   *
+   * El argumento nuevo es el que el maestro sostiene: una respuesta verdadera
+   * que nadie puede usar sigue siendo una pantalla vacía, y la regla
+   * transversal 5 dice que ninguna pantalla termina sin salida. El caso está
+   * cubierto entero en «buildSearchCriteria — precio al revés (F5)».
+   */
+  it("intercambia un rango invertido en vez de devolver vacío (F5)", () => {
     expect(
       buildSearchCriteria({ city: MARACAIBO, minPrice: "900", maxPrice: "200" }, ZONES),
-    ).toEqual({ cityId: MARACAIBO, minPriceUsd: 900, maxPriceUsd: 200 });
+    ).toEqual({ cityId: MARACAIBO, minPriceUsd: 200, maxPriceUsd: 900 });
   });
 });
 
@@ -192,6 +202,64 @@ describe("buildSearchCriteria — tipo de publicador (task 14.7, F6)", () => {
         cityId: MARACAIBO,
       });
     }
+  });
+});
+
+/**
+ * F5: «Si el mínimo supera al máximo, se intercambian en vez de dar error.»
+ *
+ * Vive acá y no en la pantalla del filtro a propósito: es la MISMA regla para
+ * el formulario del acordeón, para la barra lateral de escritorio y para una
+ * dirección pegada de un chat con los dos números al revés. Escrita en el
+ * componente, la tercera de esas tres entradas se la saltaría.
+ */
+describe("buildSearchCriteria — precio al revés (F5)", () => {
+  it("intercambia los extremos en vez de dar error", () => {
+    const criteria = buildSearchCriteria(
+      { city: MARACAIBO, minPrice: "900", maxPrice: "300" },
+      ZONES,
+    );
+
+    expect(criteria?.minPriceUsd).toBe(300);
+    expect(criteria?.maxPriceUsd).toBe(900);
+  });
+
+  it("nunca devuelve `null` por unos números al revés", () => {
+    // Un rango imposible es un error de tipeo, no una búsqueda inválida:
+    // `min > max` en SQL da cero resultados y una pantalla vacía sin causa.
+    expect(
+      buildSearchCriteria({ city: MARACAIBO, minPrice: "900", maxPrice: "300" }, ZONES),
+    ).not.toBeNull();
+  });
+
+  it("los deja como están cuando ya están en orden", () => {
+    const criteria = buildSearchCriteria(
+      { city: MARACAIBO, minPrice: "300", maxPrice: "900" },
+      ZONES,
+    );
+
+    expect(criteria?.minPriceUsd).toBe(300);
+    expect(criteria?.maxPriceUsd).toBe(900);
+  });
+
+  it("iguales no se tocan: es un precio exacto, no un error", () => {
+    const criteria = buildSearchCriteria(
+      { city: MARACAIBO, minPrice: "400", maxPrice: "400" },
+      ZONES,
+    );
+
+    expect(criteria?.minPriceUsd).toBe(400);
+    expect(criteria?.maxPriceUsd).toBe(400);
+  });
+
+  it("con un solo extremo no hay nada que intercambiar", () => {
+    const soloMin = buildSearchCriteria({ city: MARACAIBO, minPrice: "900" }, ZONES);
+    const soloMax = buildSearchCriteria({ city: MARACAIBO, maxPrice: "300" }, ZONES);
+
+    expect(soloMin?.minPriceUsd).toBe(900);
+    expect(soloMin?.maxPriceUsd).toBeUndefined();
+    expect(soloMax?.maxPriceUsd).toBe(300);
+    expect(soloMax?.minPriceUsd).toBeUndefined();
   });
 });
 

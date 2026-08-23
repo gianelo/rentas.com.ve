@@ -246,11 +246,13 @@ export function buildSearchCriteria(
   const cityId = raw.city?.trim();
   if (!cityId) return null;
 
+  const [minPriceUsd, maxPriceUsd] = orderPrices(readCount(raw.minPrice), readCount(raw.maxPrice));
+
   return {
     cityId,
     ...maybe("zoneIds", readZoneIds(raw.zone, cityId, zones)),
-    ...maybe("minPriceUsd", readCount(raw.minPrice)),
-    ...maybe("maxPriceUsd", readCount(raw.maxPrice)),
+    ...maybe("minPriceUsd", minPriceUsd),
+    ...maybe("maxPriceUsd", maxPriceUsd),
     ...maybe("minRooms", readCount(raw.minRooms)),
     ...maybe("minAreaM2", readCount(raw.minAreaM2)),
     ...maybe("propertyType", readChoice(raw.propertyType, PROPERTY_TYPES)),
@@ -258,6 +260,30 @@ export function buildSearchCriteria(
     ...maybe("attributes", readAttributes(raw)),
     ...maybe("page", readPage(raw.page)),
   };
+}
+
+/**
+ * **Los dos extremos del precio, en orden — y al revés se intercambian, no se
+ * rechazan** (F5, textual: "si el mínimo supera al máximo, se intercambian en
+ * vez de dar error").
+ *
+ * Un `min` mayor que el `max` no es una búsqueda inválida, es un tipeo: en SQL
+ * da cero filas y produce una pantalla vacía sin ninguna causa visible. Se
+ * responde a lo que la persona quiso decir, que es el rango entre los dos
+ * números que escribió.
+ *
+ * Está acá y no en el formulario del filtro porque las entradas son tres — el
+ * acordeón del teléfono, la barra lateral de escritorio y una dirección pegada
+ * de un chat — y una regla escrita en un componente sólo cubre la primera.
+ */
+function orderPrices(
+  min: number | undefined,
+  max: number | undefined,
+): readonly [number | undefined, number | undefined] {
+  // Con un solo extremo no hay nada que comparar, y con dos iguales tampoco:
+  // eso es un precio exacto, no un error.
+  if (min === undefined || max === undefined || min <= max) return [min, max];
+  return [max, min];
 }
 
 /** Keeps absent filters absent instead of present-and-undefined. */

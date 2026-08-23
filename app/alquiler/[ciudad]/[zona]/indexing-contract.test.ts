@@ -1,53 +1,65 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { FILTER_KEYS } from "@/modules/listing-discovery/domain/zone-route";
+import { SEARCH_QUERY_NAMES } from "@/modules/listing-search/domain/search-query";
 
 /**
  * **La regla de indexación y los nombres que la página lee, atados.**
  *
  * Existe por la misma razón que `signin-return.test.ts`, y atrapa un bug de la
  * misma forma: no falla el render de ninguno de los dos lados, falla que **usen
- * la misma lista**. La página traduce la query a criterios con `QUERY_NAMES`;
- * `isFilteredZoneRoute` decide con `FILTER_KEYS` si esa dirección se indexa.
+ * la misma lista**. `SEARCH_QUERY_NAMES` dice cómo se llama cada campo en la
+ * dirección; `isFilteredZoneRoute` decide con `FILTER_KEYS` si esa dirección se
+ * indexa.
  *
  * Ya pasó una vez: llegaron el tipo, el publicador, los cinco atributos y la
  * paginación, y ninguno entró en `FILTER_KEYS`. Cada combinación se publicaba
  * como una dirección indexable propia — y las combinaciones son combinatorias.
  * Nada fallaba; la página se dibujaba perfecta.
  *
- * Se comprueba leyendo el archivo y no renderizando, a propósito: lo que hay
- * que verificar es una relación entre dos archivos, no el comportamiento de
- * uno.
+ * **Cambió de forma con el acordeón, y a mejor.** La tabla de nombres vivía
+ * dentro de `page.tsx` y este test la sacaba con una expresión regular, así que
+ * comprobaba la relación entre un archivo de dominio y un archivo de pantalla
+ * leyendo texto. Ahora la tabla ES del dominio, y las dos listas se comparan
+ * como listas. Lo que queda leyéndose como texto es la otra mitad del contrato:
+ * que la página **no vuelva a escribir sus propios nombres** — porque una
+ * segunda tabla que casualmente coincide es exactamente el bug que este archivo
+ * existe para atrapar.
  */
 const PAGE = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 
-/** El bloque `QUERY_NAMES`, tal como la página lo escribe. */
-function queryNames(): string[] {
-  const block = /const QUERY_NAMES[^{]*\{([^}]*)\}/s.exec(PAGE)?.[1] ?? "";
-  return [...block.matchAll(/:\s*"([^"]+)"/g)].map((match) => match[1] as string);
-}
-
 describe("el contrato de indexación de la ruta de zona", () => {
-  it("la página declara sus nombres de query", () => {
+  it("la tabla de nombres declara algo", () => {
     // Si esta guarda falla, el resto de la suite estaría midiendo el vacío y
     // pasaría por eso — que es la peor forma de verde.
-    expect(queryNames().length).toBeGreaterThan(5);
+    expect(Object.keys(SEARCH_QUERY_NAMES).length).toBeGreaterThan(5);
   });
 
-  it("todo filtro que la página lee marca la ruta como refinada", () => {
-    const missing = queryNames()
-      // La ciudad NO es un filtro, es el contexto — y acá además la afirma la
-      // ruta, así que nunca llega por la query.
-      .filter((name) => name !== "ciudad")
-      .filter((name) => !(FILTER_KEYS as readonly string[]).includes(name));
+  it("todo parámetro de búsqueda marca la ruta como refinada", () => {
+    const missing = Object.values(SEARCH_QUERY_NAMES).filter(
+      (name) => !(FILTER_KEYS as readonly string[]).includes(name),
+    );
 
     expect(missing).toEqual([]);
   });
 
   it("la paginación también, porque la página 2 es casi la misma página", () => {
-    const pageParam = /const PAGE_PARAM = "([^"]+)"/.exec(PAGE)?.[1];
+    expect(FILTER_KEYS as readonly string[]).toContain(SEARCH_QUERY_NAMES.page);
+  });
 
-    expect(pageParam).toBeDefined();
-    expect(FILTER_KEYS as readonly string[]).toContain(pageParam as string);
+  it("el estado del acordeón también, aunque no filtre ningún aviso", () => {
+    expect(FILTER_KEYS as readonly string[]).toContain(SEARCH_QUERY_NAMES.step);
+    expect(FILTER_KEYS as readonly string[]).toContain(SEARCH_QUERY_NAMES.zoneSearch);
+  });
+
+  it("la ciudad NO está en la tabla: es el contexto, y la afirma la ruta", () => {
+    expect(Object.values(SEARCH_QUERY_NAMES)).not.toContain("ciudad");
+  });
+
+  it("la página usa la tabla del dominio en vez de escribir la suya", () => {
+    expect(PAGE).toContain("SEARCH_QUERY_NAMES");
+    // Una segunda tabla escrita a mano en la pantalla es el bug original con
+    // otra cara: coincide hoy y deja de coincidir en el próximo parámetro.
+    expect(PAGE).not.toMatch(/const QUERY_NAMES/);
   });
 });
