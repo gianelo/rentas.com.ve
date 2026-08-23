@@ -78,6 +78,13 @@
       "when": 1787430621545,
       "tag": "0010_absent_doctor_spectrum",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1787454727657,
+      "tag": "0011_rare_crusher_hogan",
+      "breakpoints": true
     }
   ]
 }

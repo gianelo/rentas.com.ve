@@ -398,6 +398,23 @@ export const listings = pgTable(
     // 30 días"). Stored rather than derived so the reminder job (Phase 7)
     // can index it and a renewal can move it.
     expiresAt: timestamp("expires_at", { mode: "date", withTimezone: true }).notNull(),
+    /**
+     * Cuándo se renovó por última vez, o `NULL` mientras nadie lo haya hecho
+     * (tasks.md 7.2).
+     *
+     * **Nulable a propósito, y no es la excepción a «tres pasos» de la 0008.**
+     * Aquel patrón —nulable, rellenar, exigir— existe para columnas que TIENEN
+     * que terminar en NOT NULL sobre filas vivas. Ésta no: «nunca se renovó» es
+     * un hecho verdadero de todo aviso publicado hasta hoy, y rellenarla con
+     * `published_at` inventaría una renovación que no ocurrió. `expiryFor` ya
+     * toma el más tardío entre publicación y renovación, así que `NULL` se lee
+     * exactamente como corresponde sin ninguna rama extra.
+     *
+     * `expires_at` no se deriva de acá: se guarda, porque la renovación la
+     * mueve con un `UPDATE` condicionado que es lo que quema el token del
+     * enlace (ver `renewal-token.ts`).
+     */
+    lastRenewedAt: timestamp("last_renewed_at", { mode: "date", withTimezone: true }),
   },
   (listing) => [
     foreignKey({
@@ -409,6 +426,11 @@ export const listings = pgTable(
     // search port (tasks.md 5.1/5.2), so this is the access path every
     // query takes.
     index("listing_city_status_idx").on(listing.cityId, listing.status),
+    // Los dos trabajos del ciclo de vida barren por fecha y NO por ciudad —
+    // son los únicos lectores del catálogo que no arrancan con `city_id`, así
+    // que `listing_city_status_idx` no les sirve de nada. Sin este índice cada
+    // corrida es un recorrido completo de la tabla.
+    index("listing_expires_at_idx").on(listing.expiresAt),
   ],
 );
 
@@ -596,4 +618,94 @@ export const contactRevealEvents = pgTable(
     index("contact_reveal_city_idx").on(event.cityId, event.revealedAt),
     index("contact_reveal_listing_idx").on(event.listingId, event.revealedAt),
   ],
+);
+
+/**
+ * Un correo del ciclo de vida que YA SALIÓ, para un aviso y un ciclo
+ * (tasks.md 7.1).
+ *
+ * **La garantía de «no lo mandes dos veces» es esta restricción, no un `if`
+ * en el trabajo.** La diferencia se ve cuando dos corridas se superponen: un
+ * cron atrasado que arranca junto al siguiente, un reintento de Vercel sobre
+ * una función que todavía corría. Un `if` sobre una lectura previa deja una
+ * ventana entre leer y escribir en la que las dos corridas leen «todavía no» y
+ * las dos mandan. Postgres no tiene esa ventana: el segundo `INSERT` choca
+ * contra el índice único y el trabajo lo lee como «de éste ya se encargó
+ * alguien» en lugar de mandar.
+ *
+ * **La clave lleva `kind`, y ahí se corre de la letra de 7.1.** La tarea
+ * escribía `UNIQUE (listing_id, expires_at)`, de cuando el plan tenía UN
+ * correo. 19.5 agregó el segundo — el de la purga — y con dos columnas el
+ * aviso de purga chocaría contra la fila del aviso de vencimiento del mismo
+ * ciclo y NO SALDRÍA. Es justamente el correo cuya ausencia no se deshace:
+ * quien ignoró el primero perdería sus fotos sin segunda advertencia. La
+ * garantía no se debilita — sigue siendo la restricción, no un `if` — pero su
+ * unidad pasa a ser «este aviso, este ciclo, este correo», que es lo que de
+ * verdad tiene que salir una sola vez.
+ *
+ * **`expires_at` es parte de la clave, y por eso renovar rehabilita los
+ * avisos.** Al renovar, `listing.expires_at` se mueve 30 días: el ciclo nuevo
+ * tiene otra clave y se gana sus dos correos. Sin esa columna, un aviso
+ * avisado una vez quedaría mudo para siempre.
+ */
+export const listingReminders = pgTable(
+  "listing_reminder",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    // `cascade` y no `restrict`: el registro de que se mandó un correo no es
+    // evidencia de nada, a diferencia de `contact_reveal_event`, que es la
+    // métrica del producto y por eso bloquea cualquier borrado.
+    listingId: text("listing_id")
+      .notNull()
+      .references(() => listings.id, { onDelete: "cascade" }),
+    /** `expiry` (antes de vencer) | `purge` (antes de borrar las fotos). */
+    kind: text("kind").$type<"expiry" | "purge">().notNull(),
+    /** El `expires_at` del aviso al enviarse: es lo que identifica el ciclo. */
+    expiresAt: timestamp("expires_at", { mode: "date", withTimezone: true }).notNull(),
+    sentAt: timestamp("sent_at", { mode: "date", withTimezone: true }).notNull(),
+  },
+  (reminder) => [
+    unique("listing_reminder_cycle_unique").on(
+      reminder.listingId,
+      reminder.kind,
+      reminder.expiresAt,
+    ),
+  ],
+);
+
+/**
+ * Una corrida de un trabajo, con sus conteos y sus fallas (tasks.md 7.7).
+ *
+ * **Existe porque un trabajo que corre solo y no deja rastro es
+ * indistinguible de uno que no corrió**, y este proyecto ya pagó esa lección
+ * entera: cuatro migraciones sin aplicar durante cuatro días, encontradas por
+ * el fundador intentando entrar a su propio producto. El error se escribía;
+ * nadie leía. Una fila por corrida se consulta.
+ *
+ * `failure_detail` es texto y no una tabla de fallas: lo que hace falta es
+ * poder mirar por qué se cayeron tres de doscientos, no consultarlo por
+ * columna. Una tabla más sería estructura pagada por adelantado.
+ */
+export const jobRuns = pgTable(
+  "job_run",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    /** `expiry-reminders` | `photo-purge`. */
+    job: text("job").notNull(),
+    startedAt: timestamp("started_at", { mode: "date", withTimezone: true }).notNull(),
+    finishedAt: timestamp("finished_at", { mode: "date", withTimezone: true }).notNull(),
+    /** Cuántos candidatos trajo la consulta. */
+    selected: integer("selected").notNull(),
+    /** Cuántos se procesaron de punta a punta. */
+    succeeded: integer("succeeded").notNull(),
+    /** Cuántos ya había hecho una corrida anterior — la restricción única. */
+    skipped: integer("skipped").notNull().default(0),
+    failed: integer("failed").notNull(),
+    failureDetail: text("failure_detail"),
+  },
+  (run) => [index("job_run_job_started_idx").on(run.job, run.startedAt)],
 );
