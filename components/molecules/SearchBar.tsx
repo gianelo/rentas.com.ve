@@ -1,3 +1,4 @@
+import { AppLink } from "../atoms/AppLink";
 import styles from "./SearchBar.module.css";
 
 export interface SearchBarProps {
@@ -25,7 +26,7 @@ export interface SearchBarProps {
  * cosa de la pantalla, haya oferta o no.
  *
  * **Un enlace y no un formulario, que es como la lámina la dibuja.** En los
- * tres estados del artboard «los tres estados de la barra» es un `<a>`: no se
+ * tres estados del artboard «los tres estados de la barra» es un `<AppLink>`: no se
  * escribe dentro, se toca y se abre el acordeón de cuatro pasos. Ese acordeón
  * es otra pantalla y no vive en este archivo; acá sólo está la puerta.
  *
@@ -54,8 +55,8 @@ export function SearchBar({ label, href }: SearchBarProps) {
   }
 
   return (
-    <a className={styles.bar} href={href} data-testid="search-bar">
+    <AppLink className={styles.bar} href={href} data-testid="search-bar">
       {content}
-    </a>
+    </AppLink>
   );
 }

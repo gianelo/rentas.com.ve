@@ -1,3 +1,4 @@
+import { AppLink } from "../atoms/AppLink";
 import styles from "./SearchSummaryBar.module.css";
 
 /**
@@ -41,22 +42,22 @@ export function SearchSummaryBar({
 }: SearchSummaryBarProps) {
   return (
     <div className={styles.bar} data-testid="search-summary-bar">
-      <a className={styles.back} href={backHref} aria-label="Volver">
+      <AppLink className={styles.back} href={backHref} aria-label="Volver">
         ←
-      </a>
+      </AppLink>
 
       <div className={styles.text}>
         <p className={styles.headline}>{headline}</p>
         <p className={styles.summary}>{summary}</p>
       </div>
 
-      <a className={styles.gear} href={openHref} aria-label="Abrir los filtros">
+      <AppLink className={styles.gear} href={openHref} aria-label="Abrir los filtros">
         <span aria-hidden="true">⚙</span>
         {/* El número sólo aparece cuando hay filtros puestos: un «0» pegado al
             engranaje se lee como un contador roto, y la lámina lo dibuja vacío
             en los dos primeros estados de la barra. */}
         {activeFilters > 0 ? <span className={styles.badge}>{activeFilters}</span> : null}
-      </a>
+      </AppLink>
     </div>
   );
 }

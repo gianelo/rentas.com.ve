@@ -1,4 +1,5 @@
 import { zonesForCity } from "../../src/modules/listing-catalogue/domain/catalogue";
+import { AppLink } from "../atoms/AppLink";
 import { ActionButton } from "../atoms/buttons";
 import { Label } from "../atoms/Label";
 import styles from "./CityZoneSelect.module.css";
@@ -39,7 +40,7 @@ export interface CityZoneSelectProps {
  * KNOWN GAP, and it belongs to whoever reads these query parameters, not
  * here: a GET form submits whatever the controls currently hold. Pick a new
  * city without touching the zone and the browser sends the previous city's
- * zone — `?city=<maracaibo>&zone=<a caracas zone>` — because the page has
+ * zone — `?city=<maracaibo>&zone=<AppLink caracas zone>` — because the page has
  * not re-rendered yet. Nothing is written, so D5's database constraint is
  * not involved and cannot help. **The server MUST ignore a zone that does
  * not belong to the submitted city** rather than returning empty results or,
