@@ -4,11 +4,8 @@ import { cache } from "react";
 import { Container } from "@/../components/layout/Container";
 import { SidebarLayout } from "@/../components/layout/SidebarLayout";
 import { ListingCard, ListingGrid } from "@/../components/molecules/ListingCard";
-import {
-  type SearchFilterControl,
-  type SearchFilterField,
-  SearchFilters,
-} from "@/../components/molecules/SearchFilters";
+import { SearchPanel } from "@/../components/organisms/SearchPanel";
+import { SearchSummaryBar } from "@/../components/organisms/SearchSummaryBar";
 import { DrizzleCatalogue } from "@/modules/listing-catalogue/infrastructure/drizzle-catalogue";
 import { buildListingGrid } from "@/modules/listing-discovery/domain/listing-grid";
 import { slugify } from "@/modules/listing-discovery/domain/listing-url";
@@ -18,8 +15,14 @@ import {
 } from "@/modules/listing-discovery/domain/zone-route";
 import { DrizzleListingPhotos } from "@/modules/listing-discovery/infrastructure/drizzle-listing-photos";
 import { readPhotoPublicBaseUrl } from "@/modules/listing-discovery/infrastructure/photo-public-base-url";
+import { buildFilterPanel } from "@/modules/listing-search/application/build-filter-panel";
 import { resolvePagination } from "@/modules/listing-search/domain/pagination";
 import { buildSearchCriteria } from "@/modules/listing-search/domain/search-criteria";
+import {
+  buildSearchHref,
+  readZoneList,
+  SEARCH_QUERY_NAMES,
+} from "@/modules/listing-search/domain/search-query";
 import { DrizzleFacetedSearch } from "@/modules/listing-search/infrastructure/drizzle-faceted-search";
 import { DrizzleListingSearch } from "@/modules/listing-search/infrastructure/drizzle-listing-search";
 import { db } from "@/shared/db/client";
@@ -42,48 +45,6 @@ const loadCatalogue = cache(async () => {
 });
 
 /**
- * **Los nombres cortos son los del fundador (F12)**, y el renombre a los
- * largos del dominio pasa acá, en el borde de entrega. Escritos como una tabla
- * y no repartidos por el archivo: son el contrato de la dirección, y una
- * dirección compartida por WhatsApp hace meses tiene que seguir significando
- * lo mismo.
- *
- * Los cinco de los servicios no estaban en la lista del fundador; se eligieron
- * en el mismo registro corto y en español, que es el criterio que la lista
- * establece.
- */
-const QUERY_NAMES: Readonly<Record<SearchFilterField, string>> = {
-  city: "ciudad",
-  zone: "zona",
-  minPrice: "min",
-  maxPrice: "max",
-  minRooms: "hab",
-  propertyType: "tipo",
-  publisherType: "pub",
-  hasPowerPlant: "planta",
-  hasRegularWater: "agua",
-  isFurnished: "amoblado",
-  hasSecurity: "vigilancia",
-  hasAppliances: "electro",
-};
-
-/**
- * La página va aparte porque no es un campo del formulario: enviarlo volvería
- * a la página 3 después de cambiar un filtro, cuando lo correcto es volver a
- * la primera de la búsqueda nueva.
- */
-const PAGE_PARAM = "pag";
-
-/** Los grupos que esta pantalla puede leer de vuelta. El lugar lo trae la ruta. */
-const FILTER_CONTROLS: readonly SearchFilterControl[] = [
-  "price",
-  "rooms",
-  "propertyType",
-  "publisherType",
-  "attributes",
-];
-
-/**
  * Los resultados de una zona — **y no una pantalla aparte**.
  *
  * La 14.24 borró `/buscar` después de mirar cómo escribe Airbnb sus URLs: el
@@ -98,6 +59,15 @@ const FILTER_CONTROLS: readonly SearchFilterControl[] = [
  * había nada del otro lado. Los dos llegan con los segmentos ya canónicos,
  * porque la ficha se redirige a la ruta que `buildListingPath` arma y esta
  * página resuelve contra la misma `slugify`.
+ *
+ * **Esta página no decide nada de la búsqueda.** Traduce la petición en una
+ * llamada a `buildFilterPanel` y dibuja lo que vuelve: la tabla de nombres de
+ * la dirección es `SEARCH_QUERY_NAMES`, a dónde lleva cada opción del acordeón
+ * lo decide `listing-search/domain/search-panel.ts`, y qué páginas hay lo
+ * decide `pagination.ts`. Es la regla permanente del fundador, y encima tiene
+ * una razón mecánica: el suelo de cobertura del 90 % llega a `domain/` y no
+ * llega a `app/`, así que una regla escrita acá es una regla que ninguna
+ * corrida de tests puede poner en rojo.
  *
  * **Sin sesión y sin JavaScript de cliente.** Es el camino de lectura del D13:
  * un rastreador ve exactamente lo mismo que un visitante, y la dirección se
@@ -116,67 +86,64 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
   // parte publica contenido duplicado bajo una dirección inventada.
   if (!place) notFound();
 
-  // Las zonas extra de F4, en la forma legible que el fundador escribió:
-  // `?zona=chacao,altamira`. Acá sólo se traducen los nombres de la dirección
-  // a ids, igual que `resolveZoneRoute` hace con los dos segmentos de la ruta;
-  // **cuál sobrevive lo decide `buildSearchCriteria`**, que ya deja caer la
-  // que no pertenece a esta ciudad sin llevarse la búsqueda entera.
+  // La ruta de la ciudad sola es adónde vuelve «Limpiar todo» (F8) y adónde
+  // caen las búsquedas de dos zonas o más, que no tienen ruta propia.
+  const cityPath = `/alquiler/${ciudad}`;
+  const basePath = `${cityPath}/${zona}`;
+
+  // Las zonas extra de F4. Acá sólo se traducen los ids de la dirección a
+  // filas del catálogo, igual que `resolveZoneRoute` hace con los dos
+  // segmentos de la ruta; **cuál sobrevive lo decide `buildSearchCriteria`**,
+  // que ya deja caer la que no pertenece a esta ciudad sin llevarse la
+  // búsqueda entera.
+  const askedZoneIds = readZoneList(query[SEARCH_QUERY_NAMES.zone]);
   const extraZones = zones.filter(
     (candidate) =>
       candidate.cityId === place.city.id &&
       candidate.id !== place.zone.id &&
-      readList(query[QUERY_NAMES.zone]).includes(slugify(candidate.name)),
+      askedZoneIds.includes(candidate.id),
   );
 
+  // La zona de la ruta siempre entra, y las extra se suman con O. La ruta
+  // afirma un lugar; la query sólo puede ensanchar la búsqueda dentro de la
+  // misma ciudad.
+  const chosenZoneIds = [place.zone.id, ...extraZones.map((extra) => extra.id)];
+
+  // `null` significaría "nadie eligió ciudad", y acá la ciudad la afirma la
+  // ruta: es inalcanzable. La caída es la búsqueda de la ciudad entera y no
+  // una lista vacía, porque si alguna vez dejara de ser inalcanzable, la
+  // respuesta honesta es "todo lo que hay acá" y no una pantalla en blanco.
   const criteria = buildSearchCriteria(
     {
       city: place.city.id,
-      // La zona de la ruta siempre entra, y las extra se suman con O. La ruta
-      // afirma un lugar; la query sólo puede ensanchar la búsqueda dentro de
-      // la misma ciudad.
-      zone: [place.zone.id, ...extraZones.map((extra) => extra.id)].join(","),
+      zone: chosenZoneIds.join(","),
       // Renombre de campos en el borde de entrega, que es justo lo que
       // `design.md` deja hacer acá: los nombres cortos de la URL son los del
-      // fundador (F12) y los largos son los del dominio. Ninguna regla se
-      // decide en esta línea.
-      minPrice: query[QUERY_NAMES.minPrice],
-      maxPrice: query[QUERY_NAMES.maxPrice],
-      minRooms: query[QUERY_NAMES.minRooms],
-      propertyType: query[QUERY_NAMES.propertyType],
-      publisherType: query[QUERY_NAMES.publisherType],
-      hasPowerPlant: query[QUERY_NAMES.hasPowerPlant],
-      hasRegularWater: query[QUERY_NAMES.hasRegularWater],
-      isFurnished: query[QUERY_NAMES.isFurnished],
-      hasSecurity: query[QUERY_NAMES.hasSecurity],
-      hasAppliances: query[QUERY_NAMES.hasAppliances],
-      page: query[PAGE_PARAM],
+      // fundador (F12) y los largos son los del dominio. La tabla es del
+      // dominio y no se vuelve a escribir acá — una segunda tabla que
+      // casualmente coincide es el bug que `indexing-contract.test.ts` existe
+      // para atrapar.
+      minPrice: query[SEARCH_QUERY_NAMES.minPrice],
+      maxPrice: query[SEARCH_QUERY_NAMES.maxPrice],
+      minRooms: query[SEARCH_QUERY_NAMES.minRooms],
+      propertyType: query[SEARCH_QUERY_NAMES.propertyType],
+      publisherType: query[SEARCH_QUERY_NAMES.publisherType],
+      hasPowerPlant: query[SEARCH_QUERY_NAMES.hasPowerPlant],
+      hasRegularWater: query[SEARCH_QUERY_NAMES.hasRegularWater],
+      isFurnished: query[SEARCH_QUERY_NAMES.isFurnished],
+      hasSecurity: query[SEARCH_QUERY_NAMES.hasSecurity],
+      hasAppliances: query[SEARCH_QUERY_NAMES.hasAppliances],
+      page: query[SEARCH_QUERY_NAMES.page],
     },
     zones,
-  );
+  ) ?? { cityId: place.city.id };
 
-  // `null` significaría "nadie eligió ciudad", y acá la ciudad la afirma la
-  // ruta. Es inalcanzable, pero el tipo lo permite y una lista vacía es la
-  // respuesta honesta si alguna vez dejara de serlo.
-  //
-  // **Las dos consultas salen juntas.** Neon es HTTP, así que en paralelo
-  // cuestan un viaje y no dos. La segunda trae el total *de la búsqueda
-  // entera*, que es lo que la paginación necesita: la primera ya viene
-  // recortada a una página y no puede decir cuántas hay.
-  const [results, counts] = criteria
-    ? await Promise.all([
-        new DrizzleListingSearch(db).search(criteria),
-        // Sin zonas ofrecidas: esta pantalla todavía no dibuja un filtro de
-        // zona, y el puerto cuenta "las opciones que estoy mostrando".
-        new DrizzleFacetedSearch(db).countFacets(criteria, []),
-      ])
-    : [[], undefined];
+  const results = await new DrizzleListingSearch(db).search(criteria);
 
-  const total = counts?.total ?? 0;
-  const pagination = resolvePagination(criteria?.page, total);
-
-  // **UNA llamada para las veinte portadas.** Neon es HTTP: pedirlas de a una
-  // son veinte viajes de red, que es el N+1 clásico pagado en latencia real.
-  // La firma del puerto lo hace inexpresable — no existe un `coverFor(id)`.
+  // **UNA llamada para las veinticuatro portadas.** Neon es HTTP: pedirlas de
+  // a una son veinticuatro viajes de red, que es el N+1 clásico pagado en
+  // latencia real. La firma del puerto lo hace inexpresable — no existe un
+  // `coverFor(id)`.
   const covers = await new DrizzleListingPhotos(db).coversFor(results.map((row) => row.id));
 
   // Quién entra en la cuadrícula (regla F9), a dónde lleva cada tarjeta y de
@@ -191,11 +158,61 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
     readPhotoPublicBaseUrl(),
   );
 
-  const basePath = `/alquiler/${ciudad}/${zona}`;
-  const pageHref = (page: number) => buildPageHref(basePath, query, page);
+  // **El panel va después de las filas, y son tres viajes en serie y no dos.**
+  // Se paga a propósito: el atajo de F7 —con un solo resultado el botón lleva
+  // a la ficha, no a una lista de uno— necesita la dirección de esa ficha, y
+  // la dirección la arma `buildListingGrid` sobre las filas. Sin esto el botón
+  // tendría que mandar a una pantalla intermedia que no informa nada.
+  //
+  // Que la ficha se pase cuando hay UNA tarjeta y no cuando el total es 1 es
+  // lo mismo dicho antes: `resolveSearchConfirm` sólo la mira con el total en
+  // 1, y con el total en 1 la única página trae esa única tarjeta.
+  const { panel, counts } = await buildFilterPanel(new DrizzleFacetedSearch(db), {
+    basePath,
+    cityPath,
+    query,
+    cityId: place.city.id,
+    cities: cities.map((candidate) => ({
+      id: candidate.id,
+      name: candidate.name,
+      path: `/alquiler/${slugify(candidate.name)}`,
+    })),
+    // Las de esta ciudad, con la misma `slugify` que resuelve la ruta: es lo
+    // que hace que tocar una sola zona caiga en su dirección canónica en vez
+    // de en la ciudad con un parámetro.
+    zones: zones
+      .filter((candidate) => candidate.cityId === place.city.id)
+      .map((candidate) => ({
+        id: candidate.id,
+        name: candidate.name,
+        path: `${cityPath}/${slugify(candidate.name)}`,
+      })),
+    chosenZoneIds,
+    criteria,
+    onlyListingHref: cards.length === 1 ? cards[0]?.href : undefined,
+  });
+
+  const total = counts.total;
+  const pagination = resolvePagination(criteria.page, total);
+  const pageHref = (page: number) =>
+    buildSearchHref(basePath, query, { page: page > 1 ? String(page) : null });
 
   return (
     <Container>
+      {/* La barra del teléfono: adónde volver, qué se está mirando y el
+          engranaje que abre el acordeón. En escritorio se esconde por CSS,
+          porque ahí los filtros ya están a la vista en la barra lateral. */}
+      <SearchSummaryBar
+        backHref={cityPath}
+        headline={panel.headline}
+        summary={panel.summary}
+        activeFilters={panel.activeFilters}
+        // El ancla es la mitad del enlace: sin `#filtros` el engranaje recarga
+        // la misma pantalla y el panel queda debajo de la cuadrícula, fuera de
+        // vista.
+        openHref={`${buildSearchHref(basePath, query, { step: "ciudad" })}#filtros`}
+      />
+
       <nav className={styles.breadcrumb} aria-label="Miga de pan">
         {/* Tres elementos y ni uno más: los separadores «›» los dibuja el CSS
             con un `::before`. Puestos como `<li>` propios, un lector de
@@ -207,10 +224,15 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
               Inicio
             </a>
           </li>
-          {/* La ciudad va sin enlace, y es decisión. `/alquiler/<ciudad>` está
-              planeada en la 14.24 y todavía no existe: una miga de pan que
-              lleva a un 404 es peor que una que no lleva a ninguna parte. */}
-          <li className={styles.crumb}>{place.city.name}</li>
+          {/* La ciudad **ya lleva enlace**: `/alquiler/<ciudad>` existe desde
+              que se construyó la pantalla de ciudad. Antes iba sin enlace, y
+              la razón anotada era que una miga de pan que lleva a un 404 es
+              peor que una que no lleva a ninguna parte. */}
+          <li className={styles.crumb}>
+            <a className={styles.crumbLink} href={cityPath}>
+              {place.city.name}
+            </a>
+          </li>
           <li className={styles.crumb} aria-current="page">
             {place.zone.name}
           </li>
@@ -244,25 +266,7 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
         {pagination.count > 1 ? ` — página ${pagination.current} de ${pagination.count}` : ""}
       </p>
 
-      <SidebarLayout
-        sidebar={
-          <SearchFilters
-            cities={cities}
-            zones={zones.filter((candidate) => candidate.cityId === place.city.id)}
-            controls={FILTER_CONTROLS}
-            names={QUERY_NAMES}
-            resultCount={total}
-            values={{
-              minPrice: query[QUERY_NAMES.minPrice],
-              maxPrice: query[QUERY_NAMES.maxPrice],
-              minRooms: query[QUERY_NAMES.minRooms],
-              propertyType: criteria?.propertyType,
-              publisherType: criteria?.publisherType,
-              attributes: criteria?.attributes,
-            }}
-          />
-        }
-      >
+      <SidebarLayout sidebar={<SearchPanel model={panel} />}>
         {pagination.beyondEnd ? (
           // La página que ya no existe: el enlace viejo pegado en un chat.
           // Se responde con la salida, no con una cuadrícula vacía sin causa.
@@ -321,37 +325,6 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
       </SidebarLayout>
     </Container>
   );
-}
-
-/** Una lista separada por comas, sin vacíos. Traducción, no decisión. */
-function readList(raw: string | undefined): readonly string[] {
-  return (raw ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter((item) => item !== "");
-}
-
-/**
- * La misma dirección con otra página. Se conserva todo lo demás — incluidos
- * los `utm_*` que trae un enlace compartido — porque quitar un parámetro que
- * esta pantalla no entiende sería decidir por quien armó el enlace.
- */
-function buildPageHref(
-  basePath: string,
-  query: Record<string, string | undefined>,
-  page: number,
-): string {
-  const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(query)) {
-    if (key === PAGE_PARAM || value === undefined || value === "") continue;
-    params.set(key, value);
-  }
-  // La primera página es la ausencia del parámetro: una sola dirección
-  // canónica para la misma pantalla.
-  if (page > 1) params.set(PAGE_PARAM, String(page));
-
-  const search = params.toString();
-  return search === "" ? basePath : `${basePath}?${search}`;
 }
 
 export async function generateMetadata({ params, searchParams }: ZonaProps): Promise<Metadata> {
