@@ -332,6 +332,27 @@ The reference point is a classifieds board, not a design showcase: information-d
 
 ### D14 — Visual language, decided in HTML rather than a design tool
 
+> **REVISADA 2026-08-22, cuando llegaron las nueve láminas al repositorio.** Lo de abajo se conserva entero porque su razonamiento sigue siendo el que hay que discutir para revertir cualquiera de estos cambios. Cinco afirmaciones quedaron superadas, y conviene leerlas antes que el texto original.
+>
+> **1. «Results are a dense list, not a card grid» — SUPERADA.** El fundador dibujó la cuadrícula: dos columnas de 158 px en móvil, tres de 254 px en escritorio. Está construida y mergeada (14.25).
+>
+> El argumento de D14 no era estético sino de peso: *«many small thumbnails fit, many detail images do not»*, con la lista de resultados en ~128 KB contra un tope de 150. **Ese argumento se midió en vez de descartarse**: `pnpm budget:bundle` reporta hoy la peor ruta de lectura en **103,96 KB gzip contra un tope de 130**, con la cuadrícula ya adentro. La restricción se respeta; lo que cambió es cómo se cumple — cuatro derivadas por foto, la más chica de 160×120 y 0,3 KB, en vez de una miniatura por fila.
+>
+> Lo que sigue vivo del párrafo original y **no** hay que perder: la densidad se acota sobre la pieza (antes la fila, ahora la tarjeta) y **nunca como un conteo de avisos sobre el pliegue**, porque ese número se mueve con la fuente del sistema y con el largo de un título, y un test que lo afirme falla por razones que no tienen que ver con la regresión que quería atrapar.
+>
+> **2. «At 1280 results stay a list rather than becoming a grid» — SUPERADA** por lo mismo.
+>
+> **3. «The publish form stays a single ~600px column» — SUPERADA.** Publicar pasó a **nueve pasos, una pregunta por pantalla**, con una columna de 520 px y un riel de 240 px a la izquierda en escritorio. La razón está en `design/especificaciones/Rentas - Publicar - Especificacion.md` §1 y es de producto, no de layout: son 14 campos obligatorios y uno pide 120 caracteres escritos con el pulgar.
+>
+> **4. «The surface inventory is settled: 22 screens» y «six screens are drawn» — DESACTUALIZADAS.** Hay **nueve láminas** en `design/pantallas/`, de otras pantallas: inicio, los cuatro pasos de búsqueda, resultados, ficha móvil y escritorio, entrar móvil y escritorio, publicar móvil y escritorio, y el sistema. El inventario de 22 sigue siendo útil como recordatorio de que los estados vacío, rechazado y vencido existen; el conteo ya no describe la realidad.
+>
+> **5. El título mismo — «rather than a design tool» — quedó impreciso.** El fundador diseña en Claude Design y entrega artboards `.dc.html`. **El fondo de la decisión sobrevive intacto y por eso no se cambia el título a la ligera**: lo entregado sigue siendo HTML real, versionado en el repositorio, que se puede abrir y pesar. Lo que cambió es quién lo produce, no que se pueda medir.
+>
+> **Lo que NO cambió, y conviene decirlo porque es lo que sostiene el resto:** el precio pesa más que el título; el publicador se distingue por forma y no por color; el color semántico se reserva para significado; el punto de quiebre es 768; y `menta` + `compacto` sigue siendo la combinación adoptada — verificada byte a byte contra `src/styles/tokens.css`.
+>
+> **Lo que las láminas agregan y D14 no podía saber:** la franja de **768 a 1099 px no está dibujada en ningún archivo** (los nueve artboards son 360 o 1280), y el **contenedor de 1100 no se estira nunca** en 1440, 1920 ni 4K — lo que escala es el número de columnas, no el tamaño de la pieza. Ver la tarea 20.10.
+
+
 The visual reference is built as real HTML under `design/reference/`, versioned with the repository, not as mockups in a design tool. The reason is D12/D13: this product's binding design constraint is transfer weight, and a mockup cannot be weighed. Designing in a medium that cannot measure the budget is designing blind. Building the reference in HTML is also the honest test of the "no webfonts" decision, since it ships the same system stack the product does.
 
 **The reference is not a specification.** Verifiable requirements live in the capability specs; the reference is the visual source of truth that the components in PR1b, PR2, PR3, and PR5 are built against. It exists so the type scale, spacing rhythm, and component inventory are settled *before* the first UI is written, rather than being invented three times and reconciled later.

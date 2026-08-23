@@ -415,7 +415,7 @@ Se rehace la capa de entrega, que es cerca de un tercio del código. Se conserva
 
 1. **RESOLVED — the grid wins, and `SISTEMA.md`'s row rule is retired.** That document states as a hard rule "Lista de filas, nunca grilla de tarjetas, en ningún ancho"; the founder overrode it deliberately after being shown the conflict. **The original argument was weight**, not taste: a row with a small thumbnail fits the 150 KB budget for 20 listings. The founder's own document reports today's results page at ~128 KB, so there is headroom — but a grid of 158 px photos spends it, and 14.5 (the budget gate) is what will say whether it fits. Two columns on mobile, three on desktop.
 
-2. **RESOLVED — `/` becomes a home with four strips, results move to `/buscar`.** `app/page.tsx` currently records the opposite as a deliberate decision ("there is no separate home page, and that is a decision rather than an omission"), and that comment must be rewritten rather than left contradicting the code beside it. What the old decision bought — the domain's strongest URL showing listings — is given up for what the strips buy: someone who arrives without knowing what they want sees supply immediately instead of an empty filter column.
+2. **RESOLVED — `/` becomes a home with four strips.** ~~results move to `/buscar`~~ — **corregido 2026-08-22**: la 14.24 borró `/buscar` y los resultados viven en `/alquiler/<ciudad>` y `/alquiler/<ciudad>/<zona>`. El documento maestro del fundador lo confirma en §7ter. `app/page.tsx` currently records the opposite as a deliberate decision ("there is no separate home page, and that is a decision rather than an omission"), and that comment must be rewritten rather than left contradicting the code beside it. What the old decision bought — the domain's strongest URL showing listings — is given up for what the strips buy: someone who arrives without knowing what they want sees supply immediately instead of an empty filter column.
 3. **F13 says the number is "parcialmente oculto".** The shipped guarantee is stronger and deliberate: in the locked state the contact value is *unrepresentable* — it never reaches the browser at all, so there is nothing to un-hide in the HTML. Showing real digits is a different promise and has to be chosen, not slid into.
 
 **A scheduling consequence of the grid decision, and it moves work earlier.** A card without an image reads as broken, so **the grid requires cover photos** — and today the search query never touches `listing_photo` while `ResultRow` renders a CSS placeholder. Phase 19's photo pipeline (four sizes, re-derivation, backfill) stops being a ficha concern and becomes a **prerequisite for the list itself**. Whoever plans the order should read 19a before starting 14.
@@ -483,8 +483,8 @@ Se rehace la capa de entrega, que es cerca de un tercio del código. Se conserva
 - [ ] 14.27 **El presupuesto es lo que decide si la cuadrícula sobrevive.** El argumento original de "lista de filas, nunca grilla" era el peso, y el documento del fundador reporta la página de resultados hoy en ~128 KB contra un tope de 150 KB con 20 avisos. Una cuadrícula de fotos de 158 px gasta ese margen. **El inicio tiene su propio techo**: ~80 KB con 20 fotos de 158×118. La 11.17 (`budget-bundle`) y la 11.19 (Lighthouse) son las que van a decir si entra, y hay que mirarlas antes de dar la cuadrícula por buena
 - [ ] 14.28 **Sin foto de portada la cuadrícula no existe.** Es 14.5, y sube de prioridad por esto: una tarjeta sin imagen se lee como rota, mientras que una fila sin miniatura sólo se ve pobre. La 19a — cuatro tamaños, re-derivación y rellenado de las fotos ya subidas — pasa a ser prerrequisito de la lista, no de la ficha
 - [ ] 14.29 **Criterio de aceptación 1, y es medible:** 4 avisos completos sobre el pliegue a 360 px, 6 a 1280. La medición vive en `tests/measure/`, que es donde ya se prueban las cotas de layout con Playwright
-- [ ] 14.22 "Limpiar todo" (F8), which resets everything except the city — "la ciudad no es un filtro, es el contexto"
-- [ ] 14.23 The URL scheme F12 specifies: `/buscar?ciudad=…&zona=chacao,altamira&min=…&max=…&hab=…&tipo=dueno&pag=1`. Today the parameters are English and live at the root. An invalid parameter is ignored with a notice rather than breaking the page; a zone that no longer exists is dropped and the rest of the search survives
+- [ ] 14.22b "Limpiar todo" (F8), which resets everything except the city — "la ciudad no es un filtro, es el contexto". Renumerada a 14.22b: el plan tenía DOS tareas 14.22, y dos tareas con el mismo número es una que alguien va a dar por hecha mirando la otra
+- [ ] 14.23b **CORREGIDA 2026-08-22 con el documento maestro del fundador en el repositorio.** Escribía `/buscar?ciudad=…`, que la 14.24 ya había descartado. El propio `design/especificaciones/Rentas - Flujos y funcionalidades.md` §7ter lo cierra desde el otro lado: *«Esto reemplaza los ejemplos anteriores del documento (`/buscar?ciudad=…` y `/aviso/84512`)»*, y fija `/alquiler/<ciudad>?zona=…&min=…&max=…&hab=…&tipo=…&pag=…`. **La deuda que la 14.24 dejaba abierta —«pendiente de corregir en los documentos del fundador»— está saldada.** Lo que queda de esta tarea es sólo lo que no era la ruta: un parámetro inválido se ignora con un aviso en vez de romper la página, y una zona que ya no existe se descarta dejando viva el resto de la búsqueda (esto último ya ships, PR #84). Renumerada a 14.23b porque el plan tenía DOS tareas 14.23
 - [ ] 14.24 An expired listing reached by direct link shows the ficha marked expired plus active listings from the same zone (F12) — needs `not-found`/expired handling, which is 11b.3
 
 ### 14e. Deliberately NOT doing
@@ -762,3 +762,47 @@ The founder asked whether a publisher who verified their WhatsApp should have to
 
 - [ ] 12.1 README: setup, env vars, deploy steps
 - [ ] 12.2 Confirm `pnpm test`, `test:unit`, `test:integration`, `test:e2e` all pass end to end
+
+---
+
+## Fase 20 — Lo que las láminas revelaron (2026-08-22)
+
+**Las nueve pantallas y las cuatro especificaciones se importaron hoy** (`design/pantallas/`, `design/especificaciones/`). Hasta esta mañana el repositorio tenía tres pantallas de nueve, y las fases 14 a 19 se escribieron leyendo texto en vez de mirando dibujos.
+
+Esta sección es el resultado de auditar el plan **contra los archivos** ahora que están. No son ideas nuevas: son cosas que el fundador ya había dibujado o escrito y que el plan no nombraba.
+
+### 20a. El inicio, que resultó tener tres piezas más
+
+La lámina del artboard `inicio` dibuja, arriba de las cuatro tiras, dos elementos que ninguna tarea mencionaba. El error de lectura está identificado: la F1 sólo nombra la barra **en el caso vacío** (*«sin ningún aviso activo, el inicio muestra la barra de búsqueda y una invitación a publicar»*), y de ahí salió la conclusión —equivocada— de que la barra aparecía sólo entonces.
+
+- [ ] 20.1 **La barra de búsqueda «¿En qué zona buscás?», SIEMPRE visible.** No sólo en el estado vacío. Es lo primero que se ve al entrar y hoy no existe
+- [ ] 20.2 **Las fichas de ciudad en el inicio** (F2). Al elegir una, las colecciones se recalculan sólo con esa ciudad, **la tira de la otra desaparece**, y la URL pasa a `/?ciudad=maracaibo`. Es la regla de aislamiento de ciudad aplicada al inicio, y no estaba escrita en ninguna tarea
+- [ ] 20.3 **El subtítulo con conteo de cada tira**: «23 avisos activos en cuatro zonas.» La lámina lo dibuja bajo el título de la tira de ciudad
+- [ ] 20.4 **Los tres estados de la barra** — la lámina les dedica un artboard propio (`los tres estados de la barra`), así que son tres y hay que mirarlos antes de construir
+
+### 20b. Reglas de la búsqueda que estaban en el texto y no en el plan
+
+- [ ] 20.5 **Con 1 resultado, el botón lleva DIRECTO a la ficha** en vez de a una lista de uno (F7). Regla explícita del documento y sin tarea
+- [ ] 20.6 **Cambiar de ciudad borra las zonas elegidas, y se avisa ANTES** (F3). El descarte estaba implícito en el aislamiento de ciudad; el aviso previo no estaba en ninguna parte
+- [ ] 20.7 **Un atributo que ningún resultado actual cumple aparece deshabilitado con conteo 0** (F6). No es lo mismo que «se muestra en cero»: hay que impedir elegirlo, porque llevaría a un vacío — la regla transversal 4 dice que ninguna opción puede llevar a un vacío
+
+### 20c. Dos rutas que el maestro fija y el código no cumple
+
+`design/especificaciones/Rentas - Flujos y funcionalidades.md` §7ter es una tabla de URLs para **todo el sitio**. Dos filas no coinciden con lo que ships.
+
+- [ ] 20.8 **`/entrar`, no `/signin`.** El maestro fija `/entrar`; el código sirve `/signin`. **No es cosmético**: `signin-return.test.ts` ata la ficha con esa pantalla por el nombre del parámetro, `safe-return-destination.ts` valida contra el prefijo `/signin?callbackUrl=`, y Auth.js tiene su propia configuración de ruta. Cambiarla toca cuatro lugares y hay que decidir si vale — o si el maestro debería decir `/signin`. **Decisión del fundador**
+- [ ] 20.9 **`/mis-avisos` es el nombre de la ruta de Mis publicaciones.** La pantalla no existe todavía; la tarea es que cuando se construya, se llame así y no `/mis-publicaciones`
+
+### 20d. Lo que las láminas NO dibujan, y ahora se puede afirmar
+
+Con los nueve archivos en la mano, esto se verifica en vez de suponerse.
+
+- [ ] 20.10 **La franja de 768 a 1099 px no está dibujada en ningún archivo.** Los nueve artboards son 360 o 1280. `design/README.md` la marca «sin diseñar» y el propio pie de las láminas la repite. Es una tableta en vertical o una ventana angosta, y **hoy un desarrollador tiene que decidirla por su cuenta — que es exactamente donde se rompe la cuadrícula**. Requerida al fundador
+- [ ] 20.11 **Los errores de validación de publicar están especificados pero no dibujados** (Publicar §12.5). La tabla de la §6 da el texto de cada mensaje; el aspecto no está en ninguna lámina
+- [ ] 20.12 **El riel de nueve pasos de escritorio** (Publicar §7) no tenía tarea propia. No es la barra de progreso agrandada: en 1280 muestra **el valor de cada paso hecho** («Altamira», «$450 al mes») y permite saltar. La diferencia es entre saber cuánto falta y poder hacer algo al respecto
+
+### 20e. Defectos del propio plan, corregidos hoy
+
+- [x] 20.13 **Había DOS tareas 14.22 y DOS 14.23.** Renumeradas a `14.22b` y `14.23b`. Dos tareas con el mismo número es una que alguien da por hecha mirando la otra
+- [x] 20.14 **La tarea 14.23 seguía escribiendo `/buscar?ciudad=…`**, que la 14.24 ya había descartado. Corregida, y la deuda que la 14.24 dejaba abierta —«pendiente de corregir en los documentos del fundador»— **está saldada por el fundador**: el §7ter del maestro dice textualmente que reemplaza `/buscar?ciudad=…` y `/aviso/84512`
+- [x] 20.15 **El encabezado de la fase 14 seguía diciendo que los resultados se mudan a `/buscar`.** Corregido
