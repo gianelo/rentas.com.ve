@@ -68,6 +68,27 @@ const SHARED_ACROSS_THEMES = new Set(["--r", "--rs"]);
 // mobile width/height and desktop width/height for the result-row thumbnail.
 const THUMBNAIL_TOKEN_NAMES = ["--tw", "--th", "--twd", "--thd"];
 
+/**
+ * tasks.md 16.22 — **un solo nombre por valor.**
+ *
+ * Las especificaciones del fundador (Publicar §8, Ficha §7) escriben `--rule`
+ * y `--acc-ink`; el conjunto que ship*a* los llama `--strong` (#788189) y
+ * `--accent-ink` (#ffffff). Son los mismos dos colores con dos grafías, y dos
+ * nombres para un valor es cómo una paleta empieza a discrepar: alguien
+ * declara `--rule` para "arreglar" una hoja, los dos conviven, y el día que el
+ * borde de control cambie de tono sólo cambia uno.
+ *
+ * Se elige la grafía que ya existe —es la del archivo de referencia del diseño
+ * y la que usan las 120 hojas— y la otra se rechaza acá. El nombre alternativo
+ * no produce ningún síntoma visible: `var(--rule)` sin declarar simplemente no
+ * pinta nada, o cae al valor heredado. Por eso hace falta un gate y no una
+ * costumbre de revisión.
+ */
+const TOKEN_ALIASES = new Map([
+  ["--rule", "--strong"],
+  ["--acc-ink", "--accent-ink"],
+]);
+
 const COLOUR_PROPERTIES = new Set([
   "color",
   "background",
@@ -190,6 +211,18 @@ function findViolations(filePath, thumbnailDimensions) {
   const violations = [];
 
   lines.forEach((lineText, index) => {
+    for (const [alias, canonical] of TOKEN_ALIASES) {
+      // Anclado en el cierre o la coma del `var(` para que `--rule` no se
+      // confunda con un token que empiece igual.
+      if (!new RegExp(`var\\(\\s*${alias}\\s*[,)]`).test(lineText)) continue;
+      violations.push({
+        file: relative(process.cwd(), filePath),
+        line: index + 1,
+        rule: `token alias ("${alias}" is the spec's spelling of the shipped "${canonical}" — use the shipped name, two names for one value is how a palette drifts)`,
+        snippet: lineText.trim(),
+      });
+    }
+
     DECLARATION_PATTERN.lastIndex = 0;
     let match = DECLARATION_PATTERN.exec(lineText);
     while (match) {
@@ -372,7 +405,8 @@ function main() {
 
   if (styleViolations.length > 0) {
     console.error(
-      "\nlint:tokens: literal design values found — use a CSS custom property (D16).\n",
+      "\nlint:tokens: values a component style may not write — a design literal, " +
+        "or the spec's spelling of a token that ships under another name (D16, 16.22).\n",
     );
     for (const violation of styleViolations) {
       console.error(`  ${violation.file}:${violation.line}  [${violation.rule}]`);

@@ -12,6 +12,18 @@ const priceCss = readFileSync("components/atoms/Price.module.css", "utf-8");
 const buttonsSource = readFileSync("components/atoms/buttons.tsx", "utf-8");
 const tokensCss = readFileSync("src/styles/tokens.css", "utf-8");
 
+/**
+ * El valor de un token que no pertenece a ningún tema — geometría y tipografía,
+ * que viven en `:root`. Se lee de `tokens.css` y nunca de una copia: una
+ * aserción contra un número escrito acá dejaría de medir el archivo real en
+ * cuanto alguien lo editara.
+ */
+function tokenValue(name: string): string {
+  const match = tokensCss.match(new RegExp(`${name}\\s*:\\s*([^;]+);`));
+  if (!match?.[1]) throw new Error(`tokens.css: "${name}" no está declarado`);
+  return match[1].trim();
+}
+
 function block(css: string, selector: string): string {
   const match = css.match(new RegExp(`\\.${selector}\\s*\\{([^}]*)\\}`));
   if (!match) throw new Error(`missing .${selector} block`);
@@ -139,6 +151,84 @@ describe("el aviso se lee como aviso (Publicar §8)", () => {
 
     expect(r).toBeGreaterThan(g);
     expect(g).toBeGreaterThan(b);
+  });
+});
+
+/**
+ * **Los tokens que faltaban, y por qué faltar no es inocuo.**
+ *
+ * Tres agentes anotaron lo mismo por separado (tasks.md 16.22–16.26): el
+ * conjunto no nombraba el alto de la barra de búsqueda, ni su tamaño de texto,
+ * ni el subtítulo de la tira, ni tenía token de sombra. Cada hueco se tapó con
+ * el token *parecido* — `--target-min` por el alto, `--control-fs` por el
+ * texto, `--meta-fs` por el subtítulo, `var(--line)` por la sombra — y eso es
+ * exactamente lo que `tokens.css` ya documenta como el defecto real que produjo
+ * el `<h1>` del inicio agarrando `--fpb` ("precio en ficha"): `lint:tokens`
+ * pasa, porque verifica que un valor SEA una propiedad personalizada, nunca que
+ * sea la CORRECTA. Un token faltante no pone ningún gate en rojo; produce una
+ * respuesta plausible y equivocada.
+ */
+describe("los tokens que el conjunto no nombraba (16.22–16.26)", () => {
+  const searchBarCss = readFileSync("components/molecules/SearchBar.module.css", "utf-8");
+  const stripCss = readFileSync("components/molecules/ListingStrip.module.css", "utf-8");
+
+  it("la barra de búsqueda usa su propio alto y su propio tamaño, no el del control genérico", () => {
+    expect(block(searchBarCss, "bar")).toContain("var(--searchbar-h)");
+    expect(block(searchBarCss, "label")).toContain("var(--searchbar-fs)");
+    // Y el alto propio no puede quedar por debajo del mínimo táctil: 50 ≥ 44.
+    expect(Number.parseFloat(tokenValue("--searchbar-h"))).toBeGreaterThanOrEqual(
+      Number.parseFloat(tokenValue("--target-min")),
+    );
+  });
+
+  it("la sombra es un token y no la línea del borde haciendo de sombra", () => {
+    expect(block(searchBarCss, "bar")).toContain("box-shadow: var(--shadow-raised)");
+    expect(block(searchBarCss, "bar")).not.toMatch(/box-shadow:[^;]*var\(--line\)/);
+  });
+
+  it("la sombra repinta al cambiar de tema, como cualquier otro color", () => {
+    // Una sombra clara sobre un fondo oscuro no levanta nada: se ve como una
+    // mancha. `lint:tokens` ya exige que los dos temas la declaren distinta;
+    // esto lo dice acá para que se lea junto al resto del contrato.
+    expect(themeColor("menta", "--shadow-raised")).not.toBe(
+      themeColor("oscuro", "--shadow-raised"),
+    );
+  });
+
+  it("el subtítulo de la tira lleva su medida y su paso de escritorio", () => {
+    expect(block(stripCss, "subtitle")).toContain("var(--strip-subtitle-fs)");
+    expect(stripCss).toContain("var(--strip-subtitle-fs-desktop)");
+  });
+
+  it("cada tamaño nuevo es el del diseño, no el del token que se le parecía", () => {
+    // Si alguno volviera a apuntar al token vecino, este bloque seguiría en
+    // verde por casualidad — salvo que se compare contra el número dibujado.
+    expect(tokenValue("--searchbar-h")).toBe("50px");
+    expect(tokenValue("--searchbar-fs")).toBe("14px");
+    expect(tokenValue("--strip-subtitle-fs")).toBe("12.5px");
+    expect(tokenValue("--strip-subtitle-fs-desktop")).toBe("13px");
+    // Y son distintos de sus vecinos, que es lo que los hace tokens propios y
+    // no alias: 14 ≠ --control-fs (15) y 12,5 ≠ --meta-fs (12).
+    expect(tokenValue("--searchbar-fs")).not.toBe(tokenValue("--control-fs"));
+    expect(tokenValue("--strip-subtitle-fs")).not.toBe(tokenValue("--meta-fs"));
+  });
+
+  it("un solo nombre por color: la spec escribe --rule y --acc-ink, y ships --strong y --accent-ink", () => {
+    // 16.22. Dos nombres para un mismo valor es cómo una paleta empieza a
+    // discrepar. Se elige la grafía que ya ship*a* — es la del archivo de
+    // referencia del diseño y la que usan las 120 hojas — y `lint:tokens`
+    // rechaza la otra, que es lo que impide que vuelva a entrar.
+    expect(themeColor("menta", "--strong")).toBe("#788189");
+    expect(themeColor("menta", "--accent-ink")).toBe("#ffffff");
+    expect(tokensCss).not.toMatch(/^\s*--rule\s*:/m);
+    expect(tokensCss).not.toMatch(/^\s*--acc-ink\s*:/m);
+  });
+
+  it("--target-min-desktop NO se toca: 36 ships y la spec dice 40, y decide el fundador", () => {
+    // 16.24. No es un hueco sino un conflicto, y el cambio es global — todo
+    // control de toda pantalla. Se deja anclado para que nadie lo "arregle"
+    // de paso mientras agrega tokens.
+    expect(tokenValue("--target-min-desktop")).toBe("36px");
   });
 });
 

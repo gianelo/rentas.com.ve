@@ -31,10 +31,11 @@
 .subtitle {
   margin: 0;
   font-family: var(--sans);
-  /* La lámina la escribe en 12,5 px (móvil) y 13 px (1280); el conjunto de
-     tokens no tiene ninguno de los dos, y --meta-fs es el que el sistema
-     define para un metadato. */
-  font-size: var(--meta-fs);
+  /* Los 12,5 px de la lámina, ahora con nombre propio. Apuntaba a `--meta-fs`
+     (12), que el sistema define para un metadato de fila: esto es el subtítulo
+     de una sección, y compartir el número con algo que significa otra cosa es
+     cómo un ajuste de metadatos termina moviendo los encabezados. */
+  font-size: var(--strip-subtitle-fs);
   line-height: 1.5;
   color: var(--soft);
 }
@@ -132,6 +133,13 @@
 @media (min-width: 768px) {
   .headLink {
     display: inline-flex;
+  }
+
+  /* El paso de escritorio que el diseño da aparte. Media query y no una sola
+     escala: el diseño escribe los dos números, y elegir uno solo deja una de
+     las dos pantallas mal a propósito. */
+  .subtitle {
+    font-size: var(--strip-subtitle-fs-desktop);
   }
 
   .rail {

@@ -70,10 +70,13 @@ describe("SearchBar — la barra del inicio", () => {
     expect(outline).not.toBe("none");
   });
 
-  it("es una píldora que alcanza el objetivo táctil mínimo", () => {
+  it("es una píldora con su propio alto, que alcanza el objetivo táctil mínimo", () => {
     // La lámina la dibuja redondeada del todo y alta: es el control más grande
-    // de la pantalla y el primero que un pulgar busca.
+    // de la pantalla y el primero que un pulgar busca. El alto es una decisión
+    // de esta pieza y tiene token propio — apuntaba a `--target-min` sólo
+    // porque el conjunto no nombraba los 50 px dibujados. Que 50 ≥ 44 lo
+    // comprueba `design-contract.test.tsx` contra `tokens.css`, no acá.
     expect(block(barCss, "bar")).toContain("border-radius: var(--rs)");
-    expect(block(barCss, "bar")).toContain("min-block-size: var(--target-min)");
+    expect(block(barCss, "bar")).toContain("min-block-size: var(--searchbar-h)");
   });
 });
