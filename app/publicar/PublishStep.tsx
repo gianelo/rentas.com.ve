@@ -1,3 +1,4 @@
+import { AppLink } from "@/../components/atoms/AppLink";
 import type {
   PublicationDraft,
   PublishStepId,
@@ -103,9 +104,9 @@ export function PublishStep(props: PublishStepProps) {
           {/* Un paso atras: la flecha en movil, el mismo enlace nombrado en
               escritorio. 44px de area tactil, la regla que mas se olvida. */}
           {backHref ? (
-            <a className={styles.back} href={backHref} aria-label="Volver al paso anterior">
+            <AppLink className={styles.back} href={backHref} aria-label="Volver al paso anterior">
               ←
-            </a>
+            </AppLink>
           ) : (
             <p className={styles.brand}>rentas.</p>
           )}
@@ -119,9 +120,9 @@ export function PublishStep(props: PublishStepProps) {
           <span className={styles.saved}>Guardado</span>
 
           {/* Salida siempre visible (regla 5 de la seccion 4). */}
-          <a className={styles.exit} href="/" aria-label="Salir de publicar">
+          <AppLink className={styles.exit} href="/" aria-label="Salir de publicar">
             ×
-          </a>
+          </AppLink>
         </div>
 
         <div className={styles.progress}>
@@ -153,9 +154,9 @@ export function PublishStep(props: PublishStepProps) {
                 {primaryLabel}
               </button>
               {backHref ? (
-                <a className={styles.secondary} href={backHref}>
+                <AppLink className={styles.secondary} href={backHref}>
                   Atrás
-                </a>
+                </AppLink>
               ) : null}
             </div>
           </form>
@@ -215,7 +216,7 @@ function Rail({
                 {entry.done ? "✓" : entry.number}
               </span>
               {entry.navigable && !entry.current ? (
-                <a href={`/publicar/paso/${entry.id}`}>{label}</a>
+                <AppLink href={`/publicar/paso/${entry.id}`}>{label}</AppLink>
               ) : (
                 <span>{label}</span>
               )}
@@ -227,9 +228,9 @@ function Rail({
       {/* "Volver a revisar" fijo al pie del riel: no hay que recorrer los pasos
           de nuevo para salir de una correccion. */}
       {returningToReview ? (
-        <a className={styles.railExit} href="/publicar/revisar">
+        <AppLink className={styles.railExit} href="/publicar/revisar">
           ↩ Volver a revisar
-        </a>
+        </AppLink>
       ) : null}
     </nav>
   );
@@ -351,12 +352,12 @@ function StepFields(props: FieldsProps) {
               dueño trabado, y de paso indica dónde hay demanda. */}
           <p className={styles.escape}>
             ¿No está la tuya?{" "}
-            <a
+            <AppLink
               className={styles.escapeLink}
               href="mailto:hola@rentas.com.ve?subject=Falta%20mi%20zona"
             >
               Avisanos
-            </a>
+            </AppLink>
           </p>
 
           <div>

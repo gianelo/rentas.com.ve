@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { AppLink } from "@/../components/atoms/AppLink";
 import {
   HOME_SEARCH_PARAM,
   HOME_SEARCH_RESULTS_LABEL,
@@ -170,9 +171,9 @@ export default async function InicioPage({ searchParams }: InicioProps) {
           <div className={styles.search}>
             <SearchBar {...searchForm} />
           </div>
-          <a className={styles.publish} href="/publicar">
+          <AppLink className={styles.publish} href="/publicar">
             Publicar
-          </a>
+          </AppLink>
         </div>
       </header>
 
@@ -187,7 +188,7 @@ export default async function InicioPage({ searchParams }: InicioProps) {
           <ul className={styles.chips}>
             {cityChips.map((chip) => (
               <li key={chip.cityId}>
-                <a
+                <AppLink
                   className={chip.selected ? styles.chipSelected : styles.chip}
                   href={chip.href}
                   // `true` y no `page`: la ficha activa es el elemento elegido
@@ -197,7 +198,7 @@ export default async function InicioPage({ searchParams }: InicioProps) {
                   aria-current={chip.selected ? "true" : undefined}
                 >
                   {chip.label}
-                </a>
+                </AppLink>
               </li>
             ))}
           </ul>
@@ -255,9 +256,9 @@ export default async function InicioPage({ searchParams }: InicioProps) {
             <p className={styles.inviteText}>
               Publicar es gratis y no se cobra comisión. Tu aviso queda activo 30 días.
             </p>
-            <a className={styles.inviteAction} href="/publicar">
+            <AppLink className={styles.inviteAction} href="/publicar">
               Publicar un aviso
-            </a>
+            </AppLink>
           </section>
         ) : (
           <div className={styles.strips}>
