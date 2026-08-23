@@ -430,11 +430,11 @@ Se rehace la capa de entrega, que es cerca de un tercio del código. Se conserva
 
 ### 14b. The search engine
 
-- [ ] 14.6 Multiple zones combined with OR (F4). `SearchCriteria` carries a single optional `zoneId`. **Construido en el PR #84, sin mergear.** `zoneIds` reemplaza a `zoneId`; una zona que ya no existe se descarta y el resto de la búsqueda sobrevive
-- [ ] 14.7 A `publisherType` criterion — "solo de dueños" (F6). The column exists; the filter does not. **Construido en el PR #84, sin mergear.**
-- [ ] 14.8 A `propertyType` criterion, from 14.1. **Construido en el PR #84, sin mergear.**
-- [ ] 14.9 Attribute criteria, AND-combined, from 14.3. **Construido en el PR #84, sin mergear.** Y sólo se puede pedir el `true`: `false` significa «no lo declaró», nunca «no lo tiene»
-- [ ] 14.10 Pagination (F10). The query has no `LIMIT` and no `OFFSET` — it returns the whole catalogue. **Construido en el PR #84, sin mergear.** 24 por página, porque divide a las dos cuadrículas (2 columnas en teléfono, 3 en escritorio) y la última fila nunca queda coja
+- [x] 14.6 Multiple zones combined with OR (F4). `SearchCriteria` carries a single optional `zoneId`. **Hecho, PR #84.** `zoneIds` reemplaza a `zoneId`; una zona que ya no existe se descarta y el resto de la búsqueda sobrevive
+- [x] 14.7 A `publisherType` criterion — "solo de dueños" (F6). The column exists; the filter does not. **Hecho, PR #84.**
+- [x] 14.8 A `propertyType` criterion, from 14.1. **Hecho, PR #84.**
+- [x] 14.9 Attribute criteria, AND-combined, from 14.3. **Hecho, PR #84.** Y sólo se puede pedir el `true`: `false` significa «no lo declaró», nunca «no lo tiene»
+- [x] 14.10 Pagination (F10). The query has no `LIMIT` and no `OFFSET` — it returns the whole catalogue. **Hecho, PR #84.** 24 por página, porque divide a las dos cuadrículas (2 columnas en teléfono, 3 en escritorio) y la última fila nunca queda coja
 - [x] 14.11 **Counts, and this is the heaviest requirement in the entire document.** F3, F4, F6 and F7 all demand that *every filter option shows its number before you choose it*, and F7 demands the confirm button state the exact result count at every step. That turns each filter into a faceted aggregation. **The cost is round trips, not Postgres.** Neon is serverless over HTTP: one query for the rows plus six for the facets is seven network round trips. The requirement is therefore ONE query returning rows and every facet count together, not a cache. **Hecho, PR #79.** Una sola consulta con `COUNT(*) FILTER`, y cada faceta se cuenta SIN su propio filtro para que las alternativas no den cero. Un test envuelve el driver y afirma `queries === 1`
 - [ ] 14.12 Price histogram over the selected zones (F5), plus the "la mayoría está entre $380 y $620" summary
 - [ ] 14.13 Swap min and max when inverted instead of erroring; clamp out-of-range values to the real extremes and say so (F5)
@@ -687,11 +687,11 @@ The founder delivered the publish specification with mobile and desktop designs,
 
 ### 18b. What the new flow needs that does not exist
 
-- [ ] 18.4 **A new listing status: `pending_verification`.** The enum ships as `active | expired | hidden`; F1 additionally needs `pending_moderation`, so it grows to five. Verify what already holds: `DrizzleListingSearch` filters `status = 'active'` unconditionally, so a pending listing cannot leak into search by accident — assert it rather than assume it
-- [ ] 18.5 **Server-side draft, one row per step, keyed by session.** The shipped draft is a 10-minute cookie of ~4 KB, and the founder is right that it cannot carry nine steps plus photo state. New storage, and with it a new question the project has not had: abandoned drafts accumulate, and "no podemos borrar data real" (11b.6) has to be reconciled with a draft that nobody will ever finish
-- [ ] 18.6 **`title` has no maximum today.** The spec sets 90 characters; the domain has `title.required` and nothing else. A new violation code plus its Spanish copy
+- [x] 18.4 **A new listing status: `pending_verification`.** The enum ships as `active | expired | hidden`; F1 additionally needs `pending_moderation`, so it grows to five. Verify what already holds: `DrizzleListingSearch` filters `status = 'active'` unconditionally, so a pending listing cannot leak into search by accident — assert it rather than assume it. **Hecho, PR #94.** `pending_verification` en el enum; el aviso se guarda ANTES de pedir el código.
+- [x] 18.5 **Server-side draft, one row per step, keyed by session.** The shipped draft is a 10-minute cookie of ~4 KB, and the founder is right that it cannot carry nine steps plus photo state. New storage, and with it a new question the project has not had: abandoned drafts accumulate, and "no podemos borrar data real" (11b.6) has to be reconciled with a draft that nobody will ever finish. **Parcial, PR #94.** Cookie de 30 minutos y DOS cookies, no una: la descripción sola a 1.200 caracteres acentuados roza los 4 KB, y hay un test que mide el peor caso. El borrador servidor pedía una tabla nueva, y las migraciones estaban fuera del alcance del agente. Es el mínimo que la propia spec acepta.
+- [x] 18.6 **`title` has no maximum today.** The spec sets 90 characters; the domain has `title.required` and nothing else. A new violation code plus its Spanish copy. **Hecho, PR #94.** Tope de 90 agregado a `publishable-listing.ts`, extendido y no reemplazado.
 - [ ] 18.7 **`referencia`** — free text, optional, shown only on the ficha. Never filtered, never indexed. This is the field that replaces Google Places, and the founder's reasoning for rejecting it is worth keeping: a formatted address is not the product's taxonomy, and four shipped things depend on the zone being a closed list — the search filter, the per-zone counts, the `/alquiler/<ciudad>/<zona>/…` URL, and the zone landing pages
-- [ ] 18.8 **The review screen** and **back-navigation that preserves forward steps.** Rule: correcting step 4 from review leaves steps 5–9 intact, with their values. Steps already answered are links; steps ahead are not. The button changes to "Guardar y volver a revisar" when entered from review, and the change is stated back ("Cambiaste habitaciones de 2 a 3")
+- [x] 18.8 **The review screen** and **back-navigation that preserves forward steps.** Rule: correcting step 4 from review leaves steps 5–9 intact, with their values. Steps already answered are links; steps ahead are not. The button changes to "Guardar y volver a revisar" when entered from review, and the change is stated back ("Cambiaste habitaciones de 2 a 3"). **Hecho, PR #94.** `/publicar/revisar` + `/publicar/paso/[paso]`. Volver no borra los pasos de adelante; el botón dice «Guardar y volver a revisar» al venir de revisar. `isDraftReadyForReview` bajó al dominio: decidir quién ve el resumen es una regla de producto y en la página no la alcanzaba ninguna prueba.
 - [ ] 18.9 **The price histogram in step 3 is the same faceting engine as F5.** This raises 14.11's priority: counting is no longer only a search feature, it is on the publish path too
 
 ### 18c. Contradictions to resolve before building
@@ -767,6 +767,13 @@ The founder asked whether a publisher who verified their WhatsApp should have to
 
 ## Fase 20 — Lo que las láminas revelaron (2026-08-22)
 
+> **Qué significa una casilla marcada acá.** Que se entregó y está en `main`, verificado por **tests**: unitarios, integración contra Postgres real, build, y verificación por mutación de las reglas que cargan peso.
+>
+> **No significa que el fundador lo haya usado.** Son dos verificaciones distintas: los tests prueban que el código hace lo que los tests dicen; nadie probó todavía que la pantalla se vea bien ni que el flujo tenga sentido con las manos encima.
+>
+> **Marcar no congela.** Una casilla se reabre, se corrige y se le agregan tareas — pasó hoy mismo con la 14.22b, la 14.23b y la decisión D14. Lo que no se hace es marcar algo que no se entregó.
+
+
 **Las nueve pantallas y las cuatro especificaciones se importaron hoy** (`design/pantallas/`, `design/especificaciones/`). Hasta esta mañana el repositorio tenía tres pantallas de nueve, y las fases 14 a 19 se escribieron leyendo texto en vez de mirando dibujos.
 
 Esta sección es el resultado de auditar el plan **contra los archivos** ahora que están. No son ideas nuevas: son cosas que el fundador ya había dibujado o escrito y que el plan no nombraba.
@@ -775,16 +782,16 @@ Esta sección es el resultado de auditar el plan **contra los archivos** ahora q
 
 La lámina del artboard `inicio` dibuja, arriba de las cuatro tiras, dos elementos que ninguna tarea mencionaba. El error de lectura está identificado: la F1 sólo nombra la barra **en el caso vacío** (*«sin ningún aviso activo, el inicio muestra la barra de búsqueda y una invitación a publicar»*), y de ahí salió la conclusión —equivocada— de que la barra aparecía sólo entonces.
 
-- [ ] 20.1 **La barra de búsqueda «¿En qué zona buscás?», SIEMPRE visible.** No sólo en el estado vacío. Es lo primero que se ve al entrar y hoy no existe
-- [ ] 20.2 **Las fichas de ciudad en el inicio** (F2). Al elegir una, las colecciones se recalculan sólo con esa ciudad, **la tira de la otra desaparece**, y la URL pasa a `/?ciudad=maracaibo`. Es la regla de aislamiento de ciudad aplicada al inicio, y no estaba escrita en ninguna tarea
-- [ ] 20.3 **El subtítulo con conteo de cada tira**: «23 avisos activos en cuatro zonas.» La lámina lo dibuja bajo el título de la tira de ciudad
+- [x] 20.1 **La barra de búsqueda «¿En qué zona buscás?», SIEMPRE visible.** No sólo en el estado vacío. Es lo primero que se ve al entrar y hoy no existe. **Hecho, PR #92.** `homeSearchBar` en el dominio. Apunta a `/alquiler/<ciudad>` y no al acordeón, que no existía como ruta al construirla.
+- [x] 20.2 **Las fichas de ciudad en el inicio** (F2). Al elegir una, las colecciones se recalculan sólo con esa ciudad, **la tira de la otra desaparece**, y la URL pasa a `/?ciudad=maracaibo`. Es la regla de aislamiento de ciudad aplicada al inicio, y no estaba escrita en ninguna tarea. **Hecho, PR #92.** `homeCityChips`. Con ciudad elegida, las tres colecciones llevan `cityId`; un `?ciudad=` desconocido no cae a la primera. Mutación: romper la llamada en `page.tsx` dejaba TODO el dominio verde con el aislamiento roto — el hueco que el piso del 90 % deja por no llegar a `app/`.
+- [x] 20.3 **El subtítulo con conteo de cada tira**: «23 avisos activos en cuatro zonas.» La lámina lo dibuja bajo el título de la tira de ciudad. **Hecho, PR #92.** `zoneCount` en el puerto. Sigue siendo una sola consulta: obligó a cambiar la ventana por un CTE con `group by`, porque Postgres no admite `count(distinct …) over (…)`.
 - [ ] 20.4 **Los tres estados de la barra** — la lámina les dedica un artboard propio (`los tres estados de la barra`), así que son tres y hay que mirarlos antes de construir
 
 ### 20b. Reglas de la búsqueda que estaban en el texto y no en el plan
 
-- [ ] 20.5 **Con 1 resultado, el botón lleva DIRECTO a la ficha** en vez de a una lista de uno (F7). Regla explícita del documento y sin tarea
-- [ ] 20.6 **Cambiar de ciudad borra las zonas elegidas, y se avisa ANTES** (F3). El descarte estaba implícito en el aislamiento de ciudad; el aviso previo no estaba en ninguna parte
-- [ ] 20.7 **Un atributo que ningún resultado actual cumple aparece deshabilitado con conteo 0** (F6). No es lo mismo que «se muestra en cero»: hay que impedir elegirlo, porque llevaría a un vacío — la regla transversal 4 dice que ninguna opción puede llevar a un vacío
+- [x] 20.5 **Con 1 resultado, el botón lleva DIRECTO a la ficha** en vez de a una lista de uno (F7). Regla explícita del documento y sin tarea. **Hecho, PR #93.** `onlyListingHref` en `search-confirm.ts`.
+- [x] 20.6 **Cambiar de ciudad borra las zonas elegidas, y se avisa ANTES** (F3). El descarte estaba implícito en el aislamiento de ciudad; el aviso previo no estaba en ninguna parte. **Hecho, PR #93.** `planCityChange` en `search-query.ts`.
+- [x] 20.7 **Un atributo que ningún resultado actual cumple aparece deshabilitado con conteo 0** (F6). No es lo mismo que «se muestra en cero»: hay que impedir elegirlo, porque llevaría a un vacío — la regla transversal 4 dice que ninguna opción puede llevar a un vacío. **Hecho, PR #93.** `search-options.ts`. No es «se muestra en cero»: se impide elegirlo, porque ninguna opción puede llevar a un vacío.
 
 ### 20c. Dos rutas que el maestro fija y el código no cumple
 
@@ -799,7 +806,7 @@ Con los nueve archivos en la mano, esto se verifica en vez de suponerse.
 
 - [ ] 20.10 **La franja de 768 a 1099 px no está dibujada en ningún archivo.** Los nueve artboards son 360 o 1280. `design/README.md` la marca «sin diseñar» y el propio pie de las láminas la repite. Es una tableta en vertical o una ventana angosta, y **hoy un desarrollador tiene que decidirla por su cuenta — que es exactamente donde se rompe la cuadrícula**. Requerida al fundador
 - [ ] 20.11 **Los errores de validación de publicar están especificados pero no dibujados** (Publicar §12.5). La tabla de la §6 da el texto de cada mensaje; el aspecto no está en ninguna lámina
-- [ ] 20.12 **El riel de nueve pasos de escritorio** (Publicar §7) no tenía tarea propia. No es la barra de progreso agrandada: en 1280 muestra **el valor de cada paso hecho** («Altamira», «$450 al mes») y permite saltar. La diferencia es entre saber cuánto falta y poder hacer algo al respecto
+- [x] 20.12 **El riel de nueve pasos de escritorio** (Publicar §7) no tenía tarea propia. No es la barra de progreso agrandada: en 1280 muestra **el valor de cada paso hecho** («Altamira», «$450 al mes») y permite saltar. La diferencia es entre saber cuánto falta y poder hacer algo al respecto. **Hecho, PR #94.** El riel muestra el valor de cada paso hecho, no sólo el progreso.
 
 ### 20e. Defectos del propio plan, corregidos hoy
 
