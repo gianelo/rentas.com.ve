@@ -91,7 +91,7 @@ function readPhotos(formData: FormData): readonly DraftPhoto[] {
     photos.push({
       key: entry,
       name: typeof name === "string" && name !== "" ? name : "Foto",
-      bytes: typeof bytes === "string" ? (Number(bytes) || 0) : 0,
+      bytes: typeof bytes === "string" ? Number(bytes) || 0 : 0,
     });
   }
   return photos;
@@ -109,7 +109,9 @@ export function readStepAnswers(
   switch (stepId) {
     case "tipo":
       // Sin valor por defecto, aca y en ninguna parte.
-      return draft({ propertyType: text(formData, "propertyType") as DraftListingValues["propertyType"] });
+      return draft({
+        propertyType: text(formData, "propertyType") as DraftListingValues["propertyType"],
+      });
 
     case "zona": {
       // **La ciudad la determina la zona.** Nunca se pregunta, asi que

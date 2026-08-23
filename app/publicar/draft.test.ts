@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { PublicationDraft } from "../../src/modules/listing-publication/domain/publication-steps";
 import {
   MAX_DESCRIPTION_CHARACTERS,
   MAX_TITLE_CHARACTERS,
@@ -164,10 +163,7 @@ describe("lo que se rechaza", () => {
       name: "x",
       bytes: 1,
     }));
-    const parsed = parseStoredDraft(
-      encode(JSON.stringify({ listing: {}, photos })),
-      undefined,
-    );
+    const parsed = parseStoredDraft(encode(JSON.stringify({ listing: {}, photos })), undefined);
 
     expect(parsed?.photos).toHaveLength(6);
   });

@@ -1,0 +1,95 @@
+import type { Metadata } from "next";
+import { notFound, redirect } from "next/navigation";
+import {
+  isStepComplete,
+  isStepNavigable,
+  PUBLISH_STEP_ORDER,
+  type PublishStepId,
+  parseStepId,
+  primaryActionFor,
+  progressPercent,
+  stepViolations,
+} from "@/modules/listing-publication/domain/publication-steps";
+import { searchPublicationZones } from "@/modules/listing-publication/domain/zone-search";
+import { DrizzleZoneVocabulary } from "@/modules/listing-publication/infrastructure/drizzle-zone-vocabulary";
+import { db } from "@/shared/db/client";
+import { requireSession } from "../../../_lib/require-session";
+import { PublishStep, type RailEntry } from "../../PublishStep";
+import { readPublicationContext } from "../../publication-context";
+import { PRIMARY_ACTION_LABEL, STEP_COPY, stepSummary } from "../../step-copy";
+
+export const metadata: Metadata = {
+  title: "Publicar — Rentas",
+};
+
+interface StepPageProps {
+  readonly params: Promise<{ paso: string }>;
+  /** `volver=revisar` cambia el boton y el destino; `q` es la busqueda de zona. */
+  readonly searchParams: Promise<{ volver?: string; q?: string }>;
+}
+
+export default async function StepPage({ params, searchParams }: StepPageProps) {
+  const { paso } = await params;
+
+  const stepId = parseStepId(paso);
+  // El segmento lo escribe quien quiera. Un paso inventado es un 404, no una
+  // pantalla a medio dibujar.
+  if (!stepId) notFound();
+
+  await requireSession(`/publicar/paso/${stepId}`);
+
+  const { volver, q } = await searchParams;
+  const returningToReview = volver === "revisar";
+
+  const { draft, violations, currentStep, zoneName } = await readPublicationContext();
+
+  // **Criterio de aceptacion 10, aplicado en el servidor.** Que el riel no
+  // dibuje el enlace es una cortesia; esto es la garantia. Escribir
+  // `/publicar/paso/quien` con el paso 2 sin contestar devuelve al paso que
+  // falta, en vez de dejar publicar un aviso con huecos que nadie vio.
+  if (!isStepNavigable(stepId, draft, violations)) {
+    redirect(`/publicar/paso/${currentStep}`);
+  }
+
+  const rail: readonly RailEntry[] = PUBLISH_STEP_ORDER.map((id) => ({
+    id,
+    number: STEP_COPY[id].number,
+    label: STEP_COPY[id].railLabel,
+    // Un paso hecho muestra SU VALOR, no su numero.
+    summary: stepSummary(id, draft, { zoneName }),
+    done: isStepComplete(id, draft, violations),
+    navigable: isStepNavigable(id, draft, violations),
+    current: id === stepId,
+  }));
+
+  // El paso 2 es el unico que consulta algo para dibujarse, y solo cuando hay
+  // algo escrito: sin busqueda no hay lista, y volcar el catalogo entero seria
+  // exactamente lo que el puerto acotado existe para no hacer.
+  const zoneResults =
+    stepId === "zona" && q
+      ? searchPublicationZones(q, await new DrizzleZoneVocabulary(db).lookup(q))
+      : undefined;
+
+  return (
+    <PublishStep
+      stepId={stepId}
+      draft={draft}
+      // Solo las de este paso. Un error de fotos en el paso 3 apunta a un
+      // campo que no existe en la pantalla: un callejon sin salida.
+      violations={stepViolations(stepId, draft.violations)}
+      raw={draft.raw}
+      rail={rail}
+      progress={progressPercent(draft, violations)}
+      returningToReview={returningToReview}
+      primaryLabel={PRIMARY_ACTION_LABEL[primaryActionFor(stepId, returningToReview)]}
+      previousStep={previousStepOf(stepId)}
+      zoneQuery={q}
+      zoneResults={zoneResults}
+      zoneName={zoneName}
+    />
+  );
+}
+
+function previousStepOf(stepId: PublishStepId): PublishStepId | null {
+  return PUBLISH_STEP_ORDER[PUBLISH_STEP_ORDER.indexOf(stepId) - 1] ?? null;
+}

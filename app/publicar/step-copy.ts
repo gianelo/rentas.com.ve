@@ -62,7 +62,11 @@ export const STEP_COPY: Record<PublishStepId, StepCopy> = {
     question: "Ponele un título",
     help: "Lo más importante primero. Es lo que se lee en la lista.",
   },
-  descripcion: { number: 7, railLabel: "Descripción", question: "Contá lo que no se ve en las fotos" },
+  descripcion: {
+    number: 7,
+    railLabel: "Descripción",
+    question: "Contá lo que no se ve en las fotos",
+  },
   fotos: { number: 8, railLabel: "Fotos", question: "Subí las fotos", help: "Entre 1 y 6." },
   quien: { number: 9, railLabel: "Quién publica", question: "¿Quién publica?" },
 };

@@ -1,12 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PublicationDraft } from "../../src/modules/listing-publication/domain/publication-steps";
 import { PUBLISH_STEP_ORDER } from "../../src/modules/listing-publication/domain/publication-steps";
-import {
-  changeNoticeMessage,
-  PRIMARY_ACTION_LABEL,
-  STEP_COPY,
-  stepSummary,
-} from "./step-copy";
+import { changeNoticeMessage, PRIMARY_ACTION_LABEL, STEP_COPY, stepSummary } from "./step-copy";
 
 const DRAFT: PublicationDraft = {
   listing: {
@@ -100,9 +95,9 @@ describe("stepSummary — el riel muestra el valor, no el numero", () => {
   });
 
   it("cuenta las fotos en singular y en plural", () => {
-    expect(
-      stepSummary("fotos", { ...DRAFT, photos: [...DRAFT.photos, DRAFT.photos[0]!] }, {}),
-    ).toBe("2 fotos");
+    expect(stepSummary("fotos", { ...DRAFT, photos: [...DRAFT.photos, ...DRAFT.photos] }, {})).toBe(
+      "2 fotos",
+    );
   });
 });
 

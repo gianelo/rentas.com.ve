@@ -1,5 +1,5 @@
-import { alias } from "drizzle-orm/pg-core";
 import { asc, eq, ilike, or, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { cities, zoneAliases, zones } from "../../../shared/db/schema";
 import type { SuggestionVocabulary } from "../../listing-catalogue/domain/suggest-filters";
 import type { ZoneVocabularyPort } from "../application/ports/zone-vocabulary.port";

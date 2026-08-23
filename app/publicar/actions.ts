@@ -25,8 +25,8 @@ import {
   DRAFT_TEXT_COOKIE,
   emptyDraft,
   parseStoredDraft,
-  serialiseStoredDraft,
   type StoredDraft,
+  serialiseStoredDraft,
 } from "./draft";
 import { publishListingDependencies } from "./fotos/publication";
 import { readStepAnswers } from "./step-values";
@@ -56,10 +56,8 @@ function stepPath(step: string, returningToReview: boolean): string {
 async function readDraft(): Promise<StoredDraft> {
   const store = await cookies();
   return (
-    parseStoredDraft(
-      store.get(DRAFT_COOKIE)?.value,
-      store.get(DRAFT_TEXT_COOKIE)?.value,
-    ) ?? emptyDraft()
+    parseStoredDraft(store.get(DRAFT_COOKIE)?.value, store.get(DRAFT_TEXT_COOKIE)?.value) ??
+    emptyDraft()
   );
 }
 

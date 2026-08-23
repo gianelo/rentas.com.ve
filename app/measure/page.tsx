@@ -6,7 +6,6 @@ import { ReadingWidth } from "../../components/layout/ReadingWidth";
 import { ResultRow } from "../../components/molecules/ResultRow";
 import { SearchFilters } from "../../components/molecules/SearchFilters";
 import { PhotoUploader } from "../publicar/fotos/PhotoUploader";
-import { PublishForm } from "../publicar/PublishForm";
 import publishStyles from "../publicar/publish-page.module.css";
 
 /**
@@ -90,18 +89,25 @@ export default function MeasureHarnessPage() {
           <h1 data-testid="publish-title" className={publishStyles.title}>
             Publicar una propiedad
           </h1>
-          <PublishForm
-            cities={[
-              { id: "dc", name: "Distrito Capital" },
-              { id: "mcbo", name: "Maracaibo" },
-            ]}
-            zones={[
-              { id: "chacao", name: "Chacao", cityId: "dc" },
-              { id: "altamira", name: "Altamira", cityId: "dc" },
-              { id: "la-lago", name: "La Lago", cityId: "mcbo" },
-            ]}
-            values={{ title: "Apartamento 2 habitaciones en Chacao", priceUsd: "450" }}
-          />
+          {/* El formulario largo de un paso se retiró: ahora son nueve
+              pantallas, una pregunta por vez. Lo que esta banca mide de ellas
+              es una sola — el paso 4, que es la que tiene cuatro controles y
+              por lo tanto la que puede desbordar la columna de 520px. El
+              formulario real vive detrás de la sesión y Playwright no llega. */}
+          <form data-testid="publish-step-form">
+            {[
+              ["Habitaciones", "2"],
+              ["Baños", "2"],
+              ["Puestos de auto", "1"],
+              ["Metros cuadrados", "78"],
+            ].map(([label, value]) => (
+              <p key={label}>
+                <label htmlFor={`measure-${label}`}>{label}</label>
+                <input id={`measure-${label}`} name={label} type="text" defaultValue={value} />
+              </p>
+            ))}
+            <ActionButton type="submit">Seguir</ActionButton>
+          </form>
         </FormShell>
       </div>
 

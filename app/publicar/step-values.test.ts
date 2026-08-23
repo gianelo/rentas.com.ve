@@ -67,9 +67,12 @@ describe("paso 2 · zona", () => {
   });
 
   it("guarda la referencia recortando los espacios, y vacia no se guarda", () => {
-    expect(read("zona", { zoneId: "altamira", reference: "  Frente a la plaza " }).answers.reference)
-      .toBe("Frente a la plaza");
-    expect(read("zona", { zoneId: "altamira", reference: "   " }).answers.reference).toBeUndefined();
+    expect(
+      read("zona", { zoneId: "altamira", reference: "  Frente a la plaza " }).answers.reference,
+    ).toBe("Frente a la plaza");
+    expect(
+      read("zona", { zoneId: "altamira", reference: "   " }).answers.reference,
+    ).toBeUndefined();
   });
 });
 
@@ -204,8 +207,9 @@ describe("paso 9 · quien publica", () => {
   it("sin elegir, dueno/inmobiliaria queda sin contestar", () => {
     // Es la garantia de confianza central del producto, no una preferencia
     // de pantalla, y no se puede cambiar despues de publicar.
-    expect(read("quien", { contactMethod: "whatsapp" }).answers.listing.publisherType)
-      .toBeUndefined();
+    expect(
+      read("quien", { contactMethod: "whatsapp" }).answers.listing.publisherType,
+    ).toBeUndefined();
   });
 });
 

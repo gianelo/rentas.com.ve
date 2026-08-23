@@ -70,7 +70,10 @@ describe("searchPublicationZones", () => {
     // dueno/inmobiliaria. En el buscador de un formulario, ofrecer
     // "Apartamento" donde se elige una zona aplicaria un dato en el campo
     // equivocado, y quien publica no tendria como notarlo.
-    const results = searchPublicationZones("apartamento amoblado hasta 400 en altamira", VOCABULARY);
+    const results = searchPublicationZones(
+      "apartamento amoblado hasta 400 en altamira",
+      VOCABULARY,
+    );
 
     expect(results.map((option) => option.zoneId)).toEqual(["altamira"]);
   });

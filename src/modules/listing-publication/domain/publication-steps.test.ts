@@ -8,12 +8,12 @@ import {
   isStepComplete,
   isStepNavigable,
   nextStepAfter,
-  parseStepId,
-  primaryActionFor,
-  progressPercent,
   PUBLISH_STEP_ORDER,
   type PublicationDraft,
   type PublishStepId,
+  parseStepId,
+  primaryActionFor,
+  progressPercent,
   STEP_FOR_VIOLATION,
   stepViolations,
 } from "./publication-steps";
@@ -102,9 +102,9 @@ describe("stepViolations", () => {
     expect(stepViolations("tipo", ["propertyType.required", "priceUsd.required"])).toEqual([
       "propertyType.required",
     ]);
-    expect(stepViolations("zona", ["cityId.unknown", "zoneId.notInCity", "title.required"])).toEqual(
-      ["cityId.unknown", "zoneId.notInCity"],
-    );
+    expect(
+      stepViolations("zona", ["cityId.unknown", "zoneId.notInCity", "title.required"]),
+    ).toEqual(["cityId.unknown", "zoneId.notInCity"]);
     expect(stepViolations("tamano", ["rooms.invalid", "parkingSpots.invalid"])).toEqual([
       "rooms.invalid",
       "parkingSpots.invalid",
@@ -433,6 +433,10 @@ describe("describeDraftChange — se dice que cambio", () => {
       ],
     });
 
-    expect(describeDraftChange(before, after)).toEqual({ field: "photos", before: "1", after: "2" });
+    expect(describeDraftChange(before, after)).toEqual({
+      field: "photos",
+      before: "1",
+      after: "2",
+    });
   });
 });
