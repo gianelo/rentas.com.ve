@@ -92,6 +92,10 @@ describe("WCAG AA contrast (1b.15)", () => {
     ["--soft", "--surface", "metadata text / broker badge text"],
     ["--accent-ink", "--accent", "action button label"],
     ["--accent", "--tint", "selection button label"],
+    // El contador en falta de publicar (`.counterShort`) y el aviso de cambio
+    // de ciudad del panel (`.warning`): los dos únicos usos de `--warn`.
+    ["--warn", "--surface", "contador en falta / texto de advertencia"],
+    ["--warn", "--warn-bg", "aviso sobre su propio fondo"],
   ];
 
   for (const theme of ["menta", "oscuro"] as const) {
@@ -102,6 +106,40 @@ describe("WCAG AA contrast (1b.15)", () => {
       });
     });
   }
+});
+
+/**
+ * **Una advertencia tiene que verse como una advertencia.**
+ *
+ * `--warn` pinta el contador de caracteres en falta de publicar y el aviso de
+ * que cambiar de ciudad borra las zonas. Traía el azul del acento —el mismo
+ * color que TODO lo demás de la pantalla— así que no se leía como aviso: se
+ * leía como texto. La especificación de publicar §8 lo pide ámbar, `#8a5a00`.
+ */
+describe("el aviso se lee como aviso (Publicar §8)", () => {
+  it("menta lleva el ámbar de la especificación, textual", () => {
+    expect(themeColor("menta", "--warn")).toBe("#8a5a00");
+  });
+
+  it("oscuro NO puede llevar ese mismo ámbar, y este es el número que lo dice", () => {
+    // 2,52:1 sobre `--surface` y 2,90:1 sobre `--bg`. Los dos por debajo de
+    // 4,5. Esta aserción existe para que nadie "corrija" el tema oscuro al
+    // valor de la spec dentro de seis meses creyendo que arregla una
+    // inconsistencia.
+    expect(contrastRatio("#8a5a00", themeColor("oscuro", "--surface"))).toBeLessThan(4.5);
+    expect(themeColor("oscuro", "--warn")).not.toBe("#8a5a00");
+  });
+
+  it("y sigue siendo ámbar en oscuro, no otro color del tema", () => {
+    // Ámbar es rojo alto, verde medio y azul bajo. Sin esto, "que pase AA" lo
+    // cumpliría cualquier color — incluido el azul del que se viene.
+    const [r, g, b] = [1, 3, 5].map((at) =>
+      Number.parseInt(themeColor("oscuro", "--warn").slice(at, at + 2), 16),
+    ) as [number, number, number];
+
+    expect(r).toBeGreaterThan(g);
+    expect(g).toBeGreaterThan(b);
+  });
 });
 
 // 1b.18 — shipped read-path CSS carries no webfont request, and this

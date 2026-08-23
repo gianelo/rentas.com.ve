@@ -215,8 +215,19 @@
   --dark-accent: #bae8e8;
   --dark-accent-ink: #272343;
   --dark-tint: #332e52;
-  --dark-warn: #bae8e8;
-  --dark-warn-bg: #332e52;
+  /* **El ámbar de la spec NO sirve acá, y este es el número.** `#8a5a00` da
+     2,52:1 sobre `--dark-surface` y 2,90:1 sobre `--dark-bg`: los dos por
+     debajo de 4,5, y el contrato de tema exige AA en `menta` Y en `oscuro`.
+     Un ámbar oscuro sobre un fondo oscuro es texto ilegible, no una
+     advertencia más discreta.
+
+     El valor propuesto es el que el propio archivo de referencia del diseño
+     le da a `oscuro` (`design/reference/sistema/tokens.css`), así que no se
+     inventa un color: 7,73:1 sobre `--dark-surface`, 8,92:1 sobre
+     `--dark-bg`, 7,86:1 sobre su propio fondo. Es el mismo ámbar de `menta`
+     subido de luminancia para el tema de noche — la misma señal, no otra. */
+  --dark-warn: #e0b464;
+  --dark-warn-bg: #2c2517;
   --dark-err: #f0a39a;
   --dark-err-bg: #43283a;
   --dark-thumb: repeating-linear-gradient(135deg, #3b3663 0 7px, #332e52 7px 14px);
@@ -259,13 +270,24 @@
   --accent: #272343;
   --accent-ink: #ffffff;
   --tint: #e3f6f5;
-  /* Both repainted from the palette itself (design update, 2026-08-18). The
-     mustard pair was the only colour on this screen belonging to no theme;
-     `--warn` is now the accent navy and `--warn-bg` the mint, so "vence
-     pronto" reads as part of the product rather than a borrowed browser
-     warning. */
-  --warn: #272343;
-  --warn-bg: #bae8e8;
+  /* **Ámbar, y el azul del acento era el error.** El repintado del 2026-08-18
+     llevó `--warn` al azul del acento y `--warn-bg` a la menta, para que
+     "vence pronto" perteneciera a la paleta. El resultado fue que un aviso
+     quedó pintado con el color de TODO lo demás: el contador de caracteres en
+     falta de publicar y el aviso de que cambiar de ciudad borra las zonas se
+     leen como texto, no como advertencia. Un aviso que no se distingue no es
+     un aviso.
+
+     `#8a5a00` es el valor de la especificación de publicar §8, textual.
+     Medido: 5,93:1 sobre `--surface` y 5,32:1 sobre `--warn-bg` — los dos
+     pasan AA. La medición la hace `components/design-contract.test.tsx`
+     contra este archivo, no contra una copia.
+
+     `--warn-bg` vuelve al lavado ámbar de SISTEMA.md por una razón medida y
+     no estética: `#8a5a00` sobre la menta `#bae8e8` da 4,46:1, que NO llega a
+     4,5. */
+  --warn: #8a5a00;
+  --warn-bg: #faf2e1;
   --err: #9c2b20;
   --err-bg: #fbecea;
   --thumb: repeating-linear-gradient(135deg, #bae8e8 0 7px, #e3f6f5 7px 14px);
