@@ -168,3 +168,21 @@ describe("isFilteredZoneRoute con los filtros que llegaron después", () => {
     expect(isFilteredZoneRoute({ tipo: "", pag: "   " })).toBe(false);
   });
 });
+
+/**
+ * **Los dos que llegaron con el acordeón, y que no son filtros.**
+ *
+ * `filtros` dice qué paso está abierto y `busca` es el texto del buscador de
+ * zonas. Ninguno de los dos cambia qué avisos se devuelven — y sin embargo los
+ * dos tienen que marcar la ruta como refinada, porque producen una dirección
+ * distinta para la MISMA página. Indexar `/alquiler/dc/chacao` y
+ * `/alquiler/dc/chacao?filtros=precio` es publicar dos veces lo mismo, que es
+ * justo lo que esta regla existe para evitar.
+ */
+describe("isFilteredZoneRoute con el estado del acordeón", () => {
+  for (const key of ["filtros", "busca"]) {
+    it(`reconoce \`${key}\` como una dirección que no se indexa`, () => {
+      expect(isFilteredZoneRoute({ [key]: "zona" })).toBe(true);
+    });
+  }
+});

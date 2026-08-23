@@ -1,0 +1,392 @@
+/* El acordeón de cuatro pasos, y la misma pieza como barra lateral.
+
+   **Una sola estructura para las dos anchuras, no dos.** En 360 los cuatro
+   pasos son un acordeón porque no cabe nada más; en 1280 los mismos cuatro
+   grupos se ven a la vez en la barra lateral de 240 px. Duplicar el marcado
+   sería duplicar los bytes en el teléfono, que es justo el dispositivo para
+   el que existe la regla del presupuesto (F15).
+
+   Cómo se abren los cuatro en escritorio sin JavaScript: `::details-content`.
+   El navegador esconde el contenido de un `<details>` cerrado con
+   `content-visibility`, y ese pseudoelemento es la única forma de revertirlo
+   desde CSS. En un navegador que todavía no lo entienda, el escritorio ve el
+   acordeón del teléfono — más clics, nunca roto. Es la degradación que el D13
+   pide: el camino de lectura funciona siempre, y lo de arriba es mejora. */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 12px;
+}
+
+.step {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: var(--gap);
+}
+
+.step:last-of-type {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* El renglón cerrado: número, título y lo elegido. Es lo que la lámina dibuja
+   como «Zona · Todas» y «Precio · Cualquiera». */
+.summary {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  min-block-size: var(--target-min);
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  color: var(--ink);
+}
+
+.summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.position {
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  font-weight: var(--meta-fw);
+  color: var(--accent);
+  border: 1px solid var(--line);
+  border-radius: var(--rs);
+  min-inline-size: 22px;
+  text-align: center;
+}
+
+.stepTitle {
+  font-weight: 600;
+}
+
+/* Lo elegido va a la derecha y en el tono suave: el título dice qué es y esto
+   dice cómo quedó. Nunca está vacío — el dominio garantiza un texto. */
+.stepValue {
+  margin-inline-start: auto;
+  color: var(--soft);
+  font-size: var(--meta-fs);
+  text-align: end;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding-block-start: var(--gap);
+}
+
+.question {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.note {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  color: var(--soft);
+  display: block;
+}
+
+/* Ciudad y zona con desplazamiento propio: la lámina lo pide con todas las
+   letras — «la pantalla no crece». Con veinte zonas, el botón del conteo
+   quedaría fuera de la vista, que es el único botón que hay que ver mientras
+   se filtra. */
+.options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-block-size: 260px;
+  overflow-y: auto;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  min-block-size: var(--target-min);
+  padding-inline: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  text-decoration: none;
+}
+
+/* Elegida: relleno y borde más grueso, nunca sólo color. La misma regla que
+   el badge de publicador — tiene que leerse en escala de grises. */
+.option[data-chosen] {
+  border: 2px solid var(--accent);
+  background: var(--tint);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.option[aria-disabled="true"] {
+  color: var(--soft);
+  background: var(--ctl);
+  cursor: not-allowed;
+}
+
+.option:focus-visible,
+.roomOption:focus-visible,
+.confirm:focus-visible,
+.clear:focus-visible,
+.control:focus-visible,
+.searchAction:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.optionName {
+  display: flex;
+  flex-direction: column;
+}
+
+/* El conteo, monoespaciado y a la derecha: es un número, y los números se
+   comparan en columna. */
+.count {
+  margin-inline-start: auto;
+  font-family: var(--meta);
+  font-size: var(--meta-fs);
+  color: var(--soft);
+}
+
+/* El aviso de que cambiar de ciudad borra las zonas. Se dibuja antes de
+   tocarla, no después. */
+.warning {
+  margin: 4px 0 0;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  color: var(--warn);
+  background: var(--warn-bg);
+  border-radius: var(--r);
+  padding: 6px 10px;
+}
+
+.search,
+.price {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.searchLabel {
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--soft);
+}
+
+.searchRow,
+.priceRow {
+  display: flex;
+  gap: var(--gap);
+}
+
+.priceField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.control {
+  min-block-size: var(--target-min);
+  padding: 0 12px;
+  border: 1px solid var(--strong);
+  border-radius: var(--r);
+  background: var(--ctl);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.searchAction {
+  min-block-size: var(--target-min);
+  padding-inline: 14px;
+  border: 1px solid var(--accent);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--accent);
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Los cuatro escalones de habitaciones, en fila: son cortos y comparables. */
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--gap);
+}
+
+.roomOption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-block-size: var(--target-min);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.roomOption[data-chosen] {
+  border: 2px solid var(--accent);
+  background: var(--tint);
+  color: var(--accent);
+}
+
+.roomOption[aria-disabled="true"] {
+  color: var(--soft);
+  background: var(--ctl);
+  cursor: not-allowed;
+}
+
+.stepNumber {
+  font-family: var(--disp);
+  font-size: var(--control-fs);
+  font-weight: 600;
+}
+
+.roomOption .count {
+  margin-inline-start: 0;
+  font-size: var(--meta-fs-sm);
+}
+
+/* El pie queda pegado abajo en el teléfono: el conteo es lo que se mira
+   mientras se filtra, y perderlo de vista es perder la razón del acordeón. */
+.foot {
+  position: sticky;
+  inset-block-end: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  padding-block-start: var(--gap);
+  background: var(--surface);
+  border-block-start: 1px solid var(--line);
+}
+
+.clear {
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  color: var(--soft);
+  text-decoration: underline;
+  min-block-size: var(--target-min);
+  display: flex;
+  align-items: center;
+}
+
+.confirm {
+  margin-inline-start: auto;
+  min-block-size: var(--action-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 16px;
+  border-radius: var(--r);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Cero resultados: el botón NO se apaga. Dice qué pasó y ofrece una salida
+   con su número (F7). */
+.empty {
+  margin-inline-start: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.emptyLabel {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  color: var(--soft);
+}
+
+@media (min-width: 768px) {
+  .option,
+  .control,
+  .searchAction,
+  .roomOption,
+  .summary {
+    min-block-size: var(--target-min-desktop);
+  }
+
+  /* Los cuatro pasos a la vez: en 1280 caben, y hacerlos secuenciales sería
+     inventar fricción. El acordeón no desaparece del marcado — deja de
+     comportarse como acordeón. */
+  .step::details-content {
+    content-visibility: visible;
+    block-size: auto;
+  }
+
+  /* El disclosure deja de ser un control y pasa a ser el encabezado del
+     grupo: no hay nada que abrir. */
+  .summary {
+    cursor: default;
+    list-style: none;
+  }
+
+  .summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /* En la barra lateral de 240 px la pregunta larga sobra: el título del grupo
+     ya la contesta, y el alto es lo que escasea. */
+  .question {
+    display: none;
+  }
+
+  .options {
+    max-block-size: 200px;
+  }
+
+  .foot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .confirm,
+  .empty {
+    margin-inline-start: 0;
+  }
+
+  .empty {
+    align-items: stretch;
+  }
+}

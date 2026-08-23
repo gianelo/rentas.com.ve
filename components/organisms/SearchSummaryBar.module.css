@@ -1,0 +1,83 @@
+/* La barra resumen del teléfono. En escritorio no se dibuja: ahí los filtros
+   están a la vista en la barra lateral de 240 px, y repetirlos en palabras
+   sería decir dos veces lo mismo ocupando el alto que la cuadrícula necesita. */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  min-block-size: var(--brandbar-h);
+  padding-inline: 4px;
+  border-block-end: 1px solid var(--line);
+  background: var(--surface);
+}
+
+@media (min-width: 768px) {
+  .bar {
+    display: none;
+  }
+}
+
+/* 44 px de área táctil también acá: la regla transversal 7 nombra
+   explícitamente los enlaces de volver. */
+.back,
+.gear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--target-min);
+  min-block-size: var(--target-min);
+  color: var(--ink);
+  text-decoration: none;
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  position: relative;
+}
+
+.back:focus-visible,
+.gear:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.text {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.headline {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* El conteo va adelante en el texto, así que si la línea se corta lo que se
+   pierde es el último filtro y no el número. */
+.summary {
+  margin: 0;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  color: var(--soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline-end: 2px;
+  min-inline-size: 16px;
+  border-radius: var(--rs);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  font-weight: var(--meta-fw);
+  text-align: center;
+}
