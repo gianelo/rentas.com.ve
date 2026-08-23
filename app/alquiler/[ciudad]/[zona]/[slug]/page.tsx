@@ -16,6 +16,12 @@ import {
 } from "@/modules/contact-reveal/infrastructure/drizzle-contact-reveal";
 import { nextAuthSessionPort } from "@/modules/identity/infrastructure/session-port";
 import { resolveListingRoute } from "@/modules/listing-discovery/domain/listing-detail-route";
+import { photoUrl } from "@/modules/listing-discovery/domain/listing-photo-view";
+import {
+  buildListingStructuredData,
+  resolveListingIndexing,
+  serializeStructuredData,
+} from "@/modules/listing-discovery/domain/listing-structured-data";
 import { listingIdFromSlug } from "@/modules/listing-discovery/domain/listing-url";
 import {
   RETURN_PARAM,
@@ -24,6 +30,7 @@ import {
 } from "@/modules/listing-discovery/domain/return-to-results";
 import { DrizzleListingDetail } from "@/modules/listing-discovery/infrastructure/drizzle-listing-detail";
 import { DrizzleListingPhotos } from "@/modules/listing-discovery/infrastructure/drizzle-listing-photos";
+import { readSiteBaseUrl } from "@/modules/listing-discovery/infrastructure/site-base-url";
 import { db } from "@/shared/db/client";
 import styles from "./ficha.module.css";
 import { revealListingContact } from "./reveal-actions";
@@ -142,8 +149,33 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
     },
   );
 
+  // Se lee al servir y no al importar el módulo: `next build` evalúa el módulo
+  // sin las variables del despliegue, y una lectura arriba del archivo
+  // convierte una foto en un build roto.
+  const photoBase = process.env.R2_BUCKET_PUBLIC_URL ?? "";
+
+  // **Qué es esta página, dicho para una máquina** (11.14). El documento lo
+  // arma el dominio: qué tipo de schema.org corresponde, qué se declara y qué
+  // no es una regla, y esta página sólo la imprime. Recibe el aviso y las
+  // fotos; el contacto no viaja acá ni podría — `detail` no lo trae.
+  const structuredData = buildListingStructuredData(readSiteBaseUrl(), detail, {
+    // Sin base pública las direcciones salen relativas, y el dominio las
+    // descarta: una imagen relativa en un JSON-LD es una imagen rota declarada
+    // como buena.
+    images: photos.flatMap(({ keys }) => (keys.full ? [photoUrl(photoBase, keys.full)] : [])),
+  });
+
   return (
     <main className={styles.page}>
+      {/* Adentro del cuerpo y no en `generateMetadata`: el `<head>` de Next no
+          admite un script, y este documento describe lo que la página dibuja.
+          Va escapado desde el dominio — la descripción la escribe quien
+          publica, y un `</script>` en ese texto cerraría la etiqueta. */}
+      <script
+        type="application/ld+json"
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: es la única forma de emitir JSON-LD, y `serializeStructuredData` escapa el `<` antes de llegar acá.
+        dangerouslySetInnerHTML={{ __html: serializeStructuredData(structuredData) }}
+      />
       <Container>
         <header className={styles.bar}>
           <a className={styles.back} href={back.href}>
@@ -157,11 +189,7 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
               <div className={styles.gallery}>
                 <PhotoStrip
                   photos={photos}
-                  // Se lee al servir y no al importar el módulo: `next build`
-                  // evalúa el módulo sin las variables del despliegue, y una
-                  // lectura arriba del archivo convierte una foto en un build
-                  // roto.
-                  publicBaseUrl={process.env.R2_BUCKET_PUBLIC_URL ?? ""}
+                  publicBaseUrl={photoBase}
                   title={detail.title}
                   zone={detail.zoneName}
                   href={listingPath}
@@ -287,8 +315,17 @@ export async function generateMetadata({ params }: FichaProps): Promise<Metadata
   const detail = await findDetail(listingId);
   if (!detail) return {};
 
+  // **Qué se le pide a Google es una regla, y la decide el dominio** (11.9 y
+  // 11.15): un aviso vencido y uno de contenido delgado salen del índice. Acá
+  // no se vuelve a mirar el estado ni a medir la descripción — escrito dos
+  // veces, se separa en el primer arreglo apurado.
+  const indexing = resolveListingIndexing(detail, new Date());
+
   return {
     title: `${detail.title} — ${detail.zoneName}, ${detail.cityName}`,
     description: detail.description.slice(0, 155),
+    // `undefined` cuando se indexa, igual que la página de zona: no emitir la
+    // etiqueta es la respuesta por defecto, y `index: true` no dice nada más.
+    robots: indexing.index ? undefined : { index: false, follow: indexing.follow },
   };
 }
