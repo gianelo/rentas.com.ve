@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
-import type * as schema from "../../../shared/db/schema";
+import * as schema from "../../../shared/db/schema";
 import type {
+  NewPhotoHash,
   PhotoHashMatch,
   PhotoHashPort,
   PublisherId,
@@ -79,5 +80,21 @@ export class DrizzlePhotoHash implements PhotoHashPort {
       publisherId: row.publisher_id,
       distance: Number(row.distance),
     }));
+  }
+
+  /**
+   * The write side task 4.7 adds. Exactly the three columns
+   * `listing_photo_hash` has — no `publisherId`, because the schema
+   * deliberately carries none (schema.ts) — so there is nothing here for a
+   * denormalised copy to drift from. Drizzle's own typed insert is used
+   * rather than raw SQL, since `bit64`'s `customType` already speaks the
+   * same 64-character bit string `toBitString` produces for the read side.
+   */
+  async record(newHash: NewPhotoHash): Promise<void> {
+    await this.db.insert(schema.listingPhotoHashes).values({
+      photoId: newHash.photoId,
+      hash: toBitString(newHash.hash),
+      createdAt: newHash.recordedAt,
+    });
   }
 }

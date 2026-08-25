@@ -39,12 +39,26 @@ export type PublicationDatabase = PgDatabase<PgQueryResultHKT, typeof schema>;
 export class DrizzleListingRepository implements ListingRepositoryPort {
   constructor(private readonly db: PublicationDatabase) {}
 
-  async save(listing: NewListing): Promise<{ readonly id: string }> {
+  async save(
+    listing: NewListing,
+  ): Promise<{ readonly id: string; readonly photoIds: readonly string[] }> {
     // Generated here rather than by the database so the photo rows can name
     // their parent inside the same transaction without a round trip to read
     // back what was just written.
     const id = randomUUID();
     const createdAt = listing.publishedAt;
+
+    // Hoisted out of the transaction closure (task 4.7): the ids below
+    // depend on nothing the database returns, so they are just as valid
+    // read back out here, and `save`'s caller needs them in submission
+    // order to record each photo's perceptual hash afterwards — see
+    // `ListingRepositoryPort.save`'s own doc for why the order matters.
+    const photoRows = listing.photos.map((photo) => ({
+      id: randomUUID(),
+      listingId: id,
+      position: photo.position,
+      createdAt,
+    }));
 
     // One transaction, because a listing with no photo row is a state the
     // publish rules forbid — `photos.required`. Without this, a failure on
@@ -92,15 +106,11 @@ export class DrizzleListingRepository implements ListingRepositoryPort {
         expiresAt: listing.expiresAt,
       });
 
-      // Los ids se generan acá y se reusan abajo: las derivadas necesitan
-      // apuntar a su foto, y volver a leerlas de la base para averiguar qué id
-      // les tocó sería un viaje de red por una respuesta que ya tenemos.
-      const photoRows = listing.photos.map((photo) => ({
-        id: randomUUID(),
-        listingId: id,
-        position: photo.position,
-        createdAt,
-      }));
+      // `photoRows` is generated above, outside this transaction — las
+      // derivadas necesitan apuntar a su foto, y volver a leerlas de la base
+      // para averiguar qué id les tocó sería un viaje de red por una
+      // respuesta que ya tenemos.
+      //
       // A published listing always has at least one photo (`photos.required`
       // — see publishable-listing.ts), so this was never empty before now.
       // An imported DRAFT (tasks.md 9.15/9.17) is created with zero — photos
@@ -127,7 +137,7 @@ export class DrizzleListingRepository implements ListingRepositoryPort {
       }
     });
 
-    return { id };
+    return { id, photoIds: photoRows.map((row) => row.id) };
   }
 }
 
@@ -213,7 +223,11 @@ export class DrizzleListingActivation implements ListingActivationPort, ListingP
    * already proved ownership and the ceiling before this is ever called,
    * so this method carries no lookup of its own.
    */
-  async attachPhoto(listingId: string, photo: NewListingPhoto, createdAt: Date): Promise<void> {
+  async attachPhoto(
+    listingId: string,
+    photo: NewListingPhoto,
+    createdAt: Date,
+  ): Promise<{ readonly photoId: string }> {
     const photoId = randomUUID();
 
     await this.db.transaction(async (tx) => {
@@ -236,6 +250,8 @@ export class DrizzleListingActivation implements ListingActivationPort, ListingP
         await tx.insert(listingPhotoDerivatives).values(derivativeRows);
       }
     });
+
+    return { photoId };
   }
 }
 
