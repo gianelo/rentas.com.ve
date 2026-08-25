@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import {
@@ -9,6 +9,10 @@ import {
   listings,
   zones,
 } from "../../../shared/db/schema";
+import type {
+  DraftForActivation,
+  ListingActivationPort,
+} from "../application/ports/listing-activation.port";
 import type {
   ListingRepositoryPort,
   NewListing,
@@ -122,6 +126,80 @@ export class DrizzleListingRepository implements ListingRepositoryPort {
     });
 
     return { id };
+  }
+}
+
+/**
+ * broker-bulk-import spec, "Drafts Are Not Published Listings" (tasks.md
+ * 9.18/9.19) — the read/write pair `activate-listing.ts` needs, kept
+ * separate from `DrizzleListingRepository` per AGENTS.md §3: `save` inserts,
+ * this reads-then-flips an existing row, and the two never need to change
+ * together.
+ */
+export class DrizzleListingActivation implements ListingActivationPort {
+  constructor(private readonly db: PublicationDatabase) {}
+
+  /**
+   * `status = 'draft'` lives IN the `WHERE`, exactly like `findRevealable`'s
+   * `status = 'active'` (contact-reveal) — never a plain `id = $1` filtered
+   * afterwards in TypeScript. An already-active, expired, hidden, or
+   * nonexistent id all come back `null` here, which is what lets
+   * `activateListing` treat "not a draft" and "does not exist" as the exact
+   * same case.
+   */
+  async findDraftById(listingId: string): Promise<DraftForActivation | null> {
+    const rows = await this.db
+      .select({
+        id: listings.id,
+        publisherId: listings.publisherId,
+        publisherType: listings.publisherType,
+        propertyType: listings.propertyType,
+        cityId: listings.cityId,
+        zoneId: listings.zoneId,
+        title: listings.title,
+        description: listings.description,
+        priceUsd: listings.priceUsd,
+        rooms: listings.rooms,
+        areaM2: listings.areaM2,
+        bathrooms: listings.bathrooms,
+        parkingSpots: listings.parkingSpots,
+        hasPowerPlant: listings.hasPowerPlant,
+        hasRegularWater: listings.hasRegularWater,
+        isFurnished: listings.isFurnished,
+        hasSecurity: listings.hasSecurity,
+        hasAppliances: listings.hasAppliances,
+        contactMethod: listings.contactMethod,
+        contactValue: listings.contactValue,
+      })
+      .from(listings)
+      .where(and(eq(listings.id, listingId), eq(listings.status, "draft")))
+      .limit(1);
+
+    const row = rows[0];
+    if (!row) return null;
+
+    const photoCountRows = await this.db
+      .select({ photoCount: count() })
+      .from(listingPhotos)
+      .where(eq(listingPhotos.listingId, listingId));
+
+    return { ...row, photoCount: photoCountRows[0]?.photoCount ?? 0 };
+  }
+
+  /**
+   * Compare-and-swap, same idiom as `DrizzleLifecycleListings.renew`:
+   * `status = 'draft'` guards the `UPDATE` itself, not only the read that
+   * preceded it, so two simultaneous activations of the same draft cannot
+   * both believe they won.
+   */
+  async activate(listingId: string, publishedAt: Date, expiresAt: Date): Promise<boolean> {
+    const updated = await this.db
+      .update(listings)
+      .set({ status: "active", publishedAt, expiresAt })
+      .where(and(eq(listings.id, listingId), eq(listings.status, "draft")))
+      .returning({ id: listings.id });
+
+    return updated.length > 0;
   }
 }
 
