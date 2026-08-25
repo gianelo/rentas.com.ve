@@ -16,13 +16,17 @@ import { db } from "../../../../src/shared/db/client";
  * que NO borra lo decide `purgeExpiredPhotos`, sobre un puerto que no tiene
  * con qué tocar la fila del aviso.
  *
- * **A PROPÓSITO NO ESTÁ EN `vercel.json`.** La ruta existe, está probada y se
- * puede disparar a mano con el portador; lo que falta es el correo. 19.8 dice
- * que lo que separa esta retención de un borrado silencioso es el aviso, y hoy
- * `ConsoleLifecycleMailer` no manda ninguno. Programarla ahora borraría fotos
- * reales sin que nadie se haya enterado — irreversible y exactamente lo que
- * 19.5 existe para impedir. Se agrega el cron el mismo día que entre el
- * adaptador de Resend (7.11), no antes.
+ * **SIGUE SIN ESTAR EN `vercel.json`, y ahora por otra razón.** El bloqueo
+ * técnico se levantó el 2026-08-24: `ResendLifecycleMailer` entró con 7.11 y
+ * el aviso de purga YA sale por correo de verdad. Lo que 19.8 pedía —que lo
+ * que separa esta retención de un borrado silencioso sea el aviso— está
+ * cumplido.
+ *
+ * Lo que falta es una decisión, no código. Programar esto empieza a **borrar
+ * fotos reales de forma irreversible** todos los días, así que el cron lo
+ * agrega el fundador cuando quiera, no un agente porque el bloqueo se cayó.
+ * Antes de programarlo conviene mirar 19.5 y comprobar contra datos reales
+ * que la anticipación de 5 días alcanza para que alguien reaccione.
  */
 
 export const dynamic = "force-dynamic";

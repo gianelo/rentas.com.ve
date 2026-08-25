@@ -9,7 +9,14 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
  * y que ninguna consulta salga es parte de lo que esta prueba afirma.
  */
 
-const ENV_KEYS = ["DATABASE_URL", "CRON_SECRET", "SITE_BASE_URL"] as const;
+const ENV_KEYS = [
+  "DATABASE_URL",
+  "CRON_SECRET",
+  "SITE_BASE_URL",
+  "RENEWAL_TOKEN_SECRET",
+  "RESEND_API_KEY",
+  "LIFECYCLE_MAIL_FROM",
+] as const;
 let saved: Record<string, string | undefined>;
 
 beforeEach(() => {
@@ -63,5 +70,43 @@ describe("POST /api/jobs/expiry-reminders", () => {
       const response = await post(header);
       expect(response.status).toBe(401);
     }
+  });
+});
+
+/**
+ * **Sin proveedor de correo la tanda NO empieza** (tasks.md 7.11).
+ *
+ * No es una comodidad: arrancarla tomaría el libro de reservas de cada aviso
+ * —una reserva por ciclo, que es justo lo que impide el doble envío— y los
+ * quemaría sin que salga un solo correo. El intento siguiente los encontraría
+ * ya reservados y **no reintentaría**, así que ese ciclo se pierde entero.
+ *
+ * Contesta 500 y no 401 a propósito: el portador estaba bien. Lo que falta es
+ * del lado del servidor, y un 401 mandaría a rotar un secreto que no tiene
+ * nada que ver.
+ */
+describe("cuando falta la configuración del correo", () => {
+  beforeEach(() => {
+    process.env.CRON_SECRET = "el-secreto";
+    process.env.RENEWAL_TOKEN_SECRET = "otro-secreto";
+  });
+
+  it.each([
+    ["falta la clave de Resend", { LIFECYCLE_MAIL_FROM: "avisos@rentas.com.ve" }],
+    ["falta el remitente", { RESEND_API_KEY: "re_loquesea" }],
+    ["no hay ninguna de las dos", {}],
+  ])("devuelve 500 y reminders_sent = 0 cuando %s", async (_caso, env) => {
+    delete process.env.RESEND_API_KEY;
+    delete process.env.LIFECYCLE_MAIL_FROM;
+    Object.assign(process.env, env);
+
+    const response = await post({ authorization: "Bearer el-secreto" });
+
+    expect(response.status).toBe(500);
+    // El cero explícito otra vez, y por la misma razón que en el 401.
+    await expect(response.json()).resolves.toEqual({
+      error: "mailer_not_configured",
+      reminders_sent: 0,
+    });
   });
 });

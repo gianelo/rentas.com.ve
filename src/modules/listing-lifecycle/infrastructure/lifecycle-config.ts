@@ -27,3 +27,23 @@ export function readCronSecret(env: Record<string, string | undefined> = process
 export function readRenewalSecret(env: Record<string, string | undefined> = process.env) {
   return env.RENEWAL_TOKEN_SECRET || env.CRON_SECRET || undefined;
 }
+
+/**
+ * Lo que hace falta para que salga un correo (tasks.md 7.11).
+ *
+ * **Las dos o ninguna.** Una clave sin remitente manda todo al rebote y un
+ * remitente sin clave no manda nada; devolver una mitad dejaría a quien llama
+ * construyendo un adaptador que falla en el primer envío, con la tanda ya
+ * empezada y el libro de reservas tomado. Se comprueban acá, antes.
+ *
+ * Sigue la misma regla que los otros dos: no lanza, devuelve `undefined` y
+ * la ruta decide qué contestar.
+ */
+export function readMailerConfig(env: Record<string, string | undefined> = process.env) {
+  const apiKey = env.RESEND_API_KEY || undefined;
+  const from = env.LIFECYCLE_MAIL_FROM || undefined;
+
+  if (!apiKey || !from) return undefined;
+
+  return { apiKey, from } as const;
+}
