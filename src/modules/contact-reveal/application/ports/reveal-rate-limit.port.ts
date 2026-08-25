@@ -14,3 +14,22 @@ export interface RevealRateLimitPort {
    */
   findRecentlyRevealedListingIds(tenantUserId: string, since: Date): Promise<readonly string[]>;
 }
+
+/**
+ * Task 6.14 — the read side of "the contact action opens with the submitted
+ * message already written". Kept alongside `RevealRateLimitPort` for the
+ * same reason: `ContactRevealEventPort` stays write-only, and both of these
+ * are reads over the same append-only log.
+ */
+export interface RevealMessageHistoryPort {
+  /**
+   * The tenant's MOST RECENT message for this `(tenant, listing)` pair.
+   * Repeat reveals each write their own row (task 6.4, never deduplicated),
+   * so "latest" is the message they meant when they last opened the contact
+   * action. `null` covers two cases the caller cannot and must not tell
+   * apart from this alone: the tenant never revealed this listing, or their
+   * only reveal(s) predate the message requirement (task 6.11's historical
+   * `NULL` rows) — either way, there is nothing authoritative to prefill.
+   */
+  findLatestMessage(tenantUserId: string, listingId: string): Promise<string | null>;
+}

@@ -6,6 +6,7 @@ import {
   RevealRateLimitExceededError,
   revealContact,
 } from "@/modules/contact-reveal/application/reveal-contact";
+import { MissingRevealMessageError } from "@/modules/contact-reveal/domain/reveal-message";
 import {
   DrizzleContactRevealEvents,
   DrizzleRevealableListing,
@@ -32,6 +33,7 @@ import { db } from "@/shared/db/client";
 export async function revealListingContact(formData: FormData): Promise<void> {
   const listingId = String(formData.get("listingId") ?? "");
   const signInHref = String(formData.get("signInHref") ?? "");
+  const message = String(formData.get("message") ?? "");
 
   try {
     // Un solo objeto para las dos mitades de la tabla (tasks.md 6.9/6.10):
@@ -40,7 +42,7 @@ export async function revealListingContact(formData: FormData): Promise<void> {
     const contactRevealEvents = new DrizzleContactRevealEvents(db);
 
     await revealContact(
-      { listingId },
+      { listingId, message },
       {
         sessionPort: nextAuthSessionPort,
         listings: new DrizzleRevealableListing(db),
@@ -64,8 +66,11 @@ export async function revealListingContact(formData: FormData): Promise<void> {
     // nuevo y dice ella misma qué pasó — el estado vencido, o un 404.
     if (error instanceof ListingNotRevealableError) return;
 
-    // Por encima del límite de cuenta (tasks.md 6.9): no se reveló nada, y
-    // una pantalla rota no es la respuesta.
+    // Sin mensaje, o por encima del límite de cuenta (tasks.md 6.9/6.12): en
+    // los dos casos no se reveló nada, y una pantalla rota no es la respuesta
+    // — el `required` del formulario ya evita el primer caso en el uso
+    // normal; esto es el respaldo del servidor.
+    if (error instanceof MissingRevealMessageError) return;
     if (error instanceof RevealRateLimitExceededError) return;
 
     throw error;

@@ -85,6 +85,7 @@ beforeAll(async () => {
       tenantUserId: ANA,
       cityId: CITY,
       revealedAt,
+      message: "Hola, me interesa.",
     });
   }
 
@@ -97,6 +98,7 @@ beforeAll(async () => {
     tenantUserId: BRUNO,
     cityId: CITY,
     revealedAt: new Date("2026-03-02T10:00:00.000Z"),
+    message: "Hola, me interesa.",
   });
   await events.record({
     listingId: OTHER_LISTING,
@@ -104,6 +106,7 @@ beforeAll(async () => {
     tenantUserId: ANA,
     cityId: CITY,
     revealedAt: new Date("2026-03-03T10:00:00.000Z"),
+    message: "Hola, me interesa.",
   });
 });
 
@@ -215,6 +218,64 @@ describe("contact_reveal_unique_pair", () => {
   });
 });
 
+describe("contact_reveal_event.message — NOT VALID CHECK (tasks.md 6.11)", () => {
+  // NOT VALID exempts only rows already present AT THE TIME the constraint
+  // was added — never a new insert made afterwards, however "historical" it
+  // looks. The only honest way to reproduce a PR #81-era row here is to drop
+  // the constraint, insert exactly as that migration would have found it,
+  // then re-add it NOT VALID — the same sequence tasks.md 6.11 describes.
+  it("keeps a pre-migration NULL message readable, and still refuses a NEW NULL row", async () => {
+    const id = randomUUID();
+    await pool.query(
+      `ALTER TABLE "contact_reveal_event" DROP CONSTRAINT "contact_reveal_event_message_present"`,
+    );
+    await pool.query(
+      `INSERT INTO "contact_reveal_event"
+         (id, listing_id, publisher_id, tenant_user_id, city_id, revealed_at, message)
+       VALUES ($1,$2,$3,$4,$5,now(),NULL)`,
+      [id, LISTING, PUBLISHER, ANA, CITY],
+    );
+    await pool.query(
+      `ALTER TABLE "contact_reveal_event"
+         ADD CONSTRAINT "contact_reveal_event_message_present"
+         CHECK (message IS NOT NULL AND length(btrim(message)) > 0) NOT VALID`,
+    );
+
+    const { rows } = await pool.query<{ message: string | null }>(
+      `SELECT message FROM "contact_reveal_event" WHERE id = $1`,
+      [id],
+    );
+    expect(rows[0]?.message).toBeNull();
+
+    // Going forward means going forward: a NEW row, even with the exact same
+    // NULL value, is enforced from this point on.
+    await expect(
+      pool.query(
+        `INSERT INTO "contact_reveal_event"
+           (id, listing_id, publisher_id, tenant_user_id, city_id, revealed_at, message)
+         VALUES ($1,$2,$3,$4,$5,now(),NULL)`,
+        [randomUUID(), LISTING, PUBLISHER, ANA, CITY],
+      ),
+    ).rejects.toThrow();
+
+    await pool.query(`DELETE FROM "contact_reveal_event" WHERE id = $1`, [id]);
+  });
+
+  // Every insert from this migration forward is enforced: a blank or
+  // whitespace-only message must be refused at the database, not only in the
+  // application layer above it.
+  it.each(["", "   "])("refuses a new row with a blank message (%j)", async (message) => {
+    await expect(
+      pool.query(
+        `INSERT INTO "contact_reveal_event"
+           (id, listing_id, publisher_id, tenant_user_id, city_id, revealed_at, message)
+         VALUES ($1,$2,$3,$4,$5,now(),$6)`,
+        [randomUUID(), LISTING, PUBLISHER, ANA, CITY, message],
+      ),
+    ).rejects.toThrow();
+  });
+});
+
 describe("DrizzleContactRevealEvents as RevealRateLimitPort (tasks.md 6.9/6.10)", () => {
   it("returns only the DISTINCT listings this tenant revealed inside the window", async () => {
     // ANA revealed LISTING three times and OTHER_LISTING once, in beforeAll.
@@ -244,5 +305,75 @@ describe("DrizzleContactRevealEvents as RevealRateLimitPort (tasks.md 6.9/6.10)"
     );
 
     expect(ids).toEqual([]);
+  });
+});
+
+describe("DrizzleContactRevealEvents as RevealMessageHistoryPort (tasks.md 6.14)", () => {
+  it("returns the tenant's MOST RECENT message for the pair, not just any", async () => {
+    // Repeat reveals never deduplicate (task 6.4); this is the query that
+    // decides "latest" is the one that matters for the contact action.
+    const listingId = randomUUID();
+    await insertListing(listingId);
+    await events.record({
+      listingId,
+      publisherId: PUBLISHER,
+      tenantUserId: ANA,
+      cityId: CITY,
+      revealedAt: new Date("2026-04-01T10:00:00.000Z"),
+      message: "Primer mensaje",
+    });
+    await events.record({
+      listingId,
+      publisherId: PUBLISHER,
+      tenantUserId: ANA,
+      cityId: CITY,
+      revealedAt: new Date("2026-04-02T10:00:00.000Z"),
+      message: "Segundo mensaje, el que importa",
+    });
+
+    await expect(events.findLatestMessage(ANA, listingId)).resolves.toBe(
+      "Segundo mensaje, el que importa",
+    );
+
+    await pool.query(`DELETE FROM "contact_reveal_event" WHERE listing_id = $1`, [listingId]);
+    await pool.query(`DELETE FROM "listing" WHERE id = $1`, [listingId]);
+  });
+
+  it("returns null when the tenant never revealed this listing", async () => {
+    await expect(events.findLatestMessage(randomUUID(), LISTING)).resolves.toBeNull();
+  });
+
+  // task 6.11 — a reveal from before the message requirement stores
+  // `message IS NULL`. The read side must hand that back as `null`, not
+  // crash and not invent an empty string — `null` means "predates the rule".
+  it("returns null when the tenant's only reveal predates the message requirement", async () => {
+    const listingId = randomUUID();
+    const eventId = randomUUID();
+    await insertListing(listingId);
+
+    // The only honest way to reproduce a PR #81-era row: drop the
+    // constraint, insert exactly as that migration would have found it, then
+    // re-add it NOT VALID — same sequence as the CHECK-constraint tests
+    // above, because a NEW insert is enforced regardless of how "historical"
+    // it looks.
+    await pool.query(
+      `ALTER TABLE "contact_reveal_event" DROP CONSTRAINT "contact_reveal_event_message_present"`,
+    );
+    await pool.query(
+      `INSERT INTO "contact_reveal_event"
+         (id, listing_id, publisher_id, tenant_user_id, city_id, revealed_at, message)
+       VALUES ($1,$2,$3,$4,$5,now(),NULL)`,
+      [eventId, listingId, PUBLISHER, ANA, CITY],
+    );
+    await pool.query(
+      `ALTER TABLE "contact_reveal_event"
+         ADD CONSTRAINT "contact_reveal_event_message_present"
+         CHECK (message IS NOT NULL AND length(btrim(message)) > 0) NOT VALID`,
+    );
+
+    await expect(events.findLatestMessage(ANA, listingId)).resolves.toBeNull();
+
+    await pool.query(`DELETE FROM "contact_reveal_event" WHERE id = $1`, [eventId]);
+    await pool.query(`DELETE FROM "listing" WHERE id = $1`, [listingId]);
   });
 });

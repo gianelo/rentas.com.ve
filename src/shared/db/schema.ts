@@ -603,6 +603,12 @@ export const contactRevealEvents = pgTable(
       .notNull()
       .references(() => cities.id, { onDelete: "restrict" }),
     revealedAt: timestamp("revealed_at", { mode: "date", withTimezone: true }).notNull(),
+    // Task 6.11 — nullable on PURPOSE, enforced by a `NOT VALID` CHECK
+    // constraint in the migration instead of `NOT NULL`. Rows already exist
+    // from PR #81 with no message; `NULL` means "this reveal predates the
+    // requirement" and nothing else. Every new insert is enforced — see the
+    // migration file for the constraint, which must never be VALIDATEd.
+    message: text("message"),
   },
   (event) => [
     // Supplies the view's `DISTINCT ON` ordering and its window partition in

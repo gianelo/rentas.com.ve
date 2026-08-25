@@ -12,6 +12,7 @@ import { PhotoStrip } from "@/../components/molecules/PhotoStrip";
 import { StatStrip } from "@/../components/molecules/StatStrip";
 import { viewListingContact } from "@/modules/contact-reveal/application/view-listing-contact";
 import {
+  DrizzleContactRevealEvents,
   DrizzleContactRevealMetrics,
   DrizzleRevealableListing,
 } from "@/modules/contact-reveal/infrastructure/drizzle-contact-reveal";
@@ -147,6 +148,9 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
       sessionPort: nextAuthSessionPort,
       listings: new DrizzleRevealableListing(db),
       reveals: new DrizzleContactRevealMetrics(db),
+      // tasks.md 6.14 — el mensaje del inquilino, para que el enlace revelado
+      // abra ya escrito y no con la plantilla genérica.
+      messages: new DrizzleContactRevealEvents(db),
     },
   );
 

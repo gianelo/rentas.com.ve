@@ -9,6 +9,7 @@ import {
 import { ActionButton, ActionLink } from "../atoms/buttons";
 import { CopyContact } from "../client/CopyContact";
 import styles from "./ContactBlock.module.css";
+import { Field } from "./Field";
 
 export interface ContactBlockProps {
   readonly contact: ContactPresentation;
@@ -73,6 +74,26 @@ function shortDate(date: Date): string {
 /** "12 de septiembre" — el estado vencido dice la fecha entera, no una abreviatura. */
 function longDate(date: Date): string {
   return new Intl.DateTimeFormat("es-VE", { day: "numeric", month: "long" }).format(date);
+}
+
+/**
+ * Redacción sugerida, en dos lugares con papeles distintos.
+ *
+ * **En el textarea es `placeholder`, NUNCA `defaultValue`** — guía sin
+ * escribir por el inquilino. Precargarla cumpliría la spec al pie de la letra
+ * y vaciaría su motivo: `design.md` descartó el modelo de bid argumentando
+ * que "bulk harvesting now costs a message per listing instead of a click",
+ * y un campo que ya viene lleno deja el revelado costando exactamente un
+ * clic. La barrera es que haya que escribir algo, aunque sean cuatro
+ * palabras; y de paso quien publica recibe un mensaje de verdad y no la
+ * plantilla que ya leyó cuarenta veces.
+ *
+ * En el enlace revelado sí es el respaldo (tasks.md 6.14), para cuando este
+ * render no conoce el mensaje guardado — una revelación anterior a la
+ * migración lo tiene en `NULL`. Ahí nunca deja el `wa.me` sin texto.
+ */
+function defaultRevealMessage(listingTitle: string): string {
+  return `Hola, vi tu aviso «${listingTitle}» en rentas.com.ve y me interesa.`;
 }
 
 /**
@@ -154,6 +175,27 @@ export function ContactBlock({
               {/* La ficha es la única que conoce su URL canónica; la acción la
                   usa sólo si hace falta mandar a entrar (F19). */}
               <input type="hidden" name="signInHref" value={signInHref} />
+              {/* La revelación ahora cuesta un mensaje escrito (tasks.md
+                  6.11-6.13): se pide ACÁ, antes de mostrar el contacto, y no
+                  después. `required` es el respaldo del navegador sin
+                  JavaScript; `revealContact` lo exige igual del lado del
+                  servidor si alguien lo salta.
+
+                  El campo arranca VACÍO y la redacción sugerida viaja como
+                  `placeholder`: un `defaultValue` enviaría el mensaje por el
+                  inquilino y dejaría el revelado costando un clic, que es
+                  justo el costo que este campo existe para cobrar. El
+                  `defaultValue` vacío sale del propio `Field`. */}
+              <Field name="message" label="Tu mensaje para quien publica" required>
+                {(attrs) => (
+                  <textarea
+                    {...attrs}
+                    rows={3}
+                    required
+                    placeholder={defaultRevealMessage(listingTitle)}
+                  />
+                )}
+              </Field>
               <ActionButton type="submit">
                 {lockedLabel(contact.method, publisherType)}
               </ActionButton>
@@ -178,7 +220,10 @@ export function ContactBlock({
                 href={contactActionHref(
                   contact.method,
                   contact.value,
-                  `Hola, vi tu aviso «${listingTitle}» en rentas.com.ve y me interesa.`,
+                  // El mensaje del propio inquilino (tasks.md 6.14), cuando
+                  // este render lo conoce; si no, el mismo texto que antes
+                  // era fijo pasa a ser sólo el respaldo.
+                  contact.message ?? defaultRevealMessage(listingTitle),
                 )}
               >
                 {REVEALED_LABEL[contact.method](contactChannelNoun(contact.method))}

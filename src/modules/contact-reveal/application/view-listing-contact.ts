@@ -6,6 +6,7 @@ import type {
 } from "../domain/revealable-contact";
 import { presentListingContact } from "../domain/revealable-contact";
 import type { ContactRevealMetricsPort } from "./ports/contact-reveal-metrics.port";
+import type { RevealMessageHistoryPort } from "./ports/reveal-rate-limit.port";
 import type { RevealableListingPort } from "./ports/revealable-listing.port";
 
 /**
@@ -38,13 +39,20 @@ export interface ViewListingContactDependencies {
    * vista queda escrito.
    */
   readonly reveals: ContactRevealMetricsPort;
+  /**
+   * tasks.md 6.14 — "the contact action opens with the submitted message
+   * already written". Only ever consulted once `hasRevealed` is already
+   * known true: a visitor who never revealed has no message to leak, and
+   * this stays a fourth database read no locked render ever pays for.
+   */
+  readonly messages: RevealMessageHistoryPort;
 }
 
 export async function viewListingContact(
   request: ViewListingContactRequest,
   dependencies: ViewListingContactDependencies,
 ): Promise<ContactPresentation> {
-  const { sessionPort, listings, reveals } = dependencies;
+  const { sessionPort, listings, reveals, messages } = dependencies;
 
   // Un aviso vencido no tiene contacto para nadie, así que no hay nada que
   // preguntar: ni sesión, ni métrica, ni catálogo. La regla es del dominio;
@@ -73,7 +81,12 @@ export async function viewListingContact(
   // Recién acá sale el valor de Postgres, y sólo para quien ya lo reveló.
   // `findRevealable` devuelve `null` si el aviso dejó de ser revelable entre
   // la revelación y este render — el evento sobrevive al aviso a propósito.
-  const listing = await listings.findRevealable(request.listingId);
+  // El mensaje viaja en el mismo tramo: dos lecturas independientes que no
+  // dependen una de la otra, en paralelo en vez de en fila.
+  const [listing, message] = await Promise.all([
+    listings.findRevealable(request.listingId),
+    messages.findLatestMessage(session.userId, request.listingId),
+  ]);
 
   return presentListingContact(
     {
@@ -83,6 +96,6 @@ export async function viewListingContact(
       availability: request.availability,
       value: listing?.contactValue ?? null,
     },
-    viewer,
+    { ...viewer, message },
   );
 }
