@@ -231,6 +231,41 @@ describe("validatePublishableListing", () => {
       ).toEqual([]);
     });
 
+    // broker-bulk-import spec, "Drafts Are Not Published Listings" +
+    // "Whole-File Validation Before Any Write" (tasks.md 9.12/9.15): a
+    // draft is created with zero photos by construction (they attach
+    // afterwards, tasks.md 9.20-9.23), so `photos.required` cannot apply at
+    // draft-creation time — only at activation.
+    describe('stage "draft" — the photo requirement is deferred to activation', () => {
+      it("does NOT reject a draft with zero photos", () => {
+        expect(validatePublishableListing(draft({ photoCount: 0 }), ZONES, "draft")).not.toContain(
+          "photos.required",
+        );
+      });
+
+      it("still rejects more photos than a listing may hold, even in draft stage", () => {
+        expect(
+          validatePublishableListing(
+            draft({ photoCount: MAX_PHOTOS_PER_LISTING + 1 }),
+            ZONES,
+            "draft",
+          ),
+        ).toContain("photos.tooMany");
+      });
+
+      it("every other rule still applies unchanged in draft stage", () => {
+        expect(
+          validatePublishableListing(draft({ photoCount: 0, title: "" }), ZONES, "draft"),
+        ).toContain("title.required");
+      });
+
+      it("defaults to activation stage when no stage is given, unchanged behaviour", () => {
+        expect(validatePublishableListing(draft({ photoCount: 0 }), ZONES)).toContain(
+          "photos.required",
+        );
+      });
+    });
+
     it("rejects an empty or whitespace-only title", () => {
       expect(validatePublishableListing(draft({ title: "" }), ZONES)).toContain("title.required");
       expect(validatePublishableListing(draft({ title: "   " }), ZONES)).toContain(

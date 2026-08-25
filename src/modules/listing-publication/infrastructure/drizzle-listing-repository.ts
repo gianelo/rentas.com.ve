@@ -75,6 +75,13 @@ export class DrizzleListingRepository implements ListingRepositoryPort {
         contactMethod: listing.contactMethod,
         contactValue: listing.contactValue,
         status: listing.status,
+        // broker-bulk-import spec, "Idempotent Import by External
+        // Reference" (tasks.md 9.17): `?? null`, never omitted — Drizzle
+        // would otherwise leave the column at its schema default (also
+        // `NULL` here), but writing it explicitly is what makes it visible
+        // at this call site that the single-listing flow's `undefined`
+        // really does mean "no reference", not "forgot to pass one".
+        externalReference: listing.externalReference ?? null,
         publishedAt: listing.publishedAt,
         expiresAt: listing.expiresAt,
       });
@@ -88,7 +95,15 @@ export class DrizzleListingRepository implements ListingRepositoryPort {
         position: photo.position,
         createdAt,
       }));
-      await tx.insert(listingPhotos).values(photoRows);
+      // A published listing always has at least one photo (`photos.required`
+      // — see publishable-listing.ts), so this was never empty before now.
+      // An imported DRAFT (tasks.md 9.15/9.17) is created with zero — photos
+      // attach afterwards through the existing upload path (9.20-9.23) — and
+      // `.values([])` is a Drizzle error, not a no-op, so the empty case has
+      // to be guarded explicitly rather than assumed away.
+      if (photoRows.length > 0) {
+        await tx.insert(listingPhotos).values(photoRows);
+      }
 
       // Dentro de la MISMA transacción, que es la razón por la que el
       // repositorio recibe todo junto: una foto sin sus derivadas es una foto
