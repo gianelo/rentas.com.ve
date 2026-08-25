@@ -214,3 +214,35 @@ describe("contact_reveal_unique_pair", () => {
     expect(actions).toBeGreaterThan(pairs.length);
   });
 });
+
+describe("DrizzleContactRevealEvents as RevealRateLimitPort (tasks.md 6.9/6.10)", () => {
+  it("returns only the DISTINCT listings this tenant revealed inside the window", async () => {
+    // ANA revealed LISTING three times and OTHER_LISTING once, in beforeAll.
+    const ids = await events.findRecentlyRevealedListingIds(
+      ANA,
+      new Date("2026-02-01T00:00:00.000Z"),
+    );
+
+    expect([...ids].sort()).toEqual([LISTING, OTHER_LISTING].sort());
+  });
+
+  it("excludes reveals older than the given `since`", async () => {
+    // Ana's earliest reveal in this fixture is 2026-03-01; a `since` set
+    // right after it must drop that one but keep the later repeats.
+    const ids = await events.findRecentlyRevealedListingIds(
+      ANA,
+      new Date("2026-03-02T00:00:00.000Z"),
+    );
+
+    expect(ids).toContain(LISTING);
+  });
+
+  it("returns nothing for a tenant who has never revealed anything", async () => {
+    const ids = await events.findRecentlyRevealedListingIds(
+      randomUUID(),
+      new Date("2020-01-01T00:00:00.000Z"),
+    );
+
+    expect(ids).toEqual([]);
+  });
+});
