@@ -1,7 +1,6 @@
 import { readSiteBaseUrl } from "../../../../src/modules/listing-discovery/infrastructure/site-base-url";
 import { sendLifecycleNotices } from "../../../../src/modules/listing-lifecycle/application/send-lifecycle-notices";
 import { isAuthorizedJobRequest } from "../../../../src/modules/listing-lifecycle/domain/cron-authorization";
-import { ConsoleLifecycleMailer } from "../../../../src/modules/listing-lifecycle/infrastructure/console-lifecycle-mailer";
 import {
   DrizzleJobRuns,
   DrizzleLifecycleListings,
@@ -10,8 +9,10 @@ import {
 } from "../../../../src/modules/listing-lifecycle/infrastructure/drizzle-lifecycle";
 import {
   readCronSecret,
+  readMailerConfig,
   readRenewalSecret,
 } from "../../../../src/modules/listing-lifecycle/infrastructure/lifecycle-config";
+import { ResendLifecycleMailer } from "../../../../src/modules/listing-lifecycle/infrastructure/resend-lifecycle-mailer";
 import { db } from "../../../../src/shared/db/client";
 
 /**
@@ -48,11 +49,20 @@ async function run(request: Request): Promise<Response> {
     return Response.json({ error: "renewal_secret_missing", reminders_sent: 0 }, { status: 500 });
   }
 
+  const mail = readMailerConfig();
+  if (!mail) {
+    // Mismo criterio que el secreto de renovación: sin proveedor, la tanda
+    // NO empieza. Arrancarla tomaría el libro de reservas de cada aviso —
+    // una reserva por ciclo — y los quemaría sin que salga un solo correo;
+    // el siguiente intento los encontraría ya reservados y no reintentaría.
+    return Response.json({ error: "mailer_not_configured", reminders_sent: 0 }, { status: 500 });
+  }
+
   const handle = db as unknown as LifecycleDatabase;
   const result = await sendLifecycleNotices({
     listings: new DrizzleLifecycleListings(handle),
     ledger: new DrizzleReminderLedger(handle),
-    mailer: new ConsoleLifecycleMailer(),
+    mailer: new ResendLifecycleMailer(mail.apiKey, mail.from),
     jobRuns: new DrizzleJobRuns(handle),
     renewalSecret,
     baseUrl: readSiteBaseUrl(),
