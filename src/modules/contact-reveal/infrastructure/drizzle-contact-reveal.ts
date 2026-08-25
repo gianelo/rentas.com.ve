@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, type SQL, sql } from "drizzle-orm";
+import { and, eq, gte, type SQL, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import { contactRevealEvents, listings } from "../../../shared/db/schema";
@@ -12,6 +12,7 @@ import type {
   UniquePairFilter,
   UniqueRevealPair,
 } from "../application/ports/contact-reveal-metrics.port";
+import type { RevealRateLimitPort } from "../application/ports/reveal-rate-limit.port";
 import type {
   RevealableListing,
   RevealableListingPort,
@@ -27,7 +28,13 @@ import type {
  */
 export type ContactRevealDatabase = PgDatabase<PgQueryResultHKT, typeof schema>;
 
-export class DrizzleContactRevealEvents implements ContactRevealEventPort {
+/**
+ * Implements both the write side (D6) and the rate-limit read side (task
+ * 6.9/6.10) — same table, same class, no second connection or repository to
+ * keep in sync. `ContactRevealEventPort` stays write-only in its own
+ * contract; this class simply also answers `RevealRateLimitPort`'s question.
+ */
+export class DrizzleContactRevealEvents implements ContactRevealEventPort, RevealRateLimitPort {
   constructor(private readonly db: ContactRevealDatabase) {}
 
   /**
@@ -38,6 +45,29 @@ export class DrizzleContactRevealEvents implements ContactRevealEventPort {
    */
   async record(event: NewContactRevealEvent): Promise<void> {
     await this.db.insert(contactRevealEvents).values({ id: randomUUID(), ...event });
+  }
+
+  /**
+   * Task 6.9/6.10 — every DISTINCT listing this tenant revealed since
+   * `since`. The rolling window lives entirely in this query (`since` is
+   * `now - 24h`, computed by the caller); `evaluateRevealAllowance` never
+   * sees a `Date` at all.
+   */
+  async findRecentlyRevealedListingIds(
+    tenantUserId: string,
+    since: Date,
+  ): Promise<readonly string[]> {
+    const rows = await this.db
+      .selectDistinct({ listingId: contactRevealEvents.listingId })
+      .from(contactRevealEvents)
+      .where(
+        and(
+          eq(contactRevealEvents.tenantUserId, tenantUserId),
+          gte(contactRevealEvents.revealedAt, since),
+        ),
+      );
+
+    return rows.map((row) => row.listingId);
   }
 }
 
@@ -81,7 +111,7 @@ export class DrizzleRevealableListing implements RevealableListingPort {
  * `contact_reveal_unique_pair` is a hand-written view in
  * drizzle/0005_hesitant_brood.sql. Drizzle does not know it exists: it is not
  * in schema.ts, `drizzle-kit generate` neither creates nor diffs it, and
- * `db.execute` returns `unknown` rows. So `UniquePairRow` below is a HAND
+ * `db.execute` returns untyped rows. So `UniquePairRow` below is a HAND
  * DECLARATION — a claim about the SQL that the compiler cannot check.
  *
  * What breaks when they drift, concretely: rename or drop a view column and

@@ -4,12 +4,18 @@ import type {
   SessionPort,
 } from "../../identity/application/ports/session.port";
 import { UnauthenticatedError } from "../../identity/application/require-authenticated-session";
+import { REVEAL_RATE_LIMIT_MAX_DISTINCT_LISTINGS } from "../domain/reveal-rate-limit";
 import type {
   ContactRevealEventPort,
   NewContactRevealEvent,
 } from "./ports/contact-reveal-event.port";
+import type { RevealRateLimitPort } from "./ports/reveal-rate-limit.port";
 import type { RevealableListing, RevealableListingPort } from "./ports/revealable-listing.port";
-import { ListingNotRevealableError, revealContact } from "./reveal-contact";
+import {
+  ListingNotRevealableError,
+  RevealRateLimitExceededError,
+  revealContact,
+} from "./reveal-contact";
 
 const TENANT: AuthenticatedSession = {
   userId: "tenant-1",
@@ -36,15 +42,22 @@ function recordingEvents(): ContactRevealEventPort & { readonly written: NewCont
   };
 }
 
-function dependencies(session: AuthenticatedSession | null, listing = LISTING) {
+function dependencies(
+  session: AuthenticatedSession | null,
+  listing = LISTING,
+  recentlyRevealedListingIds: readonly string[] = [],
+) {
   const sessionPort: SessionPort = { getSession: vi.fn().mockResolvedValue(session) };
   const listings: RevealableListingPort = {
     findRevealable: vi.fn().mockResolvedValue(listing),
   };
   const events = recordingEvents();
+  const rateLimit: RevealRateLimitPort = {
+    findRecentlyRevealedListingIds: vi.fn().mockResolvedValue(recentlyRevealedListingIds),
+  };
   const clock = { at: new Date("2026-03-01T10:00:00.000Z") };
 
-  return { sessionPort, listings, events, now: () => clock.at, clock };
+  return { sessionPort, listings, events, rateLimit, now: () => clock.at, clock };
 }
 
 describe("revealContact", () => {
@@ -126,10 +139,13 @@ describe("revealContact", () => {
     // Production passes no `now`. An event whose timestamp came from a
     // default that was never exercised is a timestamp nobody has checked —
     // and `revealed_at` is the axis the whole go/pivot report is read along.
-    const { sessionPort, listings, events } = dependencies(TENANT);
+    const { sessionPort, listings, events, rateLimit } = dependencies(TENANT);
     const before = Date.now();
 
-    await revealContact({ listingId: LISTING.listingId }, { sessionPort, listings, events });
+    await revealContact(
+      { listingId: LISTING.listingId },
+      { sessionPort, listings, events, rateLimit },
+    );
 
     const stamped = events.written[0]?.revealedAt.getTime() ?? 0;
     expect(stamped).toBeGreaterThanOrEqual(before);
@@ -146,5 +162,52 @@ describe("revealContact", () => {
       UnauthenticatedError,
     );
     expect(deps.listings.findRevealable).not.toHaveBeenCalled();
+  });
+
+  // contact-reveal spec, "An account below the limit reveals normally".
+  it("reveals normally when the account is below the rate limit", async () => {
+    const recent = Array.from(
+      { length: REVEAL_RATE_LIMIT_MAX_DISTINCT_LISTINGS - 1 },
+      (_, i) => `other-listing-${i}`,
+    );
+    const deps = dependencies(TENANT, LISTING, recent);
+
+    await expect(revealContact({ listingId: LISTING.listingId }, deps)).resolves.toMatchObject({
+      state: "revealed",
+    });
+    expect(deps.events.written).toHaveLength(1);
+  });
+
+  // contact-reveal spec, "An account at the limit is refused" (tasks.md 6.9).
+  // The refusal writes no reveal event and discloses no contact value — the
+  // catalog must not be drainable by one registered account.
+  it("refuses the 41st distinct listing and records nothing", async () => {
+    const recent = Array.from(
+      { length: REVEAL_RATE_LIMIT_MAX_DISTINCT_LISTINGS },
+      (_, i) => `other-listing-${i}`,
+    );
+    const deps = dependencies(TENANT, LISTING, recent);
+
+    await expect(revealContact({ listingId: LISTING.listingId }, deps)).rejects.toThrow(
+      RevealRateLimitExceededError,
+    );
+    expect(deps.events.written).toHaveLength(0);
+  });
+
+  // contact-reveal spec, "Repeat reveals of an already-revealed listing
+  // consume no allowance". The unit is the listing, never the action: a
+  // tenant re-opening the same advert while comparing is not draining the
+  // catalogue.
+  it("allows re-revealing a listing already inside the window, even at the limit", async () => {
+    const recent = Array.from(
+      { length: REVEAL_RATE_LIMIT_MAX_DISTINCT_LISTINGS - 1 },
+      (_, i) => `other-listing-${i}`,
+    ).concat(LISTING.listingId);
+    const deps = dependencies(TENANT, LISTING, recent);
+
+    await expect(revealContact({ listingId: LISTING.listingId }, deps)).resolves.toMatchObject({
+      state: "revealed",
+    });
+    expect(deps.events.written).toHaveLength(1);
   });
 });
