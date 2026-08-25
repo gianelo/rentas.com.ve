@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import { listingReports, listings, moderationActions } from "../../../shared/db/schema";
 import type {
   ListingModerationPort,
@@ -25,6 +25,20 @@ import type { TrustDatabase } from "./drizzle-photo-hash";
 export class DrizzleListingModeration implements ListingModerationPort {
   constructor(private readonly db: TrustDatabase) {}
 
+  /**
+   * broker-bulk-import spec, "Drafts Are Not Published Listings" (tasks.md
+   * 9.18/9.19). **Resolved as an explicit refusal, same call as
+   * `findRenewable`'s (listing-lifecycle/infrastructure/drizzle-lifecycle.ts)
+   * — see its comment for the full reasoning.** Nothing today reports or
+   * restores a draft: `reportListing`/`restoreListing` only ever receive a
+   * `listingId` a tenant read off a rendered page, and search/reveal both
+   * already exclude drafts from ever being rendered. `resolveRestoreOutcome`
+   * also fails closed on any non-`hidden` status, so this guard is
+   * belt-and-suspenders rather than the only thing standing between a draft
+   * and moderation — but it is the cheaper, earlier refusal: a draft now
+   * reads back as `ListingNotFoundError` instead of reaching the domain
+   * decision at all.
+   */
   async findModerated(listingId: string): Promise<ModeratedListing | null> {
     const rows = await this.db
       .select({
@@ -33,7 +47,7 @@ export class DrizzleListingModeration implements ListingModerationPort {
         expiresAt: listings.expiresAt,
       })
       .from(listings)
-      .where(eq(listings.id, listingId))
+      .where(and(eq(listings.id, listingId), ne(listings.status, "draft")))
       .limit(1);
 
     return rows[0] ?? null;
