@@ -40,6 +40,19 @@ describe("presentContact", () => {
     });
   });
 
+  // tasks.md 6.14 — the message rides along with the revealed state when the
+  // caller knows it, so `contactActionHref` can carry it instead of a fixed
+  // sentence. Absent when the caller does not know it: this must never widen
+  // what a locked visitor can see, only what a revealed one carries further.
+  it("carries the message along on the revealed state when the caller provides one", () => {
+    expect(presentContact(WHATSAPP, { hasRevealed: true, message: "Hola, me interesa" })).toEqual({
+      state: "revealed",
+      method: "whatsapp",
+      value: "+58 412 555 0134",
+      message: "Hola, me interesa",
+    });
+  });
+
   /**
    * **The defect this shape exists to prevent.** `publishable-listing.ts`
    * states the rule plainly: "the reveal button's label comes from this, so a

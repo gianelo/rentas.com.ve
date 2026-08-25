@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, type SQL, sql } from "drizzle-orm";
+import { and, desc, eq, gte, type SQL, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import { contactRevealEvents, listings } from "../../../shared/db/schema";
@@ -12,6 +12,10 @@ import type {
   UniquePairFilter,
   UniqueRevealPair,
 } from "../application/ports/contact-reveal-metrics.port";
+import type {
+  RevealMessageHistoryPort,
+  RevealRateLimitPort,
+} from "../application/ports/reveal-rate-limit.port";
 import type {
   RevealableListing,
   RevealableListingPort,
@@ -27,7 +31,16 @@ import type {
  */
 export type ContactRevealDatabase = PgDatabase<PgQueryResultHKT, typeof schema>;
 
-export class DrizzleContactRevealEvents implements ContactRevealEventPort {
+/**
+ * Implements the write side (D6), the rate-limit read side (task 6.9/6.10)
+ * and the message-recall read side (task 6.14) — same table, same class, no
+ * second connection or repository to keep in sync. `ContactRevealEventPort`
+ * stays write-only in its own contract; this class simply also answers what
+ * `RevealRateLimitPort` and `RevealMessageHistoryPort` ask.
+ */
+export class DrizzleContactRevealEvents
+  implements ContactRevealEventPort, RevealRateLimitPort, RevealMessageHistoryPort
+{
   constructor(private readonly db: ContactRevealDatabase) {}
 
   /**
@@ -38,6 +51,51 @@ export class DrizzleContactRevealEvents implements ContactRevealEventPort {
    */
   async record(event: NewContactRevealEvent): Promise<void> {
     await this.db.insert(contactRevealEvents).values({ id: randomUUID(), ...event });
+  }
+
+  /**
+   * Task 6.9/6.10 — every DISTINCT listing this tenant revealed since
+   * `since`. The rolling window lives entirely in this query (`since` is
+   * `now - 24h`, computed by the caller); `evaluateRevealAllowance` never
+   * sees a `Date` at all.
+   */
+  async findRecentlyRevealedListingIds(
+    tenantUserId: string,
+    since: Date,
+  ): Promise<readonly string[]> {
+    const rows = await this.db
+      .selectDistinct({ listingId: contactRevealEvents.listingId })
+      .from(contactRevealEvents)
+      .where(
+        and(
+          eq(contactRevealEvents.tenantUserId, tenantUserId),
+          gte(contactRevealEvents.revealedAt, since),
+        ),
+      );
+
+    return rows.map((row) => row.listingId);
+  }
+
+  /**
+   * Task 6.14 — the tenant's MOST RECENT message for this pair. "Latest"
+   * lives entirely in `ORDER BY ... DESC LIMIT 1`, the same read-query shape
+   * D6's own view already uses to pick a specific row deterministically; the
+   * application layer above never has to know how "latest" was decided.
+   */
+  async findLatestMessage(tenantUserId: string, listingId: string): Promise<string | null> {
+    const rows = await this.db
+      .select({ message: contactRevealEvents.message })
+      .from(contactRevealEvents)
+      .where(
+        and(
+          eq(contactRevealEvents.tenantUserId, tenantUserId),
+          eq(contactRevealEvents.listingId, listingId),
+        ),
+      )
+      .orderBy(desc(contactRevealEvents.revealedAt), desc(contactRevealEvents.id))
+      .limit(1);
+
+    return rows[0]?.message ?? null;
   }
 }
 

@@ -78,6 +78,42 @@ describe("sin cuenta", () => {
   });
 
   /**
+   * **El campo arranca VACÍO, y eso es la función entera.**
+   *
+   * `design.md` descartó el modelo de bid con un argumento concreto: revelar
+   * pasa a costar "a message per listing instead of a click". Un `defaultValue`
+   * cumpliría la spec al pie de la letra — se envía un mensaje, no está en
+   * blanco, se guarda — y vaciaría ese argumento, porque revelar seguiría
+   * costando exactamente un clic. La redacción sugerida tiene que GUIAR sin
+   * contestar por quien busca.
+   *
+   * Se prueba acá y no en el dominio porque el dominio ya hace su parte
+   * (`requireRevealMessage` rechaza el blanco) y no puede ver esto: un campo
+   * precargado le llega como un mensaje legítimo. La única capa que distingue
+   * "lo escribió una persona" de "se lo escribimos nosotros" es la que dibuja
+   * el formulario.
+   */
+  it("deja el campo del mensaje vacío: la sugerencia es pista, no respuesta", () => {
+    const markup = render(LOCKED);
+    const textarea = /<textarea[^>]*>([\s\S]*?)<\/textarea>/.exec(markup);
+
+    if (!textarea) throw new Error("falta el campo del mensaje en el estado bloqueado");
+
+    // Lo que se envía si nadie escribe: nada. Un `defaultValue` pondría acá
+    // adentro la redacción sugerida y este `toBe("")` se pondría rojo.
+    expect(textarea[1]).toBe("");
+
+    // La sugerencia sigue estando, como atributo y no como contenido.
+    expect(textarea[0]).toContain("placeholder=");
+    expect(textarea[0]).toContain("Apartamento 2 habitaciones en Chacao");
+
+    // Y el campo es obligatorio: vacío no se puede enviar, ni con el navegador
+    // sin JavaScript ni en el servidor.
+    expect(markup).toContain('name="message"');
+    expect(textarea[0]).toContain("required");
+  });
+
+  /**
    * La vuelta a esta misma ficha (F19). Va en el formulario y no en el
    * servidor porque la ficha es la única que conoce su URL canónica — la
    * acción sólo la usa si hace falta mandar a entrar.
@@ -130,6 +166,43 @@ describe("con cuenta", () => {
     const markup = render(REVEALED);
 
     expect(markup).toContain(encodeURIComponent("Apartamento 2 habitaciones en Chacao"));
+  });
+
+  /**
+   * **El mensaje del inquilino le gana a la plantilla, y esa es la función.**
+   *
+   * La verificación de la capacidad (2026-08-24) encontró que el fixture
+   * `REVEALED` nunca traía `message`, así que `contact.message ??
+   * defaultRevealMessage(...)` sólo ejercitaba su rama DERECHA: el dominio y la
+   * aplicación probaban que el mensaje guardado viaja, y el componente nunca lo
+   * dibujaba con uno. Un `??` al revés —o borrado— dejaba todo en verde
+   * mientras cada inquilino mandaba la misma plantilla.
+   *
+   * El respaldo sigue teniendo su caso y es el de arriba: una revelación
+   * anterior a la migración tiene `message` en `NULL` y el enlace no puede
+   * quedar sin texto.
+   */
+  it("lleva el mensaje que escribió el inquilino, no la plantilla", () => {
+    const suyo = "Hola, ¿se puede ver el sábado por la mañana?";
+    const markup = render({ ...REVEALED, message: suyo });
+
+    expect(markup).toContain(encodeURIComponent(suyo));
+    // Y la plantilla NO viaja: si las dos estuvieran, el `??` estaría
+    // resolviéndose en algún lado que no es el href.
+    expect(markup).not.toContain(encodeURIComponent("y me interesa."));
+  });
+
+  /**
+   * `null` es la revelación anterior a la migración (el `message` de
+   * `contact_reveal_event` es anulable a propósito, tasks.md 6.11). Tiene que
+   * caer al respaldo igual que `undefined`, o el enlace sale con el texto
+   * `null` adentro.
+   */
+  it("cae a la plantilla cuando la revelación es anterior al requisito", () => {
+    const markup = render({ ...REVEALED, message: null });
+
+    expect(markup).toContain(encodeURIComponent("Apartamento 2 habitaciones en Chacao"));
+    expect(markup).not.toContain("null");
   });
 
   /**

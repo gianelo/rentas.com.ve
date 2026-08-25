@@ -50,7 +50,18 @@ export interface PublisherContact {
 export type ContactPresentation =
   | { readonly state: "expired" }
   | { readonly state: "locked"; readonly method: ContactMethod }
-  | { readonly state: "revealed"; readonly method: ContactMethod; readonly value: string };
+  | {
+      readonly state: "revealed";
+      readonly method: ContactMethod;
+      readonly value: string;
+      /**
+       * The tenant's own message (tasks.md 6.14), when this render knows it.
+       * `undefined`/`null` on any render that did not source it — the
+       * REVEALED branch still draws, just without a pre-written contact
+       * action; this never widens what a locked visitor can see.
+       */
+      readonly message?: string | null;
+    };
 
 /**
  * Lo que el ciclo de vida del aviso permite hacer con su contacto, dicho en
@@ -74,6 +85,8 @@ export type ContactAvailability = "available" | "expired";
  */
 export interface ContactViewer {
   readonly hasRevealed: boolean;
+  /** The message this viewer wrote at reveal time, when the caller knows it (tasks.md 6.14). */
+  readonly message?: string | null;
 }
 
 export function presentContact(
@@ -84,7 +97,12 @@ export function presentContact(
     return { state: "locked", method: contact.method };
   }
 
-  return { state: "revealed", method: contact.method, value: contact.value };
+  return {
+    state: "revealed",
+    method: contact.method,
+    value: contact.value,
+    message: viewer.message,
+  };
 }
 
 /**

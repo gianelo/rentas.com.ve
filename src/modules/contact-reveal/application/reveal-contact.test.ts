@@ -4,12 +4,19 @@ import type {
   SessionPort,
 } from "../../identity/application/ports/session.port";
 import { UnauthenticatedError } from "../../identity/application/require-authenticated-session";
+import { MissingRevealMessageError } from "../domain/reveal-message";
+import { REVEAL_RATE_LIMIT_MAX_DISTINCT_LISTINGS } from "../domain/reveal-rate-limit";
 import type {
   ContactRevealEventPort,
   NewContactRevealEvent,
 } from "./ports/contact-reveal-event.port";
+import type { RevealRateLimitPort } from "./ports/reveal-rate-limit.port";
 import type { RevealableListing, RevealableListingPort } from "./ports/revealable-listing.port";
-import { ListingNotRevealableError, revealContact } from "./reveal-contact";
+import {
+  ListingNotRevealableError,
+  RevealRateLimitExceededError,
+  revealContact,
+} from "./reveal-contact";
 
 const TENANT: AuthenticatedSession = {
   userId: "tenant-1",
@@ -25,6 +32,8 @@ const LISTING: RevealableListing = {
   contactValue: "+58 412 555 0134",
 };
 
+const MESSAGE = "Hola, vi tu aviso y me interesa.";
+
 /** Records what was written, in order, so "how many rows" is an assertion. */
 function recordingEvents(): ContactRevealEventPort & { readonly written: NewContactRevealEvent[] } {
   const written: NewContactRevealEvent[] = [];
@@ -36,15 +45,22 @@ function recordingEvents(): ContactRevealEventPort & { readonly written: NewCont
   };
 }
 
-function dependencies(session: AuthenticatedSession | null, listing = LISTING) {
+function dependencies(
+  session: AuthenticatedSession | null,
+  listing = LISTING,
+  recentlyRevealedListingIds: readonly string[] = [],
+) {
   const sessionPort: SessionPort = { getSession: vi.fn().mockResolvedValue(session) };
   const listings: RevealableListingPort = {
     findRevealable: vi.fn().mockResolvedValue(listing),
   };
   const events = recordingEvents();
+  const rateLimit: RevealRateLimitPort = {
+    findRecentlyRevealedListingIds: vi.fn().mockResolvedValue(recentlyRevealedListingIds),
+  };
   const clock = { at: new Date("2026-03-01T10:00:00.000Z") };
 
-  return { sessionPort, listings, events, now: () => clock.at, clock };
+  return { sessionPort, listings, events, rateLimit, now: () => clock.at, clock };
 }
 
 describe("revealContact", () => {
@@ -56,19 +72,19 @@ describe("revealContact", () => {
   it("refuses an anonymous visitor and records nothing", async () => {
     const deps = dependencies(null);
 
-    await expect(revealContact({ listingId: LISTING.listingId }, deps)).rejects.toThrow(
-      UnauthenticatedError,
-    );
+    await expect(
+      revealContact({ listingId: LISTING.listingId, message: MESSAGE }, deps),
+    ).rejects.toThrow(UnauthenticatedError);
     expect(deps.events.written).toHaveLength(0);
   });
 
   // contact-reveal spec, "A reveal creates one event record" — the five
   // fields are named individually because each one is a question the go/pivot
   // report has to answer (design.md D6: per city, per listing, over time).
-  it("records exactly one event carrying listing, publisher, tenant, city and timestamp", async () => {
+  it("records exactly one event carrying listing, publisher, tenant, city, message and timestamp", async () => {
     const deps = dependencies(TENANT);
 
-    await revealContact({ listingId: LISTING.listingId }, deps);
+    await revealContact({ listingId: LISTING.listingId, message: MESSAGE }, deps);
 
     expect(deps.events.written).toEqual([
       {
@@ -77,6 +93,7 @@ describe("revealContact", () => {
         tenantUserId: "tenant-1",
         cityId: "city-caracas",
         revealedAt: new Date("2026-03-01T10:00:00.000Z"),
+        message: MESSAGE,
       },
     ]);
   });
@@ -89,9 +106,9 @@ describe("revealContact", () => {
   it("writes a second event when the same tenant reveals the same listing again", async () => {
     const deps = dependencies(TENANT);
 
-    await revealContact({ listingId: LISTING.listingId }, deps);
+    await revealContact({ listingId: LISTING.listingId, message: MESSAGE }, deps);
     deps.clock.at = new Date("2026-03-08T10:00:00.000Z");
-    await revealContact({ listingId: LISTING.listingId }, deps);
+    await revealContact({ listingId: LISTING.listingId, message: MESSAGE }, deps);
 
     expect(deps.events.written).toHaveLength(2);
     expect(deps.events.written.map((event) => event.revealedAt)).toEqual([
@@ -100,13 +117,16 @@ describe("revealContact", () => {
     ]);
   });
 
-  it("returns the contact to the tenant who revealed it", async () => {
+  it("returns the contact, carrying the tenant's message, to the tenant who revealed it", async () => {
     const deps = dependencies(TENANT);
 
-    await expect(revealContact({ listingId: LISTING.listingId }, deps)).resolves.toEqual({
+    await expect(
+      revealContact({ listingId: LISTING.listingId, message: MESSAGE }, deps),
+    ).resolves.toEqual({
       state: "revealed",
       method: "whatsapp",
       value: "+58 412 555 0134",
+      message: MESSAGE,
     });
   });
 
@@ -116,7 +136,7 @@ describe("revealContact", () => {
   it("records nothing when the listing is not revealable", async () => {
     const deps = dependencies(TENANT, null as unknown as RevealableListing);
 
-    await expect(revealContact({ listingId: "gone" }, deps)).rejects.toThrow(
+    await expect(revealContact({ listingId: "gone", message: MESSAGE }, deps)).rejects.toThrow(
       ListingNotRevealableError,
     );
     expect(deps.events.written).toHaveLength(0);
@@ -126,10 +146,13 @@ describe("revealContact", () => {
     // Production passes no `now`. An event whose timestamp came from a
     // default that was never exercised is a timestamp nobody has checked —
     // and `revealed_at` is the axis the whole go/pivot report is read along.
-    const { sessionPort, listings, events } = dependencies(TENANT);
+    const { sessionPort, listings, events, rateLimit } = dependencies(TENANT);
     const before = Date.now();
 
-    await revealContact({ listingId: LISTING.listingId }, { sessionPort, listings, events });
+    await revealContact(
+      { listingId: LISTING.listingId, message: MESSAGE },
+      { sessionPort, listings, events, rateLimit },
+    );
 
     const stamped = events.written[0]?.revealedAt.getTime() ?? 0;
     expect(stamped).toBeGreaterThanOrEqual(before);
@@ -142,9 +165,75 @@ describe("revealContact", () => {
     // database load amplifier for anyone with a URL.
     const deps = dependencies(null);
 
-    await expect(revealContact({ listingId: LISTING.listingId }, deps)).rejects.toThrow(
-      UnauthenticatedError,
-    );
+    await expect(
+      revealContact({ listingId: LISTING.listingId, message: MESSAGE }, deps),
+    ).rejects.toThrow(UnauthenticatedError);
     expect(deps.listings.findRevealable).not.toHaveBeenCalled();
+  });
+
+  // contact-reveal spec, "Reveal without a message is refused" (tasks.md
+  // 6.12). Both halves matter: an event written for a refused reveal would
+  // inflate the north-star metric with contacts nobody made.
+  it.each(["", "   ", undefined])(
+    "refuses a reveal without a message and records nothing (%j)",
+    async (message) => {
+      const deps = dependencies(TENANT);
+
+      await expect(
+        revealContact(
+          { listingId: LISTING.listingId, message: message as unknown as string },
+          deps,
+        ),
+      ).rejects.toThrow(MissingRevealMessageError);
+      expect(deps.events.written).toHaveLength(0);
+      expect(deps.listings.findRevealable).not.toHaveBeenCalled();
+    },
+  );
+
+  // contact-reveal spec, "An account below the limit reveals normally".
+  it("reveals normally when the account is below the rate limit", async () => {
+    const recent = Array.from(
+      { length: REVEAL_RATE_LIMIT_MAX_DISTINCT_LISTINGS - 1 },
+      (_, i) => `other-listing-${i}`,
+    );
+    const deps = dependencies(TENANT, LISTING, recent);
+
+    await expect(
+      revealContact({ listingId: LISTING.listingId, message: MESSAGE }, deps),
+    ).resolves.toMatchObject({ state: "revealed" });
+    expect(deps.events.written).toHaveLength(1);
+  });
+
+  // contact-reveal spec, "An account at the limit is refused" (tasks.md 6.9).
+  // The refusal writes no reveal event and discloses no contact value — the
+  // catalog must not be drainable by one registered account.
+  it("refuses the 41st distinct listing and records nothing", async () => {
+    const recent = Array.from(
+      { length: REVEAL_RATE_LIMIT_MAX_DISTINCT_LISTINGS },
+      (_, i) => `other-listing-${i}`,
+    );
+    const deps = dependencies(TENANT, LISTING, recent);
+
+    await expect(
+      revealContact({ listingId: LISTING.listingId, message: MESSAGE }, deps),
+    ).rejects.toThrow(RevealRateLimitExceededError);
+    expect(deps.events.written).toHaveLength(0);
+  });
+
+  // contact-reveal spec, "Repeat reveals of an already-revealed listing
+  // consume no allowance". The unit is the listing, never the action: a
+  // tenant re-opening the same advert while comparing is not draining the
+  // catalogue.
+  it("allows re-revealing a listing already inside the window, even at the limit", async () => {
+    const recent = Array.from(
+      { length: REVEAL_RATE_LIMIT_MAX_DISTINCT_LISTINGS - 1 },
+      (_, i) => `other-listing-${i}`,
+    ).concat(LISTING.listingId);
+    const deps = dependencies(TENANT, LISTING, recent);
+
+    await expect(
+      revealContact({ listingId: LISTING.listingId, message: MESSAGE }, deps),
+    ).resolves.toMatchObject({ state: "revealed" });
+    expect(deps.events.written).toHaveLength(1);
   });
 });

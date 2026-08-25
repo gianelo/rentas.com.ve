@@ -20,6 +20,13 @@ export interface NewContactRevealEvent {
    */
   readonly cityId: string;
   readonly revealedAt: Date;
+  /**
+   * Required going forward (tasks.md 6.11/6.13) — `revealContact` never
+   * calls `record` without one, `requireRevealMessage` guarantees that.
+   * `NULL` in the column stays reserved for rows written before this
+   * requirement existed; this port never writes that value.
+   */
+  readonly message: string;
 }
 
 export interface ContactRevealEventPort {
