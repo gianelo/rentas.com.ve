@@ -78,6 +78,42 @@ describe("sin cuenta", () => {
   });
 
   /**
+   * **El campo arranca VACÍO, y eso es la función entera.**
+   *
+   * `design.md` descartó el modelo de bid con un argumento concreto: revelar
+   * pasa a costar "a message per listing instead of a click". Un `defaultValue`
+   * cumpliría la spec al pie de la letra — se envía un mensaje, no está en
+   * blanco, se guarda — y vaciaría ese argumento, porque revelar seguiría
+   * costando exactamente un clic. La redacción sugerida tiene que GUIAR sin
+   * contestar por quien busca.
+   *
+   * Se prueba acá y no en el dominio porque el dominio ya hace su parte
+   * (`requireRevealMessage` rechaza el blanco) y no puede ver esto: un campo
+   * precargado le llega como un mensaje legítimo. La única capa que distingue
+   * "lo escribió una persona" de "se lo escribimos nosotros" es la que dibuja
+   * el formulario.
+   */
+  it("deja el campo del mensaje vacío: la sugerencia es pista, no respuesta", () => {
+    const markup = render(LOCKED);
+    const textarea = /<textarea[^>]*>([\s\S]*?)<\/textarea>/.exec(markup);
+
+    if (!textarea) throw new Error("falta el campo del mensaje en el estado bloqueado");
+
+    // Lo que se envía si nadie escribe: nada. Un `defaultValue` pondría acá
+    // adentro la redacción sugerida y este `toBe("")` se pondría rojo.
+    expect(textarea[1]).toBe("");
+
+    // La sugerencia sigue estando, como atributo y no como contenido.
+    expect(textarea[0]).toContain("placeholder=");
+    expect(textarea[0]).toContain("Apartamento 2 habitaciones en Chacao");
+
+    // Y el campo es obligatorio: vacío no se puede enviar, ni con el navegador
+    // sin JavaScript ni en el servidor.
+    expect(markup).toContain('name="message"');
+    expect(textarea[0]).toContain("required");
+  });
+
+  /**
    * La vuelta a esta misma ficha (F19). Va en el formulario y no en el
    * servidor porque la ficha es la única que conoce su URL canónica — la
    * acción sólo la usa si hace falta mandar a entrar.

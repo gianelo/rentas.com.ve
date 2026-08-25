@@ -1,5 +1,6 @@
 import type { SessionPort } from "../../identity/application/ports/session.port";
 import { requireAuthenticatedSession } from "../../identity/application/require-authenticated-session";
+import { requireRevealMessage } from "../domain/reveal-message";
 import { evaluateRevealAllowance, REVEAL_RATE_LIMIT_WINDOW_MS } from "../domain/reveal-rate-limit";
 import { type ContactPresentation, presentContact } from "../domain/revealable-contact";
 import type { ContactRevealEventPort } from "./ports/contact-reveal-event.port";
@@ -39,6 +40,8 @@ export class RevealRateLimitExceededError extends Error {
 
 export interface RevealContactRequest {
   readonly listingId: string;
+  /** Raw, as submitted by the tenant — `requireRevealMessage` decides if it counts (tasks.md 6.12). */
+  readonly message: string;
 }
 
 export interface RevealContactDependencies {
@@ -57,6 +60,10 @@ export async function revealContact(
   const now = dependencies.now ?? (() => new Date());
 
   const session = await requireAuthenticatedSession(sessionPort);
+
+  // A blank message is refused before anything is read, catalogue included —
+  // it is a pure check on what the caller sent, not on any product state.
+  const message = requireRevealMessage(request.message);
 
   const listing = await listings.findRevealable(request.listingId);
   if (!listing) {
@@ -85,6 +92,7 @@ export async function revealContact(
     tenantUserId: session.userId,
     cityId: listing.cityId,
     revealedAt: now(),
+    message,
   });
 
   // Recorded first, then shown. If the insert fails the tenant sees an error
@@ -92,6 +100,6 @@ export async function revealContact(
   // recoverable from the log, a silent uncounted reveal is not.
   return presentContact(
     { method: listing.contactMethod, value: listing.contactValue },
-    { hasRevealed: true },
+    { hasRevealed: true, message },
   );
 }

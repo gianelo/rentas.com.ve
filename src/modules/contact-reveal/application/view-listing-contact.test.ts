@@ -7,6 +7,7 @@ import type {
   ContactRevealMetricsPort,
   UniqueRevealPair,
 } from "./ports/contact-reveal-metrics.port";
+import type { RevealMessageHistoryPort } from "./ports/reveal-rate-limit.port";
 import type { RevealableListing, RevealableListingPort } from "./ports/revealable-listing.port";
 import { viewListingContact } from "./view-listing-contact";
 
@@ -37,14 +38,18 @@ function dependencies(
   session: AuthenticatedSession | null,
   pairs: readonly UniqueRevealPair[] = [],
   listing: RevealableListing | null = LISTING,
+  message: string | null = null,
 ) {
   const sessionPort: SessionPort = { getSession: vi.fn().mockResolvedValue(session) };
   const listings: RevealableListingPort = { findRevealable: vi.fn().mockResolvedValue(listing) };
   const reveals: ContactRevealMetricsPort = {
     findUniquePairs: vi.fn().mockResolvedValue(pairs),
   };
+  const messages: RevealMessageHistoryPort = {
+    findLatestMessage: vi.fn().mockResolvedValue(message),
+  };
 
-  return { sessionPort, listings, reveals };
+  return { sessionPort, listings, reveals, messages };
 }
 
 const ACTIVE = {
@@ -69,6 +74,9 @@ describe("viewListingContact", () => {
 
     expect(presentation).toEqual({ state: "locked", method: "whatsapp" });
     expect(deps.listings.findRevealable).not.toHaveBeenCalled();
+    // tasks.md 6.14 — el bloqueado no puede filtrar el mensaje: ni la clave
+    // ni el viaje que lo trae.
+    expect(deps.messages.findLatestMessage).not.toHaveBeenCalled();
   });
 
   it("tampoco lo lee para quien entró pero todavía no reveló", async () => {
@@ -81,6 +89,7 @@ describe("viewListingContact", () => {
 
     expect(presentation).toEqual({ state: "locked", method: "whatsapp" });
     expect(deps.listings.findRevealable).not.toHaveBeenCalled();
+    expect(deps.messages.findLatestMessage).not.toHaveBeenCalled();
   });
 
   it("entrega el valor a quien ya reveló este aviso", async () => {
@@ -90,6 +99,37 @@ describe("viewListingContact", () => {
       state: "revealed",
       method: "whatsapp",
       value: "+58 412 555 0134",
+      message: null,
+    });
+  });
+
+  // tasks.md 6.14 — "the contact action opens with the submitted message
+  // already written". Repeat reveals never deduplicate (task 6.4), so the
+  // port itself decides "latest"; this use case only carries what it hands
+  // back.
+  it("entrega el mensaje más reciente que el inquilino escribió al revelar", async () => {
+    const deps = dependencies(TENANT, [PAIR], LISTING, "Hola, vi tu aviso y me interesa.");
+
+    await expect(viewListingContact(ACTIVE, deps)).resolves.toEqual({
+      state: "revealed",
+      method: "whatsapp",
+      value: "+58 412 555 0134",
+      message: "Hola, vi tu aviso y me interesa.",
+    });
+    expect(deps.messages.findLatestMessage).toHaveBeenCalledWith(TENANT.userId, LISTING.listingId);
+  });
+
+  // task 6.11 — una revelación anterior al requisito guarda `message: NULL`.
+  // Eso no es un mensaje vacío ni un error: es "esta revelación es previa a
+  // la regla", y el render no puede confundirlo con lo uno ni con lo otro.
+  it("no revienta cuando la revelación es anterior al requisito del mensaje", async () => {
+    const deps = dependencies(TENANT, [PAIR], LISTING, null);
+
+    await expect(viewListingContact(ACTIVE, deps)).resolves.toEqual({
+      state: "revealed",
+      method: "whatsapp",
+      value: "+58 412 555 0134",
+      message: null,
     });
   });
 
@@ -136,12 +176,16 @@ describe("viewListingContact", () => {
    * llegaría como `undefined` hasta el render.
    */
   it("vuelve a bloquear si el aviso dejó de ser revelable después de la revelación", async () => {
-    const deps = dependencies(TENANT, [PAIR], null);
+    const deps = dependencies(TENANT, [PAIR], null, "Hola, me interesa.");
 
-    await expect(viewListingContact(ACTIVE, deps)).resolves.toEqual({
-      state: "locked",
-      method: "whatsapp",
-    });
+    const presentation = await viewListingContact(ACTIVE, deps);
+
+    expect(presentation).toEqual({ state: "locked", method: "whatsapp" });
+    // Bloqueado por esta rama también, aunque `hasRevealed` sea `true` y el
+    // mensaje SÍ se haya leído: el tipo `ContactPresentation` ni siquiera
+    // declara `message` en su variante `locked`, así que esto no podría
+    // filtrarse de otra forma — la prueba lo hace visible igual.
+    expect(Object.keys(presentation)).not.toContain("message");
   });
 
   /**
@@ -161,6 +205,7 @@ describe("viewListingContact", () => {
       state: "revealed",
       method: "email",
       value: "duenio@ejemplo.com",
+      message: null,
     });
   });
 });
