@@ -13,9 +13,11 @@ import type {
   DraftForActivation,
   ListingActivationPort,
 } from "../application/ports/listing-activation.port";
+import type { ListingPhotoAttachmentPort } from "../application/ports/listing-photo-attachment.port";
 import type {
   ListingRepositoryPort,
   NewListing,
+  NewListingPhoto,
 } from "../application/ports/listing-repository.port";
 import type { ZoneCataloguePort } from "../application/ports/zone-catalogue.port";
 import type { CuratedZone } from "../domain/publishable-listing";
@@ -136,7 +138,7 @@ export class DrizzleListingRepository implements ListingRepositoryPort {
  * this reads-then-flips an existing row, and the two never need to change
  * together.
  */
-export class DrizzleListingActivation implements ListingActivationPort {
+export class DrizzleListingActivation implements ListingActivationPort, ListingPhotoAttachmentPort {
   constructor(private readonly db: PublicationDatabase) {}
 
   /**
@@ -200,6 +202,40 @@ export class DrizzleListingActivation implements ListingActivationPort {
       .returning({ id: listings.id });
 
     return updated.length > 0;
+  }
+
+  /**
+   * broker-bulk-import spec, "Photos Attached Through the Existing Upload
+   * Path" (tasks.md 9.20/9.21) — `ListingPhotoAttachmentPort`'s only method.
+   * Same shape as `save`'s photo insert (one transaction, guarded against
+   * `.values([])`), except this targets an EXISTING listing row one photo
+   * at a time rather than inserting a brand-new one — `attachPhotoToDraft`
+   * already proved ownership and the ceiling before this is ever called,
+   * so this method carries no lookup of its own.
+   */
+  async attachPhoto(listingId: string, photo: NewListingPhoto, createdAt: Date): Promise<void> {
+    const photoId = randomUUID();
+
+    await this.db.transaction(async (tx) => {
+      await tx.insert(listingPhotos).values({
+        id: photoId,
+        listingId,
+        position: photo.position,
+        createdAt,
+      });
+
+      const derivativeRows = photo.derivatives.map((derivative) => ({
+        photoId,
+        name: derivative.name,
+        key: derivative.key,
+        bytes: derivative.byteLength,
+      }));
+      // Mirrors `save`'s own guard: `.values([])` is a Drizzle runtime
+      // error, not a no-op (tasks.md 9.15's own lesson, slice C).
+      if (derivativeRows.length > 0) {
+        await tx.insert(listingPhotoDerivatives).values(derivativeRows);
+      }
+    });
   }
 }
 
