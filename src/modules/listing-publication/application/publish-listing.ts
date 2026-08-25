@@ -97,6 +97,7 @@ export async function publishListing(
   const violations = validatePublishableListing(
     { ...request, photoCount: request.photos.length },
     curatedZones,
+    "activation",
   );
 
   // Before the photos, always. Validation is a pure function over values

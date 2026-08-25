@@ -211,6 +211,28 @@ function isWholeNonNegativeNumber(value: number): boolean {
 }
 
 /**
+ * broker-bulk-import spec, "Whole-File Validation Before Any Write" (tasks.md
+ * 9.12/9.15). **A row validated as a draft is checked against everything
+ * this function enforces EXCEPT the photo rule.** The spec says it directly:
+ * "Drafts Are Not Published Listings... A draft MUST become active only once
+ * it satisfies minimum publishable content" — so "at least one photo" is a
+ * rule for ACTIVATION, not for a draft's existence. An imported draft is
+ * created with zero photos by design (they attach afterwards through the
+ * upload path, tasks.md 9.20-9.23), and taking this function's own
+ * `photos.required` check literally at draft-creation time would make bulk
+ * import structurally unable to create a single row.
+ *
+ * **One validator, one rule set, one place the photo requirement lives** —
+ * not a second, photo-less copy of this function for imports to call
+ * instead. `stage` is the whole difference: "draft" skips only the "at least
+ * one" half of the photo rule (the ceiling still applies, in case a
+ * mid-attachment draft is re-validated later); every other rule, including
+ * the curated-zone check bulk import reuses verbatim, runs identically in
+ * both stages.
+ */
+export type PublishStage = "draft" | "activation";
+
+/**
  * Returns EVERY violation, never throwing and never stopping at the first.
  * The form shows per-field errors, and a fail-fast validator cannot fill
  * that screen: a publisher who left three fields empty would fix one,
@@ -219,6 +241,7 @@ function isWholeNonNegativeNumber(value: number): boolean {
 export function validatePublishableListing(
   draft: DraftListing,
   curatedZones: readonly CuratedZone[],
+  stage: PublishStage = "activation",
 ): PublishViolation[] {
   const violations: PublishViolation[] = [];
 
@@ -353,9 +376,16 @@ export function validatePublishableListing(
     if (!looksLikePhone(draft.contactValue as string)) violations.push("contactValue.invalid");
   }
 
-  if (!draft.photoCount || draft.photoCount < 1) {
-    violations.push("photos.required");
-  } else if (draft.photoCount > MAX_PHOTOS_PER_LISTING) {
+  if (stage === "activation") {
+    if (!draft.photoCount || draft.photoCount < 1) {
+      violations.push("photos.required");
+    } else if (draft.photoCount > MAX_PHOTOS_PER_LISTING) {
+      violations.push("photos.tooMany");
+    }
+  } else if (draft.photoCount !== undefined && draft.photoCount > MAX_PHOTOS_PER_LISTING) {
+    // The "at least one" half is deferred to activation; the ceiling is not
+    // — a draft mid-way through photo attachment (tasks.md 9.20+) that
+    // somehow exceeds it is still wrong regardless of stage.
     violations.push("photos.tooMany");
   }
 
