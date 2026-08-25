@@ -167,3 +167,37 @@ describe("reportListing", () => {
     expect(deps.written).toEqual([own]);
   });
 });
+
+/**
+ * **El reloj por defecto, que es el único que corre en producción.**
+ *
+ * `reportListing` resuelve `dependencies.now ?? (() => new Date())`, y hasta
+ * acá ningún test ejecutaba esa segunda mitad: todos inyectan su propio
+ * reloj, que es lo correcto para que las fechas sean afirmables. El costo era
+ * que la rama que sí corre —la ruta nunca inyecta un reloj— no la miraba
+ * nadie: cambiarla por `new Date(0)` no habría puesto una sola prueba en
+ * rojo, y cada reporte se habría guardado con fecha de 1970.
+ *
+ * Mismo procedimiento que `renew-listing.test.ts`: no se afirma un instante,
+ * que sería irrepetible, sino que la fecha cae dentro de una ventana que
+ * cualquier máquina cumple.
+ */
+describe("el reloj por defecto", () => {
+  it("sella el reporte con la hora real cuando nadie inyecta un reloj", async () => {
+    const listings = recordingListings(ACTIVE_LISTING);
+    const reports = recordingReports(1);
+    const sessionPort: SessionPort = { getSession: vi.fn().mockResolvedValue(REPORTER) };
+
+    const antes = Date.now();
+    await reportListing(
+      { listingId: "listing-1" },
+      { sessionPort, listings: listings.port, reports: reports.port },
+    );
+    const despues = Date.now();
+
+    expect(reports.written).toHaveLength(1);
+    const sellado = reports.written[0]?.reportedAt.getTime() ?? 0;
+    expect(sellado).toBeGreaterThanOrEqual(antes);
+    expect(sellado).toBeLessThanOrEqual(despues);
+  });
+});

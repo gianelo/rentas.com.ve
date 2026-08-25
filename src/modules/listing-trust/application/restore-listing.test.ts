@@ -98,3 +98,39 @@ describe("restoreListing", () => {
     },
   );
 });
+
+/**
+ * **El reloj por defecto, que es el único que corre en producción.**
+ *
+ * `restoreListing` resuelve `dependencies.now ?? (() => new Date())`, y esa
+ * rama decide algo más grande que un sello: es la que compara contra
+ * `expiresAt` para no devolver a `active` un aviso que el tiempo ya retiró.
+ * Con un reloj roto ahí, la restauración resucitaría avisos vencidos y
+ * ningún test lo habría notado.
+ *
+ * La fila de este caso vence en un futuro lejano, así que la decisión es
+ * `active` contra cualquier reloj real; lo que se afirma del instante es sólo
+ * que cae en la ventana, igual que en `renew-listing.test.ts`.
+ */
+describe("el reloj por defecto", () => {
+  it("restaura contra la hora real cuando nadie inyecta un reloj", async () => {
+    const listings = recordingListings({
+      ...HIDDEN_LISTING,
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    });
+    const moderationActions = recordingModerationActions();
+
+    const antes = Date.now();
+    const result = await restoreListing(
+      { listingId: "listing-1" },
+      { listings: listings.port, moderationActions: moderationActions.port },
+    );
+    const despues = Date.now();
+
+    expect(result.status).toBe("active");
+    expect(moderationActions.written).toHaveLength(1);
+    const sellado = moderationActions.written[0]?.createdAt.getTime() ?? 0;
+    expect(sellado).toBeGreaterThanOrEqual(antes);
+    expect(sellado).toBeLessThanOrEqual(despues);
+  });
+});
