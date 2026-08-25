@@ -715,3 +715,76 @@ export const jobRuns = pgTable(
   },
   (run) => [index("job_run_job_started_idx").on(run.job, run.startedAt)],
 );
+
+// listing_report (tasks.md 8.1, listing-trust spec, "Auto-Hide After Three
+// Distinct Reports"). One row per (listing, reporter) pair — the UNIQUE
+// constraint below IS the "at most one report per account" guarantee, the
+// same way `listing_reminder_cycle_unique` is the "never send it twice"
+// guarantee: a repeat report from the same account collides with the index
+// instead of relying on an `if` in the use case remembering to check first.
+// `count(*) WHERE listing_id = $1` is therefore already a count of DISTINCT
+// accounts, by construction — there is no second COUNT DISTINCT query
+// anywhere in this feature.
+//
+// **`ON DELETE restrict` on both foreign keys, same reasoning as
+// `contact_reveal_event` (design.md D6).** A report is evidence — of what a
+// reader flagged and who flagged it — and evidence a `CASCADE` could erase is
+// not evidence. It would also erase it at exactly the correlated moment: an
+// account or listing getting deleted is disproportionately likely to be one
+// somebody was trying to make disappear.
+export const listingReports = pgTable(
+  "listing_report",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    listingId: text("listing_id")
+      .notNull()
+      .references(() => listings.id, { onDelete: "restrict" }),
+    reporterId: text("reporter_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    reportedAt: timestamp("reported_at", { mode: "date", withTimezone: true }).notNull(),
+  },
+  (report) => [
+    // The guarantee, not an application check — see the file comment above.
+    // Leading with `listing_id` also makes this the index the distinct-count
+    // query runs on.
+    unique("listing_report_listing_reporter_unique").on(report.listingId, report.reporterId),
+  ],
+);
+
+// moderation_action (tasks.md 8.1/8.6, listing-trust spec, "Operator
+// Restore"). An append-only log of what an operator did to a listing —
+// today, only `restore`.
+//
+// **No `actor` column.** This project has no operator account model: the
+// route that writes this row is gated by a shared bearer secret
+// (`operator-authorization.ts`, mirroring `cron-authorization.ts`), not by a
+// signed-in `user` row, so there is no identity here to reference without
+// inventing an operator-account concept nothing else in this schema needs
+// yet. What the row proves — a listing was restored, and when — does not
+// depend on who was holding the secret.
+//
+// **`ON DELETE restrict`, same reasoning as `listing_report` above and
+// `contact_reveal_event` (design.md D6).** A moderation log is evidence too:
+// it is the record that a hidden listing was reviewed and cleared. `CASCADE`
+// would let a listing's own deletion quietly erase the fact that it had ever
+// been moderated.
+export const moderationActions = pgTable(
+  "moderation_action",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    listingId: text("listing_id")
+      .notNull()
+      .references(() => listings.id, { onDelete: "restrict" }),
+    /** Closed list of one today; typed rather than left as bare `text` so a
+     * second kind of action fails to compile at every switch that reads it,
+     * instead of falling through silently. */
+    action: text("action").$type<"restore">().notNull(),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+  },
+  (row) => [index("moderation_action_listing_idx").on(row.listingId, row.createdAt)],
+);
