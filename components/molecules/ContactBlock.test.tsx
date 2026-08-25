@@ -169,6 +169,43 @@ describe("con cuenta", () => {
   });
 
   /**
+   * **El mensaje del inquilino le gana a la plantilla, y esa es la función.**
+   *
+   * La verificación de la capacidad (2026-08-24) encontró que el fixture
+   * `REVEALED` nunca traía `message`, así que `contact.message ??
+   * defaultRevealMessage(...)` sólo ejercitaba su rama DERECHA: el dominio y la
+   * aplicación probaban que el mensaje guardado viaja, y el componente nunca lo
+   * dibujaba con uno. Un `??` al revés —o borrado— dejaba todo en verde
+   * mientras cada inquilino mandaba la misma plantilla.
+   *
+   * El respaldo sigue teniendo su caso y es el de arriba: una revelación
+   * anterior a la migración tiene `message` en `NULL` y el enlace no puede
+   * quedar sin texto.
+   */
+  it("lleva el mensaje que escribió el inquilino, no la plantilla", () => {
+    const suyo = "Hola, ¿se puede ver el sábado por la mañana?";
+    const markup = render({ ...REVEALED, message: suyo });
+
+    expect(markup).toContain(encodeURIComponent(suyo));
+    // Y la plantilla NO viaja: si las dos estuvieran, el `??` estaría
+    // resolviéndose en algún lado que no es el href.
+    expect(markup).not.toContain(encodeURIComponent("y me interesa."));
+  });
+
+  /**
+   * `null` es la revelación anterior a la migración (el `message` de
+   * `contact_reveal_event` es anulable a propósito, tasks.md 6.11). Tiene que
+   * caer al respaldo igual que `undefined`, o el enlace sale con el texto
+   * `null` adentro.
+   */
+  it("cae a la plantilla cuando la revelación es anterior al requisito", () => {
+    const markup = render({ ...REVEALED, message: null });
+
+    expect(markup).toContain(encodeURIComponent("Apartamento 2 habitaciones en Chacao"));
+    expect(markup).not.toContain("null");
+  });
+
+  /**
    * **Nunca afirma una verificación que no ocurrió.** La columna
    * `phone_verified_at` no existe todavía (tasks.md 16.12) y la verificación
    * por WhatsApp es un stub, así que la ficha pasa `null` — y con `null` la
