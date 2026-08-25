@@ -10,6 +10,10 @@ import type {
   SessionPort,
 } from "../../src/modules/identity/application/ports/session.port";
 import {
+  type CatalogueDatabase,
+  DrizzleCatalogue,
+} from "../../src/modules/listing-catalogue/infrastructure/drizzle-catalogue";
+import {
   AttachPhotoToDraftLimitReachedError,
   AttachPhotoToDraftNotFoundError,
   AttachPhotoToDraftNotOwnedError,
@@ -68,6 +72,7 @@ const activation = new DrizzleListingActivation(db as unknown as PublicationData
 const zones = new DrizzleZoneCatalogue(db as unknown as PublicationDatabase);
 const accounts = new DrizzleBulkImportAccounts(db as unknown as PublicationDatabase);
 const contact = new DrizzleImportAccountContact(db as unknown as PublicationDatabase);
+const catalogue = new DrizzleCatalogue(db as unknown as CatalogueDatabase);
 
 let cityCounter = 0;
 async function makeCityAndZone(): Promise<{ readonly cityId: string; readonly zoneId: string }> {
@@ -90,8 +95,11 @@ function requiredHeader(): string {
   return "referencia_externa,titulo,descripcion,precio_usd,ciudad,zona,tipo_inmueble,habitaciones,banos,metros2";
 }
 
+// NAMES, not raw ids (mvp-rental-listings unplanned work unit: "bulk
+// import: resolve ciudad and zona by name") — `Ciudad ${cityId}`/`Zona
+// ${zoneId}` are exactly the names `makeCityAndZone` inserts.
 function rowLine(externalReference: string, cityId: string, zoneId: string): string {
-  return `${externalReference},Titulo del aviso,"${VALID_DESCRIPTION}",450,${cityId},${zoneId},apartamento,2,2,78`;
+  return `${externalReference},Titulo del aviso,"${VALID_DESCRIPTION}",450,Ciudad ${cityId},Zona ${zoneId},apartamento,2,2,78`;
 }
 
 function sourceFromText(text: string): ImportFileSourcePort {
@@ -139,6 +147,7 @@ async function importOneDraft(
       accounts,
       contact,
       zones,
+      catalogue,
       listings: listingsRepo,
       now: () => new Date("2026-01-01T00:00:00.000Z"),
     },

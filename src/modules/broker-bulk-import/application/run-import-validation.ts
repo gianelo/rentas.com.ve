@@ -1,9 +1,15 @@
+import type { CataloguePort } from "../../listing-catalogue/application/ports/catalogue.port";
 import type { ZoneCataloguePort } from "../../listing-publication/application/ports/zone-catalogue.port";
 import { resolveImportAccountContact } from "../domain/import-account-contact";
 import {
   type ImportRowValidationOutcome,
   validateImportRows,
 } from "../domain/import-row-validation";
+import {
+  applyResolvedLocations,
+  mergeLocationResolutionErrors,
+  resolveImportRowLocations,
+} from "../domain/resolve-import-locations";
 import { collectCuratedZonesForRows } from "./collect-curated-zones";
 import { parseImportFile } from "./parse-import-file";
 import type { ImportAccountContactPort } from "./ports/import-account-contact.port";
@@ -35,6 +41,16 @@ export interface ImportValidationOutcome extends ImportRowValidationOutcome {
 export interface RunImportValidationDependencies {
   readonly contact: ImportAccountContactPort;
   readonly zones: ZoneCataloguePort;
+  /**
+   * Read access to the FULL city/zone taxonomy — names included — for
+   * `resolve-import-locations.ts`'s ciudad/zona-by-name resolution.
+   * `ZoneCataloguePort` above stays scoped to ids per city (what the
+   * curated-zone rule needs); `CataloguePort` is reused UNCHANGED from
+   * `listing-catalogue` (same decision `generate-import-template.ts`
+   * already made) rather than widened into a second "list everything"
+   * port.
+   */
+  readonly catalogue: CataloguePort;
 }
 
 /**
@@ -56,7 +72,7 @@ export async function runImportValidation(
   source: ImportFileSourcePort,
   dependencies: RunImportValidationDependencies,
 ): Promise<ImportValidationOutcome> {
-  const { contact, zones } = dependencies;
+  const { contact, zones, catalogue } = dependencies;
 
   const account = await contact.findAccountContact(userId);
   const resolvedContact = resolveImportAccountContact(account);
@@ -65,9 +81,22 @@ export async function runImportValidation(
   }
 
   const { rows } = await parseImportFile(source);
-  const curatedZones = await collectCuratedZonesForRows(rows, zones);
 
-  const outcome = validateImportRows(rows, curatedZones, resolvedContact);
+  // Name -> id resolution runs BEFORE the curated-zone rule and before
+  // validateImportRows — everything past this point keeps working in ids,
+  // unchanged (mvp-rental-listings unplanned work unit: "bulk import:
+  // resolve ciudad and zona by name").
+  const [cities, catalogueZones] = await Promise.all([
+    catalogue.listCities(),
+    catalogue.listZones(),
+  ]);
+  const locationOutcomes = resolveImportRowLocations(rows, cities, catalogueZones);
+  const preparedRows = applyResolvedLocations(rows, locationOutcomes);
+
+  const curatedZones = await collectCuratedZonesForRows(preparedRows, zones);
+
+  const validationOutcome = validateImportRows(preparedRows, curatedZones, resolvedContact);
+  const outcome = mergeLocationResolutionErrors(validationOutcome, locationOutcomes);
 
   return { totalRows: rows.length, ...outcome };
 }

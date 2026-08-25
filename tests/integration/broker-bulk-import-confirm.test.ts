@@ -12,6 +12,10 @@ import type {
   SessionPort,
 } from "../../src/modules/identity/application/ports/session.port";
 import {
+  type CatalogueDatabase,
+  DrizzleCatalogue,
+} from "../../src/modules/listing-catalogue/infrastructure/drizzle-catalogue";
+import {
   DrizzleListingRepository,
   DrizzleZoneCatalogue,
   type PublicationDatabase,
@@ -48,6 +52,7 @@ const listings = new DrizzleListingRepository(db);
 const zones = new DrizzleZoneCatalogue(db);
 const accounts = new DrizzleBulkImportAccounts(db);
 const contact = new DrizzleImportAccountContact(db);
+const catalogue = new DrizzleCatalogue(db as unknown as CatalogueDatabase);
 
 const CITY = randomUUID();
 const ZONE = randomUUID();
@@ -74,8 +79,11 @@ function sourceFromText(text: string): ImportFileSourcePort {
 const REQUIRED_HEADER =
   "referencia_externa,titulo,descripcion,precio_usd,ciudad,zona,tipo_inmueble,habitaciones,banos,metros2";
 
+// NAMES, not raw ids (mvp-rental-listings unplanned work unit: "bulk
+// import: resolve ciudad and zona by name") — `Ciudad ${CITY}`/`Zona
+// ${ZONE}` are exactly the names `beforeAll` inserts below.
 function rowLine(externalReference: string): string {
-  return `${externalReference},Titulo del aviso,"${VALID_DESCRIPTION}",450,${CITY},${ZONE},apartamento,2,2,78`;
+  return `${externalReference},Titulo del aviso,"${VALID_DESCRIPTION}",450,Ciudad ${CITY},Zona ${ZONE},apartamento,2,2,78`;
 }
 
 async function insertUser(
@@ -127,7 +135,7 @@ describe("confirmImport — against real Postgres", () => {
 
     const result = await confirmImport(
       sourceFromText(`${REQUIRED_HEADER}\n${rowLine("PG-REF-1")}`),
-      { sessionPort: sessionFor(userId), accounts, contact, zones, listings },
+      { sessionPort: sessionFor(userId), accounts, contact, zones, catalogue, listings },
     );
 
     expect(result.createdCount).toBe(1);
@@ -172,6 +180,7 @@ describe("confirmImport — against real Postgres", () => {
       accounts,
       contact,
       zones,
+      catalogue,
       listings,
     });
     expect(first.createdCount).toBe(1);
@@ -182,6 +191,7 @@ describe("confirmImport — against real Postgres", () => {
       accounts,
       contact,
       zones,
+      catalogue,
       listings,
     });
 
@@ -214,6 +224,7 @@ describe("confirmImport — against real Postgres", () => {
       accounts,
       contact,
       zones,
+      catalogue,
       listings,
     });
 
@@ -241,6 +252,7 @@ describe("confirmImport — against real Postgres", () => {
         accounts,
         contact,
         zones,
+        catalogue,
         listings,
       }),
     ).rejects.toBeInstanceOf(ImportMissingAccountContactError);

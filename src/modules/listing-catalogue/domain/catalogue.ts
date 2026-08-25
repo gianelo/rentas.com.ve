@@ -22,10 +22,44 @@ export interface CatalogueCity {
   readonly name: string;
 }
 
+/**
+ * Mirrors `schema.ts`'s `ZoneKind`/`ZoneCategory` as this domain's OWN leaf
+ * types rather than importing from `shared/db/schema` — the same pattern
+ * `PropertyType` (`publishable-listing.ts`) already uses: the domain layer
+ * does not depend on infrastructure, even for a plain string union.
+ */
+export type CatalogueZoneKind = "estado" | "municipio" | "parroquia" | "elemento";
+
+export type CatalogueZoneCategory =
+  | "barrio"
+  | "sector"
+  | "urbanizacion"
+  | "conjunto"
+  | "parcelamiento"
+  | "caserio"
+  | "comunidad"
+  | "localidad"
+  | "edificacion"
+  | "otro";
+
+/**
+ * `kind`, `category`, and `parentName` widened in (broker-bulk-import's
+ * name-resolution layer, `resolve-import-locations.ts`) so a broker who
+ * types an ambiguous name — "Chacao" is a municipio AND a parroquia,
+ * `schema.ts`'s own comment on `zone.parentId` — can be told WHICH places it
+ * matches, not just that it is ambiguous. Backward compatible: every
+ * existing reader (`zonesForCity`, `CityZoneSelect`, the template
+ * generator) reads only `id`/`name`/`cityId` and ignores the rest.
+ */
 export interface CatalogueZone {
   readonly id: string;
   readonly name: string;
   readonly cityId: string;
+  readonly kind: CatalogueZoneKind;
+  /** NULL for estado/municipio/parroquia — see `CatalogueZoneCategory`. */
+  readonly category: CatalogueZoneCategory | null;
+  /** The official parent's name, or `null` at the top of a city's tree. */
+  readonly parentName: string | null;
 }
 
 /**
@@ -81,11 +115,18 @@ export function resolveSelectedCity(
  * dangerous failure mode is the generous one: a filter that gives up and
  * returns the full taxonomy puts both cities back into the control, which is
  * the exact leak this function exists to close.
+ *
+ * **Generic over `{ cityId }`, not fixed to `CatalogueZone`** — the same
+ * shape `toSearchZones` (`listing-search/domain/zone-catalogue.ts`) already
+ * uses. `CatalogueZone` widened to carry `kind`/`category`/`parentName` for
+ * `resolve-import-locations.ts`'s name resolution, and a caller like
+ * `CityZoneSelect` that only ever needed `id`/`name`/`cityId` should not
+ * have to construct fields it never reads just to satisfy this filter.
  */
-export function zonesForCity(
-  zones: readonly CatalogueZone[],
+export function zonesForCity<Z extends { readonly cityId: string }>(
+  zones: readonly Z[],
   cityId: string | null | undefined,
-): readonly CatalogueZone[] {
+): readonly Z[] {
   if (!cityId) return [];
 
   return zones.filter((zone) => zone.cityId === cityId);

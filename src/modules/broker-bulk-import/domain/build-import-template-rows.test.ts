@@ -16,9 +16,30 @@ const CARACAS: CatalogueCity = { id: "city-dc-uuid", name: "Distrito Capital" };
 const MARACAIBO: CatalogueCity = { id: "city-mcbo-uuid", name: "Maracaibo" };
 
 const ZONES: readonly CatalogueZone[] = [
-  { id: "zone-chacao-uuid", name: "Chacao", cityId: CARACAS.id },
-  { id: "zone-lpg-uuid", name: "Los Palos Grandes", cityId: CARACAS.id },
-  { id: "zone-lago-uuid", name: "La Lago", cityId: MARACAIBO.id },
+  {
+    id: "zone-chacao-uuid",
+    name: "Chacao",
+    cityId: CARACAS.id,
+    kind: "municipio",
+    category: null,
+    parentName: null,
+  },
+  {
+    id: "zone-lpg-uuid",
+    name: "Los Palos Grandes",
+    cityId: CARACAS.id,
+    kind: "elemento",
+    category: "urbanizacion",
+    parentName: "Chacao",
+  },
+  {
+    id: "zone-lago-uuid",
+    name: "La Lago",
+    cityId: MARACAIBO.id,
+    kind: "parroquia",
+    category: null,
+    parentName: null,
+  },
 ];
 
 describe("IMPORT_TEMPLATE_HEADER", () => {
@@ -40,18 +61,24 @@ describe("buildImportTemplateRows — one example row per city", () => {
     }
   });
 
-  it("uses the city's REAL id in the ciudad column and one of ITS OWN zones' real id in the zona column", () => {
+  it("uses the city's real NAME in the ciudad column and one of ITS OWN zones' real NAME in the zona column — never an id", () => {
     const rows = buildImportTemplateRows([CARACAS, MARACAIBO], ZONES);
     const cityIndex = IMPORT_TEMPLATE_HEADER.indexOf("ciudad");
     const zoneIndex = IMPORT_TEMPLATE_HEADER.indexOf("zona");
 
-    const caracasRow = rows.find((row) => row[cityIndex] === CARACAS.id);
+    const caracasRow = rows.find((row) => row[cityIndex] === CARACAS.name);
     expect(caracasRow).toBeDefined();
-    expect(caracasRow?.[zoneIndex]).toBe("zone-chacao-uuid");
+    expect(caracasRow?.[zoneIndex]).toBe("Chacao");
 
-    const maracaiboRow = rows.find((row) => row[cityIndex] === MARACAIBO.id);
+    const maracaiboRow = rows.find((row) => row[cityIndex] === MARACAIBO.name);
     expect(maracaiboRow).toBeDefined();
-    expect(maracaiboRow?.[zoneIndex]).toBe("zone-lago-uuid");
+    expect(maracaiboRow?.[zoneIndex]).toBe("La Lago");
+
+    // A broker filling the template by hand must never see a UUID.
+    for (const row of rows) {
+      expect(row[cityIndex]).not.toMatch(/uuid/i);
+      expect(row[zoneIndex]).not.toMatch(/uuid/i);
+    }
   });
 
   it("skips a city with no curated zone — a row certain to fail the zone check is worse than no row", () => {

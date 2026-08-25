@@ -25,6 +25,21 @@ const BOOLEAN_FIELD_NAMES: readonly string[] = IMPORT_COLUMN_ALLOWLIST.filter((c
   IMPORT_BOOLEAN_COLUMNS.has(column.header as OptionalImportColumn),
 ).map((column) => column.field);
 
+/**
+ * **Widened to include `string`, and this is a deviation from the "stable,
+ * translatable codes" idiom `PublishViolation` documents — recorded per
+ * AGENTS.md §5, not left implicit.** Every code below still applies exactly
+ * as before. The addition is for `resolve-import-locations.ts`'s
+ * name-resolution errors ("«Caracas» no es una ciudad válida. Ciudades
+ * disponibles: …", "«Chacao» coincide con más de un lugar…"): unlike every
+ * other violation here, WHICH names are valid or WHICH places an ambiguous
+ * name matches is data the row itself decides, not a fixed sentence a
+ * `Record<Code, Copy>` table could hold — and unlike `PublishViolation`,
+ * this pipeline has no consuming copy table (`app/publicar/violation-
+ * copy.ts` has no bulk-import counterpart; 9.26's Import UI does not exist
+ * yet) to translate a code into that sentence later. The message is
+ * rendered once, in the domain, and travels as the reason itself.
+ */
 export type ImportRowViolation =
   | PublishViolation
   | "externalReference.required"
@@ -33,7 +48,8 @@ export type ImportRowViolation =
   | "hasRegularWater.invalid"
   | "isFurnished.invalid"
   | "hasSecurity.invalid"
-  | "hasAppliances.invalid";
+  | "hasAppliances.invalid"
+  | string;
 
 export interface ImportRowError {
   readonly rowNumber: number;

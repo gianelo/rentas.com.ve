@@ -58,8 +58,14 @@ const CELL_BY_FIELD: Record<
   title: (city) => exampleTitleFor(city),
   description: () => EXAMPLE_DESCRIPTION,
   priceUsd: () => "450",
-  city: (_city, zone) => zone.cityId,
-  zone: (_city, zone) => zone.id,
+  // NAMES, not ids — this is the whole point of resolve-import-locations.ts
+  // (mvp-rental-listings, unplanned work unit: "bulk import: resolve
+  // ciudad and zona by name"). A template that still emitted `city.id`/
+  // `zone.id` handed a broker two random-looking UUIDs to copy-paste into
+  // every one of fifty rows; the resolver this template feeds turns a
+  // human-typed name back into those same real ids.
+  city: (city) => city.name,
+  zone: (_city, zone) => zone.name,
   propertyType: () => "apartamento",
   rooms: () => "3",
   bathrooms: () => "2",
@@ -87,10 +93,13 @@ function buildRow(city: CatalogueCity, zone: CatalogueZone, index: number): stri
 }
 
 /**
- * One example row PER CITY, each carrying that city's own real id and one
- * of its own curated zones' real id — the "currently valid city and zone
- * values" the spec asks for, demonstrated as literally accepted data rather
- * than only described in prose. **Not one row per zone**: a city's zone
+ * One example row PER CITY, each carrying that city's own real NAME and one
+ * of its own curated zones' real NAME — never an id, so a broker can fill
+ * the template by hand instead of copy-pasting a UUID
+ * (`resolve-import-locations.ts` resolves the name back to the real id at
+ * validation time). The "currently valid city and zone values" the spec
+ * asks for, demonstrated as literally accepted data rather than only
+ * described in prose. **Not one row per zone**: a city's zone
  * taxonomy can run to hundreds or thousands of entries at every
  * estado/municipio/parroquia/elemento level (`schema.ts`'s own documented
  * reality), and dumping all of them into a downloadable template would be

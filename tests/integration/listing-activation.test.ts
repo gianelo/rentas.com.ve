@@ -15,6 +15,10 @@ import type {
   SessionPort,
 } from "../../src/modules/identity/application/ports/session.port";
 import {
+  type CatalogueDatabase,
+  DrizzleCatalogue,
+} from "../../src/modules/listing-catalogue/infrastructure/drizzle-catalogue";
+import {
   DrizzleLifecycleListings,
   type LifecycleDatabase,
 } from "../../src/modules/listing-lifecycle/infrastructure/drizzle-lifecycle";
@@ -75,6 +79,7 @@ const activation = new DrizzleListingActivation(db as unknown as PublicationData
 const zones = new DrizzleZoneCatalogue(db as unknown as PublicationDatabase);
 const accounts = new DrizzleBulkImportAccounts(db as unknown as PublicationDatabase);
 const contact = new DrizzleImportAccountContact(db as unknown as PublicationDatabase);
+const catalogue = new DrizzleCatalogue(db as unknown as CatalogueDatabase);
 const search = new DrizzleListingSearch(db as unknown as SearchDatabase);
 const revealable = new DrizzleRevealableListing(db as unknown as ContactRevealDatabase);
 const lifecycle = new DrizzleLifecycleListings(db as unknown as LifecycleDatabase);
@@ -90,8 +95,11 @@ const VALID_DESCRIPTION =
 const REQUIRED_HEADER =
   "referencia_externa,titulo,descripcion,precio_usd,ciudad,zona,tipo_inmueble,habitaciones,banos,metros2";
 
+// NAMES, not raw ids (mvp-rental-listings unplanned work unit: "bulk
+// import: resolve ciudad and zona by name") — `Ciudad ${CITY}`/`Zona
+// ${ZONE}` are exactly the names `beforeAll` inserts below.
 function rowLine(externalReference: string): string {
-  return `${externalReference},Titulo del aviso,"${VALID_DESCRIPTION}",450,${CITY},${ZONE},apartamento,2,2,78`;
+  return `${externalReference},Titulo del aviso,"${VALID_DESCRIPTION}",450,Ciudad ${CITY},Zona ${ZONE},apartamento,2,2,78`;
 }
 
 function sourceFromText(text: string): ImportFileSourcePort {
@@ -131,6 +139,7 @@ async function importOneDraft(
     accounts,
     contact,
     zones,
+    catalogue,
     listings: listingsRepo,
     now: () => importedAt,
   });
