@@ -25,7 +25,17 @@ export interface LifecycleListing {
 export interface RenewableListing {
   readonly id: string;
   readonly title: string;
-  readonly status: "active" | "expired" | "hidden";
+  /**
+   * Widened to `draft` alongside `listing.status` itself (schema.ts,
+   * tasks.md 9.1) — `findRenewable` selects the column as-is and this type
+   * has to keep compiling against it. **No draft is renewable today, and
+   * nothing here decides that yet**: a renewal token is only ever minted
+   * for a listing that already went through `noticeCandidates`
+   * (`active`/`expired` only), so a draft can never reach this port through
+   * the real flow. Deciding what happens if one somehow did is 9.18/9.19's
+   * job.
+   */
+  readonly status: "active" | "expired" | "hidden" | "draft";
   readonly expiresAt: Date;
 }
 

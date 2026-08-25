@@ -15,7 +15,17 @@
  * takes what the port already found (a count) and answers one question.
  */
 
-export type ListingModerationStatus = "active" | "expired" | "hidden";
+/**
+ * Widened to `draft` alongside `listing.status` itself (schema.ts, tasks.md
+ * 9.1). Safe without a new branch: `resolveReportOutcome` already guards on
+ * `currentStatus !== "active"` and returns the status unchanged for
+ * anything else, so a reported draft (which should never happen — drafts
+ * are excluded from search and therefore unreachable from the report
+ * button) is a silent no-op rather than a mis-hide. `resolveRestoreOutcome`
+ * below guards symmetrically on `!== "hidden"`. Deciding what `draft`
+ * itself MEANS to moderation is 9.18/9.19's job, not this widening's.
+ */
+export type ListingModerationStatus = "active" | "expired" | "hidden" | "draft";
 
 export const AUTO_HIDE_REPORT_THRESHOLD = 3;
 
