@@ -16,6 +16,7 @@ import {
   attachPhotoToDraft,
 } from "../../src/modules/listing-publication/application/attach-photo-to-draft";
 import type { PhotoDerivationPort } from "../../src/modules/listing-publication/application/ports/photo-derivation.port";
+import type { PhotoHashComputationPort } from "../../src/modules/listing-publication/application/ports/photo-hash-computation.port";
 import type {
   PhotoStoragePort,
   StoredObject,
@@ -28,6 +29,8 @@ import {
   DrizzleZoneCatalogue,
   type PublicationDatabase,
 } from "../../src/modules/listing-publication/infrastructure/drizzle-listing-repository";
+import type { PhotoHashPort } from "../../src/modules/listing-trust/application/ports/photo-hash.port";
+import { toPerceptualHash } from "../../src/modules/listing-trust/domain/perceptual-hash";
 import * as schema from "../../src/shared/db/schema";
 
 /**
@@ -187,6 +190,24 @@ function incomingKeyFor(publisherId: string): string {
   return `incoming/${publisherId}/${TOKEN}`;
 }
 
+/**
+ * The D4 duplicate check itself is proven end-to-end against real Postgres
+ * in tests/integration/photo-duplicate-rejection.test.ts (task 4.7). Here
+ * the scope is ownership and the photo-count ceiling, so `computeHash` and
+ * `photoHashes` stay fakes — a fixed real adapter with a fixed hash would
+ * make every broker in this file collide with every other broker's photos.
+ */
+const fakeComputeHash: PhotoHashComputationPort = async () => toPerceptualHash(BigInt(Date.now()));
+
+function noMatchPhotoHashes(): PhotoHashPort {
+  return {
+    async findMatchesFromOtherPublishers() {
+      return [];
+    },
+    async record() {},
+  };
+}
+
 afterAll(async () => {
   if (USER_IDS.length > 0) {
     await pool.query(`DELETE FROM "user" WHERE id = ANY($1)`, [USER_IDS]);
@@ -219,6 +240,8 @@ describe("attachPhotoToDraft — against real Postgres", () => {
           photos: activation,
           storage: fakeStorage(),
           derive: fakeDerive,
+          computeHash: fakeComputeHash,
+          photoHashes: noMatchPhotoHashes(),
           now: () => new Date(),
         },
       ),
@@ -243,6 +266,8 @@ describe("attachPhotoToDraft — against real Postgres", () => {
           photos: activation,
           storage: fakeStorage(),
           derive: fakeDerive,
+          computeHash: fakeComputeHash,
+          photoHashes: noMatchPhotoHashes(),
           now: () => new Date(),
         },
       ),
@@ -267,6 +292,8 @@ describe("attachPhotoToDraft — against real Postgres", () => {
         photos: activation,
         storage: fakeStorage(),
         derive: fakeDerive,
+        computeHash: fakeComputeHash,
+        photoHashes: noMatchPhotoHashes(),
         now: () => new Date("2026-03-01T00:00:00.000Z"),
       },
     );
@@ -294,6 +321,8 @@ describe("attachPhotoToDraft — against real Postgres", () => {
           photos: activation,
           storage: fakeStorage(),
           derive: fakeDerive,
+          computeHash: fakeComputeHash,
+          photoHashes: noMatchPhotoHashes(),
           now: () => new Date("2026-03-01T00:00:00.000Z"),
         },
       );
@@ -314,6 +343,8 @@ describe("attachPhotoToDraft — against real Postgres", () => {
           photos: activation,
           storage: fakeStorage(),
           derive: fakeDerive,
+          computeHash: fakeComputeHash,
+          photoHashes: noMatchPhotoHashes(),
           now: () => new Date("2026-03-01T00:00:00.000Z"),
         },
       ),

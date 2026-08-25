@@ -1,9 +1,11 @@
 import type { SessionPort } from "../../identity/application/ports/session.port";
 import { requireAuthenticatedSession } from "../../identity/application/require-authenticated-session";
+import type { PhotoHashPort } from "../../listing-trust/application/ports/photo-hash.port";
 import { MAX_PHOTOS_PER_LISTING } from "../domain/publishable-listing";
 import type { ListingActivationPort } from "./ports/listing-activation.port";
 import type { ListingPhotoAttachmentPort } from "./ports/listing-photo-attachment.port";
 import type { PhotoDerivationPort } from "./ports/photo-derivation.port";
+import type { PhotoHashComputationPort } from "./ports/photo-hash-computation.port";
 import type { PhotoStoragePort } from "./ports/photo-storage.port";
 import { processUploadedPhoto } from "./process-uploaded-photo";
 
@@ -43,23 +45,17 @@ import { processUploadedPhoto } from "./process-uploaded-photo";
  * session, and never silently treated as "not a draft, so nothing to
  * protect".
  *
- * **Known gap, recorded rather than hidden (AGENTS.md §5).** The
+ * **The gap this docstring used to name is closed (task 4.7).** The
  * broker-bulk-import spec's own scenario "Duplicate photo rules still apply
  * to imported drafts" names the SAME cross-account perceptual-hash rule the
- * single-listing flow is supposed to apply (design.md D4, `PhotoHashPort`).
- * That rule is NOT wired into ANY listing flow in this codebase today —
- * task 4.7 ("E2E: publish → duplicate photo rejected cross-account...
- * needs PR3") is still open, and grep across `src/` turns up zero callers
- * of `PhotoHashPort.findMatchesFromOtherPublishers` and zero writers of
- * `listing_photo_hash` outside its own adapter test. Wiring it here alone
- * would check newly-attached photos against a table nothing has ever
- * written to — a check with no way to ever find a match, which is not a
- * guard, it is the appearance of one. Doing this honestly needs `4.7`'s own
- * scope: a `PhotoHashPort` write method, hash computation wired into the
- * ONE shared choke point both `publishListing` and this file already call
- * (`processUploadedPhoto`), and its own dedicated tests — genuinely
- * separate work from tasks.md 9.20-9.23, left for that task rather than
- * built partially and silently here.
+ * single-listing flow applies (design.md D4, `PhotoHashPort`). It reaches
+ * this path exactly the way it reaches `publishListing`: through the ONE
+ * shared choke point both already call, `processUploadedPhoto`, which now
+ * both computes the hash and checks it BEFORE this function's own write.
+ * Recording it is this file's own job, not `processUploadedPhoto`'s —
+ * `listing_photo_hash.photo_id` references `listing_photo.id`, so the hash
+ * cannot be written until `photos.attachPhoto` below returns the id it
+ * assigned. `PhotoHashPort.record`'s own doc restates this ordering.
  */
 
 export class AttachPhotoToDraftNotFoundError extends Error {
@@ -106,6 +102,14 @@ export interface AttachPhotoToDraftDependencies {
   readonly photos: ListingPhotoAttachmentPort;
   readonly storage: PhotoStoragePort;
   readonly derive: PhotoDerivationPort;
+  readonly computeHash: PhotoHashComputationPort;
+  /**
+   * Full `PhotoHashPort`, not narrowed: this function both checks (via
+   * `processUploadedPhoto`, before the photo row exists) and records
+   * (after `photos.attachPhoto` returns) — same reasoning
+   * `PublishListingDependencies.photoHashes` documents.
+   */
+  readonly photoHashes: PhotoHashPort;
   readonly now?: () => Date;
 }
 
@@ -119,7 +123,7 @@ export async function attachPhotoToDraft(
   request: AttachPhotoToDraftRequest,
   dependencies: AttachPhotoToDraftDependencies,
 ): Promise<AttachPhotoToDraftResult> {
-  const { sessionPort, listings, photos, storage, derive } = dependencies;
+  const { sessionPort, listings, photos, storage, derive, computeHash, photoHashes } = dependencies;
   const now = dependencies.now ?? (() => new Date());
 
   // First, and before any read: an unauthenticated caller must not be able
@@ -144,20 +148,37 @@ export async function attachPhotoToDraft(
   }
 
   // The SAME pipeline the single-listing publish flow uses: ownership of
-  // the INCOMING key, byte-level inspection, derivative generation,
-  // promotion to a permanent key. `session.userId` (never the request) is
-  // what makes this second, key-level ownership check mean anything.
+  // the INCOMING key, byte-level inspection, the D4 perceptual-hash
+  // duplicate check, derivative generation, promotion to a permanent key.
+  // `session.userId` (never the request) is what makes the ownership check
+  // mean anything, and it is ALSO the same-publisher exemption's
+  // `excludePublisherId` (design.md D4) — an owner reusing a photo from
+  // one of their own listings, active or expired, is exempt because this
+  // is the id excluded, never a hard-coded or request-supplied one.
   const processed = await processUploadedPhoto(
     {
       publisherId: session.userId,
       incomingKey: request.incomingKey,
       declaredContentType: request.declaredContentType,
     },
-    { storage, derive },
+    { storage, derive, computeHash, photoHashes },
   );
 
   const position = draft.photoCount;
-  await photos.attachPhoto(draft.id, { position, derivatives: processed.derivatives }, now());
+  const attachedAt = now();
+  const { photoId } = await photos.attachPhoto(
+    draft.id,
+    { position, derivatives: processed.derivatives },
+    attachedAt,
+  );
+
+  // Recorded now, and only now — never before `attachPhoto` above resolved.
+  // `listing_photo_hash.photo_id` references `listing_photo.id`, so the
+  // hash cannot be written until the row it names exists, and a hash
+  // recorded before that row existed would risk poisoning the table
+  // against this same publisher if the attach had failed for an unrelated
+  // reason (`PhotoHashPort.record`'s own doc).
+  await photoHashes.record({ photoId, hash: processed.hash, recordedAt: attachedAt });
 
   return { listingId: draft.id, position };
 }

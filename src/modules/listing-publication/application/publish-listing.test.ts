@@ -1,11 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
 import type { SessionPort } from "../../identity/application/ports/session.port";
 import { UnauthenticatedError } from "../../identity/application/require-authenticated-session";
+import type {
+  NewPhotoHash,
+  PhotoHashMatch,
+  PhotoHashPort,
+} from "../../listing-trust/application/ports/photo-hash.port";
+import { toPerceptualHash } from "../../listing-trust/domain/perceptual-hash";
 import { MAX_PHOTOS_PER_LISTING } from "../domain/publishable-listing";
 import type { ListingRepositoryPort, NewListing } from "./ports/listing-repository.port";
 import type { PhotoDerivationPort } from "./ports/photo-derivation.port";
+import type { PhotoHashComputationPort } from "./ports/photo-hash-computation.port";
 import type { PhotoStoragePort, StoredObject, UploadTarget } from "./ports/photo-storage.port";
 import type { ZoneCataloguePort } from "./ports/zone-catalogue.port";
+import { RejectedUploadError } from "./process-uploaded-photo";
 import {
   LISTING_ACTIVE_DAYS,
   type PublishListingDependencies,
@@ -102,7 +110,30 @@ function makeRepository(): ListingRepositoryPort & { readonly saved: NewListing[
     saved,
     async save(listing: NewListing) {
       saved.push(listing);
-      return { id: "lst_001" };
+      // One id per submitted photo, in order — the same shape
+      // DrizzleListingRepository.save now returns (task 4.7).
+      return {
+        id: "lst_001",
+        photoIds: listing.photos.map((_photo, index) => `photo_${index}`),
+      };
+    },
+  };
+}
+
+/** design.md D4 — an arbitrary, fixed 64-bit value. */
+const SOME_HASH = toPerceptualHash(0x00000000000000ffn);
+const computeHash: PhotoHashComputationPort = async () => SOME_HASH;
+
+/** No stored photo ever matches, and every `record` call is kept for assertions. */
+function noMatchPhotoHashes(): PhotoHashPort & { readonly recorded: NewPhotoHash[] } {
+  const recorded: NewPhotoHash[] = [];
+  return {
+    recorded,
+    async findMatchesFromOtherPublishers(): Promise<PhotoHashMatch[]> {
+      return [];
+    },
+    async record(newHash: NewPhotoHash): Promise<void> {
+      recorded.push(newHash);
     },
   };
 }
@@ -120,6 +151,8 @@ function deps<T extends Partial<PublishListingDependencies>>(overrides: T = {} a
     listings: makeRepository(),
     storage: makeStorage(),
     derive: makeDerive().derive,
+    computeHash,
+    photoHashes: noMatchPhotoHashes(),
     now: () => NOW,
     ...overrides,
   };
@@ -366,5 +399,85 @@ describe("publishListing", () => {
     // Loading every curated zone in the country to validate one of them grows
     // with the catalogue for no gain.
     expect(listZonesForCity).toHaveBeenCalledExactlyOnceWith(CITY);
+  });
+
+  /**
+   * Task 4.7 — the wiring listing-trust spec's own headline requirements
+   * ("Cross-Account Duplicate Photo Rejection", "Same-Publisher Photo Reuse
+   * Exemption") depended on and never had. `PublishListingUseCase` is
+   * design.md D4's own named choke point for this check.
+   */
+  describe("D4 — cross-account perceptual-hash duplicate rejection", () => {
+    it("rejects the WHOLE submission when a photo matches another publisher's, and creates no listing", async () => {
+      const photoHashes: PhotoHashPort = {
+        async findMatchesFromOtherPublishers() {
+          return [
+            { photoId: "stolen", listingId: "listing-x", publisherId: "someone-else", distance: 1 },
+          ];
+        },
+        async record() {
+          throw new Error("record must never fire when the submission is rejected");
+        },
+      };
+      const dependencies = deps({ photoHashes });
+
+      await expect(publishListing(request(), dependencies)).rejects.toBeInstanceOf(
+        RejectedUploadError,
+      );
+
+      // The spec's own words: "rejects the listing submission" — not just
+      // the offending photo. No row anywhere.
+      expect(dependencies.listings.saved).toEqual([]);
+    });
+
+    it("records every photo's hash AFTER listings.save resolves, keyed to the real persisted photo id", async () => {
+      const photoHashes = noMatchPhotoHashes();
+      const dependencies = deps({ photoHashes });
+
+      await publishListing(request({ photos: submittedPhotos(2) }), dependencies);
+
+      expect(photoHashes.recorded).toEqual([
+        { photoId: "photo_0", hash: SOME_HASH, recordedAt: NOW },
+        { photoId: "photo_1", hash: SOME_HASH, recordedAt: NOW },
+      ]);
+    });
+
+    it("never records before the listing exists — recording follows save, not the other way around", async () => {
+      const order: string[] = [];
+      const listings: ListingRepositoryPort = {
+        async save(listing) {
+          order.push("save");
+          return { id: "lst_001", photoIds: listing.photos.map((_p, i) => `photo_${i}`) };
+        },
+      };
+      const photoHashes: PhotoHashPort = {
+        async findMatchesFromOtherPublishers() {
+          return [];
+        },
+        async record() {
+          order.push("record");
+        },
+      };
+
+      await publishListing(request(), deps({ listings, photoHashes }));
+
+      expect(order).toEqual(["save", "record"]);
+    });
+
+    it("passes the same-publisher exemption from the session, so republishing one's own photo is allowed", async () => {
+      const seenExclusions: string[] = [];
+      const photoHashes: PhotoHashPort = {
+        async findMatchesFromOtherPublishers(_hash, excludePublisherId) {
+          seenExclusions.push(excludePublisherId);
+          return [];
+        },
+        async record() {},
+      };
+
+      const { listingId } = await publishListing(request(), deps({ photoHashes }));
+
+      expect(listingId).toBe("lst_001");
+      expect(seenExclusions).toEqual([PUBLISHER]);
+    });
   });
 });

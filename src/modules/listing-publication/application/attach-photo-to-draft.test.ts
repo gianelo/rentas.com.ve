@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import type { SessionPort } from "../../identity/application/ports/session.port";
 import { UnauthenticatedError } from "../../identity/application/require-authenticated-session";
+import type {
+  NewPhotoHash,
+  PhotoHashMatch,
+  PhotoHashPort,
+} from "../../listing-trust/application/ports/photo-hash.port";
+import { toPerceptualHash } from "../../listing-trust/domain/perceptual-hash";
 import { MAX_PHOTOS_PER_LISTING } from "../domain/publishable-listing";
 import {
   AttachPhotoToDraftLimitReachedError,
@@ -11,6 +17,7 @@ import {
 import type { DraftForActivation, ListingActivationPort } from "./ports/listing-activation.port";
 import type { ListingPhotoAttachmentPort } from "./ports/listing-photo-attachment.port";
 import type { PhotoDerivationPort } from "./ports/photo-derivation.port";
+import type { PhotoHashComputationPort } from "./ports/photo-hash-computation.port";
 import type { PhotoStoragePort, StoredObject, UploadTarget } from "./ports/photo-storage.port";
 import { RejectedUploadError } from "./process-uploaded-photo";
 
@@ -87,11 +94,32 @@ function attachmentPort(): ListingPhotoAttachmentPort & {
   readonly attachCalls: ReadonlyArray<readonly [string, unknown, Date]>;
 } {
   const attachCalls: Array<readonly [string, unknown, Date]> = [];
+  let nextPhotoId = 0;
   return {
     attachCalls,
     attachPhoto: vi.fn(async (listingId: string, photo: unknown, createdAt: Date) => {
       attachCalls.push([listingId, photo, createdAt]);
+      nextPhotoId += 1;
+      return { photoId: `attached-photo-${nextPhotoId}` };
     }),
+  };
+}
+
+/** design.md D4 — an arbitrary, fixed 64-bit value. */
+const SOME_HASH = toPerceptualHash(0x00000000000000ffn);
+const computeHash: PhotoHashComputationPort = async () => SOME_HASH;
+
+/** No stored photo ever matches, and every `record` call is kept for assertions. */
+function noMatchPhotoHashes(): PhotoHashPort & { readonly recorded: NewPhotoHash[] } {
+  const recorded: NewPhotoHash[] = [];
+  return {
+    recorded,
+    async findMatchesFromOtherPublishers(): Promise<PhotoHashMatch[]> {
+      return [];
+    },
+    async record(newHash: NewPhotoHash): Promise<void> {
+      recorded.push(newHash);
+    },
   };
 }
 
@@ -145,6 +173,8 @@ describe("attachPhotoToDraft", () => {
         photos,
         storage,
         derive,
+        computeHash,
+        photoHashes: noMatchPhotoHashes(),
         now: () => NOW,
       }),
     ).rejects.toBeInstanceOf(UnauthenticatedError);
@@ -165,6 +195,8 @@ describe("attachPhotoToDraft", () => {
         photos,
         storage,
         derive,
+        computeHash,
+        photoHashes: noMatchPhotoHashes(),
         now: () => NOW,
       }),
     ).rejects.toBeInstanceOf(AttachPhotoToDraftNotFoundError);
@@ -188,6 +220,8 @@ describe("attachPhotoToDraft", () => {
         photos,
         storage,
         derive,
+        computeHash,
+        photoHashes: noMatchPhotoHashes(),
         now: () => NOW,
       }),
     ).rejects.toBeInstanceOf(AttachPhotoToDraftNotOwnedError);
@@ -208,6 +242,8 @@ describe("attachPhotoToDraft", () => {
         photos,
         storage,
         derive,
+        computeHash,
+        photoHashes: noMatchPhotoHashes(),
         now: () => NOW,
       }),
     ).rejects.toBeInstanceOf(AttachPhotoToDraftLimitReachedError);
@@ -227,6 +263,8 @@ describe("attachPhotoToDraft", () => {
       photos,
       storage,
       derive,
+      computeHash,
+      photoHashes: noMatchPhotoHashes(),
       now: () => NOW,
     });
 
@@ -258,10 +296,138 @@ describe("attachPhotoToDraft", () => {
         photos,
         storage,
         derive,
+        computeHash,
+        photoHashes: noMatchPhotoHashes(),
         now: () => NOW,
       }),
     ).rejects.toBeInstanceOf(RejectedUploadError);
 
     expect(photos.attachCalls).toEqual([]);
+  });
+
+  /**
+   * broker-bulk-import spec, "Duplicate photo rules still apply to imported
+   * drafts" — this file's own docstring named this as the known gap task
+   * 4.7 closes. Same choke point (`processUploadedPhoto`) this file already
+   * reuses for the byte-level guard, so the check itself is not retested
+   * here — only what THIS layer adds: attaching, then recording against
+   * the real photo id `photos.attachPhoto` returns.
+   */
+  describe("D4 — cross-account perceptual-hash duplicate rejection", () => {
+    it("rejects a photo matching another publisher's, and attaches nothing", async () => {
+      const listings = activationPort(draft());
+      const photos = attachmentPort();
+      const storage = makeStorage();
+      const photoHashes: PhotoHashPort = {
+        async findMatchesFromOtherPublishers() {
+          return [
+            { photoId: "stolen", listingId: "listing-x", publisherId: "someone-else", distance: 3 },
+          ];
+        },
+        async record() {
+          throw new Error("record must never fire when the attach is rejected");
+        },
+      };
+
+      const failure = await attachPhotoToDraft(request(), {
+        sessionPort: sessionPortReturning(OWNER),
+        listings,
+        photos,
+        storage,
+        derive,
+        computeHash,
+        photoHashes,
+        now: () => NOW,
+      }).catch((error: unknown) => error);
+
+      expect(failure).toBeInstanceOf(RejectedUploadError);
+      expect((failure as RejectedUploadError).violations).toEqual([
+        "photo.duplicateAcrossPublishers",
+      ]);
+      expect(photos.attachCalls).toEqual([]);
+    });
+
+    it("records the hash AFTER attachPhoto resolves, keyed to the id it returned", async () => {
+      const listings = activationPort(draft({ photoCount: 1 }));
+      const photos = attachmentPort();
+      const storage = makeStorage();
+      const photoHashes = noMatchPhotoHashes();
+
+      await attachPhotoToDraft(request(), {
+        sessionPort: sessionPortReturning(OWNER),
+        listings,
+        photos,
+        storage,
+        derive,
+        computeHash,
+        photoHashes,
+        now: () => NOW,
+      });
+
+      expect(photoHashes.recorded).toEqual([
+        { photoId: "attached-photo-1", hash: SOME_HASH, recordedAt: NOW },
+      ]);
+    });
+
+    it("never records before attachPhoto resolves — recording follows the write, not the other way around", async () => {
+      const listings = activationPort(draft());
+      const order: string[] = [];
+      const photos: ListingPhotoAttachmentPort = {
+        async attachPhoto() {
+          order.push("attach");
+          return { photoId: "photo-1" };
+        },
+      };
+      const storage = makeStorage();
+      const photoHashes: PhotoHashPort = {
+        async findMatchesFromOtherPublishers() {
+          return [];
+        },
+        async record() {
+          order.push("record");
+        },
+      };
+
+      await attachPhotoToDraft(request(), {
+        sessionPort: sessionPortReturning(OWNER),
+        listings,
+        photos,
+        storage,
+        derive,
+        computeHash,
+        photoHashes,
+        now: () => NOW,
+      });
+
+      expect(order).toEqual(["attach", "record"]);
+    });
+
+    it("allows the owner's own photo, active or expired — the same-publisher exemption reaches this path too", async () => {
+      const listings = activationPort(draft());
+      const photos = attachmentPort();
+      const storage = makeStorage();
+      const seenExclusions: string[] = [];
+      const photoHashes: PhotoHashPort = {
+        async findMatchesFromOtherPublishers(_hash, excludePublisherId) {
+          seenExclusions.push(excludePublisherId);
+          return [];
+        },
+        async record() {},
+      };
+
+      const result = await attachPhotoToDraft(request(), {
+        sessionPort: sessionPortReturning(OWNER),
+        listings,
+        photos,
+        storage,
+        derive,
+        computeHash,
+        photoHashes,
+        now: () => NOW,
+      });
+
+      expect(result).toEqual({ listingId: DRAFT_ID, position: 0 });
+      expect(seenExclusions).toEqual([OWNER]);
+    });
   });
 });

@@ -34,5 +34,16 @@ export interface ListingPhotoAttachmentPort {
    * on that constraint rather than silently overwriting an existing photo's
    * order.
    */
-  attachPhoto(listingId: string, photo: NewListingPhoto, createdAt: Date): Promise<void>;
+  /**
+   * Returns the id the adapter generated for the new row (task 4.7) — the
+   * only way `attachPhotoToDraft` can later record that SAME photo's
+   * perceptual hash: `listing_photo_hash.photo_id` references
+   * `listing_photo.id`, so the hash cannot be written before this call
+   * returns which id it wrote.
+   */
+  attachPhoto(
+    listingId: string,
+    photo: NewListingPhoto,
+    createdAt: Date,
+  ): Promise<{ readonly photoId: string }>;
 }

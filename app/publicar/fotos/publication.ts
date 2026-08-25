@@ -6,6 +6,8 @@ import {
 } from "@/modules/listing-publication/infrastructure/drizzle-listing-repository";
 import { deriveListingPhoto } from "@/modules/listing-publication/infrastructure/photo-derivatives";
 import { createR2PhotoStorage } from "@/modules/listing-publication/infrastructure/r2-photo-storage";
+import { DrizzlePhotoHash } from "@/modules/listing-trust/infrastructure/drizzle-photo-hash";
+import { computeDHash } from "@/modules/listing-trust/infrastructure/sharp-dhash";
 import { db } from "@/shared/db/client";
 import { getTransactionalDatabase } from "@/shared/db/transactional-client";
 
@@ -22,9 +24,13 @@ import { getTransactionalDatabase } from "@/shared/db/transactional-client";
  *   `neon-http` cannot do transactions at all, and a listing plus its photo
  *   rows must succeed or fail together. Reads stay on HTTP because D2's
  *   latency argument is about the read path.
- * - **Derivation is adapted, not injected raw.** The port takes `Uint8Array`
- *   so the application layer never mentions `Buffer`, which is Node's and not
- *   the domain's.
+ * - **Derivation and hash computation are both adapted, not injected raw.**
+ *   Both ports take `Uint8Array` so the application layer never mentions
+ *   `Buffer`, which is Node's and not the domain's.
+ * - **`photoHashes` uses the transactional client, not `db`.** It both reads
+ *   (`findMatchesFromOtherPublishers`, inside the upload guard) and writes
+ *   (`record`, task 4.7) — `neon-http` cannot do the write half at all, the
+ *   same reason `listings` below is not built on `db` either.
  *
  * Built per request rather than at module load. `createR2PhotoStorage` reads
  * six environment variables and throws on any that is missing — at module
@@ -40,5 +46,7 @@ export function publishListingDependencies(): PublishListingDependencies {
     listings: new DrizzleListingRepository(getTransactionalDatabase()),
     storage,
     derive: (source) => deriveListingPhoto(Buffer.from(source)),
+    computeHash: (source) => computeDHash(Buffer.from(source)),
+    photoHashes: new DrizzlePhotoHash(getTransactionalDatabase()),
   };
 }

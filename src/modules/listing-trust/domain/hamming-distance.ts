@@ -37,6 +37,20 @@ export function hammingDistance(a: PerceptualHash, b: PerceptualHash): number {
   return distance;
 }
 
+/**
+ * design.md D4, Open Questions — `<= 8` is the PROPOSED hard-block
+ * distance, explicitly NOT a measured one: "Needs calibration against real
+ * Venezuelan listing photos before launch — too loose blocks honest
+ * publishers, too tight lets re-encoded scams through." Task 4.7 wires this
+ * number into the publish and photo-attachment paths; it does NOT resolve
+ * that open question, and must not be read as having done so.
+ *
+ * One named owner here — rather than a literal `8` retyped at every call
+ * site — is what keeps the provisional number greppable and keeps the next
+ * person from mistaking repetition for calibration.
+ */
+export const MAX_DUPLICATE_HAMMING_DISTANCE = 8;
+
 /** Fixed vectors for the cross-check above, independent of dhash.ts. */
 export const KNOWN_HAMMING_DISTANCE_VECTORS: ReadonlyArray<{
   a: PerceptualHash;

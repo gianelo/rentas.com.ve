@@ -89,5 +89,12 @@ export interface NewListing {
 }
 
 export interface ListingRepositoryPort {
-  save(listing: NewListing): Promise<{ readonly id: string }>;
+  /**
+   * `photoIds` is returned in the SAME order as `listing.photos` (task
+   * 4.7) — the only way a caller can later match a persisted photo id back
+   * to the perceptual hash it computed for that same photo, so it can
+   * record `listing_photo_hash` once the row it references actually
+   * exists.
+   */
+  save(listing: NewListing): Promise<{ readonly id: string; readonly photoIds: readonly string[] }>;
 }
