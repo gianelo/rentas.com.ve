@@ -13,26 +13,6 @@
   color: var(--ink);
 }
 
-.bar {
-  display: flex;
-  align-items: center;
-  min-height: var(--brandbar-h);
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 16px;
-}
-
-/* 44px de área táctil, incluidos los enlaces de volver (regla transversal 7).
-   Es el enlace que devuelve a los resultados, y errarle es salir del aviso. */
-.back {
-  display: flex;
-  align-items: center;
-  min-height: var(--target-min);
-  font-family: var(--meta);
-  font-size: var(--meta-fs-sm);
-  color: var(--accent);
-  text-decoration: none;
-}
-
 /* ---- El orden de la columna única ---------------------------------------
    `DetailSplit` disuelve sus dos envoltorios debajo del punto de quiebre, así
    que estos cuatro bloques son los ítems de la grilla y se ordenan acá. Arriba

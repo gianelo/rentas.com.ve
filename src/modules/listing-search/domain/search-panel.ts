@@ -1,6 +1,7 @@
 import type { RoomStep } from "./room-steps";
 import {
   countActiveFilters,
+  countPillFilters,
   readSearchStep,
   resolveSearchSteps,
   type SearchSelection,
@@ -306,6 +307,14 @@ export interface SearchPanelModel {
   readonly headline: string;
   /** El número al lado del engranaje. La ciudad no cuenta. */
   readonly activeFilters: number;
+  /**
+   * El número que dice la pastilla («3 filtros», 14i). **La zona tampoco
+   * cuenta acá**: el filtro de la pastilla abre precio, tamaño, quién publica
+   * y atributos, y la ubicación la resuelve el texto. Va en el modelo y no se
+   * deriva en la pantalla, porque una resta escrita en `app/` es una regla que
+   * ninguna corrida de tests puede poner en rojo.
+   */
+  readonly pillFilters: number;
 }
 
 export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
@@ -390,6 +399,7 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
     summary: summariseSearch(selection, counts.total),
     headline: searchHeadline(selection),
     activeFilters: countActiveFilters(selection),
+    pillFilters: countPillFilters(selection),
   };
 }
 

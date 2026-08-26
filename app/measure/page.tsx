@@ -21,6 +21,7 @@ import { FormShell } from "../../components/layout/FormShell";
 import { ReadingWidth } from "../../components/layout/ReadingWidth";
 import { ResultRow } from "../../components/molecules/ResultRow";
 import { SearchFilters } from "../../components/molecules/SearchFilters";
+import { Nav } from "../../components/organisms/Nav";
 import { PhotoUploader } from "../publicar/fotos/PhotoUploader";
 import { PublishStep, type RailEntry } from "../publicar/PublishStep";
 import publishStyles from "../publicar/publish-page.module.css";
@@ -52,6 +53,37 @@ export default function MeasureHarnessPage() {
 
   return (
     <>
+      {/* **El nav, en sus dos formas, para medirlo de verdad** (14.41 corrigió
+          un defecto que ninguna prueba de hoja de estilos podía ver: los tres
+          slots de escritorio se colocaban por `order`, y el declarado dejaba la
+          pastilla en la columna derecha con las acciones en el centro). Lo que
+          hay que verificar es geometría renderizada, y para eso existe este
+          arnés. */}
+      <div data-testid="nav-harness-busqueda">
+        <Nav
+          account={{ kind: "anonymous" }}
+          publish={{ bar: { label: "Publicar gratis", emphasis: "accent" }, menu: null }}
+          signInHref="/signin"
+          pill={{
+            action: "/",
+            name: "q",
+            value: "",
+            placeholder: "¿En qué zona buscás?",
+            submitLabel: "Buscar",
+            state: { kind: "empty" },
+          }}
+        />
+      </div>
+
+      <div data-testid="nav-harness-ficha">
+        <Nav
+          account={{ kind: "anonymous" }}
+          publish={{ bar: { label: "Publicar gratis", emphasis: "accent" }, menu: null }}
+          signInHref="/signin"
+          back={{ href: "/alquiler/distrito-capital/altamira", label: "← Resultados" }}
+        />
+      </div>
+
       <Container>
         <div data-testid="row-slot-long">
           <ResultRow
