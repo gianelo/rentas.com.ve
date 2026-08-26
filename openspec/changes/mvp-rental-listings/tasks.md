@@ -631,14 +631,14 @@ Del proyecto de diseño `Rentas - Lista y Filtros - Desktop/Mobile.dc.html`, cru
 
 ### 15a. Infrastructure
 
-- [ ] 15.1 `verificationToken` table + migration, and **correct the now-false comment** in `src/shared/db/schema.ts` that explains its absence
-- [ ] 15.2 An email sender behind a port, so the domain never learns who delivers mail. Founder-owned prerequisite: SPF/DKIM on `rentas.com.ve`'s DNS, plus the API key handled the way R2's was — never pasted into chat
-- [ ] 15.3 Auth.js email provider wired with `maxAge` set to **15 minutes** (F17). The library's default is far longer, so this is a configuration the spec pins, not a default to inherit
+- [x] 15.1 `verificationToken` table + migration, and **correct the now-false comment** in `src/shared/db/schema.ts` that explains its absence. **Hecho.** `verificationTokens` table (composite PK `(identifier, token)`, mirrors `@auth/drizzle-adapter`'s own default shape) + `drizzle/0015_melted_stellaris.sql`; the stale comment above `users`/`sessions` now says why the table exists instead of why it didn't
+- [x] 15.2 An email sender behind a port, so the domain never learns who delivers mail. **Hecho.** Decision recorded in `mailer.port.ts`: `identity` gets its OWN `MailerPort`/`ResendMailer` (`resend-mailer.ts`), not `listing-lifecycle`'s `LifecycleMailerPort` — narrow ports per module, same idiom AGENTS.md already states for read/write ports. New env var `AUTH_MAIL_FROM` (documented in `.env.example`), reusing `RESEND_API_KEY`. Founder-owned SPF/DKIM prerequisite confirmed satisfied (verified domain in Resend, real send landed in Gmail Primary). Fails closed via `readAuthMailerConfig` — proven in `resend-mailer.test.ts`
+- [x] 15.3 Auth.js email provider wired with `maxAge` set to **15 minutes** (F17). **Hecho.** `MAGIC_LINK_MAX_AGE_SECONDS` (`domain/magic-link.ts`) wired in `email-provider.ts`'s `buildEmailProvider`, assembled into `auth.ts`. `email-provider.test.ts`'s `maxAge` describe block fails if the pin is removed (mutation-checked)
 
 ### 15b. The rules of the link
 
-- [ ] 15.4 Single use (F17). Auth.js does this; assert it rather than assume it
-- [ ] 15.5 **Fifteen minutes** (F17)
+- [x] 15.4 Single use (F17). Auth.js does this; assert it rather than assume it. **Hecho**, against real Postgres: `tests/integration/verification-token.test.ts` drives the exact same `@auth/drizzle-adapter` `createVerificationToken`/`useVerificationToken` contract `@auth/core`'s callback handler calls (verified by reading its source), proving a second use finds nothing
+- [x] 15.5 **Fifteen minutes** (F17). **Hecho.** Boundary mirrored in `isVerificationLinkExpired` (`domain/magic-link.ts`, pure, boundary-tested like `expiry.ts`'s `isExpired`) and proven again against a real persisted `expires` row in `tests/integration/verification-token.test.ts` — which is also where a `timestamp`-without-timezone round-trip timezone hazard in `node-postgres` was found and worked around (see that file's comment)
 - [ ] 15.6 ~~Must open on the same device~~ — **REMOVED by the founder, 2026-08-21, and the reasoning is recorded so nobody restores it as a hardening.** The rule was in F17 and it contradicted the founder's own "Decisión pendiente" two sections later: on a desktop the mail is read on the phone, so the link opens on another device **in the normal case, not an edge case**. Enforced as written, signing in by email from a computer could never succeed. What the rule buys is protection against a leaked link — forwarded mail, a shared inbox, a mail scanner that pre-fetches URLs; what it guards is access to a phone number behind a free account. Single use plus fifteen minutes covers the real exposure. It is also custom work: Auth.js is not same-device by default, so keeping it meant building a mechanism to buy a problem
 
 ### 15c. The two doors, same mechanism

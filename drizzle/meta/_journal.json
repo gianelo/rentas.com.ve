@@ -106,6 +106,13 @@
       "when": 1787636105314,
       "tag": "0014_fast_zaran",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1787703247049,
+      "tag": "0015_melted_stellaris",
+      "breakpoints": true
     }
   ]
 }
