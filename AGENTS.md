@@ -38,7 +38,20 @@ The practical reason sits next to the principle: the 90% coverage floor reaches 
 
 **The `.dc.html` boards are references, not code to copy.** They carry the design tool's own `support.js` runtime and inline styles; none of that reaches production. Recreate the design with this codebase's own patterns.
 
-**No JavaScript on the read path (D13).** Search, results, and the listing page must work with scripting disabled. Forms are real `<form method="get">` / native POST. Live suggestions and similar are enhancements layered on top, never requirements. The `crawlability` e2e project runs the suite with scripting off — that is how this stops being a claim.
+**Glyphs are text characters — plus exactly two inline SVGs.** `←`, `✓`, `✱`, `×`, `·` are characters, not images. The closed exception (founder, 2026-08-25) is the search pill's **filter** and **magnifying glass**: inline, `aria-hidden`, `stroke="currentColor"`, with an accessible label beside them. **No icon package, ever**, and a third icon is a change to the system rather than a use of it. `SISTEMA.md`'s Assets section is the authority.
+
+**The read path WORKS without JavaScript, and may be better with it (D13).** Search, results, and the listing page must function with scripting disabled — forms are real `<form method="get">` / native POST, and every action has an `href` or a form underneath it. On top of that floor, JavaScript is welcome and expected: a search modal, live result counts, suggestions while typing, a photo viewer that does not reload.
+
+This is progressive enhancement, not a ban. The distinction that matters: **the base must not depend on the script arriving.** A menu that only exists in JavaScript locks out anyone whose bundle failed; the same menu layered over a real link locks out nobody.
+
+Two things make it measurable rather than aspirational, and neither is optional:
+
+- **`pnpm budget:bundle`** — 130 KB gzip of first-load JS on the read path. About 102 KB of that is Next.js plus React, a floor nobody controls, so roughly **28 KB is what this codebase may add**. It is a budget, not a prohibition.
+- **The `crawlability` e2e project** runs the suite with scripting off. That is what turns "works without JavaScript" from a claim into a measurement.
+
+Why it matters here specifically, and none of the three reasons is aesthetic: organic search is this product's acquisition channel and a zone page that needs JavaScript to render listings indexes badly; connections in Venezuela are poor and data is expensive, so a bundle that fails to arrive leaves a blank page rather than a degraded one; and listings circulate by WhatsApp, whose in-app browser is where scripts break most often.
+
+Two surfaces are exempt because they are not the read path and sit behind a session: **publish step 2** (photo compression happens in the device, which is the difference between uploading 30 MB and 1) and **bulk import** (the file preview). `/mis-avisos` and the import screens are equally exempt for the same reason.
 
 ---
 

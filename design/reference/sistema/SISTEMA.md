@@ -251,7 +251,23 @@ Poca. El camino de lectura no tiene estado en cliente.
 
 ## Assets
 
-Ninguno propio. No hay logotipo: la marca es la palabra "rentas." en el stack del sistema. No hay iconos: los glifos usados (`←`, `✓`, `✱`, `×`, `·`) son caracteres de texto. Los rectángulos con trama diagonal son marcadores de foto — las fotos reales las suben los usuarios.
+Ninguno propio. No hay logotipo: la marca es la palabra "rentas." en el stack del sistema. Los rectángulos con trama diagonal son marcadores de foto — las fotos reales las suben los usuarios.
+
+**Glifos de texto por defecto.** `←`, `✓`, `✱`, `×`, `·` son caracteres, no imágenes: no piden red, heredan el color y la métrica del texto que los rodea, y escalan con el tipo.
+
+**Y un conjunto CERRADO de dos SVG en línea** (decisión del fundador, 2026-08-25), que son los de la pastilla de búsqueda:
+
+| Glifo | Uso | Por qué no es un carácter |
+|---|---|---|
+| tres rayas | el contador de filtros | no hay carácter que signifique "filtro" sin ambigüedad |
+| lupa | la acción de buscar | `◎` se lee como un ojo, no como una lupa |
+
+Las condiciones son parte de la regla, no una sugerencia:
+
+- **En línea, nunca un paquete de iconos.** Dos SVG pesan menos de 200 bytes; una librería pesa decenas de KB y trae cientos que nadie usa.
+- **`aria-hidden="true"`** y su etiqueta accesible al lado — la lupa va dentro de un enlace con `aria-label="Buscar"`.
+- **`stroke="currentColor"`**, así heredan el color como lo haría un carácter.
+- **El conjunto es cerrado.** Un tercer icono no se agrega: se discute. Esta tabla es la lista completa, y ampliarla es cambiar el sistema, no usarlo.
 
 ## Contenido real usado
 
