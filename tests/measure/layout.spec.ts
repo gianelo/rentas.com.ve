@@ -401,3 +401,71 @@ test.describe("search filters (5.7)", () => {
     expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
   });
 });
+
+/**
+ * **El nav, medido y no leído** (14.41).
+ *
+ * Este bloque existe por un defecto concreto: los tres slots de escritorio se
+ * colocan por `order`, y los valores declarados —marca 1, acciones 2, pastilla
+ * 3— son los del teléfono, donde la pastilla baja a su propio renglón. En la
+ * grilla de 1280 esos mismos valores dejaban **la pastilla en la columna
+ * derecha de 250 px y las acciones en el centro flexible**, o sea el
+ * encabezado al revés de como lo dibujan las láminas 14a y 7b/7c.
+ *
+ * La prueba que había afirmaba `grid-template-columns: 250px 1fr 250px`, que
+ * era cierto y no decía nada sobre qué cae en cada columna — un gate que no
+ * afirma nada sobre lo que tenía que proteger. Lo que hay que verificar es
+ * geometría renderizada, y para eso existe este arnés (1b.10).
+ */
+test.describe("la barra del producto (14a, 14.41)", () => {
+  /**
+   * El centro de un elemento y el de la barra que lo contiene, para
+   * compararlos. `text` desambigua cuando el selector casa más de uno — no se
+   * usa `:has-text()` porque ése es un selector de Playwright y acá se corre
+   * `querySelector` del navegador, que no lo conoce.
+   */
+  async function centres(
+    page: import("@playwright/test").Page,
+    testid: string,
+    child: string,
+    text?: string,
+  ) {
+    return page.evaluate(
+      ([id, sel, needle]) => {
+        const host = document.querySelector(`[data-testid="${id}"]`);
+        const inner = host?.querySelector("header > div");
+        const all = [...(inner?.querySelectorAll(sel as string) ?? [])];
+        const target = needle ? all.find((el) => el.textContent?.includes(needle)) : all[0];
+        if (!inner || !target) throw new Error(`no se encontró ${id} > ${sel} ${needle ?? ""}`);
+        const a = inner.getBoundingClientRect();
+        const b = target.getBoundingClientRect();
+        return {
+          barCentre: Math.round(a.left + a.width / 2),
+          barRight: Math.round(a.right),
+          centre: Math.round(b.left + b.width / 2),
+          left: Math.round(b.left),
+          right: Math.round(b.right),
+          visible: b.width > 0 && b.height > 0,
+        };
+      },
+      [testid, child, text] as const,
+    );
+  }
+
+  test("14a: a 1280 la pastilla va en el centro y las acciones contra el borde", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/measure");
+
+    const pill = await centres(page, "nav-harness-busqueda", "search");
+    const actions = await centres(page, "nav-harness-busqueda", "a[href='/publicar']");
+
+    console.log(`[14a] centro de la barra ${pill.barCentre}, centro de la pastilla ${pill.centre}`);
+    // El centro real, no "está en alguna columna": la lámina la dibuja
+    // centrada, y con los `order` del teléfono caía en la columna derecha.
+    expect(Math.abs(pill.centre - pill.barCentre)).toBeLessThanOrEqual(4);
+    // Y las acciones quedan a la derecha DE la pastilla, no en su lugar.
+    expect(actions.left).toBeGreaterThan(pill.right);
+  });
+});
