@@ -82,11 +82,29 @@ describe("SearchBar — la caja del inicio", () => {
     expect(renderToStaticMarkup(<SearchBar {...FORM} />)).toMatch(/aria-hidden="true"/);
   });
 
-  /** El camino de lectura no tiene runtime (D13), y esto lo mantiene así. */
-  it("no declara JavaScript de cliente", () => {
-    expect(barSource).not.toContain("use client");
-    // Un `onChange`/`onSubmit` volvería el mecanismo dependiente del script.
-    expect(barSource).not.toMatch(/on(Change|Submit|Input|Click)=/);
+  /**
+   * **El piso, no el techo** (D13, reformulado por el fundador el 2026-08-25).
+   *
+   * Este test afirmaba `not.toContain("use client")`, que es MÁS ESTRICTO que
+   * la regla: prohibía el JavaScript en vez de exigir que el mecanismo ande
+   * sin él. La regla dice que el camino de lectura **funciona** sin script y
+   * **puede ser mejor** con él — sugerencias mientras se escribe, una modal
+   * de búsqueda, un conteo en vivo. Todo eso es bienvenido ENCIMA de esto.
+   *
+   * Lo que no puede pasar nunca es que el mecanismo dependa del script. Por
+   * eso lo que se afirma acá es que el `<form method="get">` con su campo
+   * nombrado sigue existiendo: con el bundle caído, la caja se escribe, se
+   * envía y el servidor contesta. Si alguien reemplaza el formulario por un
+   * `onClick` que navega, esto se pone rojo — que es exactamente el caso que
+   * hay que atajar, y el único.
+   */
+  it("el mecanismo sin JavaScript sigue en pie", () => {
+    const html = renderToStaticMarkup(<SearchBar {...FORM} />);
+
+    expect(html).toContain('method="get"');
+    expect(html).toContain(`name="${FORM.name}"`);
+    // Un `<button type="submit">` de verdad: sin él, enviar depende del script.
+    expect(html).toMatch(/<button[^>]*type="submit"/);
   });
 
   it("tiene foco visible, como todo control del sistema", () => {
