@@ -4,6 +4,7 @@ import type {
   SessionPort,
 } from "../../identity/application/ports/session.port";
 import { UnauthenticatedError } from "../../identity/application/require-authenticated-session";
+import type { CataloguePort } from "../../listing-catalogue/application/ports/catalogue.port";
 import type { ListingRepositoryPort } from "../../listing-publication/application/ports/listing-repository.port";
 import type { ZoneCataloguePort } from "../../listing-publication/application/ports/zone-catalogue.port";
 import { BulkImportDisabledError } from "./authorize-bulk-import";
@@ -40,6 +41,27 @@ function fakeZones(): ZoneCataloguePort {
   return { listZonesForCity: vi.fn(async (cityId: string) => [{ id: "chacao", cityId }]) };
 }
 
+/** Ciudad/zona-by-name resolution — `distrito-capital`/`chacao` in the
+ * fixture rows normalize to exactly `Distrito Capital`/`Chacao` below. */
+function fakeCatalogue(): CataloguePort {
+  return {
+    listCities: vi.fn(async () => [
+      { id: "city-dc", name: "Distrito Capital" },
+      { id: "city-mcbo", name: "Maracaibo" },
+    ]),
+    listZones: vi.fn(async () => [
+      {
+        id: "chacao",
+        name: "Chacao",
+        cityId: "city-dc",
+        kind: "municipio" as const,
+        category: null,
+        parentName: null,
+      },
+    ]),
+  };
+}
+
 function fakeListings(): ListingRepositoryPort {
   return { save: vi.fn() };
 }
@@ -66,6 +88,7 @@ describe("validateImport", () => {
         accounts: accountsReturning({ bulkImportEnabled: true }),
         contact: fakeContact(),
         zones: fakeZones(),
+        catalogue: fakeCatalogue(),
         listings,
       }),
     ).rejects.toBeInstanceOf(UnauthenticatedError);
@@ -82,6 +105,7 @@ describe("validateImport", () => {
         accounts: accountsReturning({ bulkImportEnabled: false }),
         contact: fakeContact(),
         zones: fakeZones(),
+        catalogue: fakeCatalogue(),
         listings,
       }),
     ).rejects.toBeInstanceOf(BulkImportDisabledError);
@@ -101,6 +125,7 @@ describe("validateImport", () => {
         accounts: accountsReturning({ bulkImportEnabled: true }),
         contact,
         zones: fakeZones(),
+        catalogue: fakeCatalogue(),
         listings,
       }),
     ).rejects.toBeInstanceOf(ImportMissingAccountContactError);
@@ -122,6 +147,7 @@ describe("validateImport", () => {
         accounts: accountsReturning({ bulkImportEnabled: true }),
         contact: fakeContact(),
         zones: fakeZones(),
+        catalogue: fakeCatalogue(),
         listings,
       },
     );

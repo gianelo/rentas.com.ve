@@ -4,6 +4,7 @@ import type {
   SessionPort,
 } from "../../identity/application/ports/session.port";
 import { UnauthenticatedError } from "../../identity/application/require-authenticated-session";
+import type { CataloguePort } from "../../listing-catalogue/application/ports/catalogue.port";
 import type {
   ListingRepositoryPort,
   NewListing,
@@ -57,6 +58,27 @@ function fakeZones(): ZoneCataloguePort {
   return { listZonesForCity: vi.fn(async (cityId: string) => [{ id: "chacao", cityId }]) };
 }
 
+/** Ciudad/zona-by-name resolution — `distrito-capital`/`chacao` in the
+ * fixture rows normalize to exactly `Distrito Capital`/`Chacao` below. */
+function fakeCatalogue(): CataloguePort {
+  return {
+    listCities: vi.fn(async () => [
+      { id: "city-dc", name: "Distrito Capital" },
+      { id: "city-mcbo", name: "Maracaibo" },
+    ]),
+    listZones: vi.fn(async () => [
+      {
+        id: "chacao",
+        name: "Chacao",
+        cityId: "city-dc",
+        kind: "municipio" as const,
+        category: null,
+        parentName: null,
+      },
+    ]),
+  };
+}
+
 function sourceFromText(text: string): ImportFileSourcePort {
   const bytes = new TextEncoder().encode(text);
   return {
@@ -82,6 +104,7 @@ describe("confirmImport", () => {
         accounts: accountsReturning({ bulkImportEnabled: true }),
         contact: fakeContact(),
         zones: fakeZones(),
+        catalogue: fakeCatalogue(),
         listings,
       }),
     ).rejects.toBeInstanceOf(UnauthenticatedError);
@@ -99,6 +122,7 @@ describe("confirmImport", () => {
         accounts: accountsReturning({ bulkImportEnabled: false }),
         contact: fakeContact(),
         zones: fakeZones(),
+        catalogue: fakeCatalogue(),
         listings,
       }),
     ).rejects.toBeInstanceOf(BulkImportDisabledError);
@@ -116,6 +140,7 @@ describe("confirmImport", () => {
         accounts: accountsReturning({ bulkImportEnabled: true }),
         contact: { findAccountContact: vi.fn().mockResolvedValue(null) },
         zones: fakeZones(),
+        catalogue: fakeCatalogue(),
         listings,
       }),
     ).rejects.toBeInstanceOf(ImportMissingAccountContactError);
@@ -142,6 +167,7 @@ describe("confirmImport", () => {
       accounts: accountsReturning({ bulkImportEnabled: true }),
       contact: fakeContact(),
       zones: fakeZones(),
+      catalogue: fakeCatalogue(),
       listings,
       now: () => new Date("2026-08-24T00:00:00Z"),
     });
@@ -166,6 +192,7 @@ describe("confirmImport", () => {
       accounts: accountsReturning({ bulkImportEnabled: true }),
       contact: fakeContact(),
       zones: fakeZones(),
+      catalogue: fakeCatalogue(),
       listings,
       now: () => new Date("2026-08-24T00:00:00Z"),
     });
@@ -196,6 +223,7 @@ describe("confirmImport", () => {
         accounts: accountsReturning({ bulkImportEnabled: true }),
         contact: fakeContact(),
         zones: fakeZones(),
+        catalogue: fakeCatalogue(),
         listings,
       },
     );
@@ -214,6 +242,7 @@ describe("confirmImport", () => {
         accounts: accountsReturning({ bulkImportEnabled: true }),
         contact: fakeContact(),
         zones: fakeZones(),
+        catalogue: fakeCatalogue(),
         listings,
       }),
     ).rejects.toThrow("connection reset");
@@ -234,6 +263,7 @@ describe("confirmImport", () => {
       accounts: accountsReturning({ bulkImportEnabled: true }),
       contact: fakeContact(),
       zones: fakeZones(),
+      catalogue: fakeCatalogue(),
       listings,
     });
 

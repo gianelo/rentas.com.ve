@@ -5,6 +5,11 @@ import type { CuratedZone } from "../../listing-publication/domain/publishable-l
 import { IMPORT_COLUMN_ALLOWLIST } from "../domain/csv-import-columns";
 import type { ImportAccountContact } from "../domain/import-row-validation";
 import { validateImportRows } from "../domain/import-row-validation";
+import {
+  applyResolvedLocations,
+  mergeLocationResolutionErrors,
+  resolveImportRowLocations,
+} from "../domain/resolve-import-locations";
 import { generateImportTemplate } from "./generate-import-template";
 import { parseImportFile } from "./parse-import-file";
 import type { ImportFileSourcePort } from "./ports/import-file-source.port";
@@ -17,20 +22,38 @@ import type { ImportFileSourcePort } from "./ports/import-file-source.port";
  *
  * **The round trip is the proof.** `generateImportTemplate` produces the
  * template; its example rows are then fed, byte for byte, through the REAL
- * `parseImportFile` (tasks.md 9.4-9.11, already shipped) and the REAL
- * `validateImportRows` (tasks.md 9.12-9.15) — not a re-implementation of
- * either. If the template and the parser ever disagree about a column, or
- * if neutralisation ever corrupts a field's CSV syntax, this test is what
- * turns red — nothing here re-asserts the shape of either side in
- * isolation.
+ * `parseImportFile` (tasks.md 9.4-9.11, already shipped), the REAL
+ * name-resolution layer (`resolve-import-locations.ts` — mvp-rental-
+ * listings unplanned work unit, "bulk import: resolve ciudad and zona by
+ * name"), and the REAL `validateImportRows` (tasks.md 9.12-9.15) — not a
+ * re-implementation of any of the three. If the template and the parser
+ * ever disagree about a column, if neutralisation ever corrupts a field's
+ * CSV syntax, or if the template's own NAMES ever fail to resolve back to
+ * the ids `validateImportRows` needs, this test is what turns red — nothing
+ * here re-asserts the shape of any side in isolation.
  */
 
 const CARACAS: CatalogueCity = { id: "city-dc-uuid", name: "Distrito Capital" };
 const MARACAIBO: CatalogueCity = { id: "city-mcbo-uuid", name: "Maracaibo" };
+const CITIES: readonly CatalogueCity[] = [CARACAS, MARACAIBO];
 
 const ZONES: readonly CatalogueZone[] = [
-  { id: "zone-chacao-uuid", name: "Chacao", cityId: CARACAS.id },
-  { id: "zone-lago-uuid", name: "La Lago", cityId: MARACAIBO.id },
+  {
+    id: "zone-chacao-uuid",
+    name: "Chacao",
+    cityId: CARACAS.id,
+    kind: "municipio",
+    category: null,
+    parentName: null,
+  },
+  {
+    id: "zone-lago-uuid",
+    name: "La Lago",
+    cityId: MARACAIBO.id,
+    kind: "parroquia",
+    category: null,
+    parentName: null,
+  },
 ];
 
 const CURATED_ZONES: readonly CuratedZone[] = ZONES.map((zone) => ({
@@ -78,22 +101,22 @@ describe("generateImportTemplate", () => {
 });
 
 describe("generateImportTemplate — round trip through the REAL parser (tasks.md 9.25)", () => {
-  it("parses back into exactly one row per city, with the real city/zone ids intact", async () => {
+  it("parses back into exactly one row per city, carrying the real city/zone NAMES — never an id", async () => {
     const csv = await generateImportTemplate({ catalogue: fakeCatalogue() });
 
     const parsed = await parseImportFile(sourceFromText(csv));
 
     expect(parsed.rows).toHaveLength(2);
     const byCity = new Map(parsed.rows.map((row) => [row.city, row]));
-    expect(byCity.get(CARACAS.id)?.zone).toBe("zone-chacao-uuid");
-    expect(byCity.get(MARACAIBO.id)?.zone).toBe("zone-lago-uuid");
+    expect(byCity.get(CARACAS.name)?.zone).toBe("Chacao");
+    expect(byCity.get(MARACAIBO.name)?.zone).toBe("La Lago");
   });
 
   it("does NOT dodge the trap: the example title survives its own neutralisation and parses as text", async () => {
     const csv = await generateImportTemplate({ catalogue: fakeCatalogue() });
     const parsed = await parseImportFile(sourceFromText(csv));
 
-    const caracasRow = parsed.rows.find((row) => row.city === CARACAS.id);
+    const caracasRow = parsed.rows.find((row) => row.city === CARACAS.name);
     // Neutralised on write (leading '-' -> a leading apostrophe,
     // csv-output-writer.ts) and never stripped back out on read
     // (deliberately, per that file's own doc comment) — this is what
@@ -104,13 +127,26 @@ describe("generateImportTemplate — round trip through the REAL parser (tasks.m
     expect(caracasRow?.title).toContain("Amplio inmueble en Distrito Capital");
   });
 
-  it("the example rows are ACCEPTED, not merely parsed: zero validation errors through the real per-row validator", async () => {
+  // mvp-rental-listings unplanned work unit ("bulk import: resolve ciudad y
+  // zona por nombre"): the template's own names must resolve back to real
+  // ids through resolve-import-locations.ts, THEN pass the real per-row
+  // validator — proving both halves of the contract at once, exactly the
+  // way slice F proved the parser half alone.
+  it("the example rows' NAMES resolve to real ids and are then ACCEPTED: zero validation errors end to end", async () => {
     const csv = await generateImportTemplate({ catalogue: fakeCatalogue() });
     const parsed = await parseImportFile(sourceFromText(csv));
 
-    const outcome = validateImportRows(parsed.rows, CURATED_ZONES, ACCOUNT_CONTACT);
+    const locationOutcomes = resolveImportRowLocations(parsed.rows, CITIES, ZONES);
+    expect(locationOutcomes.every((outcome) => outcome.errorMessages.length === 0)).toBe(true);
+
+    const preparedRows = applyResolvedLocations(parsed.rows, locationOutcomes);
+    const validationOutcome = validateImportRows(preparedRows, CURATED_ZONES, ACCOUNT_CONTACT);
+    const outcome = mergeLocationResolutionErrors(validationOutcome, locationOutcomes);
 
     expect(outcome.errors).toEqual([]);
     expect(outcome.validRows).toHaveLength(2);
+    expect(outcome.validRows.map((row) => row.listing.cityId).sort()).toEqual(
+      [CARACAS.id, MARACAIBO.id].sort(),
+    );
   });
 });

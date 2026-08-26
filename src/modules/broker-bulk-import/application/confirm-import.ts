@@ -1,4 +1,5 @@
 import type { SessionPort } from "../../identity/application/ports/session.port";
+import type { CataloguePort } from "../../listing-catalogue/application/ports/catalogue.port";
 import type { ListingRepositoryPort } from "../../listing-publication/application/ports/listing-repository.port";
 import type { ZoneCataloguePort } from "../../listing-publication/application/ports/zone-catalogue.port";
 import type { ImportRowError, ValidImportRow } from "../domain/import-row-validation";
@@ -13,6 +14,8 @@ export interface ConfirmImportDependencies {
   readonly accounts: BulkImportAccountPort;
   readonly contact: ImportAccountContactPort;
   readonly zones: ZoneCataloguePort;
+  /** Ciudad/zona-by-name resolution — see `RunImportValidationDependencies`. */
+  readonly catalogue: CataloguePort;
   readonly listings: ListingRepositoryPort;
   readonly now?: () => Date;
 }

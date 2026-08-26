@@ -1,4 +1,5 @@
 import type { SessionPort } from "../../identity/application/ports/session.port";
+import type { CataloguePort } from "../../listing-catalogue/application/ports/catalogue.port";
 import type { ListingRepositoryPort } from "../../listing-publication/application/ports/listing-repository.port";
 import type { ZoneCataloguePort } from "../../listing-publication/application/ports/zone-catalogue.port";
 import { authorizeBulkImport } from "./authorize-bulk-import";
@@ -12,6 +13,8 @@ export interface ValidateImportDependencies {
   readonly accounts: BulkImportAccountPort;
   readonly contact: ImportAccountContactPort;
   readonly zones: ZoneCataloguePort;
+  /** Ciudad/zona-by-name resolution — see `RunImportValidationDependencies`. */
+  readonly catalogue: CataloguePort;
   /**
    * NEVER called by this use case — spec: "Preview alone creates nothing"
    * (tasks.md 9.14). Present here only so `ValidateImportDependencies` and
