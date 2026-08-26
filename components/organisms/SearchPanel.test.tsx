@@ -170,7 +170,7 @@ describe("lo que cada paso muestra", () => {
 describe("el ancla del engranaje", () => {
   it("el panel se llama «filtros», que es adónde apunta la barra resumen", () => {
     // En el teléfono el panel queda debajo de la cuadrícula. El engranaje de
-    // `SearchSummaryBar` lleva a `…#filtros`: sin este `id` el enlace recarga
+    // El filtro de la pastilla lleva a `…#filtros`: sin este `id` el enlace recarga
     // la misma pantalla y no lleva a ninguna parte visible.
     expect(render()).toContain('id="filtros"');
   });

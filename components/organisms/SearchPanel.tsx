@@ -45,7 +45,7 @@ import styles from "./SearchPanel.module.css";
  */
 export function SearchPanel({ model }: { readonly model: SearchPanelModel }) {
   return (
-    // El `id` es el destino del engranaje de `SearchSummaryBar`: en el
+    // El `id` es el destino del filtro de la pastilla (`SearchPill`): en el
     // teléfono el panel queda debajo de la cuadrícula, y sin ancla el botón
     // recarga la misma pantalla sin llevar a ninguna parte visible.
     <section
