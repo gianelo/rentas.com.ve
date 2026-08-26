@@ -9,7 +9,6 @@ import {
   type SearchStepId,
   type SearchStepView,
   searchHeadline,
-  summariseSearch,
   toSearchSelection,
 } from "./search-accordion";
 import {
@@ -21,14 +20,11 @@ import {
 import type { ListingAttribute, PublisherType, SearchCriteria } from "./search-criteria";
 import {
   type AttributeOption,
-  narrowZoneOptions,
   type RoomOption,
   resolveAttributeOptions,
   resolveRoomOptions,
   resolveZoneOptions,
   type ZoneOption,
-  type ZoneSuggestion,
-  zoneIdsFromSuggestions,
 } from "./search-options";
 import {
   buildSearchHref,
@@ -135,12 +131,6 @@ export interface SearchPanelInput {
     SearchCriteria,
     "minPriceUsd" | "maxPriceUsd" | "minRooms" | "publisherType" | "attributes"
   >;
-  /**
-   * Lo que el vocabulario cerrado reconoció en el texto del buscador. Lo
-   * resuelve `suggestFilters` (listing-catalogue) y llega ya calculado: el
-   * dominio de la búsqueda no importa el importador de topónimos.
-   */
-  readonly zoneSuggestions?: readonly ZoneSuggestion[];
   /** La ficha del único resultado, cuando hay exactamente uno (F7). */
   readonly onlyListingHref?: string;
   /**
@@ -282,15 +272,6 @@ export interface PriceForm {
   readonly max: string;
 }
 
-export interface ZoneSearchForm {
-  readonly action: string;
-  readonly hidden: readonly HiddenField[];
-  readonly name: string;
-  readonly value: string;
-  /** Se buscó algo y el vocabulario no reconoció ninguna zona. */
-  readonly noMatches: boolean;
-}
-
 /**
  * **Un filtro puesto, con la dirección que lo saca** (lámina 7c).
  *
@@ -326,15 +307,12 @@ export interface SearchPanelModel {
   readonly chips: readonly FilterChip[];
   readonly cities: readonly CityChoice[];
   readonly zones: readonly ZoneChoice[];
-  readonly zoneSearch: ZoneSearchForm;
   readonly price: PriceForm;
   readonly rooms: readonly RoomChoice[];
   readonly publisher: PublisherChoice;
   readonly attributes: readonly AttributeChoice[];
   readonly clearAllHref: string;
   readonly confirm: SearchConfirm;
-  /** «9 avisos · $250 – $700 · 2 hab · dueños». */
-  readonly summary: string;
   /** «Chacao, Altamira», o la ciudad si no hay zonas. */
   readonly headline: string;
   /** El número al lado del engranaje. La ciudad no cuenta. */
@@ -363,12 +341,12 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
     criteria,
   );
 
-  const zoneSearchText = query[SEARCH_QUERY_NAMES.zoneSearch] ?? "";
-  const matchedZoneIds = zoneIdsFromSuggestions(input.zoneSuggestions ?? [], zoneSearchText);
-  const zoneOptions = narrowZoneOptions(
-    resolveZoneOptions(input.zones, counts.byZone, input.chosenZoneIds),
-    matchedZoneIds,
-  );
+  // **Ya no se achica por lo escrito** (14.44). El buscador de zona del panel
+  // se fue con el paso de ubicación: la zona la resuelve el texto de la
+  // pastilla y la ruta, que es donde vive ese dato desde la resolución del
+  // fundador. Sin ese formulario no hay nada que estrechar, así que las
+  // opciones son las del conteo y punto.
+  const zoneOptions = resolveZoneOptions(input.zones, counts.byZone, input.chosenZoneIds);
 
   const panel = resolveFilterPanel(query[SEARCH_QUERY_NAMES.step]);
   // Una sola vez, y las dos salidas del panel la usan: el «×» de arriba y el
@@ -393,13 +371,6 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
       ...option,
       href: zoneHref(input, option.id),
     })),
-    zoneSearch: {
-      action: basePath,
-      hidden: hiddenFields(query, [SEARCH_QUERY_NAMES.zoneSearch], "precio"),
-      name: SEARCH_QUERY_NAMES.zoneSearch,
-      value: zoneSearchText,
-      noMatches: matchedZoneIds !== null && zoneOptions.length === 0,
-    },
     price: {
       action: basePath,
       // La página se cae del formulario, igual que en `buildSearchHref`:
@@ -446,7 +417,6 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
       ...(input.onlyListingHref === undefined ? {} : { onlyListingHref: input.onlyListingHref }),
       relief: input.relief ?? null,
     }),
-    summary: summariseSearch(selection, counts.total),
     headline: searchHeadline(selection),
     activeFilters: countActiveFilters(selection),
     pillFilters: countPillFilters(selection),
