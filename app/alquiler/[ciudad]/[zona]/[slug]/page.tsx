@@ -9,14 +9,17 @@ import { ReadingWidth } from "@/../components/layout/ReadingWidth";
 import { ContactBlock } from "@/../components/molecules/ContactBlock";
 import { DeclaredFeatures } from "@/../components/molecules/DeclaredFeatures";
 import { PhotoStrip } from "@/../components/molecules/PhotoStrip";
+import type { SearchPillProps } from "@/../components/molecules/SearchPill";
 import { StatStrip } from "@/../components/molecules/StatStrip";
+import { Nav } from "@/../components/organisms/Nav";
 import { viewListingContact } from "@/modules/contact-reveal/application/view-listing-contact";
 import {
   DrizzleContactRevealEvents,
   DrizzleContactRevealMetrics,
   DrizzleRevealableListing,
 } from "@/modules/contact-reveal/infrastructure/drizzle-contact-reveal";
-import { nextAuthSessionPort } from "@/modules/identity/infrastructure/session-port";
+import { resolveNavAccount, resolveNavPublish } from "@/modules/identity/domain/nav-account";
+import { homeSearchForm } from "@/modules/listing-catalogue/domain/search-destination";
 import { resolveListingRoute } from "@/modules/listing-discovery/domain/listing-detail-route";
 import { photoUrl } from "@/modules/listing-discovery/domain/listing-photo-view";
 import {
@@ -34,6 +37,7 @@ import { DrizzleListingDetail } from "@/modules/listing-discovery/infrastructure
 import { DrizzleListingPhotos } from "@/modules/listing-discovery/infrastructure/drizzle-listing-photos";
 import { readSiteBaseUrl } from "@/modules/listing-discovery/infrastructure/site-base-url";
 import { db } from "@/shared/db/client";
+import { readSession, requestSessionPort } from "../../../../_lib/session";
 import styles from "./ficha.module.css";
 import { revealListingContact } from "./reveal-actions";
 
@@ -145,7 +149,9 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
   const contact = await viewListingContact(
     { listingId: detail.id, method: detail.contactMethod, availability },
     {
-      sessionPort: nextAuthSessionPort,
+      // Memoizado por petición: la barra de arriba necesita la misma sesión, y
+      // con estrategia `database` dos lecturas son dos viajes a Neon.
+      sessionPort: requestSessionPort,
       listings: new DrizzleRevealableListing(db),
       reveals: new DrizzleContactRevealMetrics(db),
       // tasks.md 6.14 — el mensaje del inquilino, para que el enlace revelado
@@ -153,6 +159,26 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
       messages: new DrizzleContactRevealEvents(db),
     },
   );
+
+  // La barra del producto (14a). La sesión sale del MISMO puerto memoizado que
+  // acaba de usar el bloque de contacto, así que esto no agrega una consulta:
+  // dentro de una petición es la misma lectura. Y sin cookie no hubo ninguna.
+  const session = await readSession();
+  const account = resolveNavAccount(session);
+  const publish = resolveNavPublish(account);
+
+  // El estado "vacía" de la pastilla (14i): una ficha no es una búsqueda, así
+  // que no hay nada que filtrar. Reusa el formulario del inicio en vez de
+  // inventar una segunda copia del mecanismo.
+  const searchForm = homeSearchForm();
+  const pill: SearchPillProps = {
+    action: searchForm.action,
+    name: searchForm.name,
+    value: searchForm.value,
+    placeholder: searchForm.label,
+    submitLabel: searchForm.submitLabel,
+    state: { kind: "empty" },
+  };
 
   // Se lee al servir y no al importar el módulo: `next build` evalúa el módulo
   // sin las variables del despliegue, y una lectura arriba del archivo
@@ -171,132 +197,148 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
   });
 
   return (
-    <main className={styles.page}>
-      {/* Adentro del cuerpo y no en `generateMetadata`: el `<head>` de Next no
+    <>
+      {/* **La marca cede su lugar al enlace de vuelta** (14.38: "en una ficha
+          volver vale más que ir al inicio"). El destino y el texto llegan
+          decididos por `resultsLink` — con origen dice «← Resultados», sin
+          origen dice «Ver avisos en <zona>», y esa diferencia es la regla
+          entera de la 16.9. Acá no se elige ninguna de las dos.
+
+          `signInHref` vuelve a ESTA ficha, con el origen puesto (F19): pedirle
+          una cuenta a alguien y devolverlo al inicio pierde el aviso que estaba
+          mirando y la búsqueda que venía armando.
+
+          Fuera del `<main>`, que es donde va el encabezado del sitio: dentro
+          sería una cabecera de la región de contenido y no del documento. */}
+      <Nav
+        account={account}
+        publish={publish}
+        pill={pill}
+        signInHref={`/signin?callbackUrl=${encodeURIComponent(listingHref)}`}
+        back={{ href: back.href, label: back.label }}
+      />
+
+      <main className={styles.page}>
+        {/* Adentro del cuerpo y no en `generateMetadata`: el `<head>` de Next no
           admite un script, y este documento describe lo que la página dibuja.
           Va escapado desde el dominio — la descripción la escribe quien
           publica, y un `</script>` en ese texto cerraría la etiqueta. */}
-      <script
-        type="application/ld+json"
-        // biome-ignore lint/security/noDangerouslySetInnerHtml: es la única forma de emitir JSON-LD, y `serializeStructuredData` escapa el `<` antes de llegar acá.
-        dangerouslySetInnerHTML={{ __html: serializeStructuredData(structuredData) }}
-      />
-      <Container>
-        <header className={styles.bar}>
-          <AppLink className={styles.back} href={back.href}>
-            {back.label}
-          </AppLink>
-        </header>
+        <script
+          type="application/ld+json"
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: es la única forma de emitir JSON-LD, y `serializeStructuredData` escapa el `<` antes de llegar acá.
+          dangerouslySetInnerHTML={{ __html: serializeStructuredData(structuredData) }}
+        />
+        <Container>
+          <DetailSplit
+            media={
+              <>
+                <div className={styles.gallery}>
+                  <PhotoStrip
+                    photos={photos}
+                    publicBaseUrl={photoBase}
+                    title={detail.title}
+                    zone={detail.zoneName}
+                    href={listingPath}
+                  />
+                </div>
 
-        <DetailSplit
-          media={
-            <>
-              <div className={styles.gallery}>
-                <PhotoStrip
-                  photos={photos}
-                  publicBaseUrl={photoBase}
-                  title={detail.title}
-                  zone={detail.zoneName}
-                  href={listingPath}
-                />
-              </div>
+                <div className={styles.body}>
+                  <StatStrip
+                    rooms={detail.rooms}
+                    bathrooms={detail.bathrooms}
+                    areaM2={detail.areaM2}
+                    parkingSpots={detail.parkingSpots}
+                  />
 
-              <div className={styles.body}>
-                <StatStrip
-                  rooms={detail.rooms}
-                  bathrooms={detail.bathrooms}
-                  areaM2={detail.areaM2}
-                  parkingSpots={detail.parkingSpots}
-                />
+                  <DeclaredFeatures
+                    hasPowerPlant={detail.hasPowerPlant}
+                    hasRegularWater={detail.hasRegularWater}
+                    isFurnished={detail.isFurnished}
+                    hasSecurity={detail.hasSecurity}
+                    hasAppliances={detail.hasAppliances}
+                  />
 
-                <DeclaredFeatures
-                  hasPowerPlant={detail.hasPowerPlant}
-                  hasRegularWater={detail.hasRegularWater}
-                  isFurnished={detail.isFurnished}
-                  hasSecurity={detail.hasSecurity}
-                  hasAppliances={detail.hasAppliances}
-                />
-
-                <section className={styles.description}>
-                  <h2 className={styles.heading}>Descripción</h2>
-                  <ReadingWidth>
-                    <p className={styles.text}>{detail.description}</p>
-                  </ReadingWidth>
-                </section>
-              </div>
-            </>
-          }
-          data={
-            <>
-              <div className={styles.summary}>
-                {/* Dueño con relleno, inmobiliaria con borde: la distinción
+                  <section className={styles.description}>
+                    <h2 className={styles.heading}>Descripción</h2>
+                    <ReadingWidth>
+                      <p className={styles.text}>{detail.description}</p>
+                    </ReadingWidth>
+                  </section>
+                </div>
+              </>
+            }
+            data={
+              <>
+                <div className={styles.summary}>
+                  {/* Dueño con relleno, inmobiliaria con borde: la distinción
                     tiene que sobrevivir a la escala de grises, y eso es
                     estructura y no color. Va acá y no en la barra porque en
                     escritorio encabeza la columna de datos, y dibujarlo dos
                     veces sería tener dos fichas otra vez. */}
-                <PublisherBadge publisherType={detail.publisherType} />
+                  <PublisherBadge publisherType={detail.publisherType} />
 
-                <p className={styles.price}>
-                  ${detail.priceUsd}
-                  <span className={styles.perMonth}> / mes</span>
-                </p>
-                <h1 className={styles.title}>{detail.title}</h1>
-                {/* El tipo va junto a la ubicación y no en la tira de cifras
+                  <p className={styles.price}>
+                    ${detail.priceUsd}
+                    <span className={styles.perMonth}> / mes</span>
+                  </p>
+                  <h1 className={styles.title}>{detail.title}</h1>
+                  {/* El tipo va junto a la ubicación y no en la tira de cifras
                     (F23/R3): es una categoría, no un número. */}
-                <p className={styles.location}>
-                  {PROPERTY_LABEL[detail.propertyType]} · {detail.zoneName}
-                  {detail.zoneParentName ? ` · ${detail.zoneParentName}` : ""} · {detail.cityName}
-                </p>
-              </div>
+                  <p className={styles.location}>
+                    {PROPERTY_LABEL[detail.propertyType]} · {detail.zoneName}
+                    {detail.zoneParentName ? ` · ${detail.zoneParentName}` : ""} · {detail.cityName}
+                  </p>
+                </div>
 
-              <div className={styles.contact}>
-                {/* Los tres estados — sin cuenta, con cuenta y vencido — los
+                <div className={styles.contact}>
+                  {/* Los tres estados — sin cuenta, con cuenta y vencido — los
                     dibuja el mismo bloque. Elegir acá cuál va sería decidir dos
                     veces lo que el dominio ya decidió, y las dos decisiones se
                     separan en el primer arreglo apurado. */}
-                <ContactBlock
-                  contact={contact}
-                  publisherType={detail.publisherType}
-                  publisherName={detail.publisherName}
-                  listingId={detail.id}
-                  listingTitle={detail.title}
-                  revealAction={revealListingContact}
-                  // `null` mientras `phone_verified_at` no exista (tasks.md
-                  // 16.12): la verificación por WhatsApp es todavía un stub, y
-                  // certificar un número que nadie comprobó sería peor que no
-                  // decir nada.
-                  verifiedAt={null}
-                  expiresAt={detail.expiresAt}
-                  zoneName={detail.zoneName}
-                  zoneHref={`/alquiler/${ciudad}/${zona}`}
-                  // `callbackUrl` es el unico parametro que app/(auth)/signin lee, y
-                  // lo pasa a Auth.js como `redirectTo`. Con cualquier otro nombre se
-                  // ignoraba EN SILENCIO -- la pantalla se dibujaba igual y quien
-                  // entraba aterrizaba en `/` en vez de volver al aviso. Eso rompia la
-                  // F19, en el paso que el propio documento llama el punto de fuga
-                  // principal del producto.
-                  //
-                  // **No confundirlo con el parametro de la 16.9**, que viaja adentro
-                  // de `listingHref`: aquel dice de que pantalla de resultados salio
-                  // quien mira, y este dice a que aviso volver despues de entrar. Son
-                  // dos vueltas distintas, anidadas una en la otra.
-                  signInHref={`/signin?callbackUrl=${encodeURIComponent(listingHref)}`}
-                />
-              </div>
-            </>
-          }
-        />
+                  <ContactBlock
+                    contact={contact}
+                    publisherType={detail.publisherType}
+                    publisherName={detail.publisherName}
+                    listingId={detail.id}
+                    listingTitle={detail.title}
+                    revealAction={revealListingContact}
+                    // `null` mientras `phone_verified_at` no exista (tasks.md
+                    // 16.12): la verificación por WhatsApp es todavía un stub, y
+                    // certificar un número que nadie comprobó sería peor que no
+                    // decir nada.
+                    verifiedAt={null}
+                    expiresAt={detail.expiresAt}
+                    zoneName={detail.zoneName}
+                    zoneHref={`/alquiler/${ciudad}/${zona}`}
+                    // `callbackUrl` es el unico parametro que app/(auth)/signin lee, y
+                    // lo pasa a Auth.js como `redirectTo`. Con cualquier otro nombre se
+                    // ignoraba EN SILENCIO -- la pantalla se dibujaba igual y quien
+                    // entraba aterrizaba en `/` en vez de volver al aviso. Eso rompia la
+                    // F19, en el paso que el propio documento llama el punto de fuga
+                    // principal del producto.
+                    //
+                    // **No confundirlo con el parametro de la 16.9**, que viaja adentro
+                    // de `listingHref`: aquel dice de que pantalla de resultados salio
+                    // quien mira, y este dice a que aviso volver despues de entrar. Son
+                    // dos vueltas distintas, anidadas una en la otra.
+                    signInHref={`/signin?callbackUrl=${encodeURIComponent(listingHref)}`}
+                  />
+                </div>
+              </>
+            }
+          />
 
-        <footer className={styles.footer}>
-          <AppLink className={styles.report} href="#reportar">
-            Reportar este aviso
-          </AppLink>
-          <span className={styles.meta}>
-            ID {detail.id.slice(0, 8)} · vence {formatDate(detail.expiresAt)}
-          </span>
-        </footer>
-      </Container>
-    </main>
+          <footer className={styles.footer}>
+            <AppLink className={styles.report} href="#reportar">
+              Reportar este aviso
+            </AppLink>
+            <span className={styles.meta}>
+              ID {detail.id.slice(0, 8)} · vence {formatDate(detail.expiresAt)}
+            </span>
+          </footer>
+        </Container>
+      </main>
+    </>
   );
 }
 

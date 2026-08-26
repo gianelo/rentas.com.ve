@@ -6,6 +6,7 @@ import styles from "./Nav.module.css";
 
 export interface NavBackAction {
   readonly href: string;
+  /** El texto visible del enlace. Lo compone el dominio, flecha incluida. */
   readonly label: string;
 }
 
@@ -18,9 +19,9 @@ export interface NavProps {
   /** A dónde manda "Entrar" — incluye el `callbackUrl`, si aplica. */
   readonly signInHref: string;
   /**
-   * Cuando está presente, reemplaza la marca por `←` (diseño 14a: "en una
-   * ficha volver vale más que ir al inicio"). Ninguna pantalla lo pasa
-   * todavía en este trabajo — ver el reporte de aplicación.
+   * Cuando está presente, reemplaza la marca por el enlace de vuelta (14.38:
+   * "la marca cede su lugar al ← en la ficha, porque en una ficha volver vale
+   * más que ir al inicio"). Lo usa la ficha, con lo que decide `resultsLink`.
    */
   readonly back?: NavBackAction;
 }
@@ -48,8 +49,15 @@ export function Nav({ account, publish, pill, signInHref, back }: NavProps) {
     <header className={styles.bar}>
       <div className={styles.inner}>
         {back ? (
-          <AppLink className={styles.back} href={back.href} aria-label={back.label}>
-            <span aria-hidden="true">←</span>
+          // **El texto se dibuja, no se esconde detrás de un `aria-label`.**
+          // `resultsLink` devuelve dos etiquetas para dos acciones distintas
+          // —«← Resultados» cuando hay búsqueda a la que volver, «Ver avisos
+          // en Chacao» cuando no la hay—, y su propio comentario dice que la
+          // segunda "no dice volver". Un `←` pelado dibuja las dos iguales y
+          // le promete una vuelta a quien llegó desde Google. La flecha, donde
+          // corresponde, viene dentro de la etiqueta que compone el dominio.
+          <AppLink className={styles.back} href={back.href}>
+            {back.label}
           </AppLink>
         ) : (
           <AppLink className={styles.brand} href="/">

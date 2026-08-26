@@ -90,24 +90,59 @@ describe("Nav — con sesión", () => {
   });
 });
 
-describe("Nav — la ficha cede la marca al ←", () => {
-  it("con `back`, el ← reemplaza la marca y es un enlace real, no la marca perdida", () => {
-    const html = renderToStaticMarkup(
+describe("Nav — la ficha cede la marca al enlace de vuelta", () => {
+  function ficha(back: { href: string; label: string }) {
+    return renderToStaticMarkup(
       <Nav
         account={{ kind: "anonymous" }}
         publish={{ bar: { label: "Publicar gratis", emphasis: "accent" }, menu: null }}
         pill={PILL}
         signInHref="/signin"
-        back={{ href: "/alquiler/maracaibo", label: "Volver a Maracaibo" }}
+        back={back}
       />,
     );
+  }
+
+  it("con `back`, el enlace de vuelta reemplaza la marca y es un enlace real", () => {
+    const html = ficha({ href: "/alquiler/maracaibo", label: "← Resultados" });
 
     // Dos aserciones separadas y no un único regex ordenado: el orden en que
     // React serializa los atributos de un elemento es un detalle de
     // implementación de `next/link`, no un contrato de este componente.
     expect(html).toContain('href="/alquiler/maracaibo"');
-    expect(html).toContain('aria-label="Volver a Maracaibo"');
     expect(html).not.toContain(">rentas.<");
+  });
+
+  /**
+   * **El texto del enlace se DIBUJA, no se esconde detrás de un `aria-label`.**
+   *
+   * `resultsLink` (listing-discovery) devuelve dos etiquetas distintas para dos
+   * acciones distintas: «← Resultados» cuando hay una búsqueda a la que volver,
+   * y «Ver avisos en Chacao» cuando no la hay — y su propio comentario dice que
+   * en ese segundo caso «su texto no dice volver». Un `←` solo, con la etiqueta
+   * escondida, dibuja las dos iguales: le promete a quien llegó desde Google
+   * una vuelta que nunca existió.
+   *
+   * Las dos láminas de la ficha lo dibujan visible («← Resultados»), así que
+   * esto además es lo que el diseño pide.
+   */
+  it("dibuja el texto de la vuelta, que es el que decide el dominio", () => {
+    // `>texto<` y no `toContain(texto)`: la versión suelta también pasaba con
+    // el texto escondido dentro de un `aria-label`, que es justo lo que esta
+    // prueba tiene que poder distinguir. Mismo defecto que la prueba móvil de
+    // `SearchPill` ya corrigió una vez.
+    expect(ficha({ href: "/alquiler/x/y", label: "← Resultados" })).toContain(">← Resultados<");
+    expect(ficha({ href: "/alquiler/x/y", label: "Ver avisos en Chacao" })).toContain(
+      ">Ver avisos en Chacao<",
+    );
+  });
+
+  /**
+   * El nombre accesible sale del texto. Un `aria-label` encima lo pisaría con
+   * una segunda copia de la misma frase, que es cómo empiezan a discrepar.
+   */
+  it("no duplica el nombre accesible en un aria-label", () => {
+    expect(ficha({ href: "/alquiler/x/y", label: "← Resultados" })).not.toContain('aria-label="←');
   });
 });
 
