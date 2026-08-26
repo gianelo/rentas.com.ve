@@ -1,52 +1,125 @@
-/* El acordeón de cuatro pasos, y la misma pieza como barra lateral.
+/* El panel de filtros: cuatro grupos, dibujados como modal en los dos anchos.
 
-   **Una sola estructura para las dos anchuras, no dos.** En 360 los cuatro
-   pasos son un acordeón porque no cabe nada más; en 1280 los mismos cuatro
-   grupos se ven a la vez en la barra lateral de 240 px. Duplicar el marcado
-   sería duplicar los bytes en el teléfono, que es justo el dispositivo para
-   el que existe la regla del presupuesto (F15).
+   **Una sola estructura para las dos anchuras, no dos** — la regla que
+   `SearchFilters` dejó escrita y que el `Nav` de la 14.40 volvió a aplicar.
+   Bajo 768 px los cuatro grupos son un acordeón porque no cabe nada más; de
+   768 para arriba se ven **los cuatro a la vez**, en tres columnas, y lo único
+   que cambia entre los dos anchos es esta hoja.
 
-   Cómo se abren los cuatro en escritorio sin JavaScript: `::details-content`.
-   El navegador esconde el contenido de un `<details>` cerrado con
-   `content-visibility`, y ese pseudoelemento es la única forma de revertirlo
-   desde CSS. En un navegador que todavía no lo entienda, el escritorio ve el
-   acordeón del teléfono — más clics, nunca roto. Es la degradación que el D13
-   pide: el camino de lectura funciona siempre, y lo de arriba es mejora. */
+   **Lo que se fue, y por qué.** El panel era una barra lateral de 240 px y los
+   grupos eran `<details>` con `::details-content` para abrirlos en escritorio.
+   Las dos cosas cayeron con la resolución del fundador del 2026-08-26 (14.32,
+   14.33): la lámina 7c dice *"Sin barra lateral: los filtros viven solo en el
+   modal"*, y `::details-content` no es una base sobre la que apoyar el
+   escritorio — en un navegador que no lo entiende, 1280 dibujaba el acordeón
+   del teléfono. Ahora el estado abierto viaja en el marcado (`data-open`) y
+   esta hoja lo lee, que es algo que todo navegador entiende. */
 
+/* El modal empieza DEBAJO de la barra: la lámina 7b la sigue dibujando arriba,
+   con la pastilla y el conteo. Tapar la barra sería esconder dónde se está
+   buscando justo mientras se filtra. */
 .panel {
+  position: fixed;
+  inset-block-start: var(--nav-h);
+  inset-block-end: 0;
+  inset-inline: 0;
+  overflow-y: auto;
+  background: var(--surface);
+  /* Por encima del menú de cuenta (2), que es lo único que se levanta en esta
+     pantalla. */
+  z-index: 3;
+}
+
+.sheet {
+  /* «El panel entero entra en 800 px» (lámina 7b). */
+  max-inline-size: 800px;
+  margin-inline: auto;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   gap: var(--gap);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  padding: 12px;
+  min-block-size: 100%;
 }
 
-.step {
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  padding-block-end: var(--gap);
+  border-block-end: 1px solid var(--line);
+}
+
+.headTitle {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* El «×» es un carácter, no un icono: el conjunto cerrado de dos SVG en línea
+   son la lupa y el filtro de la pastilla, y ampliarlo es cambiar el sistema. */
+.close {
+  margin-inline-start: auto;
+  min-block-size: var(--target-min);
+  min-inline-size: var(--target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r);
+  color: var(--soft);
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  text-decoration: none;
+}
+
+/* Lo que se dice cuando la dirección pidió un grupo que ya no existe: se abre
+   igual y se explica, en vez de romper la página (14.23b). */
+.notice {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  color: var(--warn);
+  background: var(--warn-bg);
+  border-radius: var(--r);
+  padding: 6px 10px;
+}
+
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.group {
   border-bottom: 1px solid var(--line);
   padding-bottom: var(--gap);
 }
 
-.step:last-of-type {
+.group:last-of-type {
   border-bottom: 0;
   padding-bottom: 0;
 }
 
-/* El renglón cerrado: número, título y lo elegido. Es lo que la lámina dibuja
-   como «Zona · Todas» y «Precio · Cualquiera». */
+/* El renglón cerrado: número, título y lo elegido — «Precio · Cualquiera». */
 .summary {
+  margin: 0;
+  font-size: var(--control-fs);
+  font-weight: 400;
+}
+
+.summaryLink {
   display: flex;
   align-items: center;
   gap: var(--gap);
   min-block-size: var(--target-min);
-  cursor: pointer;
   font-family: var(--sans);
   font-size: var(--control-fs);
   color: var(--ink);
+  text-decoration: none;
 }
 
-.summary:focus-visible {
+.summaryLink:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -82,6 +155,15 @@
   padding-block-start: var(--gap);
 }
 
+/* **El acordeón del teléfono, y es lo único que lo hace acordeón.** El grupo
+   abierto lo decide el servidor y llega en `data-open`; los demás muestran sólo
+   su renglón. Con los cuatro abiertos a la vez en 360 px el botón del conteo
+   queda cuatro pantallas más abajo, y ése es justamente el botón que hay que
+   ver mientras se filtra. */
+.group:not([data-open]) .body {
+  display: none;
+}
+
 .question {
   margin: 0;
   font-family: var(--sans);
@@ -98,10 +180,6 @@
   display: block;
 }
 
-/* Ciudad y zona con desplazamiento propio: la lámina lo pide con todas las
-   letras — «la pantalla no crece». Con veinte zonas, el botón del conteo
-   quedaría fuera de la vista, que es el único botón que hay que ver mientras
-   se filtra. */
 .options {
   list-style: none;
   margin: 0;
@@ -109,8 +187,6 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-block-size: 260px;
-  overflow-y: auto;
 }
 
 .option {
@@ -147,6 +223,7 @@
 .roomOption:focus-visible,
 .confirm:focus-visible,
 .clear:focus-visible,
+.close:focus-visible,
 .control:focus-visible,
 .searchAction:focus-visible {
   outline: 2px solid var(--accent);
@@ -167,19 +244,6 @@
   color: var(--soft);
 }
 
-/* El aviso de que cambiar de ciudad borra las zonas. Se dibuja antes de
-   tocarla, no después. */
-.warning {
-  margin: 4px 0 0;
-  font-family: var(--sans);
-  font-size: var(--meta-fs);
-  color: var(--warn);
-  background: var(--warn-bg);
-  border-radius: var(--r);
-  padding: 6px 10px;
-}
-
-.search,
 .price {
   display: flex;
   flex-direction: column;
@@ -195,7 +259,6 @@
   color: var(--soft);
 }
 
-.searchRow,
 .priceRow {
   display: flex;
   gap: var(--gap);
@@ -282,11 +345,12 @@
   font-size: var(--meta-fs-sm);
 }
 
-/* El pie queda pegado abajo en el teléfono: el conteo es lo que se mira
-   mientras se filtra, y perderlo de vista es perder la razón del acordeón. */
+/* El pie queda pegado abajo: el conteo es lo que se mira mientras se filtra, y
+   perderlo de vista es perder la razón de tener un panel. */
 .foot {
   position: sticky;
   inset-block-end: 0;
+  margin-block-start: auto;
   display: flex;
   align-items: center;
   gap: var(--gap);
@@ -339,54 +403,50 @@
 }
 
 @media (min-width: 768px) {
+  .panel {
+    inset-block-start: var(--nav-h-desktop);
+  }
+
   .option,
   .control,
   .searchAction,
   .roomOption,
-  .summary {
+  .close,
+  .summaryLink {
     min-block-size: var(--target-min-desktop);
   }
 
-  /* Los cuatro pasos a la vez: en 1280 caben, y hacerlos secuenciales sería
-     inventar fricción. El acordeón no desaparece del marcado — deja de
-     comportarse como acordeón. */
-  .step::details-content {
-    content-visibility: visible;
-    block-size: auto;
+  /* **Los cuatro grupos a la vez, en tres columnas** (lámina 7b: *"los cuatro
+     pasos del móvil, simultáneos en tres columnas — no hay secuencia que
+     recordar"*). La secuencia del teléfono existe porque no cabe nada más, no
+     porque sea mejor. */
+  .groups {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    align-items: start;
   }
 
-  /* El disclosure deja de ser un control y pasa a ser el encabezado del
-     grupo: no hay nada que abrir. */
-  .summary {
-    cursor: default;
-    list-style: none;
+  /* El precio ocupa las tres columnas: es el grupo con dos campos y un
+     histograma, y partido en un tercio deja de compararse consigo mismo. */
+  .group:first-child {
+    grid-column: 1 / -1;
   }
 
-  .summary::-webkit-details-marker {
+  .group {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  /* **La misma especificidad que la regla del teléfono**, para ganarle por
+     orden en la cascada y no por un `!important`: acá no hay grupo cerrado. */
+  .group:not([data-open]) .body {
+    display: flex;
+  }
+
+  /* El renglón deja de ser un control y pasa a ser el encabezado del grupo: no
+     hay nada que abrir, así que tampoco hay nada que resumir a la derecha. */
+  .stepValue {
     display: none;
-  }
-
-  /* En la barra lateral de 240 px la pregunta larga sobra: el título del grupo
-     ya la contesta, y el alto es lo que escasea. */
-  .question {
-    display: none;
-  }
-
-  .options {
-    max-block-size: 200px;
-  }
-
-  .foot {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .confirm,
-  .empty {
-    margin-inline-start: 0;
-  }
-
-  .empty {
-    align-items: stretch;
   }
 }

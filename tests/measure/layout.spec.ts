@@ -497,3 +497,85 @@ test.describe("la barra del producto (14a, 14.41)", () => {
     expect(brand.visible).toBe(false);
   });
 });
+
+/**
+ * **El panel de filtros, medido y no leído** (14.32, 14.33).
+ *
+ * Este bloque existe por el mismo defecto que el del nav, un nivel más arriba.
+ * `SearchPanel.module.css` afirmaba abrir los cuatro grupos en escritorio con
+ * `::details-content` — una declaración cierta en la hoja y **silenciosa sobre
+ * lo que se dibuja**: en un navegador que no lo entiende, 1280 seguía dibujando
+ * el acordeón del teléfono y ninguna prueba se ponía roja. Lo que hay que
+ * verificar es cuántos cuerpos de grupo se dibujan a cada ancho.
+ *
+ * «Visible» se mide como caja real (`getBoundingClientRect`) y no como clase o
+ * como `display` declarado: eso es exactamente lo que la prueba de
+ * `grid-template-columns` demostró que no alcanza.
+ */
+test.describe("el panel de filtros a los dos anchos (14.32)", () => {
+  /** Cuántos cuerpos de grupo dibujan una caja de verdad. */
+  async function openBodies(page: import("@playwright/test").Page) {
+    return page.evaluate(() => {
+      const host = document.querySelector('[data-testid="search-panel-harness"]');
+      const groups = [...(host?.querySelectorAll("section[id^='filtros-']") ?? [])];
+      return groups.map((group) => {
+        const body = group.lastElementChild as HTMLElement | null;
+        const box = body?.getBoundingClientRect();
+        return {
+          id: group.id,
+          visible: Boolean(box && box.width > 0 && box.height > 0),
+        };
+      });
+    });
+  }
+
+  test("14.32: a 1280 los cuatro grupos se ven a la vez — no hay secuencia", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    await page.goto("/measure");
+
+    const bodies = await openBodies(page);
+    console.log(`[14.32] 1280px: ${JSON.stringify(bodies)}`);
+
+    // Los cuatro que la lámina 7b dibuja en tres columnas: precio,
+    // habitaciones, quién publica y atributos.
+    expect(bodies).toHaveLength(4);
+    expect(bodies.filter((body) => body.visible)).toHaveLength(4);
+  });
+
+  test("14.32: a 360 sigue siendo un acordeón — sólo el grupo abierto se dibuja", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 900 });
+    await page.goto("/measure");
+
+    const bodies = await openBodies(page);
+    console.log(`[14.32] 360px: ${JSON.stringify(bodies)}`);
+
+    expect(bodies).toHaveLength(4);
+    // Uno solo, y es el que el servidor marcó: con los cuatro abiertos en
+    // 360 px el botón del conteo queda cuatro pantallas más abajo, y ése es
+    // justamente el botón que hay que ver mientras se filtra.
+    expect(bodies.filter((body) => body.visible).map((body) => body.id)).toEqual([
+      "filtros-precio",
+    ]);
+  });
+
+  test("14.33: la cuadrícula gana el ancho de la barra lateral — cuatro columnas a 1280", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    await page.goto("/measure");
+
+    const tops = await page
+      .getByTestId("listing-grid-harness")
+      .locator("li")
+      .evaluateAll((nodes) => nodes.map((node) => Math.round(node.getBoundingClientRect().top)));
+
+    const firstRow = tops.filter((top) => top === tops[0]).length;
+    console.log(`[14.33] avisos en la primera fila: ${firstRow} (cota: 4) · tops=${tops}`);
+    // «Cuatro columnas de 254: 8 avisos sobre el pliegue, contra 6 antes»
+    // (lámina 7c). Contar cuántas tarjetas comparten el borde superior es la
+    // pregunta de verdad; `grid-template-columns` sólo dice qué se declaró.
+    expect(firstRow).toBe(4);
+  });
+});

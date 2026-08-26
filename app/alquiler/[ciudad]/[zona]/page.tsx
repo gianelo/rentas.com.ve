@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { AppLink } from "@/../components/atoms/AppLink";
 import { Container } from "@/../components/layout/Container";
-import { SidebarLayout } from "@/../components/layout/SidebarLayout";
+import { FilterChips } from "@/../components/molecules/FilterChips";
 import { ListingCard, ListingGrid } from "@/../components/molecules/ListingCard";
 import type { SearchPillProps } from "@/../components/molecules/SearchPill";
 import { Nav } from "@/../components/organisms/Nav";
@@ -23,7 +23,9 @@ import { DrizzleListingPhotos } from "@/modules/listing-discovery/infrastructure
 import { readPhotoPublicBaseUrl } from "@/modules/listing-discovery/infrastructure/photo-public-base-url";
 import { buildFilterPanel } from "@/modules/listing-search/application/build-filter-panel";
 import { resolvePagination } from "@/modules/listing-search/domain/pagination";
+import { PANEL_OPEN_TOKEN } from "@/modules/listing-search/domain/search-accordion";
 import { buildSearchCriteria } from "@/modules/listing-search/domain/search-criteria";
+import { resolveSearchLocation } from "@/modules/listing-search/domain/search-location";
 import { toPanelZones } from "@/modules/listing-search/domain/search-panel";
 import {
   buildSearchHref,
@@ -83,7 +85,7 @@ const loadCatalogue = cache(async () => {
  * puede pegar en un grupo de WhatsApp, que es como circulan los avisos acá.
  */
 export default async function ZonaPage({ params, searchParams }: ZonaProps) {
-  const [{ ciudad, zona }, query] = await Promise.all([params, searchParams]);
+  const [{ ciudad, zona }, rawQuery] = await Promise.all([params, searchParams]);
 
   const [cities, zones] = await loadCatalogue();
 
@@ -105,21 +107,24 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
   // la pantalla.
   const searchZones = toSearchZones(zones);
 
-  // Las zonas extra de F4. Traducir un valor de `?zona=` a una fila del
-  // catálogo es la misma regla que `resolveZoneRoute` aplica a los segmentos
-  // de la ruta, y vive en el dominio por lo mismo: acepta el slug (F12) y el
-  // id de las direcciones ya compartidas, y recorta por ciudad — «Centro»
-  // existe en Maracaibo y en Distrito Capital.
-  const extraZones = resolveZoneTokens(
-    readZoneList(query[SEARCH_QUERY_NAMES.zone]),
-    searchZones,
-    place.city.id,
-  ).filter((candidate) => candidate.id !== place.zone.id);
-
-  // La zona de la ruta siempre entra, y las extra se suman con O. La ruta
-  // afirma un lugar; la query sólo puede ensanchar la búsqueda dentro de la
-  // misma ciudad.
-  const chosenZoneIds = [place.zone.id, ...extraZones.map((extra) => extra.id)];
+  // **Esta ruta RECHAZA `?zona=`** (resolución del fundador, 2026-08-26: "un
+  // dato, un lugar"). La ubicación no aparece dos veces en una dirección: una
+  // zona vive acá, varias viven en `/alquiler/<ciudad>?zona=…`. Se ignora con
+  // un aviso en vez de romper la página (14.23b), y el dominio devuelve además
+  // la query **sin** el parámetro — dejarlo lo arrastraría a cada enlace que
+  // esta página compone.
+  const location = resolveSearchLocation({
+    route: "zone",
+    routeZoneId: place.zone.id,
+    query: rawQuery,
+    queryZoneIds: resolveZoneTokens(
+      readZoneList(rawQuery[SEARCH_QUERY_NAMES.zone]),
+      searchZones,
+      place.city.id,
+    ).map((candidate) => candidate.id),
+  });
+  const chosenZoneIds = location.zoneIds;
+  const query = location.query;
 
   // `null` significaría "nadie eligió ciudad", y acá la ciudad la afirma la
   // ruta: es inalcanzable. La caída es la búsqueda de la ciudad entera y no
@@ -237,7 +242,7 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
     // El mismo enlace que llevaba el engranaje: esta dirección con el panel
     // abierto desde el servidor. Sin el ancla, el panel queda debajo de la
     // cuadrícula y fuera de vista.
-    filtersHref: `${buildSearchHref(basePath, query, { step: "ciudad" })}#filtros`,
+    filtersHref: `${buildSearchHref(basePath, query, { step: PANEL_OPEN_TOKEN })}#filtros`,
   };
 
   const pagination = resolvePagination(criteria.page, total);
@@ -268,6 +273,15 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
         signInHref={`/signin?callbackUrl=${encodeURIComponent(buildSearchHref(basePath, query, {}))}`}
       />
 
+      {/* **El panel de filtros, como modal y en los dos anchos** (14.33, lámina
+          7c: "Sin barra lateral: los filtros viven solo en el modal"). Va
+          primero en el documento porque es lo que hay que alcanzar primero
+          cuando está abierto — sin JavaScript no hay forma de atrapar el foco,
+          así que el orden del marcado es lo único honesto que queda.
+
+          Que esté abierto o no lo decide la dirección, no esta página. */}
+      <SearchPanel model={panel} />
+
       <Container>
         <nav className={styles.breadcrumb} aria-label="Miga de pan">
           {/* Tres elementos y ni uno más: los separadores «›» los dibuja el CSS
@@ -297,14 +311,16 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
 
         <h1 className={styles.title}>Alquiler en {place.zone.name}</h1>
 
-        {/* El título nombra la zona de la ruta, así que las zonas extra tienen
-            que decirse: si no, la lista trae avisos de un sitio que el
-            encabezado no menciona y parece un error. */}
-        {extraZones.length > 0 ? (
-          <p className={styles.alsoIn}>
-            Incluye también {extraZones.map((extra) => extra.name).join(", ")}.
+        {/* **Lo que se ignoró, dicho.** Llegar con `?zona=` a una dirección que
+            ya nombra una zona era antes "sumarlas con O"; desde la resolución
+            de ubicación esta ruta busca sólo la suya. Callarlo dejaría a
+            alguien mirando una lista más corta que la que su enlace prometía.
+            El texto lo escribe el dominio. */}
+        {location.notice === null ? null : (
+          <p className={styles.alsoIn} role="status">
+            {location.notice}
           </p>
-        ) : null}
+        )}
 
         {/* El conteo es el de la búsqueda entera, no el de esta página.
             **Cambió con la 14.10 y por su culpa**: antes decía cuántas tarjetas
@@ -322,7 +338,12 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
           {pagination.count > 1 ? ` — página ${pagination.current} de ${pagination.count}` : ""}
         </p>
 
-        <SidebarLayout sidebar={<SearchPanel model={panel} />}>
+        {/* **Los filtros puestos, quitables de a uno** (lámina 7c). Reemplazan a
+            lo que la barra lateral mostraba de un vistazo. Cuáles son y adónde
+            lleva cada «×» lo arma el dominio. */}
+        <FilterChips chips={panel.chips} clearAllHref={panel.clearAllHref} />
+
+        <div className={styles.results}>
           {pagination.beyondEnd ? (
             // La página que ya no existe: el enlace viejo pegado en un chat.
             // Se responde con la salida, no con una cuadrícula vacía sin causa.
@@ -393,7 +414,7 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
               lista paginada el dominio devuelve `partial` y esto no dibuja nada,
               porque todavía faltan avisos. */}
           {total > 0 ? <SearchOutcome model={outcome} /> : null}
-        </SidebarLayout>
+        </div>
       </Container>
     </>
   );

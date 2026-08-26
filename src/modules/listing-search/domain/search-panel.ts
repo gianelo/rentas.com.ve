@@ -2,7 +2,8 @@ import type { RoomStep } from "./room-steps";
 import {
   countActiveFilters,
   countPillFilters,
-  readSearchStep,
+  describeFilter,
+  resolveFilterPanel,
   resolveSearchSteps,
   type SearchSelection,
   type SearchStepId,
@@ -290,8 +291,39 @@ export interface ZoneSearchForm {
   readonly noMatches: boolean;
 }
 
+/**
+ * **Un filtro puesto, con la dirección que lo saca** (lámina 7c).
+ *
+ * Con la barra lateral afuera, la pantalla de resultados se quedaba sin decir
+ * qué está filtrando: la `SearchSummaryBar` se fue en la 14.41 y `panel.summary`
+ * no lo dibuja nadie. Estas fichas lo dicen, y además se sacan de a una **sin
+ * abrir el panel** — que es lo que la lámina anota al lado.
+ */
+export interface FilterChip {
+  /** Cómo se lee — «Chacao», «Hasta $700», «2 hab». */
+  readonly label: string;
+  readonly removeHref: string;
+  /** «Quitar Chacao». Un «×» solo no se lee en voz alta. */
+  readonly removeLabel: string;
+}
+
+/** Un grupo del panel, con la dirección que lo abre. */
+export type SearchStepChoice = SearchStepView & { readonly href: string };
+
 export interface SearchPanelModel {
-  readonly steps: readonly SearchStepView[];
+  readonly steps: readonly SearchStepChoice[];
+  /**
+   * Si el panel se dibuja, y por qué. **Lo decide la dirección** (14.33): al
+   * perder la barra lateral, los filtros llegan sólo por el control de la
+   * pastilla, que es la misma URL con el panel abierto desde el servidor.
+   */
+  readonly open: boolean;
+  /** Lo que hay que decir cuando la dirección pidió un grupo que ya no existe. */
+  readonly openNotice: string | null;
+  /** El «×» de la lámina: la misma búsqueda sin el panel, sin tocar un filtro. */
+  readonly closeHref: string;
+  /** Las fichas quitables de la lámina 7c, en el orden en que se leen. */
+  readonly chips: readonly FilterChip[];
   readonly cities: readonly CityChoice[];
   readonly zones: readonly ZoneChoice[];
   readonly zoneSearch: ZoneSearchForm;
@@ -338,8 +370,24 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
     matchedZoneIds,
   );
 
+  const panel = resolveFilterPanel(query[SEARCH_QUERY_NAMES.step]);
+  // Una sola vez, y las dos salidas del panel la usan: el «×» de arriba y el
+  // botón de abajo cierran lo mismo, y dos expresiones iguales escritas por
+  // separado son dos que se separan en el próximo cambio.
+  const closeHref = buildSearchHref(basePath, query, { step: null });
+
   return {
-    steps: resolveSearchSteps(selection, readSearchStep(query[SEARCH_QUERY_NAMES.step])),
+    // La dirección de cada grupo la arma el dominio y no el componente: el
+    // punto de quiebre decide si se ven los cuatro a la vez, pero la dirección
+    // que abre uno es la misma en 360 y en 1280.
+    steps: resolveSearchSteps(selection, panel.step).map((step) => ({
+      ...step,
+      href: buildSearchHref(basePath, query, { step: step.id }),
+    })),
+    open: panel.open,
+    openNotice: panel.notice,
+    closeHref,
+    chips: filterChips(input, selection),
     cities: input.cities.map((candidate) => toCityChoice(candidate, input, selection)),
     zones: zoneOptions.map((option) => ({
       ...option,
@@ -347,7 +395,7 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
     })),
     zoneSearch: {
       action: basePath,
-      hidden: hiddenFields(query, [SEARCH_QUERY_NAMES.zoneSearch], "zona"),
+      hidden: hiddenFields(query, [SEARCH_QUERY_NAMES.zoneSearch], "precio"),
       name: SEARCH_QUERY_NAMES.zoneSearch,
       value: zoneSearchText,
       noMatches: matchedZoneIds !== null && zoneOptions.length === 0,
@@ -360,7 +408,7 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
       hidden: hiddenFields(
         query,
         [SEARCH_QUERY_NAMES.minPrice, SEARCH_QUERY_NAMES.maxPrice, SEARCH_QUERY_NAMES.page],
-        "habitaciones",
+        "precio",
       ),
       minName: SEARCH_QUERY_NAMES.minPrice,
       maxName: SEARCH_QUERY_NAMES.maxPrice,
@@ -383,7 +431,9 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
       ...option,
       href: buildSearchHref(basePath, query, {
         [option.attribute]: option.nextValue,
-        step: "habitaciones",
+        // Cada opción devuelve a SU grupo: saltar a otro después de tocar una
+        // casilla es perder de vista lo que se acaba de elegir.
+        step: "atributos",
       }),
     })),
     clearAllHref: clearAllHref(cityPath, query),
@@ -392,7 +442,7 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
     // cuántos hay y lleva a verlos.
     confirm: resolveSearchConfirm({
       total: counts.total,
-      resultsHref: buildSearchHref(basePath, query, { step: null }),
+      resultsHref: closeHref,
       ...(input.onlyListingHref === undefined ? {} : { onlyListingHref: input.onlyListingHref }),
       relief: input.relief ?? null,
     }),
@@ -401,6 +451,42 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
     activeFilters: countActiveFilters(selection),
     pillFilters: countPillFilters(selection),
   };
+}
+
+/**
+ * **Las fichas de la lámina 7c, en el orden en que se leen.**
+ *
+ * Las zonas primero y **una por zona**, que es la diferencia con
+ * `describeFilter`: ése las nombra juntas —«Chacao, Altamira»— porque para
+ * soltarlas la salida del vacío las suelta todas, y acá hay que poder quitar
+ * Chacao dejando Altamira viva. Por eso la zona sale por `zoneHref`, que además
+ * devuelve la ruta canónica cuando queda una sola, y los demás por
+ * `reliefHref`, que es la misma dirección que ya usa la pantalla del vacío.
+ *
+ * El vocabulario es el de `describeFilter` y no uno nuevo: un filtro que se
+ * llama distinto según dónde se lo mire obliga a adivinar de cuál habla cada
+ * pantalla, y eso ya está escrito como razón al lado de esa función.
+ */
+function filterChips(input: SearchPanelInput, selection: SearchSelection): readonly FilterChip[] {
+  const chips: FilterChip[] = [];
+
+  for (const zoneId of input.chosenZoneIds) {
+    const zone = input.zones.find((candidate) => candidate.id === zoneId);
+    if (!zone) continue;
+    chips.push(chip(zone.name, zoneHref(input, zoneId)));
+  }
+
+  for (const filter of relaxableFilters(input.criteria, input.chosenZoneIds)) {
+    // La zona ya salió arriba, de a una. Acá volvería como un solo bloque.
+    if (filter === "zone") continue;
+    chips.push(chip(describeFilter(selection, filter), reliefHref(input, filter)));
+  }
+
+  return chips;
+}
+
+function chip(label: string, removeHref: string): FilterChip {
+  return { label, removeHref, removeLabel: `Quitar ${label}` };
 }
 
 function toCityChoice(
@@ -414,7 +500,6 @@ function toCityChoice(
     { path: candidate.path, name: candidate.name },
     input.query,
     chosen ? [] : selection.zoneNames,
-    { step: "zona" },
   );
 
   return {
@@ -449,12 +534,11 @@ export function zoneHref(
 
   if (next.length === 1) {
     const only = input.zones.find((zone) => zone.id === next[0]);
-    if (only) return buildSearchHref(only.path, input.query, { zone: null, step: "zona" });
+    if (only) return buildSearchHref(only.path, input.query, { zone: null });
   }
 
   return buildSearchHref(input.cityPath, input.query, {
     zone: zoneParam(input.zones, next),
-    step: "zona",
   });
 }
 
@@ -488,7 +572,7 @@ function toPublisherChoice(input: SearchPanelInput): PublisherChoice {
     disabled: count === 0 && !chosen,
     href: buildSearchHref(input.basePath, input.query, {
       publisherType: chosen ? null : "owner",
-      step: "habitaciones",
+      step: "publica",
     }),
   };
 }

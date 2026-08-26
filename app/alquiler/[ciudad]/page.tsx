@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { AppLink } from "@/../components/atoms/AppLink";
 import { Container } from "@/../components/layout/Container";
-import { SidebarLayout } from "@/../components/layout/SidebarLayout";
+import { FilterChips } from "@/../components/molecules/FilterChips";
 import { ListingCard, ListingGrid } from "@/../components/molecules/ListingCard";
 import type { SearchPillProps } from "@/../components/molecules/SearchPill";
 import { Nav } from "@/../components/organisms/Nav";
@@ -23,7 +23,9 @@ import { DrizzleListingPhotos } from "@/modules/listing-discovery/infrastructure
 import { readPhotoPublicBaseUrl } from "@/modules/listing-discovery/infrastructure/photo-public-base-url";
 import { buildFilterPanel } from "@/modules/listing-search/application/build-filter-panel";
 import { resolvePagination } from "@/modules/listing-search/domain/pagination";
+import { PANEL_OPEN_TOKEN } from "@/modules/listing-search/domain/search-accordion";
 import { buildSearchCriteria } from "@/modules/listing-search/domain/search-criteria";
+import { resolveSearchLocation } from "@/modules/listing-search/domain/search-location";
 import { toPanelZones } from "@/modules/listing-search/domain/search-panel";
 import {
   buildSearchHref,
@@ -75,7 +77,7 @@ const loadCatalogue = cache(async () => {
  * lectura (D13).
  */
 export default async function CiudadPage({ params, searchParams }: CiudadProps) {
-  const [{ ciudad }, query] = await Promise.all([params, searchParams]);
+  const [{ ciudad }, rawQuery] = await Promise.all([params, searchParams]);
 
   const [cities, zones] = await loadCatalogue();
 
@@ -101,11 +103,23 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
   // ciudad sin llevarse la búsqueda entera — y que acepta tanto el slug (F12)
   // como el id de las direcciones ya compartidas.
   const chosenZones = resolveZoneTokens(
-    readZoneList(query[SEARCH_QUERY_NAMES.zone]),
+    readZoneList(rawQuery[SEARCH_QUERY_NAMES.zone]),
     searchZones,
     city.id,
   );
-  const chosenZoneIds = chosenZones.map((zone) => zone.id);
+
+  // **Ésta es la ruta que SÍ admite `?zona=`, y la única** (resolución del
+  // fundador, 2026-08-26: "un dato, un lugar"). Que lo sea es una regla y no
+  // una propiedad de este archivo: la ruta de zona pregunta lo mismo y recibe
+  // la respuesta contraria, y las dos preguntan al mismo sitio.
+  const location = resolveSearchLocation({
+    route: "city",
+    query: rawQuery,
+    queryZoneIds: chosenZones.map((zone) => zone.id),
+  });
+  const chosenZoneIds = location.zoneIds;
+  // La query saneada es la que compone TODOS los enlaces de la pantalla.
+  const query = location.query;
 
   // `null` significaría "nadie eligió ciudad", y acá la ciudad la afirma la
   // ruta: es inalcanzable. La caída es la búsqueda de la ciudad entera, que es
@@ -215,7 +229,7 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
     // El mismo enlace que llevaba el engranaje: esta dirección con el panel
     // abierto desde el servidor. Sin el ancla, el panel queda debajo de la
     // cuadrícula y fuera de vista.
-    filtersHref: `${buildSearchHref(cityPath, query, { step: "ciudad" })}#filtros`,
+    filtersHref: `${buildSearchHref(cityPath, query, { step: PANEL_OPEN_TOKEN })}#filtros`,
   };
 
   const pagination = resolvePagination(criteria.page, total);
@@ -245,6 +259,16 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
         // acá deja de coincidir en el próximo parámetro.
         signInHref={`/signin?callbackUrl=${encodeURIComponent(buildSearchHref(cityPath, query, {}))}`}
       />
+
+      {/* **El panel de filtros, como modal y en los dos anchos** (14.33, lámina
+          7c: "Sin barra lateral: los filtros viven solo en el modal"). Va
+          primero en el documento porque es lo que hay que alcanzar primero
+          cuando está abierto — sin JavaScript no hay forma de atrapar el foco,
+          así que el orden del marcado es lo único honesto que queda.
+
+          Que esté abierto o no lo decide la dirección, no esta página:
+          `SearchPanel` devuelve `null` cuando el dominio dice que está cerrado. */}
+      <SearchPanel model={panel} />
 
       <Container>
         <nav className={styles.breadcrumb} aria-label="Miga de pan">
@@ -285,7 +309,14 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
           {pagination.count > 1 ? ` — página ${pagination.current} de ${pagination.count}` : ""}
         </p>
 
-        <SidebarLayout sidebar={<SearchPanel model={panel} />}>
+        {/* **Los filtros puestos, quitables de a uno** (lámina 7c). Reemplazan a
+            lo que la barra lateral mostraba de un vistazo: cuáles están puestos
+            y cómo sacar uno. Cuáles son y adónde lleva cada «×» lo arma el
+            dominio — quitar una zona devuelve a su ruta canónica y quitar un
+            filtro no toca la ubicación, y son dos reglas distintas. */}
+        <FilterChips chips={panel.chips} clearAllHref={panel.clearAllHref} />
+
+        <div className={styles.results}>
           {pagination.beyondEnd ? (
             // La página que ya no existe: el enlace viejo pegado en un chat.
             // Se responde con la salida, no con una cuadrícula vacía sin causa.
@@ -359,7 +390,7 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
               lista paginada el dominio devuelve `partial` y esto no dibuja nada,
               porque todavía faltan avisos. */}
           {total > 0 ? <SearchOutcome model={outcome} /> : null}
-        </SidebarLayout>
+        </div>
       </Container>
     </>
   );

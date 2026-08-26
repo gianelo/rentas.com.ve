@@ -3,44 +3,85 @@ import type { RelaxableFilter } from "./search-confirm";
 import type { ListingAttribute, PublisherType, SearchCriteria } from "./search-criteria";
 
 /**
- * **Los cuatro pasos del acordeón, y qué dice cada uno cuando está cerrado.**
+ * **Los cuatro grupos del panel de filtros, y qué dice cada uno cerrado.**
  *
- * El acordeón secuencial existe porque en 360 px no cabe nada más (documento
- * maestro, §7), no porque sea mejor: en escritorio los mismos cuatro grupos se
- * ven a la vez. Por eso los pasos son una regla del dominio y no una lista de
- * `<details>` en un componente — la pantalla ancha y la angosta dibujan el
- * MISMO conjunto y tienen que coincidir en qué se eligió, qué falta y cómo se
- * resume. Dos listas escritas a mano es cómo empiezan a discrepar.
+ * Eran seis cosas en cuatro pasos —ciudad, zona, precio, habitaciones— y hoy
+ * son cuatro grupos: **precio, habitaciones, quién publica y atributos**. Dos
+ * decisiones lo dejaron así, y ninguna es cosmética:
+ *
+ * - **La 14.36 sacó ciudad y zona.** La ubicación vive SOLO en la ruta y los
+ *   filtros SOLO en la query; el buscador de la pastilla la resuelve por texto.
+ *   Tenerla en los dos lugares *era* el problema (lámina 7b).
+ * - **La 14.32 partió el paso «habitaciones»**, que llevaba adentro los
+ *   escalones, el publicador y los cinco atributos. La lámina 7b los dibuja
+ *   como encabezados propios en tres columnas de 800 px, y el fundador los
+ *   nombra por separado: *"precio, tamaño, quién publica y atributos"*.
+ *
+ * **La secuencia es del teléfono y de nadie más.** El acordeón existe porque en
+ * 360 px no cabe nada más (documento maestro, §7), no porque sea mejor: en
+ * 1280 los cuatro grupos se ven a la vez. Por eso los grupos son una regla del
+ * dominio y no una lista de secciones en un componente — la pantalla ancha y la
+ * angosta dibujan el MISMO conjunto y tienen que coincidir en qué se eligió,
+ * qué falta y cómo se resume. **Un solo componente con punto de quiebre, nunca
+ * dos implementaciones**: es lo que `SearchFilters` dejó escrito y lo que el
+ * `Nav` de la 14.40 volvió a aplicar.
  *
  * Lo que este archivo NO decide: cuántos resultados hay. Eso lo dice
  * `FacetedSearchPort`, con los números reales de la base (regla transversal 3).
- * Acá sólo vive la forma del paso y su resumen.
+ * Acá sólo vive la forma del grupo y su resumen.
  */
 
 /**
- * Los ids son los que viajan en la dirección (`?filtros=zona`), y por eso
+ * Los ids son los que viajan en la dirección (`?filtros=precio`), y por eso
  * están en español: son parte del contrato de la URL, igual que `min`, `max` y
  * `hab`.
  */
-export type SearchStepId = "ciudad" | "zona" | "precio" | "habitaciones";
+export type SearchStepId = "precio" | "habitaciones" | "publica" | "atributos";
 
 /**
- * El orden es la regla: ciudad, zona, precio, habitaciones (F3 → F6).
+ * El orden es la regla: precio, habitaciones, quién publica, atributos.
  *
- * No es estético. La ciudad va primera porque es el contexto que aisla todo lo
- * demás; la zona segunda porque depende de la ciudad y se borra al cambiarla;
- * precio y habitaciones después porque no dependen de ningún lugar y quien
- * llega hasta ahí ya acotó la oferta a algo que se puede mirar.
+ * No es estético. El precio va primero porque es el filtro que la gente pone
+ * primero y el que más recorta; las habitaciones después porque es la otra
+ * decisión dura; quién publica y los atributos al final porque son preferencias
+ * y no requisitos — quien llega hasta ahí ya acotó la oferta a algo mirable.
  */
-export const SEARCH_STEPS: readonly SearchStepId[] = ["ciudad", "zona", "precio", "habitaciones"];
+export const SEARCH_STEPS: readonly SearchStepId[] = [
+  "precio",
+  "habitaciones",
+  "publica",
+  "atributos",
+];
 
-/** Lista cerrada como `Record` para que un paso nuevo no compile sin su copia. */
+/** Lista cerrada como `Record` para que un grupo nuevo no compile sin su copia. */
 const STEP_COPY: Readonly<Record<SearchStepId, { title: string; question: string }>> = {
-  ciudad: { title: "Ciudad", question: "¿En qué ciudad?" },
-  zona: { title: "Zona", question: "¿Qué zonas?" },
   precio: { title: "Precio", question: "¿Cuánto podés pagar al mes?" },
   habitaciones: { title: "Habitaciones", question: "¿Cuántas habitaciones?" },
+  publica: { title: "Quién publica", question: "¿Quién publica el aviso?" },
+  atributos: { title: "La propiedad tiene", question: "¿Qué tiene que tener?" },
 };
+
+/**
+ * El valor con el que el filtro de la pastilla abre el panel **sin fijar ningún
+ * grupo**.
+ *
+ * No es un grupo: es "abrilo y decidí vos cuál conviene". Sin él, la pastilla
+ * tendría que nombrar uno —«precio», siempre el mismo— y el acordeón del
+ * teléfono perdería lo único que lo hace avanzar solo, que es abrir el primero
+ * sin contestar.
+ */
+export const PANEL_OPEN_TOKEN = "todos";
+
+/**
+ * Lo que se dice cuando la dirección pide un grupo que ya no existe.
+ *
+ * Es el enlace de `?filtros=zona` pegado en un chat antes de la 14.36. **Se
+ * ignora con un aviso en vez de romper la página** (14.23b): un 404 —o un panel
+ * que no abre— castiga a alguien por una dirección que era válida cuando la
+ * compartió.
+ */
+export const STALE_FILTER_GROUP_NOTICE =
+  "Esa dirección pedía un grupo de filtros que ya no existe. El panel se abrió igual.";
 
 /** Lo elegido hasta ahora, en la forma en que se muestra. */
 export interface SearchSelection {
@@ -80,10 +121,45 @@ export function readSearchStep(raw: string | null | undefined): SearchStepId | u
   return SEARCH_STEPS.includes(value) ? value : undefined;
 }
 
-/** El que sigue, o `null` en el último. Lo usa el «elegí y seguí» del acordeón. */
-export function nextSearchStep(step: SearchStepId): SearchStepId | null {
-  const index = SEARCH_STEPS.indexOf(step);
-  return SEARCH_STEPS[index + 1] ?? null;
+/** Si el panel está abierto, en qué grupo, y qué hay que avisar. */
+export interface FilterPanelState {
+  readonly open: boolean;
+  /** El grupo que la dirección nombró. Ausente = el primero sin contestar. */
+  readonly step?: SearchStepId;
+  readonly notice: string | null;
+}
+
+/**
+ * **El panel de filtros es un estado de la página, y lo decide la dirección**
+ * (14.33 + 14i).
+ *
+ * Al perder la barra lateral, los filtros llegan por un solo camino: el control
+ * de filtro de la pastilla, que es *"la misma URL con el panel abierto desde el
+ * servidor"*. Que "abierto" sea una lectura de la dirección y no un manejador
+ * de clic es el piso sin JavaScript del D13 — un panel que sólo existe cuando
+ * llega un script deja sin filtros a quien se quedó sin bundle, que en este
+ * mercado es mucha gente.
+ *
+ * Los tres estados y por qué son tres:
+ *
+ * - **Ausente o vacío**: cerrado. Vacío es lo que deja un `<form method="get">`
+ *   cuyo campo nadie llenó, y es el mismo criterio que `isFilteredZoneRoute`
+ *   ya aplica del lado de la indexación.
+ * - **`PANEL_OPEN_TOKEN`**: abierto sin grupo fijado.
+ * - **Un grupo de la lista**: abierto en ése.
+ * - **Cualquier otra cosa**: abierto igual, con aviso. Es la dirección vieja
+ *   de `?filtros=zona`, y también `?filtros=constructor` — la comparación es
+ *   contra una lista cerrada, así que no hay valor que se cuele como grupo.
+ */
+export function resolveFilterPanel(raw: string | null | undefined): FilterPanelState {
+  const value = (raw ?? "").trim();
+  if (value === "") return { open: false, notice: null };
+  if (value === PANEL_OPEN_TOKEN) return { open: true, notice: null };
+
+  const step = readSearchStep(value);
+  if (step === undefined) return { open: true, notice: STALE_FILTER_GROUP_NOTICE };
+
+  return { open: true, step, notice: null };
 }
 
 /**
@@ -105,11 +181,6 @@ export function resolveSearchSteps(
   openStep?: SearchStepId,
 ): readonly SearchStepView[] {
   const answers: Readonly<Record<SearchStepId, { summary: string; answered: boolean }>> = {
-    ciudad: { summary: selection.cityName, answered: true },
-    zona: {
-      summary: selection.zoneNames.length === 0 ? "Todas" : selection.zoneNames.join(", "),
-      answered: selection.zoneNames.length > 0,
-    },
     precio: {
       summary: priceSummary(selection),
       answered: selection.minPriceUsd !== undefined || selection.maxPriceUsd !== undefined,
@@ -117,6 +188,14 @@ export function resolveSearchSteps(
     habitaciones: {
       summary: roomsSummary(selection.minRooms),
       answered: selection.minRooms !== undefined,
+    },
+    publica: {
+      summary: publisherSummary(selection.publisherType),
+      answered: selection.publisherType !== undefined,
+    },
+    atributos: {
+      summary: attributesSummary(selection.attributes),
+      answered: (selection.attributes?.length ?? 0) > 0,
     },
   };
 
@@ -170,6 +249,23 @@ function roomsSummary(minRooms: number | undefined): string {
  */
 export function searchHeadline(selection: SearchSelection): string {
   return selection.zoneNames.length === 0 ? selection.cityName : selection.zoneNames.join(", ");
+}
+
+/**
+ * A quién publica, o «Cualquiera».
+ *
+ * Sale de la MISMA tabla que la barra resumen y las fichas quitables: dos
+ * copias de la copia es cómo un filtro empieza a llamarse distinto según dónde
+ * se lo mire, y entonces hay que adivinar de cuál está hablando cada una.
+ */
+function publisherSummary(publisherType: PublisherType | undefined): string {
+  return publisherType === undefined ? "Cualquiera" : PUBLISHER_SUMMARY[publisherType];
+}
+
+/** Los atributos pedidos, todos: se combinan con Y y cada uno estrecha por su cuenta. */
+function attributesSummary(attributes: readonly ListingAttribute[] | undefined): string {
+  if (attributes === undefined || attributes.length === 0) return "Cualquiera";
+  return attributes.map((attribute) => ATTRIBUTE_SUMMARY[attribute]).join(" · ");
 }
 
 /** Cómo se lee un publicador en el resumen. Copia, no regla. */

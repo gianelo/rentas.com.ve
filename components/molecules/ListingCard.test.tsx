@@ -182,12 +182,20 @@ describe("ListingCard — la cuadrícula y sus reglas transversales", () => {
  * inicio de la 14.21 ya es esa siguiente.
  */
 describe("ListingGrid", () => {
-  it("son dos columnas en móvil y tres en escritorio", () => {
+  it("son dos columnas en móvil y cuatro en escritorio", () => {
+    // Cuatro y no tres desde la 14.33: la barra lateral de 240 px se fue y ese
+    // ancho es el que gana la lista — «cuatro columnas de 254: 8 avisos sobre
+    // el pliegue, contra 6 antes» (lámina 7c).
+    //
+    // Declarado no es dibujado, y esta afirmación es de las que pueden ser
+    // ciertas y ciegas: lo que de verdad se mide son las cajas renderizadas, en
+    // `tests/measure/layout.spec.ts` («la cuadrícula gana el ancho de la barra
+    // lateral»).
     const base = block(cardCss, "grid");
     const desktop = cardCss.slice(cardCss.indexOf("@media"));
 
     expect(base).toContain("repeat(2, minmax(0, var(--card-w)))");
-    expect(desktop).toContain("repeat(3, minmax(0, var(--card-w-desktop)))");
+    expect(desktop).toContain("repeat(4, minmax(0, var(--card-w-desktop)))");
   });
 
   /**
