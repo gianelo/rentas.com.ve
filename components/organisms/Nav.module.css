@@ -144,11 +144,26 @@
     min-block-size: 40px;
   }
 
+  /* **Los `order` se vuelven a declarar acá, y no es redundancia.**
+
+     Los de arriba son los del teléfono, donde la barra es un `flex-wrap` de
+     dos renglones: marca y acciones comparten el primero (1 y 2) y la pastilla
+     se va sola al segundo (3, con `flex-basis: 100%`). En la grilla de tres
+     columnas esos mismos valores colocaban la PASTILLA en la columna derecha
+     de 250 px y las ACCIONES en el centro flexible — el encabezado al revés de
+     como lo dibujan la lámina 14a y la 7b/7c.
+
+     Se descubrió midiendo, no leyendo: la prueba que había afirmaba
+     `grid-template-columns: 250px 1fr 250px`, que era cierto y no decía nada
+     sobre qué cae en cada columna. Lo mide ahora `tests/measure/layout.spec.ts`
+     ("a 1280 la pastilla va en el centro"), con geometría real. */
   .pillCol {
+    order: 2;
     justify-content: center;
   }
 
   .actions {
+    order: 3;
     justify-self: end;
   }
 
