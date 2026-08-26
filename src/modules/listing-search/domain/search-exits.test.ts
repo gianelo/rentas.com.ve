@@ -259,6 +259,38 @@ describe("el cierre de la lista (F10)", () => {
     expect(result.kind === "complete" && result.exit?.label).toBe("Agregar Norte y ver 14");
   });
 
+  /**
+   * **La salida «sumar la zona vecina» CAMBIA de forma de ruta** — y es la
+   * consecuencia que la resolución de ubicación del fundador (2026-08-26) tiene
+   * sobre esta salida.
+   *
+   * Con una zona la dirección es `/alquiler/<ciudad>/<zona>`, indexable; con dos
+   * no existe la ruta de «Centro o Norte», así que caen en la ciudad con la
+   * lista en la query — que es la forma que la resolución marca `noindex`. La
+   * promesa de la 14.14 no cambia: sigue sumando y sigue diciendo cuántos. Lo
+   * que cambia es adónde lleva, y **eso no estaba atado por ninguna prueba**:
+   * el `label` era lo único afirmado.
+   */
+  it("y esa suma cambia de forma de ruta: de la zona a la ciudad con la lista", () => {
+    const result = outcome({
+      total: 9,
+      basePath: "/alquiler/maracaibo/centro",
+      query: {},
+      criteria: { cityId: "mcbo", zoneIds: [CENTRO] },
+      chosenZoneIds: [CENTRO],
+      counts: {
+        total: 9,
+        cityTotal: 47,
+        byZone: { [CENTRO]: 9, [NORTE]: 5 },
+        withoutFilter: NOTHING,
+      },
+    });
+
+    expect(result.kind === "complete" && result.exit?.href).toBe(
+      "/alquiler/maracaibo?zona=centro%2Cnorte",
+    );
+  });
+
   it("con un solo aviso la frase sigue siendo una frase", () => {
     const result = outcome({ total: 1, counts: { total: 1, cityTotal: 1 } });
 

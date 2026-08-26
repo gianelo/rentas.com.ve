@@ -186,3 +186,37 @@ describe("isFilteredZoneRoute con el estado del acordeón", () => {
     });
   }
 });
+
+/**
+ * **La tabla del fundador, del 2026-08-26, atada a la función que ya la
+ * cumple.**
+ *
+ * La resolución fija tres formas de dirección y su indexación: una zona en la
+ * ruta, varias zonas en la query de la ciudad, y la ciudad entera. Verificado
+ * antes de escribir nada (AGENTS.md §5): `zona` ya estaba en `FILTER_KEYS`
+ * desde la 14.6, así que la mitad de `noindex` **ya estaba construida** y lo
+ * que faltaba era el otro lado — que la ruta de zona rechace el parámetro
+ * (`listing-search/domain/search-location.ts`).
+ *
+ * Esto existe para que la tabla no se pueda perder en silencio: sacar `zona`
+ * de `FILTER_KEYS` publicaría quince direcciones de Maracaibo para el
+ * contenido de cinco páginas, y ninguna prueba se pondría roja.
+ */
+describe("la tabla de la resolución de ubicación (fundador, 2026-08-26)", () => {
+  it("la ciudad entera y la zona sola se indexan: sus direcciones no llevan query", () => {
+    // Son las dos filas canónicas de la tabla —`/alquiler/<ciudad>` y
+    // `/alquiler/<ciudad>/<zona>`— y las dos llegan acá con la query vacía,
+    // porque en las dos el lugar está en la RUTA.
+    expect(isFilteredZoneRoute({})).toBe(false);
+  });
+
+  it("la combinación de zonas NO se indexa: es una pantalla de trabajo", () => {
+    expect(isFilteredZoneRoute({ zona: "chacao,altamira" })).toBe(true);
+  });
+
+  it("y tampoco se indexa una sola zona escrita en la query de la ciudad", () => {
+    // `/alquiler/dc?zona=chacao` es la MISMA página que `/alquiler/dc/chacao`.
+    // Publicar las dos es contenido duplicado con dos direcciones.
+    expect(isFilteredZoneRoute({ zona: "chacao" })).toBe(true);
+  });
+});

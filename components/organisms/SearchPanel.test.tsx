@@ -50,8 +50,14 @@ const INPUT: SearchPanelInput = {
   criteria: {},
 };
 
+// El panel es un estado de la dirección (14.33): cerrado no dibuja nada, así
+// que casi todo lo que hay que mirar vive detrás de este parámetro.
+const ABIERTO = { filtros: "todos" };
+
 function render(overrides: Partial<SearchPanelInput> = {}) {
-  return renderToStaticMarkup(<SearchPanel model={buildSearchPanel({ ...INPUT, ...overrides })} />);
+  return renderToStaticMarkup(
+    <SearchPanel model={buildSearchPanel({ ...INPUT, query: ABIERTO, ...overrides })} />,
+  );
 }
 
 const SOURCE = readFileSync(new URL("./SearchPanel.tsx", import.meta.url), "utf8");
@@ -64,17 +70,18 @@ describe("el acordeón funciona con JavaScript apagado (F14)", () => {
     expect(SOURCE.trimStart().startsWith("'use client'")).toBe(false);
   });
 
-  it("abre y cierra con `<details>` nativo", () => {
+  it("cada grupo se abre con un enlace, así que el servidor decide cuál queda abierto", () => {
+    // Antes eran `<details name>`, el acordeón exclusivo del navegador. Se
+    // cambió por enlaces cuando el panel dejó de ser barra lateral (14.32):
+    // en escritorio los cuatro grupos van abiertos a la vez, y ninguna hoja de
+    // estilos puede volver a abrir de forma confiable un `<details>` cerrado.
+    // Un solo marcado con punto de quiebre, nunca dos implementaciones.
     const markup = render();
 
-    expect(markup).toContain("<details");
-    expect(markup).toContain("<summary");
-  });
-
-  it("los cuatro pasos comparten nombre, así que el navegador cierra el anterior solo", () => {
-    // `name` en `<details>` es el acordeón exclusivo nativo: sin una línea de
-    // JavaScript, abrir uno cierra los otros.
-    expect(render().match(/name="paso-de-busqueda"/g)).toHaveLength(4);
+    expect(markup).not.toContain("<details");
+    for (const group of ["precio", "habitaciones", "publica", "atributos"]) {
+      expect(markup).toContain(`href="/alquiler/distrito-capital?filtros=${group}"`);
+    }
   });
 
   it("no cuelga ni un manejador de eventos", () => {
@@ -132,23 +139,30 @@ describe("el conteo en vivo (F7)", () => {
   });
 });
 
-describe("lo que cada paso muestra", () => {
-  it("las ciudades con su conteo, y el aviso de que se pierden las zonas", () => {
-    const markup = render({ chosenZoneIds: ["chacao"], query: { zona: "chacao" } });
+describe("lo que cada grupo muestra", () => {
+  it("la ubicación no está en ninguna parte del panel (14.36)", () => {
+    // «Este panel ya no repite ciudad ni zona: eso lo resuelve el buscador de
+    // la pastilla, y tenerlo en los dos lugares era el problema» (lámina 7b).
+    const markup = render({ chosenZoneIds: ["chacao"], query: { ...ABIERTO, zona: "chacao" } });
 
-    expect(markup).toContain("Maracaibo");
-    expect(markup).toContain("23");
-    expect(markup).toContain("quita la zona elegida");
+    expect(markup).not.toContain("¿En qué ciudad?");
+    expect(markup).not.toContain("¿Qué zonas?");
+    expect(markup).not.toContain("Maracaibo");
+    expect(markup).not.toContain("Buscar una zona");
   });
 
-  it("las zonas con su conteo, y la vacía sin número y sin enlace", () => {
+  it("los cuatro grupos, con su título y su pregunta", () => {
     const markup = render();
 
-    expect(markup).toContain("Chacao");
-    expect(markup).toContain(">12<");
-    // El Rosal tiene cero: se ofrece para que se vea que no hay nada, pero no
-    // se puede tocar — ninguna opción lleva a un vacío.
-    expect(markup).toContain('aria-disabled="true"');
+    for (const title of ["Precio", "Habitaciones", "Quién publica", "La propiedad tiene"]) {
+      expect(markup).toContain(title);
+    }
+    expect(markup).toContain("¿Quién publica el aviso?");
+  });
+
+  it("una opción con cero se ofrece sin enlace: ninguna lleva a un vacío", () => {
+    // El escalón de 4 habitaciones tiene cero, y `hasSecurity` también.
+    expect(render()).toContain('aria-disabled="true"');
   });
 
   it("el precio como dos campos opcionales de un formulario GET", () => {
@@ -183,5 +197,45 @@ describe("el ancla del engranaje", () => {
 
     expect(markup).not.toContain("aria-pressed");
     expect(markup).toContain('aria-current="true"');
+  });
+});
+
+/**
+ * **El panel es un estado de la página, no una barra lateral** (14.33, lámina
+ * 7c: *"Sin barra lateral: los filtros viven solo en el modal"*).
+ */
+describe("el panel como modal en todos los anchos (14.33)", () => {
+  it("cerrado no dibuja nada: no hay filtros escondidos ocupando lugar", () => {
+    const markup = renderToStaticMarkup(
+      <SearchPanel model={buildSearchPanel({ ...INPUT, query: {} })} />,
+    );
+
+    expect(markup).toBe("");
+  });
+
+  it("abierto es un diálogo con nombre, y con una salida visible", () => {
+    const markup = render();
+
+    expect(markup).toContain('role="dialog"');
+    expect(markup).toMatch(/aria-label="Cerrar los filtros"/);
+    // La salida es una dirección de verdad: se puede abrir en otra pestaña y
+    // funciona con el script apagado, igual que todo el camino de lectura.
+    expect(markup).toMatch(/<a[^>]*href="\/alquiler\/distrito-capital"/);
+  });
+
+  it("una dirección vieja abre el panel y lo explica, en vez de romperlo", () => {
+    const markup = render({ query: { filtros: "zona" } });
+
+    expect(markup).toContain('role="dialog"');
+    expect(markup).toContain("ya no existe");
+  });
+
+  it("el grupo abierto se marca en el marcado, que es lo que la hoja de estilos lee", () => {
+    const markup = render({ query: { filtros: "atributos" } });
+
+    expect(markup.match(/data-open=""/g)).toHaveLength(1);
+    expect(markup).toMatch(
+      /id="filtros-atributos"[^>]*data-open=""|data-open=""[^>]*id="filtros-atributos"/,
+    );
   });
 });

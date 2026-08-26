@@ -150,3 +150,10 @@
     min-block-size: var(--target-min-desktop);
   }
 }
+
+/* La lista, ahora con el ancho entero del contenedor: la barra lateral de
+   240 px se fue con la 14.33 y lo que ganó es la cuadrícula — «cuatro columnas
+   de 254: 8 avisos sobre el pliegue, contra 6 antes» (lámina 7c). */
+.results {
+  min-inline-size: 0;
+}

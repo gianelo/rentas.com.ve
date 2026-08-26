@@ -1,0 +1,65 @@
+/* La fila de filtros puestos de la lámina 7c. Envuelve en vez de desplazarse
+   de costado: cinco fichas en 360 px no entran en un renglón, y una fila que
+   se va de lado esconde justamente el filtro que alguien quiere sacar. */
+.chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap);
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-inline-start: 12px;
+  border: 1px solid var(--accent);
+  border-radius: var(--rs);
+  background: var(--tint);
+  color: var(--accent);
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  font-weight: 600;
+}
+
+.remove {
+  min-block-size: var(--target-min);
+  min-inline-size: var(--target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--rs);
+  color: var(--accent);
+  text-decoration: none;
+  font-size: var(--control-fs);
+}
+
+.remove:focus-visible,
+.clear:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.clear {
+  display: flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  color: var(--soft);
+  text-decoration: underline;
+}
+
+@media (min-width: 768px) {
+  .remove,
+  .clear {
+    min-block-size: var(--target-min-desktop);
+  }
+
+  .remove {
+    min-inline-size: var(--target-min-desktop);
+  }
+}

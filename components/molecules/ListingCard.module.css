@@ -105,8 +105,12 @@
 }
 
 @media (min-width: 768px) {
+  /* **Cuatro columnas y no tres**, que es exactamente lo que la 14.33 compró
+     al sacar la barra lateral de 240 px: la lámina 7c lo dice con el número —
+     «cuatro columnas de 254: 8 avisos sobre el pliegue, contra 6 antes». El
+     token `--card-w-desktop` ya valía 254; lo que faltaba era el ancho. */
   .grid {
-    grid-template-columns: repeat(3, minmax(0, var(--card-w-desktop)));
+    grid-template-columns: repeat(4, minmax(0, var(--card-w-desktop)));
     justify-content: start;
   }
 }
