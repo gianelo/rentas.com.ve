@@ -15,11 +15,15 @@ import type { AdapterAccountType } from "next-auth/adapters";
 // Auth.js v5 core tables (design.md, Data Model: "user, account, session
 // (Auth.js)"). Column shapes mirror @auth/drizzle-adapter's own
 // `defineTables()` default Postgres schema exactly, so `DrizzleAdapter(db, {
-// usersTable, accountsTable, sessionsTable })` in
+// usersTable, accountsTable, sessionsTable, verificationTokensTable })` in
 // src/modules/identity/infrastructure/auth.ts type-checks against it without
-// a cast. No `verificationToken` or `authenticator` table: this app has
-// exactly one provider (Google OAuth) — no magic-link email provider, no
-// WebAuthn/passkeys — so neither table has a caller.
+// a cast. Still no `authenticator` table: WebAuthn/passkeys have no caller.
+// `verificationToken` DOES now have one (tasks.md 15.1) — Phase 15 added the
+// magic-link email door beside Google, and Auth.js's Email provider needs
+// somewhere to hold the token between "sent" and "clicked". This comment
+// used to say that table would never exist; it was true until it wasn't, and
+// the wrong half was worse than no comment at all — a stale "why not" reads
+// as a decision nobody actually holds anymore.
 
 /**
  * How a publisher wants to be reached, and the value itself.
@@ -108,6 +112,28 @@ export const sessions = pgTable("session", {
     .references(() => users.id, { onDelete: "cascade" }),
   expires: timestamp("expires", { mode: "date" }).notNull(),
 });
+
+// The magic-link door (tasks.md 15.1, F17). Column shapes and the composite
+// primary key mirror @auth/drizzle-adapter's own default `verificationToken`
+// table exactly — @auth/core's callback handler calls
+// `adapter.useVerificationToken({identifier, token})`, which DELETES the
+// matching row and returns it (single use, tasks.md 15.4: a second call
+// finds nothing). No `userId` foreign key here on purpose: a token is minted
+// before Auth.js knows whether the identifier belongs to an existing user or
+// a brand-new one — see next-auth/providers/nodemailer's default
+// `sendVerificationRequest` and @auth/core/lib/actions/callback/index.js,
+// which only looks the user up AFTER the token round-trips successfully.
+export const verificationTokens = pgTable(
+  "verificationToken",
+  {
+    identifier: text("identifier").notNull(),
+    token: text("token").notNull(),
+    expires: timestamp("expires", { mode: "date" }).notNull(),
+  },
+  (verificationToken) => [
+    primaryKey({ columns: [verificationToken.identifier, verificationToken.token] }),
+  ],
+);
 
 // city / zone (design.md D5, tasks.md 2.1). City isolation is enforced by
 // schema, not a runtime filter a caller could forget. `zone` carries an
