@@ -1,5 +1,6 @@
-import { asc } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+import { alias } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import { cities, zones } from "../../../shared/db/schema";
 import type { CataloguePort } from "../application/ports/catalogue.port";
@@ -42,11 +43,28 @@ export class DrizzleCatalogue implements CataloguePort {
    * guard an unreachable state is cost with no buyer.
    *
    * The guarantee is the foreign key, not a `WHERE` this code could forget.
+   *
+   * **`kind`/`category`/`parentName` added for broker-bulk-import's
+   * name-resolution layer** (`resolve-import-locations.ts`), which needs
+   * enough of the taxonomy shape to tell a broker WHICH places an ambiguous
+   * name matches — the same self-join `DrizzleZoneVocabulary.lookup` already
+   * runs (`listing-publication/infrastructure/drizzle-zone-vocabulary.ts`),
+   * reused here rather than re-derived: one `parent` alias, one `leftJoin`.
    */
   async listZones(): Promise<readonly CatalogueZone[]> {
+    const parent = alias(zones, "parent");
+
     return this.db
-      .select({ id: zones.id, name: zones.name, cityId: zones.cityId })
+      .select({
+        id: zones.id,
+        name: zones.name,
+        cityId: zones.cityId,
+        kind: zones.kind,
+        category: zones.category,
+        parentName: parent.name,
+      })
       .from(zones)
+      .leftJoin(parent, eq(zones.parentId, parent.id))
       .orderBy(asc(zones.name));
   }
 }

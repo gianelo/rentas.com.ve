@@ -1,5 +1,7 @@
 import type { SessionPort } from "../../identity/application/ports/session.port";
 import { requireAuthenticatedSession } from "../../identity/application/require-authenticated-session";
+import type { PhotoHashPort } from "../../listing-trust/application/ports/photo-hash.port";
+import type { PerceptualHash } from "../../listing-trust/domain/perceptual-hash";
 import {
   type DraftListing,
   type PublishViolation,
@@ -7,6 +9,7 @@ import {
 } from "../domain/publishable-listing";
 import type { ListingRepositoryPort, NewListingPhoto } from "./ports/listing-repository.port";
 import type { PhotoDerivationPort } from "./ports/photo-derivation.port";
+import type { PhotoHashComputationPort } from "./ports/photo-hash-computation.port";
 import type { PhotoStoragePort } from "./ports/photo-storage.port";
 import type { ZoneCataloguePort } from "./ports/zone-catalogue.port";
 import { processUploadedPhoto } from "./process-uploaded-photo";
@@ -54,6 +57,13 @@ export interface PublishListingDependencies {
   readonly listings: ListingRepositoryPort;
   readonly storage: PhotoStoragePort;
   readonly derive: PhotoDerivationPort;
+  readonly computeHash: PhotoHashComputationPort;
+  /**
+   * Full `PhotoHashPort`, not narrowed: this function both checks (via
+   * `processUploadedPhoto`, before the listing exists) and records (after
+   * `listings.save` returns) — see the ordering note above `listings.save`.
+   */
+  readonly photoHashes: PhotoHashPort;
   readonly now?: () => Date;
 }
 
@@ -85,7 +95,7 @@ export async function publishListing(
   request: PublishListingRequest,
   dependencies: PublishListingDependencies,
 ): Promise<{ readonly listingId: string }> {
-  const { sessionPort, zones, listings, storage, derive } = dependencies;
+  const { sessionPort, zones, listings, storage, derive, computeHash, photoHashes } = dependencies;
   const now = dependencies.now ?? (() => new Date());
 
   // First, and before any read: an unauthenticated caller must not be able to
@@ -97,6 +107,7 @@ export async function publishListing(
   const violations = validatePublishableListing(
     { ...request, photoCount: request.photos.length },
     curatedZones,
+    "activation",
   );
 
   // Before the photos, always. Validation is a pure function over values
@@ -108,6 +119,13 @@ export async function publishListing(
   }
 
   const photos: NewListingPhoto[] = [];
+  // Parallel to `photos` — the perceptual hash `processUploadedPhoto` (D4,
+  // task 4.7) computed for that SAME index. Kept out of `NewListingPhoto`
+  // on purpose: that type is exactly what `ListingRepositoryPort.save`
+  // persists, and a hash cannot be recorded until AFTER `save` returns the
+  // real photo id it was assigned — see the note above `listings.save`
+  // below.
+  const hashes: PerceptualHash[] = [];
   for (const [position, submitted] of request.photos.entries()) {
     // Sequential, and that is a decision rather than an oversight. Six
     // concurrent decodes against a serverless function's fixed memory ceiling
@@ -116,17 +134,26 @@ export async function publishListing(
     //
     // `session.userId` is what makes the ownership check downstream mean
     // anything: it comes from the session cookie, never from the request.
+    // It is ALSO the same-publisher exemption's `excludePublisherId` (D4):
+    // an owner republishing their own expired listing's photos is exempt
+    // because this is the id `processUploadedPhoto` excludes, never a
+    // hard-coded or request-supplied one.
     const processed = await processUploadedPhoto(
       { publisherId: session.userId, ...submitted },
-      { storage, derive },
+      { storage, derive, computeHash, photoHashes },
     );
 
-    photos.push({ position, ...processed });
+    photos.push({ position, derivatives: processed.derivatives });
+    hashes.push(processed.hash);
   }
 
   const publishedAt = now();
 
-  const { id } = await listings.save({
+  // design.md D4, task 4.7 — `photoIds` comes back only from THIS call, in
+  // submission order: `listing_photo_hash.photo_id` is a primary key
+  // referencing `listing_photo.id`, so a hash cannot be recorded before
+  // its photo row exists, and this is the first moment it does.
+  const { id, photoIds } = await listings.save({
     publisherId: session.userId,
     publisherType: present(request.publisherType, "publisherType"),
     propertyType: present(request.propertyType, "propertyType"),
@@ -160,6 +187,23 @@ export async function publishListing(
     expiresAt: new Date(publishedAt.getTime() + LISTING_ACTIVE_DAYS * 86_400_000),
     photos,
   });
+
+  // Recorded now, and only now — never before `save` above resolved. A
+  // hash written for a photo whose listing was then rejected for an
+  // unrelated reason would poison the table against this same publisher
+  // (see `PhotoHashPort.record`'s own doc). Parallel writes, same
+  // reasoning `processUploadedPhoto` already uses for its five derivative
+  // uploads: these are independent rows, and running them one at a time
+  // would only multiply latency for no safety gained.
+  await Promise.all(
+    photoIds.map((photoId, index) =>
+      photoHashes.record({
+        photoId,
+        hash: hashes[index] as PerceptualHash,
+        recordedAt: publishedAt,
+      }),
+    ),
+  );
 
   return { listingId: id };
 }

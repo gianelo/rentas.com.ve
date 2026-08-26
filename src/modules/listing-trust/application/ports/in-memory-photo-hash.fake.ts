@@ -1,6 +1,6 @@
 import { hammingDistance } from "../../domain/hamming-distance";
 import type { PerceptualHash } from "../../domain/perceptual-hash";
-import type { PhotoHashMatch, PhotoHashPort, PublisherId } from "./photo-hash.port";
+import type { NewPhotoHash, PhotoHashMatch, PhotoHashPort, PublisherId } from "./photo-hash.port";
 
 interface StoredPhoto {
   photoId: string;
@@ -24,6 +24,16 @@ interface StoredPhoto {
  */
 export class InMemoryPhotoHashFake implements PhotoHashPort {
   private readonly photos: StoredPhoto[] = [];
+  /**
+   * What `record` actually received — task 4.7's assertion surface. Kept
+   * SEPARATE from `photos`/`seed` on purpose: production `record` never
+   * receives a `publisherId` or `listingId` (the schema has neither column
+   * — schema.ts), so this fake cannot and must not synthesize one. A test
+   * wanting a just-recorded hash to be matchable in the SAME run has to
+   * `seed()` it too, exactly as a real caller only learns a hash is
+   * matchable through `DrizzlePhotoHash`'s own JOIN.
+   */
+  readonly recorded: NewPhotoHash[] = [];
 
   seed(photo: StoredPhoto): void {
     this.photos.push(photo);
@@ -44,5 +54,9 @@ export class InMemoryPhotoHashFake implements PhotoHashPort {
         publisherId: photo.publisherId,
         distance,
       }));
+  }
+
+  async record(newHash: NewPhotoHash): Promise<void> {
+    this.recorded.push(newHash);
   }
 }

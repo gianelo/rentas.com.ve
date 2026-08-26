@@ -11,9 +11,30 @@ const MARACAIBO: CatalogueCity = { id: "city-mcbo", name: "Maracaibo" };
 const CITIES: readonly CatalogueCity[] = [CARACAS, MARACAIBO];
 
 const ZONES: readonly CatalogueZone[] = [
-  { id: "zone-chacao", name: "Chacao", cityId: CARACAS.id },
-  { id: "zone-lag", name: "La Lago", cityId: MARACAIBO.id },
-  { id: "zone-lpg", name: "Los Palos Grandes", cityId: CARACAS.id },
+  {
+    id: "zone-chacao",
+    name: "Chacao",
+    cityId: CARACAS.id,
+    kind: "municipio",
+    category: null,
+    parentName: null,
+  },
+  {
+    id: "zone-lag",
+    name: "La Lago",
+    cityId: MARACAIBO.id,
+    kind: "parroquia",
+    category: null,
+    parentName: "Maracaibo",
+  },
+  {
+    id: "zone-lpg",
+    name: "Los Palos Grandes",
+    cityId: CARACAS.id,
+    kind: "elemento",
+    category: "urbanizacion",
+    parentName: "Chacao",
+  },
 ];
 
 describe("resolveSelectedCity", () => {

@@ -146,7 +146,14 @@ const ROOMS = /(\d)-(?:habitaciones|habitacion|hab|cuartos|cuarto)(?:-|$)/u;
  * palabra sola nunca llega al tope, así que las reglas de caracteres se siguen
  * reusando y el tope de las URL se queda donde pertenece.
  */
-function normalize(value: string): string {
+/**
+ * Exported so `broker-bulk-import`'s name-resolution layer (ciudad/zona by
+ * name, not id) can reuse it rather than write a second normalizer — this
+ * function's own doc above already warns against that, and
+ * `resolve-import-locations.ts` says explicitly which reuse decision it
+ * made and why.
+ */
+export function normalize(value: string): string {
   return value
     .split(/\s+/)
     .map((word) => slugify(word))

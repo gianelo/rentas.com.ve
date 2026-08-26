@@ -1,5 +1,9 @@
+import type { PhotoHashPort } from "../../listing-trust/application/ports/photo-hash.port";
+import { MAX_DUPLICATE_HAMMING_DISTANCE } from "../../listing-trust/domain/hamming-distance";
+import type { PerceptualHash } from "../../listing-trust/domain/perceptual-hash";
 import { inspectUploadedPhoto, type UploadViolation } from "../domain/uploaded-photo";
 import type { DerivativeName, PhotoDerivationPort } from "./ports/photo-derivation.port";
+import type { PhotoHashComputationPort } from "./ports/photo-hash-computation.port";
 import type { PhotoStoragePort } from "./ports/photo-storage.port";
 
 /**
@@ -10,12 +14,27 @@ import type { PhotoStoragePort } from "./ports/photo-storage.port";
  * broker importer (Phase 9) uploads photos in a second phase with no publish
  * form anywhere near it. The bytes never pass through this application on
  * their way to R2 — the whole point of a presigned PUT — so this is the FIRST
- * and ONLY moment anything of ours can look at them, and three guarantees
+ * and ONLY moment anything of ours can look at them, and FOUR guarantees
  * have nowhere else to live:
  *
  * 1. The object belongs to the publisher claiming it.
  * 2. The bytes are the image they claim to be (`inspectUploadedPhoto`).
- * 3. The original is discarded once the derivatives exist (D12).
+ * 3. The photo does not perceptually match another publisher's — design.md
+ *    D4, task 4.7. Checked here, not recorded here: `listing_photo_hash`'s
+ *    own primary key references `listing_photo.id`, so the row this hash
+ *    belongs to does not exist yet at this point in either caller
+ *    (`publishListing`, `attachPhotoToDraft`). Both record the returned
+ *    `hash` themselves, AFTER their own listing/photo row is written —
+ *    recording it here, before that row exists, would also risk poisoning
+ *    the table against this same publisher if the surrounding submission
+ *    were then rejected for an unrelated reason.
+ * 4. The original is discarded once the derivatives exist (D12) — and now
+ *    also whenever a photo is refused for 1-3, so a rejected upload never
+ *    lingers in the incoming prefix either.
+ *
+ * **Fail closed (task 4.7).** A photo whose hash cannot be computed is
+ * refused outright, exactly like an unowned key or a byte-level violation —
+ * never silently accepted as if nothing had been checked.
  */
 
 /**
@@ -25,7 +44,11 @@ import type { PhotoStoragePort } from "./ports/photo-storage.port";
  * were never given does not need to know which part of it was wrong, and an
  * attacker probing the parser should not be told either.
  */
-export type PhotoRejection = UploadViolation | "key.notOwnedByPublisher";
+export type PhotoRejection =
+  | UploadViolation
+  | "key.notOwnedByPublisher"
+  | "hash.unableToCompute"
+  | "photo.duplicateAcrossPublishers";
 
 export class RejectedUploadError extends Error {
   readonly violations: readonly PhotoRejection[];
@@ -49,6 +72,14 @@ export interface ProcessUploadedPhotoRequest {
 export interface ProcessUploadedPhotoDependencies {
   readonly storage: PhotoStoragePort;
   readonly derive: PhotoDerivationPort;
+  readonly computeHash: PhotoHashComputationPort;
+  /**
+   * Narrowed to the read half only — this function checks, it never
+   * records. Recording is the caller's job, after the caller's own
+   * `listing_photo` row exists (see the class docstring above and
+   * `PhotoHashPort.record`'s own doc).
+   */
+  readonly photoHashes: Pick<PhotoHashPort, "findMatchesFromOtherPublishers">;
 }
 
 /**
@@ -69,6 +100,13 @@ export interface ProcessedDerivative {
 
 export interface ProcessedPhoto {
   readonly derivatives: readonly ProcessedDerivative[];
+  /**
+   * design.md D4 — computed once, here, and handed back rather than
+   * recomputed downstream. The caller records it verbatim after its own
+   * listing/photo row exists; see the class docstring for why recording
+   * cannot happen in this function.
+   */
+  readonly hash: PerceptualHash;
 }
 
 /** Matches `R2PhotoStorage`'s own `INCOMING_PREFIX` and its 16-byte token. */
@@ -121,7 +159,7 @@ async function discardQuietly(storage: PhotoStoragePort, key: string): Promise<u
 
 export async function processUploadedPhoto(
   request: ProcessUploadedPhotoRequest,
-  { storage, derive }: ProcessUploadedPhotoDependencies,
+  { storage, derive, computeHash, photoHashes }: ProcessUploadedPhotoDependencies,
 ): Promise<ProcessedPhoto> {
   const token = tokenFromOwnedKey(request.incomingKey, request.publisherId);
 
@@ -137,6 +175,31 @@ export async function processUploadedPhoto(
   if (violations.length > 0) {
     const cleanupFailure = await discardQuietly(storage, request.incomingKey);
     throw new RejectedUploadError(violations, { cause: cleanupFailure });
+  }
+
+  // design.md D4 — computed and checked BEFORE deriving or promoting
+  // anything, on purpose: deriving five WebP sizes and uploading them is
+  // real work a photo already known stolen should never pay for.
+  //
+  // Fail closed (task 4.7's own requirement): a hash that cannot be
+  // computed is not "no evidence of duplication" — it is refused outright,
+  // the same way an unowned key or a byte-level violation already is.
+  let hash: PerceptualHash;
+  try {
+    hash = await computeHash(source);
+  } catch (error) {
+    const cleanupFailure = await discardQuietly(storage, request.incomingKey);
+    throw new RejectedUploadError(["hash.unableToCompute"], { cause: cleanupFailure ?? error });
+  }
+
+  const matches = await photoHashes.findMatchesFromOtherPublishers(
+    hash,
+    request.publisherId,
+    MAX_DUPLICATE_HAMMING_DISTANCE,
+  );
+  if (matches.length > 0) {
+    const cleanupFailure = await discardQuietly(storage, request.incomingKey);
+    throw new RejectedUploadError(["photo.duplicateAcrossPublishers"], { cause: cleanupFailure });
   }
 
   let derivatives: Awaited<ReturnType<PhotoDerivationPort>>;
@@ -170,5 +233,5 @@ export async function processUploadedPhoto(
   // función más corta y perdería la foto cada vez que un PUT fallara.
   await storage.remove(request.incomingKey);
 
-  return { derivatives: stored };
+  return { derivatives: stored, hash };
 }

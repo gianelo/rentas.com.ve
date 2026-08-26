@@ -71,3 +71,20 @@ describe("PhotoHashPort contract — cross-account duplicate detection", () => {
     // distance would be 0 and only the publisher exclusion prevents it.
   });
 });
+
+/**
+ * Task 4.7 — the write side. Before this, nothing implemented `record`, so
+ * `listing_photo_hash` stayed permanently empty and no match could ever
+ * fire (attach-photo-to-draft.ts's own "known gap" note, and AGENTS.md §5).
+ */
+describe("PhotoHashPort contract — recording a hash", () => {
+  it("records exactly photoId, hash and recordedAt — no publisherId to leak", async () => {
+    const port = new InMemoryPhotoHashFake();
+    const hash = computeDHashFromGrayscalePixels(solidGray(10));
+    const recordedAt = new Date("2026-08-24T12:00:00.000Z");
+
+    await port.record({ photoId: "photo-new-1", hash, recordedAt });
+
+    expect(port.recorded).toEqual([{ photoId: "photo-new-1", hash, recordedAt }]);
+  });
+});

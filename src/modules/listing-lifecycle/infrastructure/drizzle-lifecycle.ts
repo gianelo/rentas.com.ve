@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, gt, inArray, lt, lte, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, lt, lte, ne, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import {
@@ -97,6 +97,24 @@ export class DrizzleLifecycleListings implements LifecycleListingsPort {
       );
   }
 
+  /**
+   * broker-bulk-import spec, "Drafts Are Not Published Listings" (tasks.md
+   * 9.18/9.19) — the decision `RenewableListing.status`'s own comment
+   * deferred to this task. **Resolved as an explicit refusal, not left as
+   * "unreachable by construction".** Nothing today mints a renewal token
+   * for a draft — `noticeCandidates` only ever selects `active`/`expired` —
+   * so this guard changes no observable behaviour yet. It exists anyway
+   * because AGENTS.md's own "fail closed" section names exactly this shape:
+   * prefer the guard that refuses over the one that merely happens to never
+   * be exercised. `ne(status, 'draft')` costs one predicate on an id lookup
+   * and closes the path BEFORE a future caller could ever open it, rather
+   * than leaving it to be reopened silently the day something new mints a
+   * token from a wider set of listings than `noticeCandidates` does today.
+   *
+   * Same `null`-covers-everything-excluded idiom `findRevealable` already
+   * uses: a draft, a genuinely missing id, and (once one exists) a removed
+   * listing are indistinguishable to whoever calls this.
+   */
   async findRenewable(listingId: string): Promise<RenewableListing | null> {
     const rows = await this.db
       .select({
@@ -106,7 +124,7 @@ export class DrizzleLifecycleListings implements LifecycleListingsPort {
         expiresAt: listings.expiresAt,
       })
       .from(listings)
-      .where(eq(listings.id, listingId))
+      .where(and(eq(listings.id, listingId), ne(listings.status, "draft")))
       .limit(1);
 
     return rows[0] ?? null;

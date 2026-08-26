@@ -64,16 +64,37 @@ export interface NewListing {
    * cell in artboard 2b's four-cell strip.
    */
   readonly parkingSpots: number;
-  /** Only `active` is reachable from publication; the rest are lifecycle. */
   /** Copied at publish time; editing the account default never rewrites it. */
   readonly contactMethod: ContactMethod;
   readonly contactValue: string;
-  readonly status: "active";
+  /**
+   * `"active"` from the single-listing flow (`publishListing` always sets
+   * this). `"draft"` from broker bulk import (tasks.md 9.15/9.17) — a row
+   * that exists but is not yet searchable, revealable, or on the expiry
+   * clock (broker-bulk-import spec, "Drafts Are Not Published Listings").
+   * Widened here rather than adding a second write path, per Phase 9's own
+   * header note: "Creates no write path of its own into `listing`."
+   */
+  readonly status: "active" | "draft";
   readonly publishedAt: Date;
   readonly expiresAt: Date;
   readonly photos: readonly NewListingPhoto[];
+  /**
+   * broker-bulk-import spec, "Idempotent Import by External Reference"
+   * (tasks.md 9.1/9.17). `undefined` for the single-listing flow — never set
+   * by `publishListing` — and the value the unique
+   * `(publisher_id, external_reference)` index enforces for an imported row.
+   */
+  readonly externalReference?: string;
 }
 
 export interface ListingRepositoryPort {
-  save(listing: NewListing): Promise<{ readonly id: string }>;
+  /**
+   * `photoIds` is returned in the SAME order as `listing.photos` (task
+   * 4.7) — the only way a caller can later match a persisted photo id back
+   * to the perceptual hash it computed for that same photo, so it can
+   * record `listing_photo_hash` once the row it references actually
+   * exists.
+   */
+  save(listing: NewListing): Promise<{ readonly id: string; readonly photoIds: readonly string[] }>;
 }
