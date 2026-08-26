@@ -9,7 +9,6 @@ import { ReadingWidth } from "@/../components/layout/ReadingWidth";
 import { ContactBlock } from "@/../components/molecules/ContactBlock";
 import { DeclaredFeatures } from "@/../components/molecules/DeclaredFeatures";
 import { PhotoStrip } from "@/../components/molecules/PhotoStrip";
-import type { SearchPillProps } from "@/../components/molecules/SearchPill";
 import { StatStrip } from "@/../components/molecules/StatStrip";
 import { Nav } from "@/../components/organisms/Nav";
 import { viewListingContact } from "@/modules/contact-reveal/application/view-listing-contact";
@@ -19,7 +18,6 @@ import {
   DrizzleRevealableListing,
 } from "@/modules/contact-reveal/infrastructure/drizzle-contact-reveal";
 import { resolveNavAccount, resolveNavPublish } from "@/modules/identity/domain/nav-account";
-import { homeSearchForm } from "@/modules/listing-catalogue/domain/search-destination";
 import { resolveListingRoute } from "@/modules/listing-discovery/domain/listing-detail-route";
 import { photoUrl } from "@/modules/listing-discovery/domain/listing-photo-view";
 import {
@@ -167,19 +165,6 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
   const account = resolveNavAccount(session);
   const publish = resolveNavPublish(account);
 
-  // El estado "vacía" de la pastilla (14i): una ficha no es una búsqueda, así
-  // que no hay nada que filtrar. Reusa el formulario del inicio en vez de
-  // inventar una segunda copia del mecanismo.
-  const searchForm = homeSearchForm();
-  const pill: SearchPillProps = {
-    action: searchForm.action,
-    name: searchForm.name,
-    value: searchForm.value,
-    placeholder: searchForm.label,
-    submitLabel: searchForm.submitLabel,
-    state: { kind: "empty" },
-  };
-
   // Se lee al servir y no al importar el módulo: `next build` evalúa el módulo
   // sin las variables del despliegue, y una lectura arriba del archivo
   // convierte una foto en un build roto.
@@ -198,11 +183,21 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
 
   return (
     <>
-      {/* **La marca cede su lugar al enlace de vuelta** (14.38: "en una ficha
-          volver vale más que ir al inicio"). El destino y el texto llegan
-          decididos por `resultsLink` — con origen dice «← Resultados», sin
-          origen dice «Ver avisos en <zona>», y esa diferencia es la regla
-          entera de la 16.9. Acá no se elige ninguna de las dos.
+      {/* **El encabezado de la ficha, en la forma que fijan sus dos láminas**
+          (RESUELTO por el fundador: "seguí el diseño, que fue lo que se decidió
+          acá"). La 11 dibuja tres hijos a 1280 —`← Resultados` · `rentas` ·
+          `Publicar gratis`—, o sea que la marca NO cede: se corre al centro. La
+          10 dibuja dos a 360, sin marca, porque no caben tres. Las dos tienen
+          razón: describen anchos distintos, y eso lo resuelve la hoja de
+          estilos del `Nav`, no una segunda rama acá.
+
+          **Sin pastilla**, que es lo otro que las dos láminas dicen: una ficha
+          no es una búsqueda, y el slot del medio se lo lleva la marca. El tipo
+          lo hace inexpresable — `NavProps` no admite `pill` junto con `back`.
+
+          El destino y el texto de la vuelta llegan decididos por `resultsLink`:
+          con origen dice «← Resultados», sin origen dice «Ver avisos en
+          <zona>», y esa diferencia es la regla entera de la 16.9.
 
           `signInHref` vuelve a ESTA ficha, con el origen puesto (F19): pedirle
           una cuenta a alguien y devolverlo al inicio pierde el aviso que estaba
@@ -213,7 +208,6 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
       <Nav
         account={account}
         publish={publish}
-        pill={pill}
         signInHref={`/signin?callbackUrl=${encodeURIComponent(listingHref)}`}
         back={{ href: back.href, label: back.label }}
       />

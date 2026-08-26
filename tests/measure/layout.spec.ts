@@ -468,4 +468,32 @@ test.describe("la barra del producto (14a, 14.41)", () => {
     // Y las acciones quedan a la derecha DE la pastilla, no en su lugar.
     expect(actions.left).toBeGreaterThan(pill.right);
   });
+
+  test("11: en la ficha a 1280 la marca no cede, se corre al centro", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/measure");
+
+    const back = await centres(page, "nav-harness-ficha", "a", "← Resultados");
+    const brand = await centres(page, "nav-harness-ficha", "a", "rentas.");
+
+    console.log(`[11] ← en ${back.left}, marca centrada en ${brand.centre} de ${brand.barCentre}`);
+    expect(back.visible).toBe(true);
+    expect(brand.visible).toBe(true);
+    // Los tres hijos de la lámina 11, en orden: ← Resultados · rentas · Publicar.
+    expect(back.right).toBeLessThan(brand.left);
+    expect(Math.abs(brand.centre - brand.barCentre)).toBeLessThanOrEqual(4);
+  });
+
+  test("10: en la ficha a 360 la marca no se dibuja — el ← le tomó el lugar", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 900 });
+    await page.goto("/measure");
+
+    const back = await centres(page, "nav-harness-ficha", "a", "← Resultados");
+    const brand = await centres(page, "nav-harness-ficha", "a", "rentas.");
+
+    expect(back.visible).toBe(true);
+    // A 360 px no caben tres, y la lámina 10 dibuja dos. Declarado en la hoja
+    // no es renderizado: esto lo mide.
+    expect(brand.visible).toBe(false);
+  });
 });

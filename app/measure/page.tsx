@@ -75,6 +75,15 @@ export default function MeasureHarnessPage() {
         />
       </div>
 
+      <div data-testid="nav-harness-ficha">
+        <Nav
+          account={{ kind: "anonymous" }}
+          publish={{ bar: { label: "Publicar gratis", emphasis: "accent" }, menu: null }}
+          signInHref="/signin"
+          back={{ href: "/alquiler/distrito-capital/altamira", label: "← Resultados" }}
+        />
+      </div>
+
       <Container>
         <div data-testid="row-slot-long">
           <ResultRow
