@@ -469,3 +469,36 @@ describe("«Limpiar todo» conserva la ciudad (F8)", () => {
     expect(panel({ query: { min: "250" } }).clearAllHref).toContain("/alquiler/distrito-capital");
   });
 });
+
+/**
+ * **El modelo lleva los dos conteos, y por eso ninguna pantalla tiene que
+ * restar.** El engranaje de la barra resumen cuenta la zona; el filtro de la
+ * pastilla no (14i/14.36). Una página que hiciera `activeFilters - 1` estaría
+ * escribiendo esa regla en `app/`, donde el suelo de cobertura no llega.
+ */
+describe("los dos conteos de filtros del modelo", () => {
+  it("con una zona elegida, el engranaje cuenta uno más que la pastilla", () => {
+    const model = buildSearchPanel({ ...BASE, chosenZoneIds: ["chacao"] });
+
+    expect(model.activeFilters).toBe(1);
+    expect(model.pillFilters).toBe(0);
+  });
+
+  it("el caso de la lámina 7c: la pastilla dice 3 y el engranaje 4", () => {
+    const model = buildSearchPanel({
+      ...BASE,
+      chosenZoneIds: ["chacao", "altamira"],
+      criteria: { minPriceUsd: 250, maxPriceUsd: 700, minRooms: 2, publisherType: "owner" },
+    });
+
+    expect(model.pillFilters).toBe(3);
+    expect(model.activeFilters).toBe(4);
+  });
+
+  it("sin nada elegido los dos son cero: la ciudad no es un filtro (F8)", () => {
+    const model = buildSearchPanel(BASE);
+
+    expect(model.activeFilters).toBe(0);
+    expect(model.pillFilters).toBe(0);
+  });
+});

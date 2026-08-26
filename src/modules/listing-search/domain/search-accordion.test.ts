@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   countActiveFilters,
+  countPillFilters,
   nextSearchStep,
   readSearchStep,
   resolveSearchSteps,
@@ -184,5 +185,69 @@ describe("la barra resumen de resultados", () => {
     expect(
       countActiveFilters({ ...CARACAS, attributes: ["hasPowerPlant", "hasRegularWater"] }),
     ).toBe(2);
+  });
+});
+
+/**
+ * **El número de la pastilla no es el del engranaje, y esto es la corrección de
+ * una contradicción real entre dos contratos ya escritos.**
+ *
+ * `countActiveFilters` cuenta la zona como un filtro, porque el engranaje de la
+ * barra resumen abría un acordeón que TENÍA un paso de zona. La 14.36 sacó
+ * ciudad y zona del panel («la ubicación pasa a vivir SOLO en la ruta; los
+ * filtros SOLO en la query»), y la 14i lo dice desde el otro lado: el filtro de
+ * la pastilla «abre precio, tamaño, quién publica y atributos. Ciudad y zona no
+ * están ahí: eso lo resuelve el texto».
+ *
+ * Y la lámina 7b/7c lo dibuja: con Chacao, Altamira, $250–$700, 2 habitaciones
+ * y "solo de dueños" puestos, la pastilla dice **«3 filtros»** — no 4, no 5.
+ *
+ * Pasarle `activeFilters` a la pastilla habría dibujado un número que no es el
+ * que abre nada, y no hay lámina ni prueba de dominio que se ponga roja por eso.
+ */
+describe("countPillFilters — lo que el filtro de la pastilla abre de verdad (14i)", () => {
+  it("la zona NO cuenta: la resuelve el texto de la pastilla, no el panel", () => {
+    expect(countPillFilters({ ...CARACAS, zoneNames: ["Chacao", "Altamira"] })).toBe(0);
+  });
+
+  it("el caso de la lámina 7c: precio, habitaciones y quién publica son 3", () => {
+    expect(
+      countPillFilters({
+        ...CARACAS,
+        zoneNames: ["Chacao", "Altamira"],
+        minPriceUsd: 250,
+        maxPriceUsd: 700,
+        minRooms: 2,
+        publisherType: "owner",
+      }),
+    ).toBe(3);
+  });
+
+  it("sin nada puesto es cero, y la ciudad tampoco cuenta (F8)", () => {
+    expect(countPillFilters(CARACAS)).toBe(0);
+  });
+
+  it("cada atributo cuenta por su cuenta, igual que en el engranaje", () => {
+    expect(countPillFilters({ ...CARACAS, attributes: ["hasPowerPlant", "hasRegularWater"] })).toBe(
+      2,
+    );
+  });
+
+  it("un solo extremo del precio ya es el filtro de precio", () => {
+    expect(countPillFilters({ ...CARACAS, maxPriceUsd: 900 })).toBe(1);
+    expect(countPillFilters({ ...CARACAS, minPriceUsd: 300 })).toBe(1);
+  });
+
+  /** La diferencia con el engranaje es exactamente una: la zona. */
+  it("es el conteo del engranaje menos la zona, nunca otra cosa", () => {
+    const withZones = {
+      ...CARACAS,
+      zoneNames: ["Chacao"],
+      minRooms: 3,
+      attributes: ["hasSecurity"] as const,
+    };
+
+    expect(countActiveFilters(withZones) - countPillFilters(withZones)).toBe(1);
+    expect(countActiveFilters(CARACAS) - countPillFilters(CARACAS)).toBe(0);
   });
 });
