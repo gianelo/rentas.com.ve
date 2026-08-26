@@ -86,58 +86,6 @@ export function resolveZoneOptions(
   return [...chosen, ...rest].map(toOption);
 }
 
-/**
- * Lo mínimo que hace falta de una sugerencia. Escrito como forma y no
- * importado de `listing-catalogue`: el vocabulario cerrado es de aquel módulo
- * y esta regla es de éste, y atarlos con un import haría que el filtro de
- * búsqueda dependa del importador de topónimos.
- */
-export interface ZoneSuggestion {
-  readonly kind: string;
-  readonly id: string;
-}
-
-/**
- * Qué zonas nombra lo que alguien escribió — **y nada más que zonas** (F4:
- * «el buscador sólo autocompleta zonas conocidas: no acepta texto libre ni
- * busca en títulos»).
- *
- * `suggestFilters` traduce texto contra un vocabulario cerrado y devuelve
- * ciudades, tipos, precios y atributos además de zonas. Acá se descarta todo
- * lo que no sea una zona: dejar pasar una sugerencia de ciudad haría que
- * escribir «Maracaibo» dentro del paso 2 achicara la lista de zonas de
- * Caracas a cero por una razón que nadie puede ver.
- *
- * `null` significa **no se buscó nada** y es distinto de la lista vacía, que
- * significa «esa zona no existe acá». La primera deja la lista entera; la
- * segunda la deja vacía a propósito. Confundirlas es lo que hace que un
- * buscador parezca roto: escribís algo que no está y te devuelve todo.
- */
-export function zoneIdsFromSuggestions(
-  suggestions: readonly ZoneSuggestion[],
-  text: string,
-): readonly string[] | null {
-  if (text.trim() === "") return null;
-  return suggestions.filter((suggestion) => suggestion.kind === "zone").map(({ id }) => id);
-}
-
-/**
- * La lista de zonas achicada a lo que se buscó, **con las elegidas siempre a
- * la vista**.
- *
- * Que las elegidas sobrevivan al filtro del buscador no es una comodidad: sin
- * ellas, escribir cualquier cosa esconde las zonas marcadas y no queda forma
- * de soltarlas — la búsqueda quedaría clavada en un estado que la pantalla ya
- * no muestra.
- */
-export function narrowZoneOptions(
-  options: readonly ZoneOption[],
-  matchedZoneIds: readonly string[] | null,
-): readonly ZoneOption[] {
-  if (matchedZoneIds === null) return options;
-  return options.filter((option) => option.chosen || matchedZoneIds.includes(option.id));
-}
-
 export interface RoomOption {
   readonly step: RoomStep;
   /** «1», «2», «3», «4+». El «+» es la regla de `room-steps.ts`, no adorno. */

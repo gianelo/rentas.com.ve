@@ -328,7 +328,15 @@ The reference point is a classifieds board, not a design showcase: information-d
 
 **But deliberately not retro.** Craigslist looks like 1996 because it never changed, not because ugliness causes speed. This product is new, unknown, and operating in a market where users already fear being scammed — a site that looks abandoned confirms that fear. The target is spartan and current, not spartan and dated.
 
-**The read path ships no JavaScript.** Browsing, searching, and filtering are server-rendered with URL parameters — no client-side filter layer. Client components are restricted to genuine interaction: photo upload, contact reveal, contribution dismissal, bulk import preview. This is what makes the classifieds feel and the mobile performance the same decision rather than two competing ones.
+**The read path WORKS without JavaScript, and may be better with it.** *(Reworded by the founder on 2026-08-25. The rule previously read "the read path ships no JavaScript", which was read as a ban and was never what the gates measured.)*
+
+Browsing, searching and filtering are server-rendered with the state in the URL, and every action has a real `href` or form underneath it. **On that floor, JavaScript is welcome**: a search modal, live result counts, suggestions while typing, a photo viewer that does not reload. The distinction that matters is that the base must not depend on the script arriving — a control that only exists in JavaScript locks out anyone whose bundle failed; the same control layered over a real link locks out nobody.
+
+**Two gates make this measurable, and they were always a budget rather than a prohibition:** `pnpm budget:bundle` allows 130 KB gzip of first-load JS on the read path, of which ~102 KB is Next.js plus React — a floor nobody controls — leaving roughly 28 KB for this codebase; and the `crawlability` e2e project runs the suite with scripting disabled, which is what turns "works without JavaScript" into a measurement instead of a claim.
+
+Three reasons hold the floor, and none is aesthetic: organic search is this product's acquisition channel, and a zone page that needs JavaScript to render listings indexes badly; connections here are poor and data is expensive, so a bundle that fails to arrive leaves a blank page rather than a degraded one; and listings circulate by WhatsApp, whose in-app browser is where scripts break most often.
+
+Two surfaces sit outside the read path entirely, behind a session: **publish step 2** (photo compression in the device — the difference between uploading 30 MB and 1) and **bulk import** (the file preview). `/mis-avisos` and the import screens are exempt for the same reason: no tenant browsing ever reaches them.
 
 ### D14 — Visual language, decided in HTML rather than a design tool
 

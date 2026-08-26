@@ -15,12 +15,16 @@ import {
   validatePublishableListing,
 } from "@/modules/listing-publication/domain/publishable-listing";
 import type { PublicationZoneOption } from "@/modules/listing-publication/domain/zone-search";
+import { buildSearchPanel } from "@/modules/listing-search/domain/search-panel";
 import { ActionButton, NeutralButton, SelectionButton } from "../../components/atoms/buttons";
 import { Container } from "../../components/layout/Container";
 import { FormShell } from "../../components/layout/FormShell";
 import { ReadingWidth } from "../../components/layout/ReadingWidth";
+import { ListingCard, ListingGrid } from "../../components/molecules/ListingCard";
 import { ResultRow } from "../../components/molecules/ResultRow";
 import { SearchFilters } from "../../components/molecules/SearchFilters";
+import { Nav } from "../../components/organisms/Nav";
+import { SearchPanel } from "../../components/organisms/SearchPanel";
 import { PhotoUploader } from "../publicar/fotos/PhotoUploader";
 import { PublishStep, type RailEntry } from "../publicar/PublishStep";
 import publishStyles from "../publicar/publish-page.module.css";
@@ -52,6 +56,37 @@ export default function MeasureHarnessPage() {
 
   return (
     <>
+      {/* **El nav, en sus dos formas, para medirlo de verdad** (14.41 corrigió
+          un defecto que ninguna prueba de hoja de estilos podía ver: los tres
+          slots de escritorio se colocaban por `order`, y el declarado dejaba la
+          pastilla en la columna derecha con las acciones en el centro). Lo que
+          hay que verificar es geometría renderizada, y para eso existe este
+          arnés. */}
+      <div data-testid="nav-harness-busqueda">
+        <Nav
+          account={{ kind: "anonymous" }}
+          publish={{ bar: { label: "Publicar gratis", emphasis: "accent" }, menu: null }}
+          signInHref="/signin"
+          pill={{
+            action: "/",
+            name: "q",
+            value: "",
+            placeholder: "¿En qué zona buscás?",
+            submitLabel: "Buscar",
+            state: { kind: "empty" },
+          }}
+        />
+      </div>
+
+      <div data-testid="nav-harness-ficha">
+        <Nav
+          account={{ kind: "anonymous" }}
+          publish={{ bar: { label: "Publicar gratis", emphasis: "accent" }, menu: null }}
+          signInHref="/signin"
+          back={{ href: "/alquiler/distrito-capital/altamira", label: "← Resultados" }}
+        />
+      </div>
+
       <Container>
         <div data-testid="row-slot-long">
           <ResultRow
@@ -122,6 +157,51 @@ export default function MeasureHarnessPage() {
           que dejó el encabezado contra el borde mientras los campos flotaban
           centrados. */}
       <div data-testid="publish-step-tamano">{stepHarness("tamano", harnessDraft())}</div>
+      {/* **El panel de filtros, medido y no leído** (14.32).
+          `SearchPanel.module.css` afirmaba abrir los cuatro grupos en
+          escritorio con `::details-content`, y eso era una declaración que
+          ninguna prueba podía ver: en un navegador que no lo entiende, 1280
+          dibujaba el acordeón del teléfono y la hoja seguía en verde. Lo que hay
+          que verificar es geometría renderizada — cuántos cuerpos de grupo se
+          dibujan a cada ancho — y para eso existe este arnés (1b.10).
+
+          `transform` crea el bloque contenedor del `position: fixed` del panel:
+          sin esto el modal taparía el resto del arnés y las demás medidas
+          medirían una pantalla cubierta. */}
+      <div
+        data-testid="search-panel-harness"
+        style={{ transform: "translateZ(0)", position: "relative", blockSize: 640 }}
+      >
+        <SearchPanel model={harnessPanel()} />
+      </div>
+
+      {/* La cuadrícula con ocho avisos: lo que la 14.33 compró al sacar la barra
+          lateral es exactamente el ancho, y «cuatro columnas» es una medida. */}
+      <Container>
+        <div data-testid="listing-grid-harness">
+          <ListingGrid>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+              <li key={n}>
+                <ListingCard
+                  href={`/alquiler/distrito-capital/chacao/apto-${n}`}
+                  priceUsd={380 + n * 20}
+                  title={`Apartamento 2 hab con puesto ${n}`}
+                  zone="Chacao"
+                  rooms={2}
+                  areaM2={78}
+                  publisherType="owner"
+                  photo={{
+                    thumbUrl: "https://fotos.rentas.com.ve/photos/pub/tok/thumb.webp",
+                    cardUrl: "https://fotos.rentas.com.ve/photos/pub/tok/card.webp",
+                    alt: `Foto 1 de 1 — Apartamento ${n}, Chacao`,
+                  }}
+                />
+              </li>
+            ))}
+          </ListingGrid>
+        </div>
+      </Container>
+
       <div data-testid="publish-step-zona">
         {stepHarness("zona", harnessDraft(), [
           {
@@ -222,4 +302,39 @@ function harnessDraft(): PublicationDraft {
     },
     photos: [],
   };
+}
+
+/**
+ * El panel real, abierto, con los conteos que la lámina 7b dibuja. Se arma con
+ * `buildSearchPanel` y no a mano: lo que hay que medir es el panel que se
+ * sirve, no una maqueta que se le parece — es el mismo error que dejó a este
+ * arnés dibujando un formulario de publicar que ya no existía.
+ */
+function harnessPanel() {
+  return buildSearchPanel({
+    basePath: "/alquiler/distrito-capital",
+    cityPath: "/alquiler/distrito-capital",
+    // `filtros=todos`: el panel es un estado de la dirección (14.33).
+    query: { filtros: "todos" },
+    cityId: "dc",
+    cities: [{ id: "dc", name: "Distrito Capital", path: "/alquiler/distrito-capital", count: 47 }],
+    zones: [
+      { id: "chacao", name: "Chacao", slug: "chacao", path: "/alquiler/distrito-capital/chacao" },
+    ],
+    chosenZoneIds: [],
+    counts: {
+      total: 16,
+      byZone: { chacao: 12 },
+      byMinRooms: { 1: 16, 2: 9, 3: 4, 4: 0 },
+      byAttribute: {
+        hasPowerPlant: 9,
+        hasRegularWater: 12,
+        isFurnished: 4,
+        hasSecurity: 8,
+        hasAppliances: 6,
+      },
+      byPublisherType: { owner: 11, broker: 5 },
+    },
+    criteria: {},
+  });
 }

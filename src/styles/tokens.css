@@ -263,6 +263,48 @@
   --dark-err: #f0a39a;
   --dark-err-bg: #43283a;
   --dark-thumb: repeating-linear-gradient(135deg, #3b3663 0 7px, #332e52 7px 14px);
+
+  /* ---------- La navegación y la pastilla de búsqueda (UI-A, diseño 14a/14i) ----------
+
+     **`--brandbar-h` (48/56) ya existía y NO es este token.** Ese conjunto
+     nombra la barra de marca de una pantalla anterior a la pastilla; el
+     artboard `14a` dibuja 60px en el teléfono y 68px en escritorio para la
+     barra que además contiene el buscador. Un token que se parece no es el
+     token correcto (esta misma lección ya está escrita más arriba, sobre el
+     `<h1>` que agarró `--fpb`) — así que ésta es una medida propia y la
+     diferencia queda anotada en vez de resuelta en silencio, igual que
+     `--target-min-desktop` (36 contra los 40 de la especificación de la
+     ficha) sigue pendiente del fundador. */
+  --nav-h: 60px;
+  --nav-h-desktop: 68px;
+  --nav-brand-fs: 17px;
+  --nav-brand-fs-desktop: 19px;
+  /* Un solo tamaño para "Publicar gratis", "Publicar", "Entrar" y "Mis
+     avisos": son la misma clase de control en la barra, y la lámina los
+     dibuja los cuatro a 13.5px. */
+  --nav-action-fs: 13.5px;
+  --nav-avatar-fs: 13px;
+  --nav-avatar-fs-desktop: 11.5px;
+  /* El menú de cuenta (14b). Simplificación deliberada: la lámina da 15/14.5
+     según el ancho para las filas y usa el mismo tamaño para el encabezado;
+     un solo token evita multiplicar variantes de medio punto por una
+     diferencia que `lint:tokens` no puede distinguir de un error de tipeo. */
+  --nav-menu-item-fs: 15px;
+  --nav-menu-name-fs: 14.5px;
+
+  /* La pastilla (14i). El texto: 13.5px en el teléfono, 14 en escritorio —
+     no `--searchbar-fs` (14 fijo): esa es la caja del inicio (`SearchBar`),
+     una pieza distinta con su propio contrato, y no la pastilla que este
+     conjunto describe. */
+  --pill-text-fs: 13.5px;
+  --pill-text-fs-desktop: 14px;
+  /* El conteo bajo el nombre de zona ("12 avisos") Y el correo bajo el
+     nombre en el menú de cuenta comparten este token — son el mismo papel
+     visual: una línea de metadato bajo un renglón principal, no una
+     coincidencia de valor. */
+  --pill-meta-fs: 10.5px;
+  --pill-filter-fs: 12.5px;
+  --pill-filter-fs-desktop: 13px;
 }
 
 /* ---------- data-layout: compacto (shipped structure) ---------- */

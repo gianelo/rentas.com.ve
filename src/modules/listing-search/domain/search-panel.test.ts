@@ -64,12 +64,12 @@ function panel(overrides: Partial<SearchPanelInput> = {}) {
 }
 
 describe("el panel entero", () => {
-  it("dibuja los cuatro pasos", () => {
+  it("dibuja los cuatro grupos que quedaron (14.32, 14.36)", () => {
     expect(panel().steps.map((step) => step.id)).toEqual([
-      "ciudad",
-      "zona",
       "precio",
       "habitaciones",
+      "publica",
+      "atributos",
     ]);
   });
 
@@ -126,10 +126,12 @@ describe("paso 1 · la ciudad (F3)", () => {
     expect(same?.warning).toBeNull();
   });
 
-  it("elegir ciudad abre el paso siguiente", () => {
+  it("elegir ciudad lleva a la otra ciudad, sin abrir ningún grupo", () => {
     const other = panel().cities.find((city) => city.id === "mcbo");
 
-    expect(other?.href).toContain("filtros=zona");
+    // Cambiar de ciudad LLEVA a la otra ciudad; ya no abre ningún grupo,
+    // porque el panel dejó de tener paso de ciudad (14.36).
+    expect(other?.href).not.toContain("filtros=");
   });
 });
 
@@ -173,27 +175,6 @@ describe("paso 2 · las zonas (F4)", () => {
     );
 
     expect(chacao?.href).toContain("/alquiler/distrito-capital/altamira");
-  });
-
-  it("el buscador se lleva el resto del estado, para no perderlo al enviar", () => {
-    const form = panel({ query: { min: "250", hab: "2" } }).zoneSearch;
-
-    expect(form.action).toBe("/alquiler/distrito-capital");
-    expect(form.hidden).toContainEqual({ name: "min", value: "250" });
-    expect(form.hidden).toContainEqual({ name: "hab", value: "2" });
-    // El campo que el propio formulario manda no puede ir además escondido.
-    expect(form.hidden.map((field) => field.name)).not.toContain("busca");
-  });
-
-  it("el buscador deja el acordeón en el paso de la zona", () => {
-    expect(panel().zoneSearch.hidden).toContainEqual({ name: "filtros", value: "zona" });
-  });
-
-  it("con un texto que no nombra ninguna zona, lo dice en vez de mostrarlas todas", () => {
-    const result = panel({ query: { busca: "maracaibo" } });
-
-    expect(result.zones).toEqual([]);
-    expect(result.zoneSearch.noMatches).toBe(true);
   });
 });
 
@@ -327,8 +308,9 @@ describe("paso 3 · el precio (F5)", () => {
     expect(form.hidden.map((field) => field.name)).not.toContain("pag");
   });
 
-  it("al enviarlo el acordeón pasa a las habitaciones", () => {
-    expect(panel().price.hidden).toContainEqual({ name: "filtros", value: "habitaciones" });
+  it("al enviarlo el panel se queda en el precio", () => {
+    // El panel queda donde estaba: enviar el precio no salta a otro grupo.
+    expect(panel().price.hidden).toContainEqual({ name: "filtros", value: "precio" });
   });
 });
 
@@ -467,5 +449,146 @@ describe("«Limpiar todo» conserva la ciudad (F8)", () => {
 
   it("nunca se lleva la ciudad puesta", () => {
     expect(panel({ query: { min: "250" } }).clearAllHref).toContain("/alquiler/distrito-capital");
+  });
+});
+
+/**
+ * **El modelo lleva los dos conteos, y por eso ninguna pantalla tiene que
+ * restar.** El engranaje de la barra resumen cuenta la zona; el filtro de la
+ * pastilla no (14i/14.36). Una página que hiciera `activeFilters - 1` estaría
+ * escribiendo esa regla en `app/`, donde el suelo de cobertura no llega.
+ */
+describe("los dos conteos de filtros del modelo", () => {
+  it("con una zona elegida, el engranaje cuenta uno más que la pastilla", () => {
+    const model = buildSearchPanel({ ...BASE, chosenZoneIds: ["chacao"] });
+
+    expect(model.activeFilters).toBe(1);
+    expect(model.pillFilters).toBe(0);
+  });
+
+  it("el caso de la lámina 7c: la pastilla dice 3 y el engranaje 4", () => {
+    const model = buildSearchPanel({
+      ...BASE,
+      chosenZoneIds: ["chacao", "altamira"],
+      criteria: { minPriceUsd: 250, maxPriceUsd: 700, minRooms: 2, publisherType: "owner" },
+    });
+
+    expect(model.pillFilters).toBe(3);
+    expect(model.activeFilters).toBe(4);
+  });
+
+  it("sin nada elegido los dos son cero: la ciudad no es un filtro (F8)", () => {
+    const model = buildSearchPanel(BASE);
+
+    expect(model.activeFilters).toBe(0);
+    expect(model.pillFilters).toBe(0);
+  });
+});
+
+/**
+ * **El panel dejó de ser una barra lateral y pasó a ser un estado de la página**
+ * (14.33, lámina 7c: *"Sin barra lateral: los filtros viven solo en el modal"*).
+ *
+ * Lo que decide si está abierto es la dirección, y por eso está en el modelo:
+ * escribirlo en las dos páginas serían dos copias de la misma condición, y la
+ * segunda deja de coincidir en el próximo parámetro.
+ */
+describe("el panel como estado de la dirección (14.33)", () => {
+  it("sin el parámetro está cerrado", () => {
+    expect(panel().open).toBe(false);
+    expect(panel().openNotice).toBeNull();
+  });
+
+  it("el token de la pastilla lo abre, y abre el primer grupo sin contestar", () => {
+    const model = panel({ query: { filtros: "todos" } });
+
+    expect(model.open).toBe(true);
+    expect(model.steps.filter((step) => step.open).map((step) => step.id)).toEqual(["precio"]);
+  });
+
+  it("un grupo viejo lo abre igual y lo dice, en vez de romper la página", () => {
+    const model = panel({ query: { filtros: "zona" } });
+
+    expect(model.open).toBe(true);
+    expect(model.openNotice).toContain("ya no existe");
+  });
+
+  it("cada grupo trae la dirección que lo abre, y la arma el dominio", () => {
+    // El componente no compone direcciones: el punto de quiebre decide si se
+    // ven los cuatro a la vez, y la dirección es la misma en los dos anchos.
+    const model = panel({ query: { filtros: "todos", min: "250" } });
+
+    expect(model.steps.map((step) => step.href)).toEqual([
+      "/alquiler/distrito-capital?filtros=precio&min=250",
+      "/alquiler/distrito-capital?filtros=habitaciones&min=250",
+      "/alquiler/distrito-capital?filtros=publica&min=250",
+      "/alquiler/distrito-capital?filtros=atributos&min=250",
+    ]);
+  });
+
+  it("cerrarlo es la misma búsqueda sin el parámetro, y no toca ningún filtro", () => {
+    expect(panel({ query: { filtros: "precio", min: "250", hab: "2" } }).closeHref).toBe(
+      "/alquiler/distrito-capital?min=250&hab=2",
+    );
+  });
+});
+
+/**
+ * **Las fichas quitables de la lámina 7c.** Con la barra lateral afuera, la
+ * pantalla de resultados se quedaba sin decir qué filtros están puestos: la
+ * `SearchSummaryBar` ya se había ido en la 14.41 y `panel.summary` no lo dibuja
+ * nadie. La lámina las pone en la lista — «Chacao × Altamira × $250 – $700 × 2
+ * habitaciones × Solo de dueños ×» — y se saca una sin abrir nada.
+ *
+ * Cada zona es su propia ficha, y ahí está la diferencia con `describeFilter`,
+ * que nombra las zonas juntas: quitar «Chacao» tiene que dejar Altamira viva.
+ */
+describe("las fichas quitables de los filtros puestos (14.33, lámina 7c)", () => {
+  const CHOSEN = {
+    chosenZoneIds: ["chacao", "altamira"],
+    query: { zona: "chacao,altamira", max: "700", hab: "2", pub: "owner" },
+    criteria: { maxPriceUsd: 700, minRooms: 2, publisherType: "owner" },
+  } as const;
+
+  it("sin filtros puestos no hay ninguna ficha", () => {
+    expect(panel().chips).toEqual([]);
+  });
+
+  it("una ficha por zona, y las demás en el orden en que se pueden soltar", () => {
+    expect(panel(CHOSEN).chips.map((chip) => chip.label)).toEqual([
+      "Chacao",
+      "Altamira",
+      "Hasta $700",
+      "2 hab",
+      "dueños",
+    ]);
+  });
+
+  it("quitar una zona deja viva a la otra, y la devuelve a su ruta canónica", () => {
+    const chacao = panel(CHOSEN).chips.find((chip) => chip.label === "Chacao");
+
+    // Queda una sola zona, así que la dirección vuelve a ser la indexable.
+    expect(chacao?.removeHref).toBe("/alquiler/distrito-capital/altamira?max=700&hab=2&pub=owner");
+  });
+
+  it("quitar un filtro que no es zona deja la ubicación intacta", () => {
+    const rooms = panel(CHOSEN).chips.find((chip) => chip.label === "2 hab");
+
+    expect(rooms?.removeHref).toBe(
+      "/alquiler/distrito-capital?zona=chacao%2Caltamira&max=700&pub=owner",
+    );
+  });
+
+  it("cada ficha dice qué quita, porque «×» solo no se lee en voz alta", () => {
+    expect(panel(CHOSEN).chips.map((chip) => chip.removeLabel)).toContain("Quitar Chacao");
+    expect(panel(CHOSEN).chips.map((chip) => chip.removeLabel)).toContain("Quitar 2 hab");
+  });
+
+  it("cada atributo es su propia ficha: se combinan con Y", () => {
+    const labels = panel({
+      criteria: { attributes: ["hasPowerPlant", "hasRegularWater"] },
+    }).chips.map((chip) => chip.label);
+
+    expect(labels).toEqual(["planta", "agua"]);
   });
 });

@@ -401,3 +401,181 @@ test.describe("search filters (5.7)", () => {
     expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
   });
 });
+
+/**
+ * **El nav, medido y no leído** (14.41).
+ *
+ * Este bloque existe por un defecto concreto: los tres slots de escritorio se
+ * colocan por `order`, y los valores declarados —marca 1, acciones 2, pastilla
+ * 3— son los del teléfono, donde la pastilla baja a su propio renglón. En la
+ * grilla de 1280 esos mismos valores dejaban **la pastilla en la columna
+ * derecha de 250 px y las acciones en el centro flexible**, o sea el
+ * encabezado al revés de como lo dibujan las láminas 14a y 7b/7c.
+ *
+ * La prueba que había afirmaba `grid-template-columns: 250px 1fr 250px`, que
+ * era cierto y no decía nada sobre qué cae en cada columna — un gate que no
+ * afirma nada sobre lo que tenía que proteger. Lo que hay que verificar es
+ * geometría renderizada, y para eso existe este arnés (1b.10).
+ */
+test.describe("la barra del producto (14a, 14.41)", () => {
+  /**
+   * El centro de un elemento y el de la barra que lo contiene, para
+   * compararlos. `text` desambigua cuando el selector casa más de uno — no se
+   * usa `:has-text()` porque ése es un selector de Playwright y acá se corre
+   * `querySelector` del navegador, que no lo conoce.
+   */
+  async function centres(
+    page: import("@playwright/test").Page,
+    testid: string,
+    child: string,
+    text?: string,
+  ) {
+    return page.evaluate(
+      ([id, sel, needle]) => {
+        const host = document.querySelector(`[data-testid="${id}"]`);
+        const inner = host?.querySelector("header > div");
+        const all = [...(inner?.querySelectorAll(sel as string) ?? [])];
+        const target = needle ? all.find((el) => el.textContent?.includes(needle)) : all[0];
+        if (!inner || !target) throw new Error(`no se encontró ${id} > ${sel} ${needle ?? ""}`);
+        const a = inner.getBoundingClientRect();
+        const b = target.getBoundingClientRect();
+        return {
+          barCentre: Math.round(a.left + a.width / 2),
+          barRight: Math.round(a.right),
+          centre: Math.round(b.left + b.width / 2),
+          left: Math.round(b.left),
+          right: Math.round(b.right),
+          visible: b.width > 0 && b.height > 0,
+        };
+      },
+      [testid, child, text] as const,
+    );
+  }
+
+  test("14a: a 1280 la pastilla va en el centro y las acciones contra el borde", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/measure");
+
+    const pill = await centres(page, "nav-harness-busqueda", "search");
+    const actions = await centres(page, "nav-harness-busqueda", "a[href='/publicar']");
+
+    console.log(`[14a] centro de la barra ${pill.barCentre}, centro de la pastilla ${pill.centre}`);
+    // El centro real, no "está en alguna columna": la lámina la dibuja
+    // centrada, y con los `order` del teléfono caía en la columna derecha.
+    expect(Math.abs(pill.centre - pill.barCentre)).toBeLessThanOrEqual(4);
+    // Y las acciones quedan a la derecha DE la pastilla, no en su lugar.
+    expect(actions.left).toBeGreaterThan(pill.right);
+  });
+
+  test("11: en la ficha a 1280 la marca no cede, se corre al centro", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/measure");
+
+    const back = await centres(page, "nav-harness-ficha", "a", "← Resultados");
+    const brand = await centres(page, "nav-harness-ficha", "a", "rentas.");
+
+    console.log(`[11] ← en ${back.left}, marca centrada en ${brand.centre} de ${brand.barCentre}`);
+    expect(back.visible).toBe(true);
+    expect(brand.visible).toBe(true);
+    // Los tres hijos de la lámina 11, en orden: ← Resultados · rentas · Publicar.
+    expect(back.right).toBeLessThan(brand.left);
+    expect(Math.abs(brand.centre - brand.barCentre)).toBeLessThanOrEqual(4);
+  });
+
+  test("10: en la ficha a 360 la marca no se dibuja — el ← le tomó el lugar", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 900 });
+    await page.goto("/measure");
+
+    const back = await centres(page, "nav-harness-ficha", "a", "← Resultados");
+    const brand = await centres(page, "nav-harness-ficha", "a", "rentas.");
+
+    expect(back.visible).toBe(true);
+    // A 360 px no caben tres, y la lámina 10 dibuja dos. Declarado en la hoja
+    // no es renderizado: esto lo mide.
+    expect(brand.visible).toBe(false);
+  });
+});
+
+/**
+ * **El panel de filtros, medido y no leído** (14.32, 14.33).
+ *
+ * Este bloque existe por el mismo defecto que el del nav, un nivel más arriba.
+ * `SearchPanel.module.css` afirmaba abrir los cuatro grupos en escritorio con
+ * `::details-content` — una declaración cierta en la hoja y **silenciosa sobre
+ * lo que se dibuja**: en un navegador que no lo entiende, 1280 seguía dibujando
+ * el acordeón del teléfono y ninguna prueba se ponía roja. Lo que hay que
+ * verificar es cuántos cuerpos de grupo se dibujan a cada ancho.
+ *
+ * «Visible» se mide como caja real (`getBoundingClientRect`) y no como clase o
+ * como `display` declarado: eso es exactamente lo que la prueba de
+ * `grid-template-columns` demostró que no alcanza.
+ */
+test.describe("el panel de filtros a los dos anchos (14.32)", () => {
+  /** Cuántos cuerpos de grupo dibujan una caja de verdad. */
+  async function openBodies(page: import("@playwright/test").Page) {
+    return page.evaluate(() => {
+      const host = document.querySelector('[data-testid="search-panel-harness"]');
+      const groups = [...(host?.querySelectorAll("section[id^='filtros-']") ?? [])];
+      return groups.map((group) => {
+        const body = group.lastElementChild as HTMLElement | null;
+        const box = body?.getBoundingClientRect();
+        return {
+          id: group.id,
+          visible: Boolean(box && box.width > 0 && box.height > 0),
+        };
+      });
+    });
+  }
+
+  test("14.32: a 1280 los cuatro grupos se ven a la vez — no hay secuencia", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    await page.goto("/measure");
+
+    const bodies = await openBodies(page);
+    console.log(`[14.32] 1280px: ${JSON.stringify(bodies)}`);
+
+    // Los cuatro que la lámina 7b dibuja en tres columnas: precio,
+    // habitaciones, quién publica y atributos.
+    expect(bodies).toHaveLength(4);
+    expect(bodies.filter((body) => body.visible)).toHaveLength(4);
+  });
+
+  test("14.32: a 360 sigue siendo un acordeón — sólo el grupo abierto se dibuja", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 900 });
+    await page.goto("/measure");
+
+    const bodies = await openBodies(page);
+    console.log(`[14.32] 360px: ${JSON.stringify(bodies)}`);
+
+    expect(bodies).toHaveLength(4);
+    // Uno solo, y es el que el servidor marcó: con los cuatro abiertos en
+    // 360 px el botón del conteo queda cuatro pantallas más abajo, y ése es
+    // justamente el botón que hay que ver mientras se filtra.
+    expect(bodies.filter((body) => body.visible).map((body) => body.id)).toEqual([
+      "filtros-precio",
+    ]);
+  });
+
+  test("14.33: la cuadrícula gana el ancho de la barra lateral — cuatro columnas a 1280", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    await page.goto("/measure");
+
+    const tops = await page
+      .getByTestId("listing-grid-harness")
+      .locator("li")
+      .evaluateAll((nodes) => nodes.map((node) => Math.round(node.getBoundingClientRect().top)));
+
+    const firstRow = tops.filter((top) => top === tops[0]).length;
+    console.log(`[14.33] avisos en la primera fila: ${firstRow} (cota: 4) · tops=${tops}`);
+    // «Cuatro columnas de 254: 8 avisos sobre el pliegue, contra 6 antes»
+    // (lámina 7c). Contar cuántas tarjetas comparten el borde superior es la
+    // pregunta de verdad; `grid-template-columns` sólo dice qué se declaró.
+    expect(firstRow).toBe(4);
+  });
+});
