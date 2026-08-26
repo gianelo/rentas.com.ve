@@ -1,66 +1,7 @@
-/* El inicio (14.21). La barra es la misma que el producto ya usaba cuando en
-   esta dirección vivían los resultados; lo nuevo es la pila de tiras y el
-   estado sin oferta. */
-
-.bar {
-  border-block-end: 1px solid var(--line);
-}
-
-.barInner {
-  max-inline-size: 1100px;
-  margin-inline: auto;
-  min-block-size: var(--brandbar-h);
-  display: flex;
-  /* El punto entero del encabezado: un solo orden en el DOM (marca, búsqueda,
-     publicar) y dos disposiciones. En el teléfono la búsqueda se va a su
-     propio renglón; en escritorio vuelve a la fila. */
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding-inline: 16px;
-  padding-block-end: 10px;
-}
-
-/* La búsqueda, envuelta: el envoltorio pone dónde se para y el componente
-   pone cómo se ve. Separados porque la barra es la misma en cualquier
-   pantalla que la use, y su sitio no. */
-.search {
-  /* `order` y no un segundo bloque de JSX. Sin esto el renglón quedaría
-     "marca / búsqueda" y "Publicar" caería solo a la tercera línea. */
-  order: 1;
-  flex-basis: 100%;
-}
-
-.brand {
-  margin: 0;
-  font-family: var(--disp);
-  font-size: var(--title-fs);
-  font-weight: var(--title-fw);
-  line-height: var(--title-lh);
-  letter-spacing: var(--brand-ls);
-  color: var(--ink);
-}
-
-.publish {
-  min-block-size: var(--target-min-desktop);
-  display: flex;
-  align-items: center;
-  padding-inline: 16px;
-  border-radius: var(--r);
-  background: var(--tint);
-  color: var(--accent);
-  font-family: var(--sans);
-  font-size: var(--meta-fs);
-  font-weight: 600;
-  line-height: 1.4;
-  text-decoration: none;
-}
-
-.publish:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
+/* El inicio (14.21). El encabezado propio que vivía acá —marca, caja de
+   búsqueda y "Publicar", con su propio CSS— lo reemplazó el `Nav` del producto
+   (14g), así que esta hoja se queda sólo con lo que es del inicio: las fichas
+   de ciudad, la pila de tiras y el estado sin oferta. */
 
 /* El encabezado existe para el esquema del documento y para un rastreador; el
    diseño del inicio arranca en la primera tira. `clip-path` y no `display:
@@ -202,23 +143,6 @@
    la marca y las acciones, y las fichas en una fila propia bajo el encabezado.
    Nada de esto duplica un componente: es el mismo DOM leído distinto. */
 @media (min-width: 768px) {
-  .barInner {
-    min-block-size: var(--brandbar-h-desktop);
-    /* Ya no hay segundo renglón que dejar respirar. */
-    padding-block-end: 0;
-    gap: 24px;
-  }
-
-  .search {
-    /* Vuelve a su sitio en la fila y deja de ocupar el ancho entero. El tope
-       de 460 px es el de la lámina: la búsqueda es el centro del encabezado,
-       no una caja que empuja a la marca contra el borde. */
-    order: 0;
-    flex: 1;
-    flex-basis: auto;
-    max-inline-size: 460px;
-  }
-
   .chips {
     padding-block: 14px;
   }

@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AppLink } from "@/../components/atoms/AppLink";
+import type { SearchPillProps } from "@/../components/molecules/SearchPill";
+import { Nav } from "@/../components/organisms/Nav";
+import { resolveNavAccount, resolveNavPublish } from "@/modules/identity/domain/nav-account";
+import { nextAuthSessionPort } from "@/modules/identity/infrastructure/session-port";
 import {
   HOME_SEARCH_PARAM,
   HOME_SEARCH_RESULTS_LABEL,
@@ -24,7 +28,6 @@ import { readPhotoPublicBaseUrl } from "@/modules/listing-discovery/infrastructu
 import { db } from "@/shared/db/client";
 import { Container } from "../components/layout/Container";
 import { ListingStrip } from "../components/molecules/ListingStrip";
-import { SearchBar } from "../components/molecules/SearchBar";
 import styles from "./home.module.css";
 
 export const metadata: Metadata = {
@@ -153,29 +156,52 @@ export default async function InicioPage({ searchParams }: InicioProps) {
   const searchForm = homeSearchForm(typed);
   const cityChips = homeCityChips(cities, selectedCity?.id ?? null);
 
+  // **La sesión, y lo que cuesta.** Auth.js está en estrategia `database`, así
+  // que una lectura CON cookie es un viaje a Postgres. **Sin cookie no cuesta
+  // nada**: `@auth/core` corta en `if (!sessionToken) return response` antes de
+  // llamar al adaptador, así que el visitante anónimo —que es casi todo el
+  // tráfico de esta dirección— sigue pagando las mismas tres consultas de
+  // siempre. Tampoco se pide la cartera del importador que `/mis-avisos`
+  // consulta: la barra no la mira.
+  //
+  // No cambia el modo de render: esta página ya se sirve por petición
+  // (`dynamic = "force-dynamic"`, arriba, con su propia razón escrita).
+  const session = await nextAuthSessionPort.getSession();
+  const account = resolveNavAccount(session);
+  const publish = resolveNavPublish(account);
+
+  // La pastilla del inicio es el estado "vacía" (14i): sin zona elegida el
+  // filtro no existe como pieza — "sin búsqueda no hay nada que filtrar".
+  //
+  // **Se alimenta del MISMO `homeSearchForm` que el servidor traduce arriba**,
+  // y ahí está todo el mecanismo: la pastilla es un `<form method="get">` que
+  // vuelve acá con `?q=`, y `resolveSearchDestination` redirige. Escribir el
+  // `action` o el `name` acá sería una segunda copia del contrato de la URL.
+  const pill: SearchPillProps = {
+    action: searchForm.action,
+    name: searchForm.name,
+    value: searchForm.value,
+    placeholder: searchForm.label,
+    submitLabel: searchForm.submitLabel,
+    state: { kind: "empty" },
+  };
+
   return (
     <>
-      {/* La barra que el producto entero comparte: la marca, la búsqueda y la
-          única acción de la que depende todo el lado de la oferta.
+      {/* **La misma barra que el resto del producto** (14a/14i), en lugar del
+          encabezado propio que el inicio tenía. Ése dibujaba marca + caja +
+          "Publicar" con su propio CSS: dos encabezados arrancan idénticos y se
+          separan en el primer arreglo apurado, que es lo que `SearchFilters` y
+          `ListingStrip` ya dejaron escrito.
 
-          **Un solo orden en el DOM y dos disposiciones**, nunca dos marcados.
-          En escritorio la lámina pone la búsqueda entre la marca y las
-          acciones; en el teléfono la baja a su propio renglón. Eso lo resuelve
-          el `flex-wrap` con un `order`, no un segundo bloque de JSX — dos
-          copias del mismo encabezado arrancan idénticas y se separan en el
-          primer arreglo apurado, que es lo que `SearchFilters` y `ListingStrip`
-          ya dejaron escrito. */}
-      <header className={styles.bar}>
-        <div className={styles.barInner}>
-          <p className={styles.brand}>rentas.</p>
-          <div className={styles.search}>
-            <SearchBar {...searchForm} />
-          </div>
-          <AppLink className={styles.publish} href="/publicar">
-            Publicar
-          </AppLink>
-        </div>
-      </header>
+          Acá no se decide nada: los tres estados de la barra y qué dice
+          "Publicar" salen de `identity/domain/nav-account.ts`, y el estado de
+          la pastilla de `listing-catalogue/domain/search-pill.ts`.
+
+          `signInHref` va pelado a propósito: `app/(auth)/signin` vuelve a `/`
+          cuando no hay `callbackUrl`, así que agregarlo sería escribir el
+          destino que ya es el respaldo. */}
+      <Nav account={account} publish={publish} pill={pill} signInHref="/signin" />
 
       {/* Las fichas de ciudad (F2). Enlaces y no controles: el camino de
           lectura no tiene JavaScript (D13), así que elegir una ciudad es
