@@ -50,9 +50,16 @@ test("the root IS the search, not a landing page that links to it", async ({ pag
   // The wordmark is lowercase with a period — it IS the mark, and a
   // capitalised "Rentas" means somebody retyped it from memory.
   await expect(page.getByText("rentas.", { exact: true })).toBeVisible();
-  // The filters are the page. A root that showed a value proposition and a
-  // button would be spending the domain's best URL on a click.
-  await expect(page.getByTestId("search-filters")).toBeVisible();
+  // **Esta aserción estaba podrida antes de este trabajo, y nadie lo vio.**
+  // Miraba `search-filters`, que es `SearchFilters` — la caja de filtros que
+  // vivía en `/` cuando la raíz ERA los resultados. La 14.24 mudó los
+  // resultados a `/alquiler/<ciudad>` y la raíz pasó a ser el inicio (14.21),
+  // así que ese testid dejó de existir acá hace varios PRs. Como la prueba se
+  // salta sin despliegue, siguió reportándose verde sin poder pasar nunca.
+  //
+  // Lo que la raíz sí tiene que tener, y es lo que la frase de al lado quería
+  // decir, es la búsqueda: no un argumento de venta con un botón.
+  await expect(page.getByRole("searchbox")).toBeVisible();
 });
 
 test("publishing is refused without a session, and remembers where you were going", async ({

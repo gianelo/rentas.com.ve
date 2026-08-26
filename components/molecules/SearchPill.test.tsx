@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import {
+  HOME_SEARCH_PARAM,
+  homeSearchForm,
+} from "@/modules/listing-catalogue/domain/search-destination";
 import { SearchPill } from "./SearchPill";
 
 const pillCss = readFileSync("components/molecules/SearchPill.module.css", "utf-8");
@@ -138,5 +142,56 @@ describe("SearchPill — geometría y accesibilidad", () => {
     // porque este archivo es nuevo y es exactamente el que ese gate existe
     // para atrapar.
     expect(pillCss).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+  });
+});
+
+/**
+ * **El mecanismo del inicio, cargado por la pastilla** (14g).
+ *
+ * `/` traduce lo escrito en el servidor y redirige a la dirección canónica
+ * (14.20/F14), y ese mecanismo entero depende de tres cosas del marcado: que
+ * sea un `GET`, que vuelva a `/`, y que el parámetro se llame como
+ * `resolveSearchDestination` lo lee. La pastilla las carga **sólo si se
+ * alimenta de `homeSearchForm`**, así que esta prueba usa la función real del
+ * dominio en vez de una copia de sus valores: si el contrato de la URL cambia,
+ * la prueba lo sigue en vez de quedarse defendiendo el contrato viejo.
+ *
+ * Es la garantía que reemplaza a la que `SearchBar.test.tsx` daba para la
+ * pieza anterior — el inicio dejó de dibujar `SearchBar` y pasó a dibujar esto.
+ */
+describe("SearchPill — carga el mecanismo del inicio sin degradarlo", () => {
+  const form = homeSearchForm("chacao");
+  const html = renderToStaticMarkup(
+    <SearchPill
+      action={form.action}
+      name={form.name}
+      value={form.value}
+      placeholder={form.label}
+      submitLabel={form.submitLabel}
+      state={{ kind: "empty" }}
+    />,
+  );
+
+  it("es un GET que vuelve a donde el servidor traduce", () => {
+    expect(html).toContain('method="get"');
+    expect(html).toContain(`action="${form.action}"`);
+  });
+
+  it("el campo se llama como el parámetro que el dominio lee", () => {
+    expect(html).toContain(`name="${form.name}"`);
+    expect(HOME_SEARCH_PARAM).toBe(form.name);
+  });
+
+  it("tiene un submit de verdad: sin él no hay forma de enviar sin JavaScript", () => {
+    expect(html).toMatch(/<button[^>]*type="submit"/);
+  });
+
+  /**
+   * Devolver lo escrito es lo que hace que el campo no vuelva vacío del
+   * servidor. Sin JavaScript el navegador no puede recordarlo por su cuenta, y
+   * perder el texto en cada intento es lo que hace que alguien abandone.
+   */
+  it("devuelve lo escrito al campo", () => {
+    expect(html).toContain('value="chacao"');
   });
 });

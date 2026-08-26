@@ -68,12 +68,76 @@ describe("el inicio y el dominio que lo decide", () => {
    * dibuja arriba de todo, con las cuatro tiras debajo.
    */
   it("dibuja la barra antes de decidir si hay oferta que mostrar", () => {
-    const bar = PAGE.indexOf("<SearchBar");
+    // El sujeto cambió de pieza —`SearchBar` pasó a ser la pastilla dentro del
+    // `Nav` (14g)— y la regla no: la búsqueda va arriba de todo y no depende
+    // de que haya avisos. Se actualiza a qué mira, nunca qué exige.
+    const bar = PAGE.indexOf("<Nav");
     const invite = PAGE.indexOf("home.invitesToPublish");
 
     expect(bar).toBeGreaterThan(-1);
     expect(invite).toBeGreaterThan(-1);
     expect(bar).toBeLessThan(invite);
+  });
+
+  /**
+   * **El mecanismo de búsqueda no puede cambiar al cambiar la pieza que lo
+   * dibuja, y ésta es la comprobación que lo ata.**
+   *
+   * El buscador del inicio es un `<form method="get">` que vuelve a `/` con
+   * `?q=`, y el servidor traduce con `resolveSearchDestination` y redirige
+   * (14.20). La pastilla es otro `<form method="get">` — el mecanismo
+   * sobrevive **sólo si se alimenta del mismo `homeSearchForm`**. Una pastilla
+   * con un `action` o un `name` escritos a mano acá se dibujaría igual y
+   * dejaría el buscador del inicio muerto, sin poner roja ninguna prueba del
+   * dominio.
+   */
+  it("arma la pastilla con el MISMO formulario que el servidor traduce", () => {
+    expect(PAGE).toMatch(/homeSearchForm\(typed\)/);
+    expect(PAGE).toMatch(/action:\s*searchForm\.action/);
+    expect(PAGE).toMatch(/name:\s*searchForm\.name/);
+    expect(PAGE).toMatch(/submitLabel:\s*searchForm\.submitLabel/);
+    // Ni el destino ni el nombre del parámetro escritos a mano: son contrato
+    // de la URL y viven en `search-destination.ts`.
+    expect(CODE).not.toMatch(/action:\s*["'`]/);
+    expect(CODE).not.toMatch(/name:\s*["'`]q["'`]/);
+  });
+
+  /**
+   * **La rama de `choices` y la de «no entendí» son del buscador, no del nav**,
+   * y este trabajo no las toca. Si desaparecieran, escribir algo ambiguo en el
+   * inicio dejaría de contestar nada.
+   */
+  it("sigue dibujando las opciones y el «no entendí» del buscador", () => {
+    expect(PAGE).toContain('searched.kind === "choices"');
+    expect(PAGE).toContain("noMatchMessage(typed)");
+  });
+
+  /**
+   * **El nav no decide nada acá.** Qué estado tiene la barra sale de
+   * `resolveNavAccount`/`resolveNavPublish` (identity/domain), con el suelo de
+   * cobertura del 90 % encima. Un `if` acá sería una regla que ninguna corrida
+   * de tests puede poner en rojo.
+   */
+  it("resuelve el estado del nav en el dominio y no en la página", () => {
+    expect(PAGE).toContain("resolveNavAccount(");
+    expect(PAGE).toContain("resolveNavPublish(");
+  });
+
+  /**
+   * **El visitante anónimo no paga una consulta de más, y es medible.**
+   *
+   * `/` es la dirección más pedida del sitio y casi todo su tráfico llega sin
+   * sesión. Auth.js está en estrategia `database`, así que una lectura de
+   * sesión CON cookie es un viaje a Postgres — pero sin cookie `auth()`
+   * devuelve `null` sin tocar la base (`@auth/core/lib/actions/session.js`:
+   * `if (!sessionToken) return response`). Lo que sí sería una consulta segura
+   * es el adaptador de cartera que `/mis-avisos` usa para `canImportListings`:
+   * acá no se llama, porque la barra no lo mira y el menú de cuenta todavía no
+   * ofrece "Importar cartera".
+   */
+  it("no consulta la cartera del importador en el camino de lectura", () => {
+    expect(PAGE).not.toContain("BulkImportAccounts");
+    expect(PAGE).not.toContain("bulk-import");
   });
 
   it("dibuja las fichas de ciudad antes de las tiras", () => {
