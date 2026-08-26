@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  narrowZoneOptions,
-  resolveAttributeOptions,
-  resolveRoomOptions,
-  resolveZoneOptions,
-  zoneIdsFromSuggestions,
-} from "./search-options";
+import { resolveAttributeOptions, resolveRoomOptions, resolveZoneOptions } from "./search-options";
 
 const ZONES = [
   { id: "chacao", name: "Chacao" },
@@ -67,64 +61,6 @@ describe("las zonas ofrecidas (F4)", () => {
     const options = resolveZoneOptions([{ id: "nueva", name: "Nueva" }], {}, []);
 
     expect(options[0]?.count).toBe(0);
-  });
-});
-
-describe("el buscador del paso 2 sólo autocompleta zonas conocidas (F4)", () => {
-  it("sin texto no narra nada: la lista queda entera", () => {
-    expect(zoneIdsFromSuggestions([], "")).toBeNull();
-    expect(zoneIdsFromSuggestions([], "   ")).toBeNull();
-  });
-
-  it("se queda con las zonas y descarta todo lo demás que el vocabulario ofrezca", () => {
-    // `suggestFilters` también devuelve ciudades, precios y atributos. Acá sólo
-    // pueden narrar la lista de zonas las sugerencias de zona.
-    const ids = zoneIdsFromSuggestions(
-      [
-        { kind: "city", id: "dc" },
-        { kind: "zone", id: "chacao" },
-        { kind: "maxPrice", id: "400" },
-        { kind: "zone", id: "altamira" },
-      ],
-      "chacao",
-    );
-
-    expect(ids).toEqual(["chacao", "altamira"]);
-  });
-
-  it("con texto que no nombra ninguna zona, la respuesta es «ninguna» y no «todas»", () => {
-    // Es la diferencia entre «no encontré esa zona» y «buscá en toda la
-    // ciudad»: la segunda es la que hace pensar que el buscador no funciona.
-    expect(zoneIdsFromSuggestions([{ kind: "city", id: "dc" }], "maracaibo")).toEqual([]);
-    // Y con el vocabulario devolviendo NADA, que es lo que pasa con un texto
-    // que no se parece a ninguna entrada: sigue siendo «ninguna», no «todas».
-    expect(zoneIdsFromSuggestions([], "asdfgh")).toEqual([]);
-  });
-
-  it("nunca deja pasar texto libre: lo que no es un id de zona no entra", () => {
-    const options = narrowZoneOptions(resolveZoneOptions(ZONES, BY_ZONE, []), [
-      "apartamento bonito",
-    ]);
-
-    expect(options).toEqual([]);
-  });
-
-  it("achica la lista a las zonas que el texto nombra", () => {
-    const options = narrowZoneOptions(resolveZoneOptions(ZONES, BY_ZONE, []), ["chacao"]);
-
-    expect(options.map((option) => option.id)).toEqual(["chacao"]);
-  });
-
-  it("las ya elegidas siguen a la vista, porque si no no se pueden soltar", () => {
-    const options = narrowZoneOptions(resolveZoneOptions(ZONES, BY_ZONE, ["altamira"]), ["chacao"]);
-
-    expect(options.map((option) => option.id)).toEqual(["altamira", "chacao"]);
-  });
-
-  it("sin búsqueda (`null`) la lista no se toca", () => {
-    const all = resolveZoneOptions(ZONES, BY_ZONE, []);
-
-    expect(narrowZoneOptions(all, null)).toEqual(all);
   });
 });
 

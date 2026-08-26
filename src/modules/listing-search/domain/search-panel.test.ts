@@ -176,29 +176,6 @@ describe("paso 2 · las zonas (F4)", () => {
 
     expect(chacao?.href).toContain("/alquiler/distrito-capital/altamira");
   });
-
-  it("el buscador se lleva el resto del estado, para no perderlo al enviar", () => {
-    const form = panel({ query: { min: "250", hab: "2" } }).zoneSearch;
-
-    expect(form.action).toBe("/alquiler/distrito-capital");
-    expect(form.hidden).toContainEqual({ name: "min", value: "250" });
-    expect(form.hidden).toContainEqual({ name: "hab", value: "2" });
-    // El campo que el propio formulario manda no puede ir además escondido.
-    expect(form.hidden.map((field) => field.name)).not.toContain("busca");
-  });
-
-  it("el buscador deja el panel en el primer grupo", () => {
-    // El buscador de zonas quedó huérfano del panel (14.36) y su formulario ya
-    // no puede devolver a un grupo que no existe: vuelve al primero.
-    expect(panel().zoneSearch.hidden).toContainEqual({ name: "filtros", value: "precio" });
-  });
-
-  it("con un texto que no nombra ninguna zona, lo dice en vez de mostrarlas todas", () => {
-    const result = panel({ query: { busca: "maracaibo" } });
-
-    expect(result.zones).toEqual([]);
-    expect(result.zoneSearch.noMatches).toBe(true);
-  });
 });
 
 /**

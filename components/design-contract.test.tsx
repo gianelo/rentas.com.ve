@@ -169,21 +169,29 @@ describe("el aviso se lee como aviso (Publicar §8)", () => {
  * respuesta plausible y equivocada.
  */
 describe("los tokens que el conjunto no nombraba (16.22–16.26)", () => {
-  const searchBarCss = readFileSync("components/molecules/SearchBar.module.css", "utf-8");
   const stripCss = readFileSync("components/molecules/ListingStrip.module.css", "utf-8");
 
-  it("la barra de búsqueda usa su propio alto y su propio tamaño, no el del control genérico", () => {
-    expect(block(searchBarCss, "bar")).toContain("var(--searchbar-h)");
-    expect(block(searchBarCss, "label")).toContain("var(--searchbar-fs)");
-    // Y el alto propio no puede quedar por debajo del mínimo táctil: 50 ≥ 44.
+  /**
+   * **Lo que la 14.42 se llevó de este bloque, dicho acá y no en el mensaje del
+   * commit.** Tres aserciones leían `SearchBar.module.css`: que `.bar` usara
+   * `--searchbar-h`, que `.label` usara `--searchbar-fs`, y el `it` entero de
+   * «la sombra es un token y no la línea del borde». Su sujeto era esa hoja, y
+   * la hoja se borró con la pieza. Se borran con ella en vez de reapuntarlas a
+   * `SearchPill.module.css`: una aserción mudada de sujeto es una que dice
+   * seguir protegiendo lo de antes y protege otra cosa, y eso es peor que no
+   * tenerla, porque nadie vuelve a mirarla.
+   *
+   * **`--searchbar-h` y `--searchbar-fs` quedan sin un solo uso** — eran de esa
+   * hoja y de ninguna otra. No se borran acá: sacar un token es un cambio al
+   * conjunto (SISTEMA.md) y no un uso de él, y `lint:tokens` no lo exige porque
+   * verifica paridad de temas y literales, nunca si alguien lo usa. Queda
+   * anotado como hallazgo de la 14.42. Lo que sigue abajo sí sobrevive: mide
+   * `tokens.css`, que es un sujeto que no se borró.
+   */
+  it("el alto propio de la barra no queda por debajo del mínimo táctil: 50 ≥ 44", () => {
     expect(Number.parseFloat(tokenValue("--searchbar-h"))).toBeGreaterThanOrEqual(
       Number.parseFloat(tokenValue("--target-min")),
     );
-  });
-
-  it("la sombra es un token y no la línea del borde haciendo de sombra", () => {
-    expect(block(searchBarCss, "bar")).toContain("box-shadow: var(--shadow-raised)");
-    expect(block(searchBarCss, "bar")).not.toMatch(/box-shadow:[^;]*var\(--line\)/);
   });
 
   it("la sombra repinta al cambiar de tema, como cualquier otro color", () => {

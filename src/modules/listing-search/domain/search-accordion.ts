@@ -283,27 +283,22 @@ const ATTRIBUTE_SUMMARY: Readonly<Record<ListingAttribute, string>> = {
 };
 
 /**
- * La línea de la barra resumen: **el conteo primero**, y después qué filtros lo
- * produjeron — «9 avisos · $250 – $700 · 2 hab · dueños».
+ * **`summariseSearch` se fue con la 14.42**, y no por parecer de más: era la
+ * línea «9 avisos · $250 – $700 · 2 hab · dueños» de la `SearchSummaryBar`,
+ * que la 14.41 sacó de las dos pantallas, y su único consumidor de producción
+ * era `panel.summary`, que esa misma tarea borra. Sin los dos, la función no la
+ * llamaba nadie.
  *
- * El número va adelante porque es lo que se está mirando; los filtros van
- * detrás porque son la explicación de ese número. Sin filtros la línea es sólo
- * el conteo, y sigue siendo una frase completa.
+ * **Lo destapó la cobertura y no una lectura.** Al borrar `panel.summary`, el
+ * bucle de atributos de esta función quedó como la ÚNICA sentencia sin cubrir
+ * de todo el archivo: sus tres pruebas directas nunca le pasaban atributos, así
+ * que la rama la ejercía el panel y nadie más. Una función sin consumidor cuyo
+ * cuerpo sólo cubre a medias su propio archivo es el gate en verde que la
+ * 14.42 nombra, así que se fue con sus pruebas.
+ *
+ * Nada colgaba de ella: `priceSummary`, `roomsSummary`, `PUBLISHER_SUMMARY` y
+ * `ATTRIBUTE_SUMMARY` los siguen usando `resolveSearchSteps` y `describeFilter`.
  */
-export function summariseSearch(selection: SearchSelection, total: number): string {
-  const parts: string[] = [total === 1 ? "1 aviso" : `${total} avisos`];
-
-  if (selection.minPriceUsd !== undefined || selection.maxPriceUsd !== undefined) {
-    parts.push(priceSummary(selection));
-  }
-  if (selection.minRooms !== undefined) parts.push(roomsSummary(selection.minRooms));
-  if (selection.publisherType !== undefined) {
-    parts.push(PUBLISHER_SUMMARY[selection.publisherType]);
-  }
-  for (const attribute of selection.attributes ?? []) parts.push(ATTRIBUTE_SUMMARY[attribute]);
-
-  return parts.join(" · ");
-}
 
 /**
  * **Cómo se nombra UN filtro suelto, con su valor adentro** — «Hasta $700»,

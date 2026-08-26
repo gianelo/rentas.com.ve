@@ -10,7 +10,6 @@ import {
   type SearchSelection,
   STALE_FILTER_GROUP_NOTICE,
   searchHeadline,
-  summariseSearch,
 } from "./search-accordion";
 
 const CARACAS: SearchSelection = { cityName: "Distrito Capital", zoneNames: [] };
@@ -183,30 +182,6 @@ describe("la barra resumen de resultados", () => {
       "Chacao, Altamira",
     );
     expect(searchHeadline(CARACAS)).toBe("Distrito Capital");
-  });
-
-  it("resume la búsqueda entera empezando por el conteo real", () => {
-    const line = summariseSearch(
-      {
-        ...CARACAS,
-        zoneNames: ["Chacao", "Altamira"],
-        minPriceUsd: 250,
-        maxPriceUsd: 700,
-        minRooms: 2,
-        publisherType: "owner",
-      },
-      9,
-    );
-
-    expect(line).toBe("9 avisos · $250 – $700 · 2 hab · dueños");
-  });
-
-  it("un solo aviso se dice en singular", () => {
-    expect(summariseSearch(CARACAS, 1)).toBe("1 aviso");
-  });
-
-  it("sin filtros el resumen es sólo el conteo", () => {
-    expect(summariseSearch(CARACAS, 47)).toBe("47 avisos");
   });
 
   it("cuenta los filtros puestos, y la ciudad NO es uno de ellos (F8)", () => {
