@@ -1,0 +1,160 @@
+/* La navegación (diseño 14a). Un solo marcado, dos disposiciones — el mismo
+   argumento que ya deja escrito `app/home.module.css`: dos copias del mismo
+   encabezado arrancan idénticas y se separan en el primer arreglo apurado.
+
+   **Punto de quiebre: 768px.** Mismo valor que `Container.module.css` ya
+   eligió por su cuenta — "ni SISTEMA.md ni design.md nombran un punto de
+   quiebre exacto" sigue siendo cierto acá, así que se reutiliza el mismo en
+   vez de inventar un segundo número para la misma pregunta sin resolver. */
+
+.bar {
+  margin: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-block-size: var(--nav-h);
+  padding-inline: 12px;
+}
+
+.brand {
+  order: 1;
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-block-size: 44px;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: var(--nav-brand-fs);
+  letter-spacing: var(--brand-ls);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.back {
+  order: 1;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 44px;
+  block-size: 44px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: var(--nav-brand-fs);
+}
+
+/* En móvil, la pastilla baja a su propio renglón — es el control más grande
+   de la barra y el que un pulgar busca primero, así que se le da el ancho
+   entero en vez de competir por espacio con la marca y las acciones. */
+.pillCol {
+  order: 3;
+  flex: 1 1 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.actions {
+  order: 2;
+  margin-left: auto;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.publishAccent,
+.publishOutline {
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-block-size: 44px;
+  padding: 0 18px;
+  border-radius: var(--rs);
+  font-family: var(--sans);
+  font-size: var(--nav-action-fs);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.publishAccent {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.publishOutline {
+  border: 1px solid var(--strong);
+  color: var(--ink);
+}
+
+.publishAccent:focus-visible,
+.publishOutline:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.enter {
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-block-size: 44px;
+  padding: 0 10px;
+  font-family: var(--sans);
+  font-size: var(--nav-action-fs);
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.enter:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 14.38 — con sesión, "Publicar" se muda al menú de cuenta en móvil ("con
+   sesión el botón ya hizo su trabajo"; costaba una segunda fila de cromo en
+   la pantalla donde la foto es lo que vende). Sin sesión NUNCA se esconde —
+   es cuando hay que provocar, y sigue afuera en las dos anchuras. */
+@media (max-width: 767px) {
+  .publishAuth {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .inner {
+    display: grid;
+    grid-template-columns: 250px 1fr 250px;
+    align-items: center;
+    gap: 20px;
+    min-block-size: var(--nav-h-desktop);
+    max-inline-size: 1100px;
+    margin-inline: auto;
+    padding-inline: 0;
+  }
+
+  .brand,
+  .back {
+    font-size: var(--nav-brand-fs-desktop);
+    min-block-size: 40px;
+  }
+
+  .pillCol {
+    justify-content: center;
+  }
+
+  .actions {
+    justify-self: end;
+  }
+
+  .publishAccent,
+  .publishOutline,
+  .enter {
+    min-block-size: 40px;
+  }
+}
