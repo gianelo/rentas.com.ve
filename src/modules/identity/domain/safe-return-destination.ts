@@ -70,3 +70,42 @@ export function safeSignInDestination(candidate: string): string {
 
   return value;
 }
+
+/**
+ * La misma regla, sobre una ruta pelada (tasks.md 8.7).
+ *
+ * `safeSignInDestination` valida `/signin?callbackUrl=<ficha>`; esto valida la
+ * ficha sola. La acción de reportar la recibe en un campo oculto y la usa para
+ * dos redirecciones —el acuse y la vuelta cuando el aviso no existe—, así que
+ * es exactamente la misma entrada de quien envía y el mismo riesgo: un enlace
+ * que se ve nuestro y deja a quien lo toca en cualquier parte.
+ *
+ * **Comparte el origen inventado y el prefijo con la función de arriba a
+ * propósito.** Dos copias de esta comprobación es cómo una de las dos se queda
+ * vieja el día que el prefijo cambie.
+ *
+ * **Devuelve `null` y no un respaldo.** Mandar a alguien a `/signin` cuando no
+ * se sabe de dónde vino es inofensivo; acá el valor se concatena para armar
+ * `…/reportar?enviado`, y un respaldo silencioso convertiría una ruta hostil en
+ * un acuse dibujado sobre una pantalla que no es la nuestra. `null` obliga a
+ * quien llama a ver el rechazo y a decidir — y esa decisión es negarse.
+ */
+export function safeReturnPath(candidate: string): string | null {
+  const value = candidate.trim();
+  if (value === "") return null;
+
+  let url: URL;
+  try {
+    url = new URL(value, SAME_ORIGIN);
+  } catch {
+    return null;
+  }
+
+  // Cubre `https://evil.test/…`, `//evil.test/…` y `/\evil.test/…` de una vez:
+  // los tres salen con un origen distinto del inventado. La barra invertida la
+  // normaliza el propio parser antes de llegar acá.
+  if (url.origin !== SAME_ORIGIN) return null;
+  if (!url.pathname.startsWith(RETURN_PREFIX)) return null;
+
+  return value;
+}

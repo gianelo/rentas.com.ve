@@ -323,7 +323,11 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
           />
 
           <footer className={styles.footer}>
-            <AppLink className={styles.report} href="#reportar">
+            {/* **Tenía destino y no llevaba a ningún lado** (tasks.md 8.7):
+                `#reportar` era un ancla a una sección que esta página nunca
+                dibujó, así que tocarlo no hacía nada — y `reportListing`,
+                completo desde la Fase 8, no lo llamaba ninguna ruta. */}
+            <AppLink className={styles.report} href={`${listingPath}/reportar`}>
               Reportar este aviso
             </AppLink>
             <span className={styles.meta}>
