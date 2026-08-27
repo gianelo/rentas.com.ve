@@ -26,7 +26,17 @@ import { expect, test } from "@playwright/test";
  * database when no session cookie is present. It cannot prove anything that
  * reads the catalogue.
  */
-const againstADeployment = Boolean(process.env.PLAYWRIGHT_BASE_URL);
+/**
+ * **Un catálogo de verdad, venga de donde venga** (tasks.md 11.22).
+ *
+ * Antes esto era `Boolean(PLAYWRIGHT_BASE_URL)` y el comentario de arriba
+ * explicaba por qué: el respaldo local compilaba contra una `DATABASE_URL`
+ * deliberadamente inalcanzable, así que todo lo que lee el catálogo sólo podía
+ * contestar 500. Ya no — `scripts/neon-http-proxy.mjs` más `scripts/seed-e2e.ts`
+ * le dan a la compilación local un Postgres real con dos ciudades sembradas, y
+ * esta prueba deja de saltarse en cada corrida.
+ */
+const conCatalogo = Boolean(process.env.PLAYWRIGHT_BASE_URL || process.env.TEST_DATABASE_URL);
 
 test("the root IS the search, not a landing page that links to it", async ({ page }) => {
   // Skipped rather than weakened. The alternative was asserting something
@@ -35,8 +45,8 @@ test("the root IS the search, not a landing page that links to it", async ({ pag
   // reports the read path as covered. What this needs is the bypass secret
   // set on the repository, and then it runs everywhere.
   test.skip(
-    !againstADeployment,
-    "needs a real database: the local fallback build points at an unroutable host",
+    !conCatalogo,
+    "needs a real catalogue: no preview deployment and no local e2e harness (tasks.md 11.22)",
   );
 
   const response = await page.goto("/");

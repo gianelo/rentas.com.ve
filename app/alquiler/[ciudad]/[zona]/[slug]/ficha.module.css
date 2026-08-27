@@ -133,6 +133,32 @@
   color: var(--soft);
 }
 
+/* **Las salidas de la ficha vencida** (11.8): los avisos vivos, dibujados
+   debajo del aviso que ya no está. Va antes del pie y después de todo el
+   contenido del aviso — quien llegó vino a ver ESTE apartamento, y recién
+   cuando termina de enterarse de que no está tiene sentido ofrecerle otro.
+
+   Sin punto de quiebre propio: la cuadrícula ya lleva el suyo (dos columnas
+   en el teléfono, cuatro en escritorio), y un segundo aquí sería una segunda
+   regla de ancho compitiendo en silencio con aquélla. */
+.suggestions {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+/* El mismo rótulo de sección que «Descripción» y «La propiedad tiene»: es una
+   sección más de esta página, no una pantalla dentro de otra. */
+.suggestionsTitle {
+  margin: 0 0 16px;
+  font-family: var(--meta);
+  font-weight: var(--badge-fw);
+  font-size: var(--badge-fs);
+  letter-spacing: var(--badge-ls);
+  text-transform: uppercase;
+  color: var(--soft);
+}
+
 @media (min-width: 768px) {
   .bar {
     min-height: var(--brandbar-h-desktop);
