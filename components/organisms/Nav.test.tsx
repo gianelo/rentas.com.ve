@@ -1,7 +1,43 @@
 import { readFileSync } from "node:fs";
+import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { resolveAccountMenuItems } from "@/modules/identity/domain/nav-account";
+import type { AccountMenuProps } from "./AccountMenu";
 import { Nav, type NavBackAction, type NavProps, type NavWithReturn } from "./Nav";
+
+/**
+ * Las filas viven detrás del estado `open` de `AccountMenu`, así que el HTML
+ * del servidor no las trae. En vez de hidratar, se lee el árbol de React que
+ * `Nav` devuelve y se toman las props con las que llama al menú: es la MISMA
+ * pregunta —qué filas ofrece esta cuenta— sin montar un navegador para ella.
+ */
+function accountMenuItemsOf(element: ReactElement): readonly AccountMenuProps["items"][number][] {
+  const found = findAccountMenu(element as unknown as ReactNode);
+  if (!found) throw new Error("Nav no dibujó el control de cuenta");
+  return found.items;
+}
+
+function findAccountMenu(node: ReactNode): AccountMenuProps | null {
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      const found = findAccountMenu(child);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (!isValidElement(node)) return null;
+  const element = node as ReactElement<{ children?: ReactNode }>;
+  if (typeof element.type === "function") {
+    if (element.type.name === "AccountMenu") return element.props as unknown as AccountMenuProps;
+    // Se ejecuta el componente para ver QUÉ devuelve. Un recorrido que sólo
+    // mirara `props.children` nunca entraría en `Nav`, que no recibe hijos:
+    // sus hijos son lo que su cuerpo construye.
+    const rendered = (element.type as (props: unknown) => ReactNode)(element.props);
+    return findAccountMenu(rendered);
+  }
+  return findAccountMenu(element.props.children ?? null);
+}
 
 const navCss = readFileSync("components/organisms/Nav.module.css", "utf-8");
 
@@ -107,6 +143,29 @@ describe("Nav — con sesión", () => {
     );
 
     expect(agencyHtml).toBe(sessionHtml);
+  });
+
+  /**
+   * **La barra dibuja igual; el menú NO.** La prueba de arriba compara los
+   * bytes del servidor, donde el panel está cerrado y por eso las filas no
+   * salen — así que por sí sola no distingue "la agencia no cambia la barra"
+   * de "`canImportListings` no lo lee nadie", que es exactamente lo que
+   * pasaba antes de este trabajo. Ésta mira las filas que `Nav` le PASA al
+   * menú, que es donde vive la diferencia.
+   */
+  it("le entrega al menú las filas que decide el dominio, «Importar cartera» incluida", () => {
+    const agency = { ...account, canImportListings: true };
+
+    expect(
+      accountMenuItemsOf(
+        <Nav account={agency} publish={publish} pill={PILL} signInHref="/signin" />,
+      ),
+    ).toEqual(resolveAccountMenuItems(agency, publish));
+    expect(
+      accountMenuItemsOf(
+        <Nav account={account} publish={publish} pill={PILL} signInHref="/signin" />,
+      ),
+    ).toEqual(resolveAccountMenuItems(account, publish));
   });
 });
 
