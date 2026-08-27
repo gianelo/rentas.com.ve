@@ -7,9 +7,34 @@
  * y su `useState` — hacia el servidor con sólo importarlo.
  */
 
+/**
+ * Las cinco columnas de 14g, en castellano. **Nombradas como la lámina las
+ * escribe y no como el dominio las llama** (`externalReference`,
+ * `priceUsd`…): esto es el contrato entre la ruta y la pantalla, y las dos
+ * hablan el idioma de quien mira la tabla.
+ */
+export interface CeldasDeFila {
+  readonly referencia: string;
+  readonly precio: string;
+  readonly zona: string;
+  readonly habitaciones: string;
+  readonly titulo: string;
+}
+
+export type NombreDeCelda = keyof CeldasDeFila;
+
 export interface FilaConProblema {
   readonly fila: number;
   readonly razones: readonly string[];
+  /**
+   * tasks.md 9.29 — lo que la fila traía en el archivo, para que la vista
+   * previa pueda mostrar el valor ofensor además del texto del problema.
+   * Viajan crudas: el número de la descripción ya viene dentro de `razones`,
+   * armado en el servidor con el mínimo real del dominio.
+   */
+  readonly celdas: CeldasDeFila;
+  /** Cuáles de esas celdas resaltar («el valor ofensor va resaltado», 14g). */
+  readonly resaltadas: readonly NombreDeCelda[];
 }
 
 export interface VistaPreviaResultado {

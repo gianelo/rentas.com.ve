@@ -269,9 +269,14 @@ describe("confirmImport", () => {
 
     expect(save).not.toHaveBeenCalled();
     expect(result.createdCount).toBe(0);
-    expect(result.errors).toEqual([
+    // Proyectado a lo que este caso prueba. Cada error lleva además las
+    // celdas de 14g (tasks.md 9.29), probadas en `import-row-cells.test.ts`
+    // y en `run-import-validation.test.ts`.
+    expect(result.errors.map(({ rowNumber, reasons }) => ({ rowNumber, reasons }))).toEqual([
       { rowNumber: 2, reasons: ["externalReference.duplicateInFile"] },
       { rowNumber: 3, reasons: ["externalReference.duplicateInFile"] },
     ]);
+    // Y la referencia duplicada es lo que 14g resalta en su propia celda.
+    expect(result.errors[0]?.offendingCells).toEqual(["externalReference"]);
   });
 });

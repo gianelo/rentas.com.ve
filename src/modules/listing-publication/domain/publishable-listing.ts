@@ -192,8 +192,14 @@ function isBlank(value: string | undefined): boolean {
  * ordinary Spanish the two agree — but the moment a description carries an
  * emoji or any astral-plane character, `.length` counts it twice and the
  * counter on screen would disagree with the rule.
+ *
+ * **Exportada (tasks.md 9.29), no copiada.** La vista previa de la
+ * importación tiene que decir «la descripción tiene 61 caracteres, hacen
+ * falta 120» con el MISMO número que este validador usa para rechazarla; una
+ * segunda cuenta escrita al lado es exactamente cómo un contador termina en
+ * desacuerdo con la regla que cuenta.
  */
-function characterCount(value: string): number {
+export function characterCount(value: string): number {
   return [...value].length;
 }
 

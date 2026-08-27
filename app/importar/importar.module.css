@@ -229,3 +229,24 @@
   font-weight: var(--title-fw);
   line-height: var(--title-lh);
 }
+
+/* «El valor ofensor va resaltado en su propia celda» (14g, al pie). `mark`
+   trae un fondo amarillo de fábrica que no es de este sistema; se reemplaza
+   por el par de error, que es el mismo que ya pinta el bloque. */
+.problemaTitulo {
+  color: var(--ink);
+  font-size: var(--ficha-body-fs);
+}
+
+.problemaCeldas {
+  color: var(--soft);
+  font-size: var(--meta-fs);
+}
+
+.celdaResaltada {
+  background: var(--surface);
+  color: var(--err);
+  font-weight: var(--badge-fw);
+  border-radius: var(--r-thumb);
+  padding: 0 4px;
+}

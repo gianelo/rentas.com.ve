@@ -67,13 +67,37 @@ describe("Importar · antes de elegir archivo (14e)", () => {
 });
 
 describe("Importar · vista previa (14g)", () => {
+  // Las dos primeras filas con problema de la lámina 14g, con sus celdas
+  // (tasks.md 9.29) tal como el archivo las traía.
   const preview = {
     estado: "vista-previa" as const,
     totalFilas: 42,
     listas: 38,
     errores: [
-      { fila: 7, razones: ["«El Rosal» no existe en Maracaibo"] },
-      { fila: 12, razones: ["Falta el precio."] },
+      {
+        fila: 7,
+        razones: ["«El Rosal» no existe en Maracaibo"],
+        celdas: {
+          referencia: "MB-0114",
+          precio: "520",
+          zona: "El Rosal",
+          habitaciones: "2",
+          titulo: "Apto 2 hab cerca del lago",
+        },
+        resaltadas: ["zona" as const],
+      },
+      {
+        fila: 12,
+        razones: ["Falta el precio."],
+        celdas: {
+          referencia: "CH-0207",
+          precio: "",
+          zona: "Chacao",
+          habitaciones: "3",
+          titulo: "Apartamento 3 hab con puesto techado",
+        },
+        resaltadas: ["precio" as const],
+      },
     ],
   };
 
@@ -87,6 +111,49 @@ describe("Importar · vista previa (14g)", () => {
     expect(html).toContain("Fila 12");
     expect(html).toContain("Falta el precio.");
     expect(html).toContain("cartera.csv");
+  });
+
+  /**
+   * tasks.md 9.29 — el desvío 2 de la 9.26, cerrado. La lámina 14g dibuja la
+   * referencia, el precio, la zona, las habitaciones y el título de cada
+   * fila con problema; hasta ahora la pantalla sólo podía decir la fila y el
+   * problema porque `ImportRowError` no llevaba nada más.
+   */
+  it("cada fila con problema muestra sus celdas: referencia, título, precio, zona y habitaciones", () => {
+    const html = renderToStaticMarkup(<VistaPrevia preview={preview} archivo="cartera.csv" />);
+
+    expect(html).toContain("Fila 7 · MB-0114");
+    expect(html).toContain("Apto 2 hab cerca del lago");
+    expect(html).toContain("El Rosal");
+    expect(html).toContain("2 hab");
+    expect(html).toContain("$520");
+  });
+
+  /**
+   * «El valor ofensor va resaltado en su propia celda, además del texto del
+   * problema» — la anotación al pie de 14g. `<mark>` y no una clase suelta:
+   * el resaltado es semántico, así que existe también para quien no lo ve.
+   */
+  it("resalta la celda ofensora, y sólo ésa", () => {
+    const html = renderToStaticMarkup(<VistaPrevia preview={preview} archivo="cartera.csv" />);
+
+    expect(html).toMatch(/<mark[^>]*>El Rosal<\/mark>/);
+    // La misma fila muestra «2 hab» sin resaltar: su problema es la zona.
+    expect(html).not.toMatch(/<mark[^>]*>2 hab<\/mark>/);
+  });
+
+  /**
+   * La fila 12 de la lámina no trae precio: la tabla de escritorio escribe
+   * «—» y la tarjeta de móvil simplemente no lo pone. Una celda vacía
+   * resaltada sería un rectángulo de color sobre nada.
+   */
+  it("una celda vacía no se dibuja, ni siquiera resaltada", () => {
+    const html = renderToStaticMarkup(<VistaPrevia preview={preview} archivo="cartera.csv" />);
+
+    expect(html).toContain("Fila 12 · CH-0207");
+    expect(html).toContain("Chacao · 3 hab");
+    expect(html).not.toContain("$ ·");
+    expect(html).not.toMatch(/<mark[^>]*><\/mark>/);
   });
 
   it("el botón de crear dice cuántas va a crear — no «Confirmar»", () => {

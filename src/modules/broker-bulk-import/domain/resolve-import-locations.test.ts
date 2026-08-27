@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogueCity, CatalogueZone } from "../../listing-catalogue/domain/catalogue";
 import type { ImportRow } from "./csv-import-rows";
-import type { ImportRowValidationOutcome } from "./import-row-validation";
+import { importRowCells, offendingCellsFor } from "./import-row-cells";
+import type { ImportRowError, ImportRowValidationOutcome } from "./import-row-validation";
 import {
   applyResolvedLocations,
   mergeLocationResolutionErrors,
@@ -260,21 +261,48 @@ describe("applyResolvedLocations", () => {
   });
 });
 
+/**
+ * tasks.md 9.29: un `ImportRowError` lleva ahora, además de la fila y sus
+ * razones, las cinco celdas que 14g dibuja. Este archivo prueba el merge —
+ * qué razones sobreviven y en qué orden — así que las construye y las
+ * proyecta con estos dos ayudantes en vez de repetirlas en cada aserción.
+ */
+const MERGE_ROWS: readonly ImportRow[] = [
+  { externalReference: "REF-1", priceUsd: "450", zone: "Chacao", rooms: "2", title: "t" },
+];
+
+function errorWithCells(rowNumber: number, reasons: readonly string[]): ImportRowError {
+  return {
+    rowNumber,
+    reasons,
+    cells: importRowCells(MERGE_ROWS[rowNumber - 2] ?? {}),
+    offendingCells: offendingCellsFor(reasons),
+  };
+}
+
+function rowsAndReasons(
+  errors: readonly ImportRowError[],
+): { rowNumber: number; reasons: readonly string[] }[] {
+  return errors.map(({ rowNumber, reasons }) => ({ rowNumber, reasons }));
+}
+
 describe("mergeLocationResolutionErrors", () => {
   const NO_ROW_ERRORS: ImportRowValidationOutcome = { validRows: [], errors: [] };
 
   it("passes an unaffected row's existing error through unchanged", () => {
     const outcome: ImportRowValidationOutcome = {
       validRows: [],
-      errors: [{ rowNumber: 2, reasons: ["priceUsd.invalid"] }],
+      errors: [errorWithCells(2, ["priceUsd.invalid"])],
     };
     const locationOutcomes = [
       { cityId: CARACAS.id, zoneId: LOS_PALOS_GRANDES.id, errorMessages: [] },
     ];
 
-    const merged = mergeLocationResolutionErrors(outcome, locationOutcomes);
+    const merged = mergeLocationResolutionErrors(outcome, locationOutcomes, MERGE_ROWS);
 
-    expect(merged.errors).toEqual([{ rowNumber: 2, reasons: ["priceUsd.invalid"] }]);
+    expect(rowsAndReasons(merged.errors)).toEqual([
+      { rowNumber: 2, reasons: ["priceUsd.invalid"] },
+    ]);
   });
 
   it("passes an unaffected row's valid result through unchanged", () => {
@@ -305,7 +333,7 @@ describe("mergeLocationResolutionErrors", () => {
       { cityId: CARACAS.id, zoneId: LOS_PALOS_GRANDES.id, errorMessages: [] },
     ];
 
-    const merged = mergeLocationResolutionErrors(outcome, locationOutcomes);
+    const merged = mergeLocationResolutionErrors(outcome, locationOutcomes, MERGE_ROWS);
 
     expect(merged.validRows).toEqual(outcome.validRows);
   });
@@ -315,15 +343,15 @@ describe("mergeLocationResolutionErrors", () => {
     // were blanked out by applyResolvedLocations after a resolution failure.
     const outcome: ImportRowValidationOutcome = {
       validRows: [],
-      errors: [{ rowNumber: 2, reasons: ["cityId.required", "zoneId.required"] }],
+      errors: [errorWithCells(2, ["cityId.required", "zoneId.required"])],
     };
     const locationOutcomes = [
       { cityId: "", zoneId: "", errorMessages: ["«Caracas» no es una ciudad válida."] },
     ];
 
-    const merged = mergeLocationResolutionErrors(outcome, locationOutcomes);
+    const merged = mergeLocationResolutionErrors(outcome, locationOutcomes, MERGE_ROWS);
 
-    expect(merged.errors).toEqual([
+    expect(rowsAndReasons(merged.errors)).toEqual([
       { rowNumber: 2, reasons: ["«Caracas» no es una ciudad válida."] },
     ]);
   });
@@ -331,15 +359,15 @@ describe("mergeLocationResolutionErrors", () => {
   it("keeps an INDEPENDENT violation alongside the location message, for the same row", () => {
     const outcome: ImportRowValidationOutcome = {
       validRows: [],
-      errors: [{ rowNumber: 2, reasons: ["priceUsd.invalid", "cityId.required"] }],
+      errors: [errorWithCells(2, ["priceUsd.invalid", "cityId.required"])],
     };
     const locationOutcomes = [
       { cityId: "", zoneId: "", errorMessages: ["«Caracas» no es una ciudad válida."] },
     ];
 
-    const merged = mergeLocationResolutionErrors(outcome, locationOutcomes);
+    const merged = mergeLocationResolutionErrors(outcome, locationOutcomes, MERGE_ROWS);
 
-    expect(merged.errors).toEqual([
+    expect(rowsAndReasons(merged.errors)).toEqual([
       { rowNumber: 2, reasons: ["«Caracas» no es una ciudad válida.", "priceUsd.invalid"] },
     ]);
   });
@@ -349,17 +377,51 @@ describe("mergeLocationResolutionErrors", () => {
       { cityId: "", zoneId: "", errorMessages: ["«Caracas» no es una ciudad válida."] },
     ];
 
-    const merged = mergeLocationResolutionErrors(NO_ROW_ERRORS, locationOutcomes);
+    const merged = mergeLocationResolutionErrors(NO_ROW_ERRORS, locationOutcomes, MERGE_ROWS);
 
-    expect(merged.errors).toEqual([
+    expect(rowsAndReasons(merged.errors)).toEqual([
       { rowNumber: 2, reasons: ["«Caracas» no es una ciudad válida."] },
     ]);
+  });
+
+  /**
+   * tasks.md 9.29. Para cuando el merge corre, `applyResolvedLocations` ya
+   * vació la celda de zona de esta fila — el nombre que la inmobiliaria
+   * escribió sólo existe en la fila cruda, que es la que entra por el tercer
+   * argumento. Y la razón viaja como frase escrita y no como código, así que
+   * la celda a resaltar la nombra este lado: `offendingCellsFor` no puede
+   * clasificar una oración.
+   */
+  it("una falla de ubicación lleva la celda de zona del ARCHIVO y la resalta", () => {
+    const locationOutcomes = [
+      { cityId: "", zoneId: "", errorMessages: ["«Chacao» no existe en Maracaibo."] },
+    ];
+
+    const merged = mergeLocationResolutionErrors(NO_ROW_ERRORS, locationOutcomes, MERGE_ROWS);
+
+    expect(merged.errors[0]?.cells.zone).toBe("Chacao");
+    expect(merged.errors[0]?.cells.externalReference).toBe("REF-1");
+    expect(merged.errors[0]?.offendingCells).toEqual(["zone"]);
+  });
+
+  it("una falla de ubicación con OTRO problema independiente resalta las dos celdas, sin repetir", () => {
+    const outcome: ImportRowValidationOutcome = {
+      validRows: [],
+      errors: [errorWithCells(2, ["priceUsd.invalid", "zoneId.required"])],
+    };
+    const locationOutcomes = [
+      { cityId: "", zoneId: "", errorMessages: ["«Chacao» no existe en Maracaibo."] },
+    ];
+
+    const merged = mergeLocationResolutionErrors(outcome, locationOutcomes, MERGE_ROWS);
+
+    expect(merged.errors[0]?.offendingCells).toEqual(["zone", "priceUsd"]);
   });
 
   it("preserves row numbers and order across many rows", () => {
     const outcome: ImportRowValidationOutcome = {
       validRows: [],
-      errors: [{ rowNumber: 4, reasons: ["priceUsd.invalid"] }],
+      errors: [errorWithCells(4, ["priceUsd.invalid"])],
     };
     const locationOutcomes = [
       { cityId: CARACAS.id, zoneId: LOS_PALOS_GRANDES.id, errorMessages: [] },
@@ -368,9 +430,9 @@ describe("mergeLocationResolutionErrors", () => {
       { cityId: CARACAS.id, zoneId: LOS_PALOS_GRANDES.id, errorMessages: [] },
     ];
 
-    const merged = mergeLocationResolutionErrors(outcome, locationOutcomes);
+    const merged = mergeLocationResolutionErrors(outcome, locationOutcomes, MERGE_ROWS);
 
-    expect(merged.errors).toEqual([
+    expect(rowsAndReasons(merged.errors)).toEqual([
       { rowNumber: 3, reasons: ["«Caracas» no es una ciudad válida."] },
       { rowNumber: 4, reasons: ["priceUsd.invalid"] },
     ]);

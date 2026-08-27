@@ -11,6 +11,8 @@ import {
 } from "../../../src/modules/broker-bulk-import/application/read-bounded-import-file";
 import { ImportMissingAccountContactError } from "../../../src/modules/broker-bulk-import/application/run-import-validation";
 import { validateImport } from "../../../src/modules/broker-bulk-import/application/validate-import";
+import type { ImportRowCellName } from "../../../src/modules/broker-bulk-import/domain/import-row-cells";
+import type { ImportRowError } from "../../../src/modules/broker-bulk-import/domain/import-row-validation";
 import { DrizzleBulkImportAccounts } from "../../../src/modules/broker-bulk-import/infrastructure/drizzle-bulk-import-account";
 import { DrizzleImportAccountContact } from "../../../src/modules/broker-bulk-import/infrastructure/drizzle-import-account-contact";
 import { UnauthenticatedError } from "../../../src/modules/identity/application/require-authenticated-session";
@@ -23,6 +25,7 @@ import {
 import { db } from "../../../src/shared/db/client";
 import { getTransactionalDatabase } from "../../../src/shared/db/transactional-client";
 import { importRowReasonText } from "../../importar/import-copy";
+import type { FilaConProblema, NombreDeCelda } from "../../importar/preview";
 
 /**
  * broker-bulk-import spec, Requirement: Operator-Granted Access (tasks.md
@@ -128,13 +131,37 @@ function respondToError(error: unknown): Response {
   throw error;
 }
 
-function erroresPara(errors: readonly { rowNumber: number; reasons: readonly string[] }[]) {
+/**
+ * tasks.md 9.29: el dominio nombra sus celdas `externalReference`/`priceUsd`
+ * y la lámina las nombra «Referencia»/«Precio». La traducción de nombres pasa
+ * acá, una sola vez, para que `preview.ts` —el contrato con la pantalla— no
+ * arrastre el vocabulario interno del dominio hasta el navegador.
+ */
+const NOMBRE_DE_CELDA: Readonly<Record<ImportRowCellName, NombreDeCelda>> = {
+  externalReference: "referencia",
+  priceUsd: "precio",
+  zone: "zona",
+  rooms: "habitaciones",
+  title: "titulo",
+};
+
+function erroresPara(errors: readonly ImportRowError[]): readonly FilaConProblema[] {
   return errors.map((error) => ({
     fila: error.rowNumber,
     // La traducción pasa en el servidor: la pantalla nunca recibe un código,
     // así que un código sin copia no puede llegar a la cara de nadie sin que
-    // `import-copy.test.ts` se ponga roja primero.
-    razones: error.reasons.map(importRowReasonText),
+    // `import-copy.test.ts` se ponga roja primero. **Las celdas van con la
+    // razón** (tasks.md 9.29) porque son lo que le pone el número a «la
+    // descripción tiene 61 caracteres».
+    razones: error.reasons.map((reason) => importRowReasonText(reason, error.cells)),
+    celdas: {
+      referencia: error.cells.externalReference,
+      precio: error.cells.priceUsd,
+      zona: error.cells.zone,
+      habitaciones: error.cells.rooms,
+      titulo: error.cells.title,
+    },
+    resaltadas: error.offendingCells.map((cell) => NOMBRE_DE_CELDA[cell]),
   }));
 }
 
