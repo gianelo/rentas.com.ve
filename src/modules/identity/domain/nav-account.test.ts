@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { type NavSession, resolveNavAccount, resolveNavPublish } from "./nav-account";
+import {
+  type NavAccountAuthenticated,
+  type NavSession,
+  resolveAccountMenuItems,
+  resolveNavAccount,
+  resolveNavPublish,
+} from "./nav-account";
 
 /**
  * Los tres estados de la barra (tasks.md 20.4) y la regla de Publicar
@@ -91,5 +97,59 @@ describe("resolveNavPublish", () => {
 
     expect(publish.bar).toEqual({ label: "Publicar", emphasis: "outline" });
     expect(publish.menu).toEqual({ label: "Publicar una propiedad", emphasis: "accent" });
+  });
+});
+
+/**
+ * El menú de cuenta (lámina 14b), que es lo ÚNICO que distingue una cuenta de
+ * agencia de una cuenta con sesión — la barra ya se probó idéntica arriba.
+ *
+ * **Por qué la lista la decide el dominio y no `Nav.tsx`.** Hasta este
+ * trabajo `canImportListings` lo calculaba `resolveNavAccount`, lo probaba
+ * este archivo… y no lo leía NADIE: `Nav.tsx` armaba su lista de filas a
+ * mano, sin mirarlo. Una regla que sólo vive en un componente es una regla
+ * que el piso de 90% no alcanza (AGENTS.md §1), y ésta lo demostró quedando
+ * muerta sin que ninguna prueba se pusiera roja.
+ */
+describe("resolveAccountMenuItems", () => {
+  const publish = { bar: { label: "Publicar", emphasis: "outline" as const }, menu: null };
+  const publishWithMenu = {
+    bar: { label: "Publicar", emphasis: "outline" as const },
+    menu: { label: "Publicar una propiedad", emphasis: "accent" as const },
+  };
+
+  function accountWith(canImportListings: boolean): NavAccountAuthenticated {
+    return {
+      kind: "authenticated",
+      displayName: "Inmobiliaria Caracas",
+      email: "contacto@inmocaracas.com",
+      initials: "IC",
+      imageUrl: null,
+      canImportListings,
+    };
+  }
+
+  it("una cuenta de dueño NO recibe «Importar cartera»", () => {
+    const items = resolveAccountMenuItems(accountWith(false), publishWithMenu);
+
+    expect(items.map((item) => item.href)).toEqual(["/publicar", "/mis-avisos"]);
+    expect(items.some((item) => item.href === "/importar")).toBe(false);
+  });
+
+  it("una cuenta de agencia recibe «Importar cartera» hacia /importar, después de «Mis avisos» (14b)", () => {
+    const items = resolveAccountMenuItems(accountWith(true), publishWithMenu);
+
+    expect(items.map((item) => item.href)).toEqual(["/publicar", "/mis-avisos", "/importar"]);
+    expect(items.at(-1)).toEqual({ label: "Importar cartera", href: "/importar" });
+  });
+
+  it("sin sesión no hay menú que abrir", () => {
+    expect(resolveAccountMenuItems({ kind: "anonymous" }, publish)).toEqual([]);
+  });
+
+  it("sin fila de publicar, la lista arranca en «Mis avisos» y no deja un hueco", () => {
+    const items = resolveAccountMenuItems(accountWith(true), publish);
+
+    expect(items.map((item) => item.href)).toEqual(["/mis-avisos", "/importar"]);
   });
 });

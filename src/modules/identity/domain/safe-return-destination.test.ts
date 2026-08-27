@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SIGN_IN_FALLBACK, safeSignInDestination } from "./safe-return-destination";
+import { SIGN_IN_FALLBACK, safeReturnPath, safeSignInDestination } from "./safe-return-destination";
 
 const VALID = "/signin?callbackUrl=%2Falquiler%2Fmaracaibo%2Fbella-vista%2Fapto-abc123";
 
@@ -68,5 +68,66 @@ describe("safeSignInDestination", () => {
     for (const junk of ["%", "://", " ", "/signin?callbackUrl=%E0%A4%A"]) {
       expect(safeSignInDestination(junk)).toBe(SIGN_IN_FALLBACK);
     }
+  });
+});
+
+/**
+ * **La misma regla, sobre una ruta pelada** (tasks.md 8.7).
+ *
+ * La acción de reportar recibe la ruta de la ficha en un campo oculto y
+ * redirige a ella dos veces: al acuse y, si el aviso no existe, a la propia
+ * ficha para que sea ella la que conteste. Las dos son destinos que llegan de
+ * quien envía, así que valen exactamente lo mismo que el `callbackUrl` de
+ * arriba — un redirector abierto con nuestro dominio en la barra.
+ *
+ * Vive acá y no en `listing-trust` para no escribir la regla dos veces: comparte
+ * el origen inventado y el prefijo `/alquiler/` con `safeSignInDestination`, y
+ * dos copias de esta comprobación es cómo una de las dos se queda vieja.
+ */
+describe("safeReturnPath", () => {
+  const FICHA = "/alquiler/maracaibo/bella-vista/apto-abc123";
+
+  it("deja pasar la ruta de una ficha", () => {
+    expect(safeReturnPath(FICHA)).toBe(FICHA);
+  });
+
+  it("conserva la búsqueda de origen que la ficha ya lleva", () => {
+    const conOrigen = `${FICHA}?desde=%2Falquiler%2Fmaracaibo`;
+    expect(safeReturnPath(conOrigen)).toBe(conOrigen);
+  });
+
+  it.each([
+    ["otro origen escrito completo", "https://evil.test/alquiler/x"],
+    ["el origen relativo al protocolo", "//evil.test/alquiler/x"],
+    ["la barra invertida que algunos navegadores normalizan", "/\\evil.test/alquiler/x"],
+    ["una pantalla que no es una ficha", "/publicar"],
+    ["la pantalla de entrar", "/signin?callbackUrl=%2Falquiler%2Fx"],
+    ["un prefijo que sólo se le parece", "/alquilerx/caracas"],
+    // Se compara la ruta YA RESUELTA y no el texto: `/alquiler/../publicar`
+    // empieza con el prefijo y el navegador lo resuelve a `/publicar`, así que
+    // una comparación sobre el texto crudo deja salir de la regla caminando.
+    ["una escapada por segmentos relativos", "/alquiler/../publicar"],
+    ["el campo vacío", ""],
+    ["el campo en blanco", "   "],
+    ["basura que ni siquiera parsea", "://"],
+    // Sí hace lanzar a `new URL`: un origen relativo al protocolo con un host
+    // mal formado. Es lo que ejercita el `catch` — sin un caso así, esa rama
+    // sería código que ningún camino recorre, que es peor que no tenerlo.
+    ["un host que hace lanzar al parser", "//["],
+  ])("rechaza %s", (_caso, candidato) => {
+    expect(safeReturnPath(candidato)).toBeNull();
+  });
+
+  /**
+   * **Devuelve `null` y no una ruta por defecto**, al revés que
+   * `safeSignInDestination`. La diferencia no es de estilo: mandar a alguien a
+   * `/signin` cuando no sabemos de dónde vino es inofensivo, pero acá el valor
+   * se concatena para armar `…/reportar?enviado` — un respaldo silencioso
+   * convertiría una ruta hostil en un acuse sobre una pantalla que no es la
+   * nuestra. `null` obliga a quien llama a decidir, y esa decisión es negarse.
+   */
+  it("no inventa un respaldo: quien llama tiene que ver el rechazo", () => {
+    expect(safeReturnPath("https://evil.test/alquiler/x")).not.toBe(SIGN_IN_FALLBACK);
+    expect(safeReturnPath("https://evil.test/alquiler/x")).toBeNull();
   });
 });

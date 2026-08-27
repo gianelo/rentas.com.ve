@@ -1,0 +1,58 @@
+/* La pantalla de reportar un aviso (tasks.md 8.7, F31).
+
+   **Derivada, no inventada** (AGENTS.md §2). Ninguna lámina la dibuja —el
+   `.dc.html` de la ficha enlaza «Reportar este aviso» a su propio ancla, así
+   que la referencia declara el enlace y no la pantalla que abre—, y la
+   especificación de la ficha sí la nombra ("Formulario de reporte", paso 10).
+   Cuando eso pasa, SISTEMA.md manda: mismos tokens, misma jerarquía de
+   botones, y el ancho de formulario que ya usa publicar (`FormShell`, una sola
+   columna de 600px). Esta hoja no aporta ni un valor propio: es la tipografía
+   de la ficha aplicada a una columna. */
+.page {
+  background: var(--surface);
+  color: var(--ink);
+  padding: 24px 0 40px;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--ficha-title-fs);
+  font-weight: var(--ficha-title-fw);
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+
+.text {
+  margin: 0;
+  font-size: var(--ficha-body-fs);
+  line-height: var(--ficha-body-lh);
+  text-wrap: pretty;
+}
+
+/* El botón se alinea a la izquierda con el texto, no se estira: es una acción
+   destructiva para el aviso de otra persona y no la acción principal de la
+   pantalla. */
+.form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  margin: 0;
+}
+
+/* La vuelta al aviso desde el acuse. Discreta, como el enlace del pie de la
+   ficha del que se llegó. */
+.back {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-min);
+  font-size: var(--meta-fs);
+  color: var(--soft);
+  text-decoration: underline;
+}
+
+@media (min-width: 768px) {
+  .title {
+    font-size: var(--ficha-title-fs-desktop);
+  }
+}

@@ -13,6 +13,12 @@ import {
   type OptionalImportColumn,
 } from "./csv-import-columns";
 import type { ImportRow } from "./csv-import-rows";
+import {
+  type ImportRowCellName,
+  type ImportRowCells,
+  importRowCells,
+  offendingCellsFor,
+} from "./import-row-cells";
 
 /**
  * The five F6 field names (`hasPowerPlant`...), derived from the SAME
@@ -54,6 +60,17 @@ export type ImportRowViolation =
 export interface ImportRowError {
   readonly rowNumber: number;
   readonly reasons: readonly ImportRowViolation[];
+  /**
+   * tasks.md 9.29 — las cinco celdas que la lámina 14g dibuja al lado del
+   * problema, **tal como venían en el archivo**. Sin ellas la vista previa
+   * podía nombrar la fila y el problema pero no el valor ofensor, y la copia
+   * de `description.tooShort` no tenía con qué decir «tiene 61» (el desvío 2
+   * de la 9.26, y el `PublishCopyContext` que `app/importar/import-copy.ts`
+   * dice por escrito que no tiene).
+   */
+  readonly cells: ImportRowCells;
+  /** Cuál de esas celdas resaltar. Vacío cuando ninguna de las cinco lo es. */
+  readonly offendingCells: readonly ImportRowCellName[];
 }
 
 /** Everything `ConfirmImportUseCase` needs to build one `NewListing`, minus
@@ -128,6 +145,14 @@ export function validateImportRows(
   rows: readonly ImportRow[],
   curatedZones: readonly CuratedZone[],
   contact: ImportAccountContact,
+  /**
+   * Las filas **del archivo**, antes de que `applyResolvedLocations`
+   * reemplace `ciudad`/`zona` por sus ids (tasks.md 9.29). Sólo las celdas
+   * que se dibujan salen de acá; ninguna regla las mira. El valor por
+   * defecto no miente: cuando nadie resolvió nada, la fila validada ES la
+   * fila del archivo, que es el caso de cada prueba de este módulo.
+   */
+  sourceRows: readonly ImportRow[] = rows,
 ): ImportRowValidationOutcome {
   const referenceCounts = new Map<string, number>();
   for (const row of rows) {
@@ -188,7 +213,12 @@ export function validateImportRows(
     reasons.push(...validatePublishableListing(draft, curatedZones, "draft"));
 
     if (reasons.length > 0) {
-      errors.push({ rowNumber, reasons });
+      errors.push({
+        rowNumber,
+        reasons,
+        cells: importRowCells(sourceRows[index] ?? row),
+        offendingCells: offendingCellsFor(reasons),
+      });
       return;
     }
 

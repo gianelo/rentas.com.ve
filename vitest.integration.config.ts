@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 // Integration layer (design.md, "Testing Strategy"): Drizzle queries and
@@ -34,6 +35,18 @@ import { defineConfig } from "vitest/config";
 }
 
 export default defineConfig({
+  // Mirrors tsconfig.json's "@/*" -> "./src/*" alias, the same way
+  // vitest.config.ts already does. It did not exist here until a spec needed
+  // to exercise a **server action** against the real database (tasks.md 8.7):
+  // the action under `app/` imports its use case and its adapters through
+  // `@/`, and without this the suite cannot reach the code a browser actually
+  // runs — only the use case underneath it, which is exactly the seam where
+  // this project has now found five unreachable use cases.
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
   test: {
     environment: "node",
     include: ["tests/integration/**/*.test.ts"],

@@ -49,6 +49,18 @@ export interface CreateUploadTargetRequest {
    * the two must move together.
    */
   readonly maxBytes: number;
+  /**
+   * El tamaño exacto que el navegador ya midió, cuando lo sabe. Sube el techo
+   * de byte de una comprobación posterior a una restricción FIRMADA: R2 refusa
+   * un cuerpo de cualquier otro largo en su propio borde.
+   *
+   * **Opcional, y aditivo** — un llamador que no lo sabe sigue obteniendo una
+   * firma válida contra `maxBytes`. Vive en el puerto y no sólo en el
+   * adaptador (donde estaba, como `CreateUploadTargetInput`) desde la 9.28,
+   * porque el caso de uso que firma la subida de un borrador lo necesita y no
+   * puede importar infraestructura para pedirlo.
+   */
+  readonly byteLength?: number;
 }
 
 export interface StoredObject {

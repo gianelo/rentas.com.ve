@@ -1,4 +1,8 @@
-import type { NavAccount, NavPublish } from "@/modules/identity/domain/nav-account";
+import {
+  type NavAccount,
+  type NavPublish,
+  resolveAccountMenuItems,
+} from "@/modules/identity/domain/nav-account";
 import { AppLink } from "../atoms/AppLink";
 import { SearchPill, type SearchPillProps } from "../molecules/SearchPill";
 import { AccountMenu } from "./AccountMenu";
@@ -137,12 +141,10 @@ export function Nav({ account, publish, pill, signInHref, back }: NavProps) {
               imageUrl={account.imageUrl}
               panelTitle={account.displayName}
               panelEmail={account.email}
-              items={[
-                ...(publish.menu
-                  ? [{ label: publish.menu.label, href: "/publicar", emphasis: "accent" as const }]
-                  : []),
-                { label: "Mis avisos", href: "/mis-avisos" },
-              ]}
+              // Ya decididas (`resolveAccountMenuItems`). Escritas a mano acá,
+              // «Importar cartera» era una fila que ningún dominio podía
+              // encender: `canImportListings` se calculaba y no lo leía nadie.
+              items={resolveAccountMenuItems(account, publish)}
             />
           )}
         </div>

@@ -122,13 +122,16 @@ interface GetObjectResult {
 }
 
 /**
- * Additive to the port rather than a change to it: a declared size upgrades
- * the byte ceiling from a post-hoc check to a signed constraint, and a caller
- * that knows only the port still type-checks.
+ * A declared size upgrades the byte ceiling from a post-hoc check to a signed
+ * constraint, and a caller that knows only the port still type-checks.
+ *
+ * **`byteLength` subió al puerto en la 9.28** (`photo-storage.port.ts`), donde
+ * siempre debió estar: el caso de uso que firma la subida de un borrador lo
+ * necesita y una `application/` no puede importar `infrastructure/`. Este
+ * alias queda como el nombre por el que este adaptador y sus pruebas ya lo
+ * conocían.
  */
-export type CreateUploadTargetInput = CreateUploadTargetRequest & {
-  readonly byteLength?: number;
-};
+export type CreateUploadTargetInput = CreateUploadTargetRequest;
 
 export class R2PhotoStorage implements PhotoStoragePort {
   private readonly client: S3Like;

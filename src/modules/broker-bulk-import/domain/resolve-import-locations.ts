@@ -6,6 +6,7 @@ import type {
 } from "../../listing-catalogue/domain/catalogue";
 import { normalize as normalizeLocationName } from "../../listing-catalogue/domain/suggest-filters";
 import type { ImportRow } from "./csv-import-rows";
+import { type ImportRowCellName, importRowCells, offendingCellsFor } from "./import-row-cells";
 import type {
   ImportRowError,
   ImportRowValidationOutcome,
@@ -257,6 +258,13 @@ const LOCATION_VIOLATION_CODES: ReadonlySet<string> = new Set([
 export function mergeLocationResolutionErrors(
   outcome: ImportRowValidationOutcome,
   locationOutcomes: readonly RowLocationOutcome[],
+  /**
+   * Las filas **del archivo** (tasks.md 9.29). Es el único lado del que
+   * puede salir la celda de zona de una fila que no resolvió: para cuando
+   * `validateImportRows` la vio, `applyResolvedLocations` ya la había
+   * vaciado, así que el nombre que la inmobiliaria escribió sólo existe acá.
+   */
+  rows: readonly ImportRow[],
 ): ImportRowValidationOutcome {
   const errorsByRow = new Map(outcome.errors.map((error) => [error.rowNumber, error]));
   const validByRow = new Map(outcome.validRows.map((valid) => [valid.rowNumber, valid]));
@@ -279,8 +287,26 @@ export function mergeLocationResolutionErrors(
     const otherReasons = (existing?.reasons ?? []).filter(
       (reason) => !LOCATION_VIOLATION_CODES.has(reason),
     );
-    errors.push({ rowNumber, reasons: [...location.errorMessages, ...otherReasons] });
+    const reasons = [...location.errorMessages, ...otherReasons];
+    errors.push({
+      rowNumber,
+      reasons,
+      // De la fila cruda, no de `existing.cells`: una fila que resolvió mal
+      // puede no tener error previo, así que puede no haber `existing`.
+      cells: importRowCells(rows[index] ?? {}),
+      // El mensaje de ubicación viaja como frase escrita y no como código,
+      // así que `offendingCellsFor` no puede clasificarlo; la celda la
+      // nombra este lado, que sí sabe de qué está hablando. **`zone` y no
+      // `city`**: la tabla de 14g no dibuja una columna de ciudad, y las dos
+      // fallas de ubicación se leen en la única celda que muestra dónde
+      // queda la propiedad.
+      offendingCells: dedupeCells(["zone", ...offendingCellsFor(otherReasons)]),
+    });
   });
 
   return { validRows, errors };
+}
+
+function dedupeCells(cells: readonly ImportRowCellName[]): readonly ImportRowCellName[] {
+  return [...new Set(cells)];
 }

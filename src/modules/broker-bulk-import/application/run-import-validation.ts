@@ -95,8 +95,13 @@ export async function runImportValidation(
 
   const curatedZones = await collectCuratedZonesForRows(preparedRows, zones);
 
-  const validationOutcome = validateImportRows(preparedRows, curatedZones, resolvedContact);
-  const outcome = mergeLocationResolutionErrors(validationOutcome, locationOutcomes);
+  // `rows` — las del ARCHIVO — viaja como cuarto/tercer argumento a las dos
+  // (tasks.md 9.29). Las reglas siguen corriendo sobre `preparedRows`, que
+  // trabajan en ids; lo único que sale de `rows` son las celdas que 14g
+  // dibuja, y salen de ahí porque `applyResolvedLocations` ya reemplazó
+  // `ciudad`/`zona` por sus ids justo arriba.
+  const validationOutcome = validateImportRows(preparedRows, curatedZones, resolvedContact, rows);
+  const outcome = mergeLocationResolutionErrors(validationOutcome, locationOutcomes, rows);
 
   return { totalRows: rows.length, ...outcome };
 }

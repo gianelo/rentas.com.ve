@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const DIR = "app/alquiler/[ciudad]/[zona]/[slug]";
@@ -63,5 +63,41 @@ describe("la ficha en una columna", () => {
   it("compone la galería y las dos columnas en vez de dibujarlas de nuevo", () => {
     expect(page).toContain("PhotoStrip");
     expect(page).toContain("DetailSplit");
+  });
+});
+
+/**
+ * **El enlace del pie tenía destino y no llevaba a ningún lado** (tasks.md
+ * 8.7).
+ *
+ * `href="#reportar"` es un ancla a una sección que esta página nunca dibujó:
+ * tocarlo no hacía absolutamente nada. Y como se veía bien, la Fase 8 quedó
+ * marcada 6/6 con `reportListing` completo, probado contra Postgres real y sin
+ * un solo llamador — el umbral de tres reportantes distintos no podía
+ * dispararse nunca.
+ *
+ * Lo que se afirma no es el texto del `href` sino que **lo que nombra existe
+ * como ruta**. Una comparación de cadenas seguiría en verde con la ruta mal
+ * escrita; esto no.
+ */
+describe("el enlace de reportar del pie (F31)", () => {
+  const bloque = /styles\.report[\s\S]*?<\/AppLink>/.exec(page)?.[0];
+
+  it("la guarda: el enlace sigue estando en la ficha", () => {
+    // Sin esto, un enlace renombrado dejaría a este bloque midiendo `undefined`
+    // y pasando por eso — la peor forma de verde.
+    expect(bloque).toBeDefined();
+    expect(bloque).toContain("Reportar este aviso");
+  });
+
+  it("no es un ancla de la misma página", () => {
+    expect(bloque).not.toMatch(/href="#/);
+  });
+
+  it("lleva a una ruta que existe de verdad", () => {
+    const destino = /href=\{`\$\{listingPath\}(\/[a-z-]+)`\}/.exec(bloque ?? "")?.[1];
+
+    expect(destino).toBe("/reportar");
+    expect(existsSync(`${DIR}${destino}/page.tsx`)).toBe(true);
   });
 });

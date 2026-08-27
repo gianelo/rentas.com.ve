@@ -1,0 +1,252 @@
+/* Importar cartera — láminas 14e, 14f, 14g y 14h.
+
+   Sin un solo literal de color, radio o tamaño de tipografía: todo sale de
+   `src/styles/tokens.css`, que es lo que `pnpm lint:tokens` exige (D16). Los
+   valores estructurales (separaciones, 600px de columna de formulario) son
+   los que SISTEMA.md fija como literales y que ese gate deliberadamente no
+   tokeniza. */
+
+.flujo {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.paso,
+.previa,
+.rechazo,
+.creado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+/* El rechazo de 14f lleva el color del error, no un borde neutro: es lo que
+   distingue "tu archivo no sirve" de "acá hay un paso más". */
+.rechazo {
+  background: var(--err-bg);
+  border-color: var(--err);
+  color: var(--err);
+}
+
+.pasoNumero {
+  margin: 0;
+  color: var(--soft);
+  font-size: var(--meta-fs);
+  font-weight: var(--meta-fw);
+  letter-spacing: var(--badge-ls);
+  text-transform: uppercase;
+}
+
+.tituloSeccion {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--ficha-title-fs);
+  font-weight: var(--ficha-title-fw);
+}
+
+.explicacion {
+  margin: 0;
+  color: var(--soft);
+  font-size: var(--ficha-body-fs);
+  line-height: var(--ficha-body-lh);
+}
+
+.archivo {
+  margin: 0;
+  color: var(--soft);
+  font-size: var(--meta-fs);
+  font-weight: var(--meta-fw);
+}
+
+/* Mismo nivel visual que un ActionButton, pero es un enlace: navega sin
+   JavaScript, que es exactamente por lo que la plantilla es un enlace. */
+.bajarPlantilla {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--target-min);
+  padding: 8px 16px;
+  border-radius: var(--r);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.etiquetaArchivo {
+  color: var(--ink);
+  font-size: var(--control-fs);
+  font-weight: var(--meta-fw);
+}
+
+.campoArchivo {
+  min-height: var(--target-min);
+  max-width: 100%;
+  padding: 8px;
+  border: 1px solid var(--strong);
+  border-radius: var(--r);
+  background: var(--ctl);
+  color: var(--ink);
+  font: inherit;
+}
+
+.limites,
+.columnas,
+.problemas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.limites {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--soft);
+  font-size: var(--meta-fs);
+}
+
+.tituloColumnas {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--control-fs);
+  font-weight: var(--meta-fw);
+}
+
+.columnas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap);
+  color: var(--ink);
+  font-size: var(--meta-fs);
+}
+
+.columnas code {
+  padding: 2px 6px;
+  border-radius: var(--rs);
+  background: var(--tint);
+  color: var(--accent);
+  font-family: var(--mono);
+}
+
+.aviso {
+  margin: 0;
+  padding: 12px;
+  border-radius: var(--r);
+  background: var(--warn-bg);
+  color: var(--warn);
+  font-size: var(--meta-fs);
+}
+
+/* La pantalla no queda muda si el paquete no llega: el `<noscript>` dice por
+   qué el botón de arriba está cerrado. */
+.sinScript {
+  margin: 0;
+  padding: 12px;
+  border-radius: var(--r);
+  background: var(--warn-bg);
+  color: var(--warn);
+  font-size: var(--meta-fs);
+}
+
+.cuenta {
+  margin: 0;
+  color: var(--soft);
+  font-size: var(--ficha-body-fs);
+}
+
+.cuentaOk {
+  color: var(--accent);
+  font-size: var(--ficha-stat-fs);
+}
+
+.cuentaErr {
+  color: var(--err);
+  font-size: var(--ficha-stat-fs);
+}
+
+/* Las filas con problema, arriba y en su propio bloque (14g). */
+.problemas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  align-self: stretch;
+}
+
+.problema {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border-left: 3px solid var(--err);
+  border-radius: var(--r-thumb);
+  background: var(--err-bg);
+}
+
+.problemaFila {
+  color: var(--ink);
+  font-size: var(--meta-fs);
+  font-weight: var(--badge-fw);
+  letter-spacing: var(--badge-ls);
+}
+
+.problemaRazon {
+  color: var(--err);
+  font-size: var(--ficha-body-fs);
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap);
+}
+
+@media (min-width: 768px) {
+  .paso,
+  .previa,
+  .rechazo,
+  .creado {
+    padding: 24px;
+  }
+}
+
+.volver {
+  display: inline-block;
+  margin-block: 16px 8px;
+  color: var(--soft);
+  font-size: var(--meta-fs);
+  font-weight: var(--meta-fw);
+}
+
+.titulo {
+  margin: 0 0 16px;
+  color: var(--ink);
+  font-size: var(--title-fs);
+  font-weight: var(--title-fw);
+  line-height: var(--title-lh);
+}
+
+/* «El valor ofensor va resaltado en su propia celda» (14g, al pie). `mark`
+   trae un fondo amarillo de fábrica que no es de este sistema; se reemplaza
+   por el par de error, que es el mismo que ya pinta el bloque. */
+.problemaTitulo {
+  color: var(--ink);
+  font-size: var(--ficha-body-fs);
+}
+
+.problemaCeldas {
+  color: var(--soft);
+  font-size: var(--meta-fs);
+}
+
+.celdaResaltada {
+  background: var(--surface);
+  color: var(--err);
+  font-weight: var(--badge-fw);
+  border-radius: var(--r-thumb);
+  padding: 0 4px;
+}

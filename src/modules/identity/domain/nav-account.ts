@@ -85,3 +85,46 @@ export function resolveNavPublish(account: NavAccount): NavPublish {
     menu: { label: "Publicar una propiedad", emphasis: "accent" },
   };
 }
+
+/** Una fila del menú de cuenta (14b). Misma forma que `AccountMenuItem`. */
+export interface AccountMenuEntry {
+  readonly label: string;
+  readonly href: string;
+  readonly emphasis?: "accent";
+}
+
+/**
+ * Las filas del menú de cuenta (lámina 14b) — **la única pieza del producto
+ * que mira `canImportListings`**.
+ *
+ * Hasta este trabajo ese campo se calculaba acá, se probaba acá y no lo leía
+ * nadie: `Nav.tsx` escribía su lista de filas a mano. Una regla que sólo vive
+ * en un componente no la alcanza el piso de 90% (AGENTS.md §1), y ésta lo
+ * demostró quedando muerta sin que ninguna prueba se pusiera roja.
+ *
+ * **La lámina dibuja cinco filas y acá hay tres.** «Mis datos» y «Salir» son
+ * pantallas que todavía no existen, y una fila que lleva a un enlace roto es
+ * peor que una fila ausente (AGENTS.md §7). Anotado como desvío en tasks.md
+ * 9.26, no resuelto en silencio.
+ *
+ * **`/importar` no es la única puerta, y no debe serlo**: la lámina 14d pone
+ * «Importar cartera» dentro de `/mis-avisos` ("importar vive acá, no en la
+ * navegación global"), que es la que funciona con JavaScript apagado. Ésta es
+ * el atajo de 14b, no el camino.
+ */
+export function resolveAccountMenuItems(
+  account: NavAccount,
+  publish: NavPublish,
+): readonly AccountMenuEntry[] {
+  if (account.kind === "anonymous") return [];
+
+  const items: AccountMenuEntry[] = [];
+  if (publish.menu) {
+    items.push({ label: publish.menu.label, href: "/publicar", emphasis: "accent" });
+  }
+  items.push({ label: "Mis avisos", href: "/mis-avisos" });
+  if (account.canImportListings) {
+    items.push({ label: "Importar cartera", href: "/importar" });
+  }
+  return items;
+}
