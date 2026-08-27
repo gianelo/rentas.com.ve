@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AppLink } from "../../components/atoms/AppLink";
 import type { SearchPillProps } from "../../components/molecules/SearchPill";
 import { Nav } from "../../components/organisms/Nav";
 import { DrizzleBulkImportAccounts } from "../../src/modules/broker-bulk-import/infrastructure/drizzle-bulk-import-account";
@@ -69,6 +70,22 @@ export default async function MisAvisosPage() {
       />
       <main>
         <h1>Mis avisos</h1>
+        {/*
+          **«Importar vive acá, no en la navegación global»** — la anotación al
+          pie de la lámina 14d. El menú de cuenta (14b) también la ofrece, pero
+          ese panel sólo existe con JavaScript y su propia lámina aclara que
+          "nada vive solo en el menú": ésta es la puerta que funciona igual sin
+          el paquete.
+
+          La decisión ya viene tomada (`resolveNavAccount` -> `canImportListings`,
+          con el piso de 90% encima). Acá sólo se dibuja: la página no mira
+          `bulkImportEnabled` por su cuenta (AGENTS.md §1).
+        */}
+        {account.kind === "authenticated" && account.canImportListings ? (
+          <p>
+            <AppLink href="/importar">Importar cartera</AppLink>
+          </p>
+        ) : null}
         <p>
           La lista de tus publicaciones vive acá. Todavía no está construida — es la próxima porción
           de este trabajo.
