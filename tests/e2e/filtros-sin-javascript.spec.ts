@@ -29,12 +29,22 @@ import { expect, test } from "@playwright/test";
  * `app/alquiler/[ciudad]/filtros-contract.test.ts` ata las dos páginas al
  * dominio.
  */
-const againstADeployment = Boolean(process.env.PLAYWRIGHT_BASE_URL);
+/**
+ * **Un catálogo de verdad, venga de donde venga** (tasks.md 11.22).
+ *
+ * Antes esto era `Boolean(PLAYWRIGHT_BASE_URL)` y el comentario de arriba
+ * explicaba por qué: el respaldo local compilaba contra una `DATABASE_URL`
+ * deliberadamente inalcanzable, así que todo lo que lee el catálogo sólo podía
+ * contestar 500. Ya no — `scripts/neon-http-proxy.mjs` más `scripts/seed-e2e.ts`
+ * le dan a la compilación local un Postgres real con dos ciudades sembradas, y
+ * esta prueba deja de saltarse en cada corrida.
+ */
+const conCatalogo = Boolean(process.env.PLAYWRIGHT_BASE_URL || process.env.TEST_DATABASE_URL);
 
 test.beforeEach(() => {
   test.skip(
-    !againstADeployment,
-    "needs a real database: the local fallback build points at an unroutable host",
+    !conCatalogo,
+    "needs a real catalogue: no preview deployment and no local e2e harness (tasks.md 11.22)",
   );
 });
 
@@ -52,8 +62,15 @@ test("el filtro de la pastilla abre el panel sin una línea de JavaScript", asyn
   await expect(panel).toBeVisible();
   // Los cuatro grupos que quedaron después de la 14.36. La ubicación no está:
   // eso lo resuelve el texto de la pastilla.
-  await expect(panel.getByText("Precio")).toBeVisible();
-  await expect(panel.getByText("Quién publica")).toBeVisible();
+  //
+  // **Se apunta al ENCABEZADO del grupo y no a un texto suelto**, y es una
+  // corrección: `getByText("Precio")` también alcanzaba el botón «Usar este
+  // precio» del grupo abierto, así que la prueba caía por ambigüedad. Nadie lo
+  // vio porque este archivo se saltaba solo desde que se escribió — es la
+  // segunda prueba de este repositorio que se pudre detrás de un `test.skip`,
+  // y la razón por la que la 11.22 existe.
+  await expect(panel.getByRole("heading", { name: "Precio" })).toBeVisible();
+  await expect(panel.getByRole("heading", { name: "Quién publica" })).toBeVisible();
   await expect(panel).not.toContainText("¿En qué ciudad?");
 
   // Y la salida también es una dirección: cerrar devuelve a la misma búsqueda.
