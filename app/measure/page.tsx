@@ -334,6 +334,21 @@ function harnessPanel() {
         hasAppliances: 6,
       },
       byPublisherType: { owner: 11, broker: 5 },
+      // Las nueve relajaciones y el total pelado de la ciudad. Son la otra
+      // mitad del conteo en vivo (14.34): cuántos quedarían al SOLTAR cada
+      // filtro, que es lo que dice el botón al volver a tocar el elegido.
+      withoutFilter: {
+        zone: 40,
+        price: 22,
+        rooms: 31,
+        publisherType: 25,
+        hasPowerPlant: 18,
+        hasRegularWater: 19,
+        isFurnished: 20,
+        hasSecurity: 21,
+        hasAppliances: 23,
+      },
+      cityTotal: 70,
     },
     criteria: {},
   });

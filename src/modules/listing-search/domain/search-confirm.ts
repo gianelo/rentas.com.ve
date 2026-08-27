@@ -162,20 +162,33 @@ export interface SearchConfirmInput {
   readonly relief?: ReliefOffer | null;
 }
 
+/**
+ * **Cómo se escribe un total, y se escribe UNA sola vez** (14.34).
+ *
+ * El conteo en vivo tiene que decir exactamente lo mismo que dirá el servidor
+ * cuando conteste, porque los dos aparecen en el mismo botón con menos de un
+ * segundo de diferencia. Dos formateos escritos por separado son dos que se
+ * separan, y el número parpadearía de forma distinta al llegar la respuesta —
+ * que es justo lo que este botón existe para que no pase.
+ *
+ * El cero dice qué pasó en vez de «Ver 0 avisos»: un botón que ofrece ver nada
+ * es una salida a otra pantalla vacía (regla transversal 4).
+ */
+export function confirmCountLabel(total: number): string {
+  if (total <= 0) return "Ningún aviso coincide";
+  return total === 1 ? "Ver 1 aviso" : `Ver ${total} avisos`;
+}
+
 export function resolveSearchConfirm(input: SearchConfirmInput): SearchConfirm {
   const { total, resultsHref, onlyListingHref } = input;
 
   if (total <= 0) {
-    return { kind: "empty", label: "Ningún aviso coincide", relief: input.relief ?? null };
+    return { kind: "empty", label: confirmCountLabel(total), relief: input.relief ?? null };
   }
 
   if (total === 1 && onlyListingHref !== undefined) {
     return { kind: "listing", label: "Ver el único aviso", href: onlyListingHref };
   }
 
-  return {
-    kind: "results",
-    label: total === 1 ? "Ver 1 aviso" : `Ver ${total} avisos`,
-    href: resultsHref,
-  };
+  return { kind: "results", label: confirmCountLabel(total), href: resultsHref };
 }

@@ -19,6 +19,18 @@ const COUNTS = {
     hasAppliances: 3,
   },
   byPublisherType: { owner: 11, broker: 5 },
+  withoutFilter: {
+    zone: 40,
+    price: 22,
+    rooms: 31,
+    publisherType: 25,
+    hasPowerPlant: 18,
+    hasRegularWater: 19,
+    isFurnished: 20,
+    hasSecurity: 21,
+    hasAppliances: 23,
+  },
+  cityTotal: 70,
 } as const;
 
 const INPUT: SearchPanelInput = {
@@ -101,7 +113,10 @@ describe("el conteo en vivo (F7)", () => {
     const markup = render();
     // Sólo el botón de confirmar: el buscador de zonas tiene su propio
     // «Buscar», que es otro control y otra pregunta.
-    const confirm = /data-testid="search-confirm"[^>]*>([^<]*)</.exec(markup)?.[1];
+    // El texto ahora vive dentro del `<span aria-live>` que anuncia el cambio
+    // (14.34). Es el mismo sujeto —lo que el botón dice— leído un nivel más
+    // adentro; la aserción no se aflojó.
+    const confirm = /data-testid="search-confirm"[\s\S]*?<span[^>]*>([^<]*)</.exec(markup)?.[1];
 
     expect(confirm).toBe("Ver 16 avisos");
     for (const forbidden of ["Aplicar", "Buscar", "Filtrar"]) {
@@ -237,5 +252,50 @@ describe("el panel como modal en todos los anchos (14.33)", () => {
     expect(markup).toMatch(
       /id="filtros-atributos"[^>]*data-open=""|data-open=""[^>]*id="filtros-atributos"/,
     );
+  });
+});
+
+describe("el conteo en vivo se monta ENCIMA del piso, nunca en su lugar (14.34)", () => {
+  it("el botón sale del servidor con su número escrito, sin ejecutar una línea de script", () => {
+    // `renderToStaticMarkup` son los bytes servidos con nada ejecutado del
+    // lado del cliente. Si el número dependiera del script, acá no estaría —
+    // y quien se quedó sin bundle vería un botón mudo.
+    const markup = render();
+    expect(markup).toContain("Ver 16 avisos");
+  });
+
+  it("cada opción que se puede tocar lleva escrito el número que va a producir", () => {
+    // El dato viaja en el marcado que el servidor ya escribe: el componente de
+    // cliente lo lee de ahí y no vuelve a preguntar nada.
+    const markup = render();
+    expect(markup).toContain('data-preview="Ver 9 avisos"');
+    expect(markup).toContain('data-preview="Ver 4 avisos"');
+    expect(markup).toContain('data-preview="Ver 11 avisos"');
+    expect(markup).toContain('data-preview="Ver 70 avisos"');
+  });
+
+  it("los adelantos son exactamente los diez enlaces que se pueden tocar", () => {
+    // Contarlos, y no buscar la ausencia de uno: un `not.toContain` sigue en
+    // verde si el atributo desapareció de TODAS las opciones, que es la misma
+    // clase de defecto que la 20.x ya pagó dos veces. Nueve: tres escalones de
+    // habitaciones (el cuarto cuenta 0 y llega apagado), quién publica, cuatro
+    // atributos (vigilancia cuenta 0) y «Limpiar todo».
+    const markup = render();
+    expect(markup.split('data-preview="').length - 1).toBe(9);
+
+    // Y las dos apagadas se dibujan como `<span aria-disabled>`, sin dirección
+    // que tocar y por lo tanto sin número que adelantar.
+    expect(markup.split('aria-disabled="true"').length - 1).toBe(2);
+  });
+
+  it("el número del botón se anuncia cuando cambia", () => {
+    // Sin `aria-live` el conteo cambia sólo para quien lo ve. La lista de
+    // opciones que reemplaza ya se leía en voz alta; esto no puede ser una
+    // regresión contra ella (AGENTS.md §2).
+    expect(render()).toContain('aria-live="polite"');
+  });
+
+  it("con el panel cerrado no hay ni un número adelantado dando vueltas", () => {
+    expect(renderToStaticMarkup(<SearchPanel model={buildSearchPanel(INPUT)} />)).toBe("");
   });
 });

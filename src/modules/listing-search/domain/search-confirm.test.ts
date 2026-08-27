@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chooseRelief, resolveSearchConfirm } from "./search-confirm";
+import { chooseRelief, confirmCountLabel, resolveSearchConfirm } from "./search-confirm";
 
 const RESULTS = "/alquiler/distrito-capital?zona=chacao";
 
@@ -149,5 +149,32 @@ describe("cuál es el filtro más restrictivo", () => {
     expect(
       chooseRelief([{ filter: "price", resultCount: 14, href: "/alquiler/dc" }])?.resultCount,
     ).toBe(14);
+  });
+});
+
+describe("la etiqueta del conteo se escribe una sola vez (14.34)", () => {
+  // El conteo en vivo tiene que decir lo MISMO que dirá el servidor cuando
+  // conteste. Dos formateos separados —uno acá y otro para la vista previa—
+  // son dos que se separan: bastaría con que uno dijera «Ver 9 avisos» y el
+  // otro «9 avisos» para que el número parpadeara al llegar la respuesta.
+  it("es la misma función que usa el botón del servidor", () => {
+    expect(confirmCountLabel(9)).toBe("Ver 9 avisos");
+    expect(resolveSearchConfirm({ total: 9, resultsHref: RESULTS })).toMatchObject({
+      label: confirmCountLabel(9),
+    });
+  });
+
+  it("singulariza en uno, porque «Ver 1 avisos» se lee como un error", () => {
+    expect(confirmCountLabel(1)).toBe("Ver 1 aviso");
+  });
+
+  it("en cero dice qué pasó, y no «Ver 0 avisos»", () => {
+    // El mismo texto que `resolveSearchConfirm` ya escribe para el vacío: un
+    // botón que dice «Ver 0 avisos» invita a tocar algo que no lleva a nada.
+    expect(confirmCountLabel(0)).toBe("Ningún aviso coincide");
+    expect(confirmCountLabel(-3)).toBe("Ningún aviso coincide");
+    expect(resolveSearchConfirm({ total: 0, resultsHref: RESULTS })).toMatchObject({
+      label: confirmCountLabel(0),
+    });
   });
 });
