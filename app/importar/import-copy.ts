@@ -5,7 +5,11 @@ import {
   IMPORT_COLUMN_ALLOWLIST,
   type OptionalImportColumn,
 } from "../../src/modules/broker-bulk-import/domain/csv-import-columns";
-import type { PublishViolation } from "../../src/modules/listing-publication/domain/publishable-listing";
+import type { ImportRowCells } from "../../src/modules/broker-bulk-import/domain/import-row-cells";
+import {
+  MIN_DESCRIPTION_CHARACTERS,
+  type PublishViolation,
+} from "../../src/modules/listing-publication/domain/publishable-listing";
 
 /**
  * El castellano que lee una inmobiliaria en la vista previa (lámina 14g),
@@ -21,11 +25,19 @@ import type { PublishViolation } from "../../src/modules/listing-publication/dom
  *
  * ## Por qué NO se reusa `PUBLISH_VIOLATION_COPY`
  *
- * Sus mensajes cuentan: «Mínimo 120 caracteres. Vas 24». Ese `24` sale de un
- * `PublishCopyContext` que la importación **no tiene**: `ImportRowError` sólo
- * lleva `rowNumber` y `reasons`, nunca las celdas de la fila. Reusar esa tabla
- * sin contexto imprimiría «Vas 0» en cada fila, que no es menos preciso: es
- * falso. Se prefiere una frase sin número a un número inventado.
+ * Sus mensajes cuentan: «Mínimo 120 caracteres. Vas 24». Ese `24` salía de un
+ * `PublishCopyContext` que la importación **no tenía**: `ImportRowError` sólo
+ * llevaba `rowNumber` y `reasons`, nunca las celdas de la fila. Reusar esa
+ * tabla sin contexto habría impreso «Vas 0» en cada fila, que no es menos
+ * preciso: es falso.
+ *
+ * **La 9.29 cerró esa mitad, y sólo esa.** `ImportRowError.cells` ya lleva el
+ * conteo de la descripción, así que `description.tooShort` dice el número que
+ * 14g escribe. El resto de la tabla sigue sin contador y sigue siendo suya:
+ * las dos tablas dicen cosas distintas porque el publicador corrige un campo
+ * en pantalla y la inmobiliaria corrige un archivo en su computadora. Sin
+ * celdas, cada frase vuelve a ser la de antes — un número ausente es
+ * preferible a uno inventado.
  *
  * El costo de tener dos tablas —que se separen— lo paga la última prueba de
  * `import-copy.test.ts`, que recorre las claves REALES de la otra tabla en
@@ -110,6 +122,18 @@ const PUBLISH_COPY: Record<PublishViolation, string> = {
 
 const REASON_COPY: Record<string, string> = { ...PUBLISH_COPY, ...BOOLEAN_COPY };
 
+/**
+ * Las frases que la fila puede completar con un número (tasks.md 9.29,
+ * lámina 14g fila 31). **El mínimo se lee de `MIN_DESCRIPTION_CHARACTERS`**,
+ * la misma constante que el validador aplica: dos «120» escritos aparte es
+ * exactamente cómo un mensaje termina prometiendo un límite distinto del que
+ * se rechaza.
+ */
+const COUNTED_COPY: Record<string, (cells: ImportRowCells) => string> = {
+  "description.tooShort": (cells) =>
+    `La descripción tiene ${cells.descriptionLength} caracteres, hacen falta ${MIN_DESCRIPTION_CHARACTERS}.`,
+};
+
 const IMPORT_ONLY_COPY: Record<string, string> = {
   "externalReference.required":
     "Falta la referencia externa: es el código con el que reconocés esta propiedad.",
@@ -124,6 +148,7 @@ const IMPORT_ONLY_COPY: Record<string, string> = {
  * lo decide la fila y no una tabla fija. Traducirlas otra vez sería inventar;
  * pasan tal cual, que es lo que su propio comentario pide.
  */
-export function importRowReasonText(reason: string): string {
-  return REASON_COPY[reason] ?? IMPORT_ONLY_COPY[reason] ?? reason;
+export function importRowReasonText(reason: string, cells?: ImportRowCells): string {
+  const counted = cells === undefined ? undefined : COUNTED_COPY[reason]?.(cells);
+  return counted ?? REASON_COPY[reason] ?? IMPORT_ONLY_COPY[reason] ?? reason;
 }

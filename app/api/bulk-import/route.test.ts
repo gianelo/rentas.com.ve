@@ -110,7 +110,21 @@ describe("POST /api/bulk-import — revisar", () => {
         externalReference: `REF-${index}`,
         listing: {},
       })),
-      errors: [{ rowNumber: 7, reasons: ["priceUsd.required"] }],
+      errors: [
+        {
+          rowNumber: 7,
+          reasons: ["priceUsd.required"],
+          cells: {
+            externalReference: "MB-0114",
+            priceUsd: "",
+            zone: "El Rosal",
+            rooms: "2",
+            title: "Apto 2 hab cerca del lago",
+            descriptionLength: 300,
+          },
+          offendingCells: ["priceUsd"],
+        },
+      ],
     });
 
     const response = await post(request("revisar"));
@@ -121,9 +135,63 @@ describe("POST /api/bulk-import — revisar", () => {
       totalFilas: 42,
       listas: 38,
       // La copia se resuelve en el servidor: la pantalla nunca ve un código.
-      errores: [{ fila: 7, razones: ["Falta el precio."] }],
+      // Las celdas viajan crudas (tasks.md 9.29): son el texto del archivo,
+      // que es justamente lo que 14g muestra.
+      errores: [
+        {
+          fila: 7,
+          razones: ["Falta el precio."],
+          celdas: {
+            referencia: "MB-0114",
+            precio: "",
+            zona: "El Rosal",
+            habitaciones: "2",
+            titulo: "Apto 2 hab cerca del lago",
+          },
+          resaltadas: ["precio"],
+        },
+      ],
     });
     expect(confirmImport).not.toHaveBeenCalled();
+  });
+
+  /**
+   * tasks.md 9.29. El contador de la descripción se arma en el servidor, con
+   * el mínimo real del dominio — la pantalla recibe la frase entera y no un
+   * número suelto que tendría que saber con qué comparar.
+   */
+  it("la frase de la descripción corta llega con su número, como la escribe 14g", async () => {
+    validateImport.mockResolvedValueOnce({
+      totalRows: 1,
+      validRows: [],
+      errors: [
+        {
+          rowNumber: 31,
+          reasons: ["description.tooShort"],
+          cells: {
+            externalReference: "TN-0091",
+            priceUsd: "640",
+            zone: "Tierra Negra",
+            rooms: "4",
+            title: "Quinta con piscina",
+            descriptionLength: 61,
+          },
+          offendingCells: [],
+        },
+      ],
+    });
+
+    const response = await post(request("revisar"));
+    const body = (await response.json()) as {
+      errores: readonly { razones: readonly string[]; resaltadas: readonly string[] }[];
+    };
+
+    expect(body.errores[0]?.razones).toEqual([
+      "La descripción tiene 61 caracteres, hacen falta 120.",
+    ]);
+    // Ninguna de las cinco columnas muestra la descripción, así que no hay
+    // celda que resaltar: el problema se lee entero en su propio texto.
+    expect(body.errores[0]?.resaltadas).toEqual([]);
   });
 
   it("una acción que no es ninguna de las dos se rechaza sin tocar nada", async () => {
@@ -152,7 +220,21 @@ describe("POST /api/bulk-import — crear", () => {
       totalRows: 42,
       createdCount: 38,
       skippedDuplicates: [{ rowNumber: 3, externalReference: "CH-0118" }],
-      errors: [{ rowNumber: 7, reasons: ["priceUsd.required"] }],
+      errors: [
+        {
+          rowNumber: 7,
+          reasons: ["priceUsd.required"],
+          cells: {
+            externalReference: "CH-0207",
+            priceUsd: "",
+            zone: "Chacao",
+            rooms: "3",
+            title: "Apartamento 3 hab con puesto techado",
+            descriptionLength: 300,
+          },
+          offendingCells: ["priceUsd"],
+        },
+      ],
     });
 
     const response = await post(request("crear"));
@@ -163,7 +245,20 @@ describe("POST /api/bulk-import — crear", () => {
       totalFilas: 42,
       creadas: 38,
       yaEstaban: [{ fila: 3, referencia: "CH-0118" }],
-      errores: [{ fila: 7, razones: ["Falta el precio."] }],
+      errores: [
+        {
+          fila: 7,
+          razones: ["Falta el precio."],
+          celdas: {
+            referencia: "CH-0207",
+            precio: "",
+            zona: "Chacao",
+            habitaciones: "3",
+            titulo: "Apartamento 3 hab con puesto techado",
+          },
+          resaltadas: ["precio"],
+        },
+      ],
     });
     expect(validateImport).not.toHaveBeenCalled();
   });

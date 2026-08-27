@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { ImportRowCells } from "../../src/modules/broker-bulk-import/domain/import-row-cells";
 import { PUBLISH_VIOLATION_COPY } from "../publicar/violation-copy";
 import { importRowReasonText } from "./import-copy";
 
@@ -14,6 +15,15 @@ import { importRowReasonText } from "./import-copy";
  * `resolve-import-locations.ts` ya escribe en castellano —porque QUÉ ciudades
  * existen lo decide la fila, no una tabla fija— viajan tal cual.
  */
+const CELLS_CON_DESCRIPCION_CORTA: ImportRowCells = {
+  externalReference: "TN-0091",
+  priceUsd: "640",
+  zone: "Tierra Negra",
+  rooms: "4",
+  title: "Quinta con piscina",
+  descriptionLength: 61,
+};
+
 describe("importRowReasonText", () => {
   it("traduce un código del dominio a una frase que se puede leer", () => {
     // Los códigos REALES del dominio (`publishable-listing.ts`), no los que
@@ -55,6 +65,30 @@ describe("importRowReasonText", () => {
    * la pantalla de importar como texto crudo — `price.notPositive` en la cara
    * de una inmobiliaria — y nada se pondría rojo.
    */
+  /**
+   * tasks.md 9.29 — la frase que la lámina 14g escribe en la fila 31: «La
+   * descripción tiene 61 caracteres, hacen falta 120». Hasta ahora esta
+   * tabla escribía una frase sin número y su propio comentario explicaba por
+   * qué: «Ese 24 sale de un `PublishCopyContext` que la importación no
+   * tiene». Ya lo tiene: `ImportRowError.cells` lleva el conteo.
+   */
+  it("cuenta la descripción cuando la fila le dice cuántos caracteres trae", () => {
+    expect(importRowReasonText("description.tooShort", CELLS_CON_DESCRIPCION_CORTA)).toBe(
+      "La descripción tiene 61 caracteres, hacen falta 120.",
+    );
+  });
+
+  /**
+   * Sin celdas —o para cualquier otro código— la frase sigue siendo la de
+   * antes. Un «tiene 0» inventado es peor que una frase sin número, que es
+   * la razón por la que esta tabla no reusaba `PUBLISH_VIOLATION_COPY`.
+   */
+  it("sin celdas no inventa el número: vuelve a la frase sin contador", () => {
+    expect(importRowReasonText("description.tooShort")).toBe(
+      "La descripción es más corta que el mínimo de caracteres.",
+    );
+  });
+
   it("cubre TODOS los códigos que el publicador ya sabe traducir", () => {
     const sinCopia = Object.keys(PUBLISH_VIOLATION_COPY).filter(
       (code) => importRowReasonText(code) === code,

@@ -156,7 +156,23 @@ describe("runImportValidation", () => {
     });
 
     expect(result.errors).toEqual([
-      { rowNumber: 2, reasons: ["«El Rosal» no existe en Distrito Capital."] },
+      {
+        rowNumber: 2,
+        reasons: ["«El Rosal» no existe en Distrito Capital."],
+        // tasks.md 9.29: la celda lleva el nombre que se escribió en el
+        // archivo. Para cuando el validador corre, `applyResolvedLocations`
+        // ya la reemplazó — y en esta fila no pudo, así que tomarla de la
+        // fila preparada daría vacío en vez de «El Rosal».
+        cells: {
+          externalReference: "REF-1",
+          priceUsd: "450",
+          zone: "El Rosal",
+          rooms: "2",
+          title: "t",
+          descriptionLength: 162,
+        },
+        offendingCells: ["zone"],
+      },
     ]);
   });
 
@@ -229,7 +245,51 @@ describe("runImportValidation", () => {
 
     expect(result.validRows).toEqual([]);
     expect(result.errors).toEqual([
-      { rowNumber: 2, reasons: ["«Chacao» no existe en Maracaibo."] },
+      {
+        rowNumber: 2,
+        reasons: ["«Chacao» no existe en Maracaibo."],
+        cells: {
+          externalReference: "REF-1",
+          priceUsd: "450",
+          zone: "Chacao",
+          rooms: "2",
+          title: "t",
+          descriptionLength: 162,
+        },
+        offendingCells: ["zone"],
+      },
     ]);
+  });
+
+  /**
+   * tasks.md 9.29, el caso decisivo. Esta fila SÍ resuelve su zona: el
+   * validador la ve como el id `chacao`, y su problema es otro (falta el
+   * precio). La lámina 14g escribe «Chacao» en esa celda, con mayúscula,
+   * porque es lo que la inmobiliaria escribió — un `cells` armado desde la
+   * fila preparada diría `chacao`, el id, y esta prueba distingue una cosa
+   * de la otra.
+   */
+  it("una fila cuya zona SÍ resolvió lleva igual el nombre del archivo en su celda, no el id resuelto", async () => {
+    const text = `${REQUIRED_HEADER}\nREF-9,Apartamento 3 hab con puesto techado,"${VALID_DESCRIPTION}",,Distrito Capital,Chacao,apartamento,3,2,78,1`;
+
+    const result = await runImportValidation("broker-1", sourceFromText(text), {
+      contact: contactPortReturning(FULL_CONTACT),
+      zones: zonesReturningAllCurated(),
+      catalogue: fakeCatalogue(),
+    });
+
+    expect(result.errors).toHaveLength(1);
+    const [error] = result.errors;
+    expect(error?.reasons).toEqual(["priceUsd.required"]);
+    expect(error?.cells).toEqual({
+      externalReference: "REF-9",
+      priceUsd: "",
+      zone: "Chacao",
+      rooms: "3",
+      title: "Apartamento 3 hab con puesto techado",
+      descriptionLength: 162,
+    });
+    // El precio es lo que 14g resalta en su propia celda.
+    expect(error?.offendingCells).toEqual(["priceUsd"]);
   });
 });

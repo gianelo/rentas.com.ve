@@ -140,8 +140,16 @@ describe("generateImportTemplate — round trip through the REAL parser (tasks.m
     expect(locationOutcomes.every((outcome) => outcome.errorMessages.length === 0)).toBe(true);
 
     const preparedRows = applyResolvedLocations(parsed.rows, locationOutcomes);
-    const validationOutcome = validateImportRows(preparedRows, CURATED_ZONES, ACCOUNT_CONTACT);
-    const outcome = mergeLocationResolutionErrors(validationOutcome, locationOutcomes);
+    // `parsed.rows` — las del archivo, con NOMBRES — es de donde salen las
+    // celdas que 14g dibuja (tasks.md 9.29); las reglas siguen corriendo
+    // sobre `preparedRows`, que ya trabajan en ids.
+    const validationOutcome = validateImportRows(
+      preparedRows,
+      CURATED_ZONES,
+      ACCOUNT_CONTACT,
+      parsed.rows,
+    );
+    const outcome = mergeLocationResolutionErrors(validationOutcome, locationOutcomes, parsed.rows);
 
     expect(outcome.errors).toEqual([]);
     expect(outcome.validRows).toHaveLength(2);

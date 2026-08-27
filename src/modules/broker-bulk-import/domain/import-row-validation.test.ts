@@ -47,6 +47,18 @@ function validRow(overrides: Partial<ImportRow> = {}): ImportRow {
   };
 }
 
+/**
+ * Proyecta cada error a lo que ESTE archivo prueba: número de fila y
+ * razones. Las celdas que 14g dibuja (tasks.md 9.29) viajan además en cada
+ * error y tienen su propio archivo de pruebas — repetirlas en cada
+ * aserción de acá haría ilegible lo que cada caso realmente afirma.
+ */
+function rowsAndReasons(
+  errors: readonly { rowNumber: number; reasons: readonly string[] }[],
+): { rowNumber: number; reasons: readonly string[] }[] {
+  return errors.map(({ rowNumber, reasons }) => ({ rowNumber, reasons }));
+}
+
 describe("validateImportRows — reuses validatePublishableListing for every rule it owns", () => {
   it("accepts a row that satisfies every rule, as a valid draft with no photo requirement", () => {
     const { validRows, errors } = validateImportRows([validRow()], ZONES, CONTACT);
@@ -70,7 +82,7 @@ describe("validateImportRows — reuses validatePublishableListing for every rul
     );
 
     expect(validRows).toEqual([]);
-    expect(errors).toEqual([
+    expect(rowsAndReasons(errors)).toEqual([
       { rowNumber: 2, reasons: expect.arrayContaining(["zoneId.notInCity"]) },
     ]);
   });
@@ -99,13 +111,17 @@ describe("validateImportRows — reuses validatePublishableListing for every rul
 
     const { errors } = validateImportRows(rows, ZONES, CONTACT);
 
-    expect(errors).toEqual([{ rowNumber: 3, reasons: ["externalReference.required"] }]);
+    expect(rowsAndReasons(errors)).toEqual([
+      { rowNumber: 3, reasons: ["externalReference.required"] },
+    ]);
   });
 
   it("reports a blank external reference as required", () => {
     const { errors } = validateImportRows([validRow({ externalReference: "" })], ZONES, CONTACT);
 
-    expect(errors).toEqual([{ rowNumber: 2, reasons: ["externalReference.required"] }]);
+    expect(rowsAndReasons(errors)).toEqual([
+      { rowNumber: 2, reasons: ["externalReference.required"] },
+    ]);
   });
 
   // tasks.md 9.16: "an uploaded file containing the same referencia_externa
@@ -120,7 +136,7 @@ describe("validateImportRows — reuses validatePublishableListing for every rul
     const { validRows, errors } = validateImportRows(rows, ZONES, CONTACT);
 
     expect(validRows).toEqual([]);
-    expect(errors).toEqual([
+    expect(rowsAndReasons(errors)).toEqual([
       { rowNumber: 2, reasons: ["externalReference.duplicateInFile"] },
       { rowNumber: 3, reasons: ["externalReference.duplicateInFile"] },
     ]);
@@ -131,7 +147,7 @@ describe("validateImportRows — reuses validatePublishableListing for every rul
 
     const { errors } = validateImportRows(rows, ZONES, CONTACT);
 
-    expect(errors).toEqual([
+    expect(rowsAndReasons(errors)).toEqual([
       { rowNumber: 2, reasons: ["externalReference.required"] },
       { rowNumber: 3, reasons: ["externalReference.required"] },
     ]);
@@ -154,11 +170,11 @@ describe("validateImportRows — reuses validatePublishableListing for every rul
 
     expect(validRows).toHaveLength(38);
     expect(errors).toHaveLength(2);
-    expect(errors[0]).toEqual({
+    expect(rowsAndReasons(errors)[0]).toEqual({
       rowNumber: 40,
       reasons: expect.arrayContaining(["priceUsd.invalid"]),
     });
-    expect(errors[1]).toEqual({
+    expect(rowsAndReasons(errors)[1]).toEqual({
       rowNumber: 41,
       reasons: expect.arrayContaining(["zoneId.notInCity"]),
     });
@@ -190,7 +206,9 @@ describe("validateImportRows — reuses validatePublishableListing for every rul
       );
 
       expect(validRows).toEqual([]);
-      expect(errors).toEqual([{ rowNumber: 2, reasons: ["hasPowerPlant.invalid"] }]);
+      expect(rowsAndReasons(errors)).toEqual([
+        { rowNumber: 2, reasons: ["hasPowerPlant.invalid"] },
+      ]);
     });
   });
 });
