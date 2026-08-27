@@ -399,6 +399,24 @@ jobs:
           # can only prove the route fails closed, which is the weaker half of
           # what it is there to prove (tasks.md 7.12).
           RENEWAL_TOKEN_SECRET: e2e-fake-secret-signs-nothing-real
+          # El origen público de las fotos. Hasta que 11.22 encendió las
+          # especificaciones que dibujan avisos, este job no lo necesitaba: todo
+          # lo que leía el catálogo se saltaba solo. Al prenderlas apareció la
+          # dependencia que el skip escondía, y `listing-discovery` se NIEGA a
+          # construir una URL de foto sin ella (falla cerrado, AGENTS.md §7) en
+          # vez de emitir una rota.
+          #
+          # Valor fijo y falso a propósito: estas pruebas afirman que la foto
+          # está en el HTML servido, nunca que la imagen cargue. Un origen real
+          # ataría la suite a un bucket, y un bucket vacío la pondría roja por
+          # algo que no es el código.
+          #
+          # **Sólo ésta se agrega.** Las otras que el job no define
+          # —CRON_SECRET, OPERATOR_SECRET, RESEND_API_KEY, el resto de R2—
+          # quedan ausentes a propósito: sus rutas fallan cerradas sin ellas, y
+          # eso es justo lo que sus especificaciones miden. Dárselas taparía la
+          # afirmación.
+          R2_BUCKET_PUBLIC_URL: https://fotos-de-prueba.rentas.invalid
           PLAYWRIGHT_WEB_COMMAND: pnpm start
         run: |
           # Built once here rather than by each project's webServer. The two
