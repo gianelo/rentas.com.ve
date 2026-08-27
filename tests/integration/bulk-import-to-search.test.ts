@@ -16,6 +16,7 @@ import {
 } from "../../src/modules/listing-catalogue/infrastructure/drizzle-catalogue";
 import { activateListing } from "../../src/modules/listing-publication/application/activate-listing";
 import { attachPhotoToDraft } from "../../src/modules/listing-publication/application/attach-photo-to-draft";
+import { listPublisherListings } from "../../src/modules/listing-publication/application/list-publisher-listings";
 import type { PhotoDerivationPort } from "../../src/modules/listing-publication/application/ports/photo-derivation.port";
 import type { PhotoHashComputationPort } from "../../src/modules/listing-publication/application/ports/photo-hash-computation.port";
 import type {
@@ -23,12 +24,14 @@ import type {
   StoredObject,
   UploadTarget,
 } from "../../src/modules/listing-publication/application/ports/photo-storage.port";
+import { requestDraftPhotoUpload } from "../../src/modules/listing-publication/application/request-draft-photo-upload";
 import {
   DrizzleListingActivation,
   DrizzleListingRepository,
   DrizzleZoneCatalogue,
   type PublicationDatabase,
 } from "../../src/modules/listing-publication/infrastructure/drizzle-listing-repository";
+import { DrizzlePublisherListings } from "../../src/modules/listing-publication/infrastructure/drizzle-publisher-listings";
 import {
   DrizzleListingSearch,
   type SearchDatabase,
@@ -84,6 +87,7 @@ const accounts = new DrizzleBulkImportAccounts(db as unknown as PublicationDatab
 const contact = new DrizzleImportAccountContact(db as unknown as PublicationDatabase);
 const catalogue = new DrizzleCatalogue(db as unknown as CatalogueDatabase);
 const search = new DrizzleListingSearch(db as unknown as SearchDatabase);
+const publisherListings = new DrizzlePublisherListings(db as unknown as PublicationDatabase);
 
 const USER_IDS: string[] = [];
 const CITY_IDS: string[] = [];
@@ -159,8 +163,15 @@ const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00
 const TOKEN = "9c1d4e6f8a2b0c3d5e7f9a1b3c5d7e9f";
 
 const fakeStorage: PhotoStoragePort = {
-  async createUploadTarget(): Promise<UploadTarget> {
-    throw new Error("not used by this test");
+  // tasks.md 9.28: `requestDraftPhotoUpload` sí lo usa ahora. Lo que se prueba
+  // contra Postgres es a QUIÉN se le firma, no la firma en sí — eso es de
+  // `r2-photo-storage.test.ts`, que no necesita base.
+  async createUploadTarget(request): Promise<UploadTarget> {
+    return {
+      key: `incoming/${request.publisherId}/${TOKEN}`,
+      url: "https://r2.example/put",
+      expiresAt: new Date("2026-04-10T12:05:00.000Z"),
+    };
   },
   async read(): Promise<Uint8Array> {
     return PNG;
@@ -348,6 +359,109 @@ describe("9.27 — importar, fotografiar, activar, aparecer (contra Postgres rea
     ).rejects.toThrow(/photos\.required/);
 
     expect(await search.search({ cityId })).toEqual([]);
+  });
+
+  /**
+   * **tasks.md 9.28 — los dos eslabones del medio, recorridos por donde el
+   * corredor los recorre.**
+   *
+   * Hasta esta porción la cadena existía pero era intransitable: `/mis-avisos`
+   * era una carcasa y `attachPhotoToDraft`/`activateListing` no los llamaba
+   * ninguna ruta. Esta prueba recorre la cadena entera por los MISMOS casos de
+   * uso que la pantalla llama —listar el tablero, pedir el destino de la foto,
+   * adjuntarla, activar— y vuelve a mirar el tablero. Si la lista de «Mis
+   * avisos» dejara de traer los borradores importados, o dejara de contar sus
+   * fotos, o el aviso activado siguiera dibujándose como borrador, se ve acá.
+   */
+  it("la cadena por la pantalla: el borrador importado sale en «Mis avisos», recibe foto, se activa y cambia de estado ahí mismo", async () => {
+    const { cityId, zoneId } = await makeCityAndZone();
+    const broker = await insertBroker(true);
+
+    await confirmImport(
+      sourceFromText([HEADER, rowLine("TABLERO-A", cityId, zoneId)].join("\n")),
+      importDependencies(broker),
+    );
+    const listingId = await draftIdFor(broker, "TABLERO-A");
+
+    // 1. El tablero LO VE, como borrador y sin fotos. Es lo que convertía
+    //    «se crearon 38 y ninguna se ve» en un callejón sin salida.
+    const antes = await listPublisherListings(
+      {},
+      { sessionPort: sessionFor(broker), listings: publisherListings },
+    );
+    expect(antes.cards.map((card) => card.id)).toEqual([listingId]);
+    expect(antes.cards[0]?.state).toBe("draft");
+    expect(antes.cards[0]?.photoCount).toBe(0);
+    expect(antes.draftsAwaitingPhotos).toBe(1);
+    expect(antes.cards[0]?.zoneName).toBe(`Zona ${zoneId}`);
+    expect(antes.cards[0]?.externalReference).toBe("TABLERO-A");
+
+    // 2. La firma que la pantalla pide antes de subir, contra la fila real.
+    const destino = await requestDraftPhotoUpload(
+      { listingId, contentType: "image/webp", byteLength: 38_000 },
+      { sessionPort: sessionFor(broker), listings: activation, storage: fakeStorage },
+    );
+    expect(destino.key).toBe(`incoming/${broker}/${TOKEN}`);
+
+    // 3. Adjuntar y activar, por los dos casos de uso que ninguna ruta
+    //    llamaba hasta ahora.
+    await attachPhotoToDraft(
+      { listingId, incomingKey: destino.key, declaredContentType: "image/png" },
+      photoDependencies(broker),
+    );
+    await activateListing(
+      { listingId },
+      { sessionPort: sessionFor(broker), zones, listings: activation },
+    );
+
+    // 4. El mismo tablero, después: activa, con su foto contada, y ya no
+    //    esperando nada.
+    const despues = await listPublisherListings(
+      {},
+      { sessionPort: sessionFor(broker), listings: publisherListings },
+    );
+    expect(despues.cards[0]?.state).toBe("active");
+    expect(despues.cards[0]?.photoCount).toBe(1);
+    expect(despues.draftsAwaitingPhotos).toBe(0);
+    expect(despues.publishedCount).toBe(1);
+
+    // 5. Y la búsqueda, que es el final de la cadena de la 9.27.
+    expect((await search.search({ cityId })).map((row) => row.id)).toEqual([listingId]);
+  });
+
+  /**
+   * **«Mis avisos» son los MÍOS, contra el `WHERE` real.** El caso de uso ya
+   * lo prueba con dobles; lo que un doble no puede probar es que la consulta
+   * lleva el `publisher_id` adentro en vez de filtrar después — la misma
+   * lección que `listing-photo-attachment.test.ts` documenta para su propia
+   * cláusula.
+   */
+  it("el tablero de una inmobiliaria nunca trae los borradores de otra", async () => {
+    const { cityId, zoneId } = await makeCityAndZone();
+    const brokerA = await insertBroker(true);
+    const brokerB = await insertBroker(true);
+
+    await confirmImport(
+      sourceFromText([HEADER, rowLine("TABLERO-B", cityId, zoneId)].join("\n")),
+      importDependencies(brokerA),
+    );
+    const deA = await draftIdFor(brokerA, "TABLERO-B");
+
+    const tableroDeB = await listPublisherListings(
+      {},
+      { sessionPort: sessionFor(brokerB), listings: publisherListings },
+    );
+
+    expect(tableroDeB.total).toBe(0);
+    expect(tableroDeB.cards.map((card) => card.id)).not.toContain(deA);
+
+    // Y B tampoco puede obtener permiso de escritura para el borrador de A.
+    await expect(
+      requestDraftPhotoUpload(
+        { listingId: deA, contentType: "image/webp", byteLength: 1000 },
+        { sessionPort: sessionFor(brokerB), listings: activation, storage: fakeStorage },
+      ),
+    ).rejects.toThrow(/does not belong to the caller/);
   });
 
   /**

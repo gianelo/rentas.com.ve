@@ -18,24 +18,44 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * quedaría verde con el enlace dentro de una rama muerta.
  */
 
-const { findAccount, requireSession } = vi.hoisted(() => ({
+const { findAccount, requireSession, listPublisherListings } = vi.hoisted(() => ({
   findAccount: vi.fn(),
   requireSession: vi.fn(),
+  listPublisherListings: vi.fn(),
 }));
 
 vi.mock("../../src/shared/db/client", () => ({ db: {} }));
 vi.mock("../_lib/require-session", () => ({ requireSession }));
+vi.mock("../../src/modules/identity/infrastructure/session-port", () => ({
+  nextAuthSessionPort: { getSession: async () => null },
+}));
 vi.mock("../../src/modules/broker-bulk-import/infrastructure/drizzle-bulk-import-account", () => ({
   DrizzleBulkImportAccounts: class {
     findAccount = findAccount;
   },
 }));
+// La lista de avisos (tasks.md 9.28) llegó después de esta prueba y no
+// participa de lo que afirma: acá se prueba la puerta de importar.
+vi.mock("../../src/modules/listing-publication/infrastructure/drizzle-publisher-listings", () => ({
+  DrizzlePublisherListings: class {},
+}));
+vi.mock("../../src/modules/listing-publication/application/list-publisher-listings", () => ({
+  listPublisherListings,
+}));
+vi.mock("./actions", () => ({
+  activarBorrador: vi.fn(),
+  pedirDestinoDeFoto: vi.fn(),
+  adjuntarFotoAlBorrador: vi.fn(),
+}));
 
+import { buildPublisherListingBoard } from "../../src/modules/listing-publication/domain/publisher-listing-board";
 import MisAvisosPage from "./page";
 
 beforeEach(() => {
   findAccount.mockReset();
   requireSession.mockReset();
+  listPublisherListings.mockReset();
+  listPublisherListings.mockResolvedValue(buildPublisherListingBoard([], new Date()));
   requireSession.mockResolvedValue({
     userId: "broker-1",
     name: "Inmobiliaria Caracas",
@@ -44,7 +64,7 @@ beforeEach(() => {
 });
 
 async function draw(): Promise<string> {
-  return renderToStaticMarkup(await MisAvisosPage());
+  return renderToStaticMarkup(await MisAvisosPage({ searchParams: Promise.resolve({}) }));
 }
 
 describe("/mis-avisos — la puerta de importar (14d)", () => {

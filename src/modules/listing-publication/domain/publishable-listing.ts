@@ -154,6 +154,24 @@ export const MAX_TITLE_CHARACTERS = 90;
  */
 export const MAX_PHOTOS_PER_LISTING = 6;
 
+/**
+ * Una. **El número que separa un borrador de un aviso que se puede activar**,
+ * y hasta la 9.28 estaba escrito como un `1` suelto dentro de esta misma
+ * función.
+ *
+ * Sale acá porque «Mis avisos» (lámina 14d) cuenta los borradores que esperan
+ * fotos —«38 borradores esperando fotos»— y esa cuenta tiene que dar lo mismo
+ * que este validador rechaza. Un `>= 1` copiado allá y un `< 1` acá es
+ * exactamente cómo una pantalla termina prometiendo que un aviso ya está
+ * listo mientras la activación lo sigue refusando.
+ *
+ * **Contar no es decidir.** Quién puede activarse lo sigue contestando
+ * `activateListing` llamando a esta función en etapa `"activation"`, que
+ * comprueba además las otras veinte reglas; la pantalla no reimplementa
+ * ninguna, sólo dice cuántos borradores todavía no tienen ni una.
+ */
+export const MIN_PHOTOS_FOR_ACTIVATION = 1;
+
 const PUBLISHER_TYPES: readonly string[] = ["owner", "broker"];
 const CONTACT_METHODS: readonly string[] = ["whatsapp", "telefono", "email"];
 const PROPERTY_TYPES: readonly string[] = ["apartamento", "casa", "quinta", "anexo", "habitacion"];
@@ -383,7 +401,7 @@ export function validatePublishableListing(
   }
 
   if (stage === "activation") {
-    if (!draft.photoCount || draft.photoCount < 1) {
+    if (!draft.photoCount || draft.photoCount < MIN_PHOTOS_FOR_ACTIVATION) {
       violations.push("photos.required");
     } else if (draft.photoCount > MAX_PHOTOS_PER_LISTING) {
       violations.push("photos.tooMany");

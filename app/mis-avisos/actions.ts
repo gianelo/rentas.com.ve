@@ -1,0 +1,168 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { nextAuthSessionPort } from "@/modules/identity/infrastructure/session-port";
+import {
+  ActivateListingRejectedError,
+  activateListing,
+} from "@/modules/listing-publication/application/activate-listing";
+import { attachPhotoToDraft } from "@/modules/listing-publication/application/attach-photo-to-draft";
+import { requestDraftPhotoUpload } from "@/modules/listing-publication/application/request-draft-photo-upload";
+import {
+  DrizzleListingActivation,
+  DrizzleZoneCatalogue,
+} from "@/modules/listing-publication/infrastructure/drizzle-listing-repository";
+import { deriveListingPhoto } from "@/modules/listing-publication/infrastructure/photo-derivatives";
+import { createR2PhotoStorage } from "@/modules/listing-publication/infrastructure/r2-photo-storage";
+import { DrizzlePhotoHash } from "@/modules/listing-trust/infrastructure/drizzle-photo-hash";
+import { db } from "@/shared/db/client";
+import { getTransactionalDatabase } from "@/shared/db/transactional-client";
+
+/**
+ * tasks.md 9.28 — **las dos llamadas que no existían.**
+ *
+ * `activateListing` y `attachPhotoToDraft` llevaban una porción entera
+ * construidos, probados y sin una sola ruta que los llamara: una inmobiliaria
+ * podía importar cincuenta avisos y quedaban como borradores que nadie podía
+ * fotografiar ni activar desde un navegador. Es la cuarta vez que este
+ * trabajo encuentra la misma forma de defecto (el anti-fraude de fotos, la
+ * pastilla de búsqueda, el motor de importación y `canImportListings` fueron
+ * las tres anteriores). Este archivo la cierra.
+ *
+ * **Ninguna regla vive acá.** De quién es el borrador, si tiene fotos, si
+ * puede activarse y qué se puede firmar lo contestan los tres casos de uso;
+ * este archivo elige adaptadores y traduce su respuesta a una dirección.
+ *
+ * **Una acción de servidor es un endpoint HTTP público.** Que la llame un
+ * componente nuestro no es una garantía sobre quién la llama, así que las
+ * tres empiezan por la sesión — y ninguna acepta un `publisherId`: el id sale
+ * siempre de la sesión, adentro del caso de uso.
+ */
+
+/**
+ * Composición por pedido y no al importar el módulo: `createR2PhotoStorage`
+ * lee seis variables de entorno y tira si falta una — a nivel de módulo eso
+ * tumbaría la pantalla entera de quien sólo quiere mirar su lista.
+ */
+function photoDependencies() {
+  const transactional = getTransactionalDatabase();
+  const activation = new DrizzleListingActivation(transactional);
+
+  return {
+    sessionPort: nextAuthSessionPort,
+    listings: activation,
+    photos: activation,
+    storage: createR2PhotoStorage(),
+    derive: (source: Uint8Array) => deriveListingPhoto(Buffer.from(source)),
+    computeHash: (source: Uint8Array) => computeHashOf(source),
+    photoHashes: new DrizzlePhotoHash(transactional),
+  };
+}
+
+// `sharp` y el dHash sólo se cargan cuando de verdad llega una foto: son la
+// dependencia más pesada de este árbol y la pantalla de la lista no la usa.
+async function computeHashOf(source: Uint8Array) {
+  const { computeDHash } = await import("@/modules/listing-trust/infrastructure/sharp-dhash");
+  return computeDHash(Buffer.from(source));
+}
+
+export interface DestinoDeFoto {
+  readonly key: string;
+  readonly url: string;
+  /** Serializado: una `Date` no sobrevive el cruce hacia el componente cliente. */
+  readonly expiresAt: string;
+}
+
+/**
+ * Paso 1 de la subida: la firma. Falla cerrado — un borrador que no existe o
+ * que es de otra cuenta no obtiene permiso de escritura (AGENTS.md §7).
+ */
+export async function pedirDestinoDeFoto(input: {
+  readonly listingId: string;
+  readonly contentType: string;
+  readonly byteLength: number;
+}): Promise<DestinoDeFoto> {
+  const target = await requestDraftPhotoUpload(input, {
+    sessionPort: nextAuthSessionPort,
+    listings: new DrizzleListingActivation(db),
+    storage: createR2PhotoStorage(),
+  });
+
+  return { key: target.key, url: target.url, expiresAt: target.expiresAt.toISOString() };
+}
+
+/**
+ * Paso 2: adjuntar lo que ya está subido. **Pasa por
+ * `processUploadedPhoto`**, adentro de `attachPhotoToDraft`, que es el único
+ * punto por el que publicar y adjuntar pasan los dos — y donde vive el
+ * rechazo por foto duplicada entre cuentas (tarea 4.7). Un camino de
+ * importación que subiera fotos sin pasar por ahí reabriría el agujero que
+ * esa tarea cerró.
+ */
+export async function adjuntarFotoAlBorrador(input: {
+  readonly listingId: string;
+  readonly key: string;
+  readonly contentType: string;
+}): Promise<{ readonly position: number }> {
+  const result = await attachPhotoToDraft(
+    {
+      listingId: input.listingId,
+      incomingKey: input.key,
+      declaredContentType: input.contentType,
+    },
+    photoDependencies(),
+  );
+
+  // La ficha del aviso cuenta sus fotos y su estado; sin esto la lista
+  // seguiría diciendo «faltan fotos» después de subir una.
+  revalidatePath("/mis-avisos");
+
+  return { position: result.position };
+}
+
+/**
+ * El disparador de activación. **Un `<form>` de verdad**, así que llega como
+ * `FormData` y funciona con el script apagado: `/mis-avisos` está exento del
+ * piso de la ruta de lectura por la compresión de fotos (AGENTS.md §2), no
+ * por esto.
+ *
+ * **La negativa viaja en la dirección.** `activateListing` re-valida en etapa
+ * `"activation"` y puede refusar; sin JavaScript no hay dónde devolverle un
+ * valor a la pantalla, así que los códigos vuelven como parámetros y la
+ * página los traduce al lado del aviso que los pidió. Los códigos son los
+ * estables del dominio, nunca la frase — la copia se decide en una tabla, no
+ * en una URL.
+ */
+export async function activarBorrador(formData: FormData): Promise<void> {
+  const listingId = String(formData.get("listingId") ?? "");
+
+  let violations: readonly string[] | null = null;
+  try {
+    await activateListing(
+      { listingId },
+      {
+        sessionPort: nextAuthSessionPort,
+        zones: new DrizzleZoneCatalogue(db),
+        listings: new DrizzleListingActivation(getTransactionalDatabase()),
+      },
+    );
+  } catch (error) {
+    // Sólo la negativa del validador se dibuja. Un borrador que no existe o
+    // que es de otro no produce una explicación: sube, y Next responde como
+    // ante cualquier otro fallo — decirle a un desconocido «ese borrador no
+    // es tuyo» ya sería contarle que existe.
+    if (!(error instanceof ActivateListingRejectedError)) throw error;
+    violations = error.violations;
+  }
+
+  revalidatePath("/mis-avisos");
+
+  // Fuera del `try`: `redirect` funciona tirando, y atraparlo acá adentro lo
+  // convertiría en «un error inesperado» silenciosamente.
+  redirect(
+    violations === null
+      ? "/mis-avisos"
+      : `/mis-avisos?fallo=${encodeURIComponent(listingId)}&motivos=${encodeURIComponent(violations.join(","))}`,
+  );
+}
