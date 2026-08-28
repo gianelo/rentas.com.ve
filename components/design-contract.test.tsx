@@ -352,13 +352,18 @@ describe("field geometry comes from tokens, not literals (3.9/D16)", () => {
     expect(block(fieldCss, "controlInvalid")).toMatch(/border:\s*2px solid var\(--err\)/);
   });
 
-  it("pairs two fields on one row at every width, not behind a media query", () => {
-    // The 360 artboard puts city and zone side by side exactly as 1280 does.
-    // A media query here would silently stack them on the viewport the
-    // product is designed for first.
-    const rowIndex = fieldCss.indexOf(".row");
-    const mediaIndex = fieldCss.indexOf("@media");
-    expect(rowIndex).toBeGreaterThan(-1);
-    expect(rowIndex).toBeLessThan(mediaIndex);
-  });
+  /**
+   * **Lo que la 8.9 se llevó de este bloque, dicho acá y no en el mensaje del
+   * commit.** Había una aserción más: «pairs two fields on one row at every
+   * width, not behind a media query», sobre `.row` de esta misma hoja. Su
+   * sujeto era `FieldRow`, y `FieldRow` no lo dibujaba nadie: el par
+   * ciudad/zona que iba a usarlo era el del `PublishForm` que la 3.9(c)
+   * reemplazó por `PublishStep`, y ese asistente **no pregunta la ciudad en
+   * ningún paso** (medido: `layout.spec.ts` → «3.9: la ciudad no se pregunta
+   * en ninguna parte del paso»). El par para el que existía no puede existir.
+   *
+   * Se borra con la pieza en vez de reapuntarla a otra hoja, por la misma
+   * razón que la 14.42 dejó escrita más arriba: una aserción mudada de sujeto
+   * dice seguir protegiendo lo de antes y protege otra cosa.
+   */
 });
