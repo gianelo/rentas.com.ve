@@ -54,6 +54,15 @@ export class DrizzleLifecycleListings implements LifecycleListingsPort {
    * pasaría a `expired`, y renovarlo lo devolvería a `active` — el camino por
    * el que un aviso reportado se lava solo. El filtro por `active` cierra ese
    * camino en la consulta y no en un comentario.
+   *
+   * **Ésta es LA EXCEPCIÓN a la regla de la 21.1, y es deliberada.** Los
+   * lectores del catálogo —búsqueda, facetas, revelado, sitemap— filtran por
+   * las dos condiciones porque su pregunta es «¿esto sigue vigente?», y el
+   * rótulo se atrasa. Acá la pregunta es la contraria: el trabajo existe
+   * justamente para encontrar las filas cuyo rótulo quedó viejo, así que
+   * `status = 'active'` no es un descuido sino el sujeto de la consulta.
+   * Agregarle `expires_at > now()` la dejaría sin una sola fila que
+   * actualizar y el rótulo no volvería a moverse nunca.
    */
   async markExpired(now: Date): Promise<number> {
     const updated = await this.db

@@ -77,6 +77,19 @@ const PAGINADA = randomUUID();
 const P_ZONA = randomUUID();
 const PAGINADOS = RESULTS_PER_PAGE + 2;
 
+/**
+ * Una quinta ciudad para la 21.1, con DOS avisos idénticos salvo la fecha.
+ *
+ * Van en su propia ciudad a propósito: el par vigente/vencido es la aserción
+ * entera, y así ninguna de las dos filas puede cambiarle un número a las de
+ * arriba. La única diferencia entre ellos es `expires_at`, así que una
+ * consulta que devolviera los dos —o ninguno— no puede pasar por casualidad.
+ */
+const RELOJ = randomUUID();
+const R_ZONA = randomUUID();
+const R_VIGENTE = randomUUID();
+const R_VENCIDO_POR_RELOJ = randomUUID();
+
 interface Fixture {
   readonly id: string;
   readonly zoneId: string;
@@ -101,7 +114,19 @@ interface Fixture {
    * aviso y se salta otro.
    */
   readonly ageMinutes?: number;
+  /**
+   * Minutos de vigencia **contados desde `now()` de Postgres**, no una fecha.
+   *
+   * Que sea un desplazamiento y no un literal es la parte que importa: una
+   * fixture con `'2026-01-01'` escrito a mano cambia de significado sola el
+   * día que el calendario la pasa, y la prueba sigue verde midiendo otra
+   * cosa. Negativo = ya vencido; el valor por defecto son los 30 días que
+   * `activate` le pone a un aviso recién publicado.
+   */
+  readonly expiresInMinutes?: number;
 }
+
+const THIRTY_DAYS_IN_MINUTES = 30 * 24 * 60;
 
 async function insertListing(fixture: Fixture) {
   await pool.query(
@@ -112,7 +137,7 @@ async function insertListing(fixture: Fixture) {
      VALUES ($1,$2,$3,$4,$5,$6,$7,'x',$8,$9,$10,2,
        $11,$12,$13,$14,$15,
        'whatsapp','04121234567',$16,
-       now() - make_interval(mins => $17::int), now() + interval '30 days')`,
+       now() - make_interval(mins => $17::int), now() + make_interval(mins => $18::int))`,
     [
       fixture.id,
       ANA,
@@ -131,6 +156,7 @@ async function insertListing(fixture: Fixture) {
       fixture.hasAppliances ?? false,
       fixture.status,
       fixture.ageMinutes ?? 0,
+      fixture.expiresInMinutes ?? THIRTY_DAYS_IN_MINUTES,
     ],
   );
 }
@@ -141,6 +167,7 @@ beforeAll(async () => {
     [DISTRITO, "Distrito Capital"],
     [FILTROS, "Filtros"],
     [PAGINADA, "Paginada"],
+    [RELOJ, "Reloj"],
   ] as const) {
     await pool.query(`INSERT INTO "city" (id, name) VALUES ($1,$2)`, [city, `${name} ${city}`]);
   }
@@ -152,6 +179,7 @@ beforeAll(async () => {
     [F_DOS, FILTROS, "Dos"],
     [F_TRES, FILTROS, "Tres"],
     [P_ZONA, PAGINADA, "Única"],
+    [R_ZONA, RELOJ, "Única"],
   ] as const) {
     await pool.query(
       `INSERT INTO "zone" (id, city_id, name, kind, source) VALUES ($1,$2,$3,'parroquia','INE')`,
@@ -291,12 +319,31 @@ beforeAll(async () => {
       ageMinutes: index,
     });
   }
+
+  // task 21.1. Los dos son `active` y sólo se diferencian en la fecha.
+  for (const [id, expiresInMinutes] of [
+    [R_VIGENTE, 24 * 60],
+    [R_VENCIDO_POR_RELOJ, -60],
+  ] as const) {
+    await insertListing({
+      id,
+      zoneId: R_ZONA,
+      cityId: RELOJ,
+      priceUsd: 250,
+      rooms: 2,
+      areaM2: 55,
+      status: "active",
+      publisherType: "owner",
+      propertyType: "apartamento",
+      expiresInMinutes,
+    });
+  }
 });
 
 afterAll(async () => {
   await pool.query(`DELETE FROM "user" WHERE id = $1`, [ANA]);
   await pool.query(`DELETE FROM "city" WHERE id = ANY($1)`, [
-    [MARACAIBO, DISTRITO, FILTROS, PAGINADA],
+    [MARACAIBO, DISTRITO, FILTROS, PAGINADA, RELOJ],
   ]);
   await pool.end();
 });
@@ -367,6 +414,64 @@ describe("active only (tasks 5.5/5.6)", () => {
     });
 
     expect(results).toEqual([]);
+  });
+});
+
+describe("vigente son DOS condiciones, no una (task 21.1)", () => {
+  /**
+   * **La ventana está medida, no supuesta.** `vercel.json` agenda
+   * `/api/jobs/expiry-reminders` con `0 13 * * *` —una vez al día—,
+   * `markExpired` corre adentro de ese trabajo con `WHERE status = 'active'
+   * AND expires_at < now()`, y nada más mueve el rótulo. Como un aviso vence
+   * a los 30 días de la HORA en que se publicó, entre «vencido por reloj» y
+   * «vencido en la base» hay de 0 a casi 24 horas. En ese hueco la fila
+   * todavía dice `active`.
+   *
+   * Es la misma regla que el sitemap escribió en la 11.13 —«el filtro de
+   * frescura son dos condiciones, no una»— aplicada a la pantalla más
+   * visitada del producto. Lo que se evita es concreto: un inquilino le
+   * escribe a un aviso que ya no está, que es el mensaje desperdiciado del
+   * que habla la 5.5.
+   */
+  it("la fixture es realmente el caso: rótulo `active` y fecha ya pasada", async () => {
+    // Sin esto la prueba de abajo podría estar verde por el motivo
+    // equivocado —una fila `expired`, o una fecha que nunca pasó—, y nadie
+    // se enteraría. El desplazamiento se calcula contra el `now()` de
+    // Postgres en cada corrida, así que no puede envejecer hasta cambiar de
+    // significado.
+    const { rows } = await pool.query<{ status: string; vencido: boolean }>(
+      `SELECT status, expires_at < now() AS vencido FROM "listing" WHERE id = ANY($1) ORDER BY id`,
+      [[R_VENCIDO_POR_RELOJ]],
+    );
+
+    expect(rows[0]).toEqual({ status: "active", vencido: true });
+  });
+
+  it("no devuelve el aviso cuya fecha ya pasó, aunque su rótulo siga diciendo active", async () => {
+    const results = await search.search({ cityId: RELOJ });
+
+    // **El discriminador.** Los dos avisos son iguales en todo salvo
+    // `expires_at`: el vigente tiene que venir y el vencido no. Una consulta
+    // que ignorara el reloj traería los dos; una que se pasara de estricta no
+    // traería ninguno. Sólo el filtro correcto da esta lista de uno.
+    expect(results.map((row) => row.id)).toEqual([R_VIGENTE]);
+  });
+
+  it("sigue fuera del alcance del filtro más específico que lo describe", async () => {
+    // Mismo idioma que la 5.5 con `F_VENCIDO`: la búsqueda más estrecha que
+    // se puede escribir sobre esa fila tampoco la alcanza.
+    const results = await search.search({
+      cityId: RELOJ,
+      zoneIds: [R_ZONA],
+      propertyType: "apartamento",
+      publisherType: "owner",
+      minPriceUsd: 250,
+      maxPriceUsd: 250,
+      minRooms: 2,
+      minAreaM2: 55,
+    });
+
+    expect(results.map((row) => row.id)).toEqual([R_VIGENTE]);
   });
 });
 

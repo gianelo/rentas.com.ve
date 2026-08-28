@@ -273,7 +273,13 @@ describe("9.27 — importar, fotografiar, activar, aparecer (contra Postgres rea
     expect(attached.position).toBe(0);
 
     // 4. Activar. El reloj de 30 días arranca ACÁ, no en la importación.
-    const activatedAt = new Date("2026-04-10T12:00:00.000Z");
+    //
+    // **Relativo a `now()`, no un literal (task 21.1).** Era
+    // `2026-04-10`, y su `expires_at` —treinta días después— quedó en el
+    // pasado cuando el calendario la alcanzó; con la búsqueda mirando sólo el
+    // rótulo, el paso 5 seguía verde sobre un aviso ya vencido. Un día antes
+    // de hoy sigue siendo después de la importación y no puede envejecer.
+    const activatedAt = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const activated = await activateListing(
       { listingId: conFoto },
       {
