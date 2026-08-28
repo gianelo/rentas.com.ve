@@ -232,11 +232,30 @@ describe("los tokens que el conjunto no nombraba (16.22–16.26)", () => {
     expect(tokensCss).not.toMatch(/^\s*--acc-ink\s*:/m);
   });
 
-  it("--target-min-desktop NO se toca: 36 ships y la spec dice 40, y decide el fundador", () => {
-    // 16.24. No es un hueco sino un conflicto, y el cambio es global — todo
-    // control de toda pantalla. Se deja anclado para que nadie lo "arregle"
-    // de paso mientras agrega tokens.
-    expect(tokenValue("--target-min-desktop")).toBe("36px");
+  /**
+   * **16.24, decidida por el fundador el 2026-08-27: 44.**
+   *
+   * El ancla anterior decía «NO se toca: 36 ships y la spec dice 40, y decide
+   * el fundador». La decisión llegó y las tres candidatas no eran equivalentes:
+   * WCAG 2.2 SC 2.5.8 (AA) pide 24×24 y las tres lo pasan, pero SC 2.5.5 (AAA)
+   * pide 44×44 y **sólo 44 lo alcanza**. 40 era «mejor que 36» y seguía sin ser
+   * suficiente, así que el criterio dejó de ser de gusto y pasó a ser el único
+   * que se puede comprobar contra una norma.
+   *
+   * **El token sigue existiendo aunque ahora valga lo mismo que `--target-min`,
+   * y no se colapsa en un alias.** El nombre registra la intención: quien
+   * mañana quiera bajar el mínimo de escritorio tiene que ver cuál de los dos
+   * está tocando. Un alias haría que bajar uno bajara los dos sin decirlo.
+   */
+  it("--target-min-desktop es 44: el único valor que alcanza WCAG 2.2 SC 2.5.5 (16.24)", () => {
+    expect(tokenValue("--target-min-desktop")).toBe("44px");
+  });
+
+  it("sigue siendo un token propio y no un alias de --target-min", () => {
+    // Valen lo mismo hoy, y aun así son dos declaraciones. Si alguien
+    // "simplificara" a `--target-min-desktop: var(--target-min)`, esto lo dice.
+    expect(tokensCss).toMatch(/^\s*--target-min-desktop:\s*44px;/m);
+    expect(tokensCss).toMatch(/^\s*--target-min:\s*44px;/m);
   });
 });
 
