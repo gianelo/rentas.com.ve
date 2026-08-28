@@ -21,6 +21,7 @@ import {
 import { resolveNavAccount, resolveNavPublish } from "@/modules/identity/domain/nav-account";
 import { DrizzleCatalogue } from "@/modules/listing-catalogue/infrastructure/drizzle-catalogue";
 import { suggestActiveListings } from "@/modules/listing-discovery/application/suggest-active-listings";
+import { resolveListingAvailability } from "@/modules/listing-discovery/domain/listing-availability";
 import { resolveListingRoute } from "@/modules/listing-discovery/domain/listing-detail-route";
 import { buildListingGrid } from "@/modules/listing-discovery/domain/listing-grid";
 import { photoUrl } from "@/modules/listing-discovery/domain/listing-photo-view";
@@ -146,11 +147,18 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
   // desde Google o desde el inicio.
   const back = resultsLink(returnTo, { cityName: detail.cityName, zoneName: detail.zoneName });
 
-  // **Al revés de como se lee: sólo `active` habilita el contacto.** Escrito
-  // como "vencido = expired", un cuarto estado que alguien agregue mañana
-  // caería en la rama que MUESTRA el contacto, y ese descuido no falla en
-  // ningún lado. Así, lo desconocido cae en la pantalla que no revela nada.
-  const availability = detail.status === "active" ? "available" : "expired";
+  // **Un solo reloj para toda la respuesta.** Leerlo dos veces dejaría al
+  // cuerpo y al `<head>` mirando instantes distintos, que es exactamente la
+  // contradicción que esta página venía teniendo por otro motivo.
+  const now = new Date();
+
+  // **Del reloj, no del rótulo** (11.23). Acá había un ternario que miraba sólo
+  // `detail.status`, mientras `resolveListingIndexing` —a dos pantallas de
+  // distancia, en el mismo render— ya leía las DOS condiciones. En la ventana
+  // en que el trabajo diario todavía no corrió, el `<head>` pedía `noindex` por
+  // vencido y el cuerpo ofrecía revelar el contacto. La regla vive en el
+  // dominio, que es lo único que el piso del 90% alcanza.
+  const availability = resolveListingAvailability(detail, now);
 
   // Los tres estados del bloque salen de acá, no de un `if` en esta página: si
   // quien mira ya reveló, el caso de uso lee el valor; si no, no lo lee — el
@@ -185,7 +193,7 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
   // arma el dominio: qué tipo de schema.org corresponde, qué se declara y qué
   // no es una regla, y esta página sólo la imprime. Recibe el aviso y las
   // fotos; el contacto no viaja acá ni podría — `detail` no lo trae.
-  const structuredData = buildListingStructuredData(readSiteBaseUrl(), detail, {
+  const structuredData = buildListingStructuredData(readSiteBaseUrl(), detail, now, {
     // Sin base pública las direcciones salen relativas, y el dominio las
     // descarta: una imagen relativa en un JSON-LD es una imagen rota declarada
     // como buena.
