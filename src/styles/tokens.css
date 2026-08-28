@@ -118,7 +118,21 @@
 
      Se nombran por su lugar en la ficha y llevan su variante de escritorio,
      porque el diseño da los dos valores y una sola escala obligaría a elegir
-     cuál de las dos pantallas se ve mal. */
+     cuál de las dos pantallas se ve mal.
+
+     **30 y no 28, y es una corrección medida contra la lámina, no un
+     redondeo.** La especificación de la ficha lo escribe 28 dos veces (§4 R1 y
+     la tabla de §8) y la lámina móvil dibuja `font-size:30px`
+     (`design/pantallas/Rentas - Ficha - Mobile.dc.html`). Manda la lámina, por
+     la regla del propio AGENTS.md: el sistema de diseño es la fuente visual de
+     verdad. El paso de escritorio, 34, coincide en los dos documentos. Queda
+     anotado acá porque el siguiente lector va a abrir la tabla de §8 antes que
+     la lámina y va a creer que 30 es un error de tipeo (tasks.md 16.23).
+
+     **Y el número dibujado se mide, no se declara**: `tests/measure/ficha.spec.ts`
+     lee `getComputedStyle` sobre la ficha real, porque `lint:tokens` acepta
+     por igual `var(--ficha-price-fs)` y `var(--fpb)` — comprobado: con la
+     ficha apuntando a `--fpb` el gate sale 0 y la pantalla pinta 26. */
   --ficha-price-fs: 30px;
   --ficha-price-fs-desktop: 34px;
   --ficha-price-fw: 700;
