@@ -61,7 +61,18 @@ test.describe("layout measurement", () => {
     expect(bodyBox.width).toBeLessThanOrEqual(520);
   });
 
-  test("1b.14: interactive targets are >= 44px on mobile and >= 36px on desktop", async ({
+  /**
+   * **`toBe(44)` y no `toBeGreaterThanOrEqual(44)`, y ésa es toda la lección de
+   * la 16.24.** Esta prueba afirmaba `>= 36` en escritorio mientras el fundador
+   * decidía entre 36, 40 y 44: las tres respuestas posibles pasaban la
+   * aserción, así que la suite de medición habría dejado entrar cualquiera de
+   * ellas en silencio. Una cota inferior que acepta todas las respuestas
+   * válidas no está preguntando nada — el mismo defecto que la 16.25 acababa de
+   * encontrar en `--action-h`. Con la decisión tomada (44 en las dos pantallas,
+   * WCAG 2.2 SC 2.5.5 AAA) el número se fija, y mover el token pone esto rojo
+   * diciendo qué midió.
+   */
+  test("1b.14/16.24: interactive targets measure exactly 44px on mobile and on desktop", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 360, height: 800 });
@@ -71,8 +82,8 @@ test.describe("layout measurement", () => {
       const box = await page.getByTestId(testid).locator("button").boundingBox();
       if (!box) throw new Error(`${testid} did not render a measurable box`);
       const smallest = Math.min(box.width, box.height);
-      console.log(`[1b.14] mobile ${testid}: smallest dimension ${smallest}px (bound: >= 44px)`);
-      expect(smallest).toBeGreaterThanOrEqual(44);
+      console.log(`[1b.14] mobile ${testid}: smallest dimension ${smallest}px (bound: === 44px)`);
+      expect(smallest).toBe(44);
     }
 
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -82,8 +93,8 @@ test.describe("layout measurement", () => {
       const box = await page.getByTestId(testid).locator("button").boundingBox();
       if (!box) throw new Error(`${testid} did not render a measurable box`);
       const smallest = Math.min(box.width, box.height);
-      console.log(`[1b.14] desktop ${testid}: smallest dimension ${smallest}px (bound: >= 36px)`);
-      expect(smallest).toBeGreaterThanOrEqual(36);
+      console.log(`[1b.14] desktop ${testid}: smallest dimension ${smallest}px (bound: === 44px)`);
+      expect(smallest).toBe(44);
     }
   });
 });

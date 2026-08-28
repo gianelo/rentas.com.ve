@@ -9,18 +9,6 @@
   gap: var(--gap);
 }
 
-/* Two related fields on one line, at every width — the mobile artboard pairs
-   city and zone exactly as the desktop one does. */
-.row {
-  display: flex;
-  gap: 12px;
-}
-
-.row > * {
-  flex: 1;
-  min-inline-size: 0;
-}
-
 .label {
   font-family: var(--sans);
   font-size: var(--meta-fs);

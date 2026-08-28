@@ -90,15 +90,3 @@ export function Field({
     </div>
   );
 }
-
-/**
- * Two related fields on one line — the city/zone pair.
- *
- * `flex: 1` on each child with a 12px gap, taken from the artboard, and it is
- * a row at **every** width: the mobile 360 artboard pairs them exactly as the
- * desktop one does. That is why this is a component rather than a media
- * query, and why the next screen that pairs two selects gets it for free.
- */
-export function FieldRow({ children }: { children: ReactNode }) {
-  return <div className={styles.row}>{children}</div>;
-}
