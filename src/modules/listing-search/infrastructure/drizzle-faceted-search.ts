@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, lte, type SQL, sql } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, lte, type SQL, sql } from "drizzle-orm";
 import type { PgColumn, PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import type { PropertyType } from "../../../shared/db/schema";
@@ -93,11 +93,27 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
     widenedPrice?: PriceRange,
   ): Promise<FacetCounts> {
     // Lo que TODA faceta comparte, y por eso va en el `WHERE` de afuera: la
-    // ciudad y el estado son incondicionales — `cityId` es obligatorio en el
+    // ciudad y la frescura son incondicionales — `cityId` es obligatorio en el
     // criterio y el estado no está en el criterio en absoluto (5.5/5.6) — y el
     // área no es faceta de este puerto ni filtro que el panel pueda soltar, así
     // que ninguna cuenta tiene motivo para ignorarla.
-    const shared = [eq(listings.cityId, criteria.cityId), eq(listings.status, "active")];
+    //
+    // **La frescura son DOS condiciones y las dos van acá** (task 21.1). Que
+    // vivan en el `WHERE` compartido es la parte que importa: es el mismo
+    // lugar del que sale el total, cada faceta, `cityTotal` y las nueve
+    // relajaciones, así que ningún número puede quedarse con la mitad de la
+    // regla. Si el reloj estuviera sólo en `DrizzleListingSearch`, la pantalla
+    // diría «9 avisos en Chacao» encima de una lista de ocho — y un conteo que
+    // discrepa de su propia lista es peor que uno viejo: rompe lo único para
+    // lo que ese botón existe (regla transversal 3, «si una etiqueta dice 9,
+    // hay 9»). `tests/integration/faceted-search.test.ts` compara cada total
+    // contra las filas de la búsqueda equivalente, así que arreglar una sola
+    // de las dos consultas no puede pasar en verde.
+    const shared = [
+      eq(listings.cityId, criteria.cityId),
+      eq(listings.status, "active"),
+      gt(listings.expiresAt, sql`now()`),
+    ];
     if (criteria.minAreaM2 !== undefined) {
       shared.push(gte(listings.areaM2, criteria.minAreaM2));
     }

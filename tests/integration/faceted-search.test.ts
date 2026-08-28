@@ -69,6 +69,13 @@ const A5 = randomUUID();
 /** Mismo sitio, mismo precio, misma cantidad de cuartos: sólo cambia el estado. */
 const VENCIDO = randomUUID();
 const OCULTO = randomUUID();
+/**
+ * task 21.1. Idéntico a `VENCIDO` salvo en una cosa: su rótulo todavía dice
+ * `active` porque el trabajo diario no pasó. Cae dentro de TODAS las facetas
+ * —zona, precio, cuartos, tipo, publicador y `isFurnished`—, así que si algún
+ * conteo lo sumara, se vería en varios números a la vez.
+ */
+const VENCIDO_POR_RELOJ = randomUUID();
 /** Caracas, y su única razón de existir es que ningún conteo lo alcance. */
 const D1 = randomUUID();
 
@@ -90,7 +97,16 @@ interface Fixture {
   readonly isFurnished?: boolean;
   readonly hasSecurity?: boolean;
   readonly hasAppliances?: boolean;
+  /**
+   * Minutos de vigencia contados desde el `now()` de Postgres, no una fecha
+   * escrita a mano: un literal cambia de significado solo el día que el
+   * calendario lo pasa, y la prueba sigue verde midiendo otra cosa. Negativo
+   * = ya vencido.
+   */
+  readonly expiresInMinutes?: number;
 }
+
+const THIRTY_DAYS_IN_MINUTES = 30 * 24 * 60;
 
 async function insertListing(fixture: Fixture) {
   await pool.query(
@@ -100,7 +116,7 @@ async function insertListing(fixture: Fixture) {
        contact_method, contact_value, status, published_at, expires_at)
      VALUES ($1,$2,$3,$4,$5,$6,'Apartamento','x',$7,$8,$9,2,1,
        $10,$11,$12,$13,$14,
-       'whatsapp','04121234567',$15,now(),now() + interval '30 days')`,
+       'whatsapp','04121234567',$15,now(),now() + make_interval(mins => $16::int))`,
     [
       fixture.id,
       ANA,
@@ -117,6 +133,7 @@ async function insertListing(fixture: Fixture) {
       fixture.hasSecurity ?? false,
       fixture.hasAppliances ?? false,
       fixture.status,
+      fixture.expiresInMinutes ?? THIRTY_DAYS_IN_MINUTES,
     ],
   );
 }
@@ -216,6 +233,19 @@ beforeAll(async () => {
     isFurnished: true,
   });
   await insertListing({
+    id: VENCIDO_POR_RELOJ,
+    zoneId: MCBO_CENTRO,
+    cityId: MARACAIBO,
+    priceUsd: 300,
+    rooms: 2,
+    areaM2: 60,
+    propertyType: "apartamento",
+    publisherType: "owner",
+    status: "active",
+    isFurnished: true,
+    expiresInMinutes: -60,
+  });
+  await insertListing({
     id: OCULTO,
     zoneId: MCBO_NORTE,
     cityId: MARACAIBO,
@@ -304,6 +334,59 @@ describe('"si una etiqueta dice 9, hay 9" (regla transversal 3, task 14.11)', ()
   it("cuenta cinco activos en Maracaibo y uno en Distrito Capital", async () => {
     expect((await facets.countFacets({ cityId: MARACAIBO }, ZONAS_OFRECIDAS)).total).toBe(5);
     expect((await facets.countFacets({ cityId: DISTRITO }, [DC_CENTRO])).total).toBe(1);
+  });
+});
+
+describe("vigente son DOS condiciones, también para los conteos (task 21.1)", () => {
+  /**
+   * **Un conteo que no coincide con su propia lista es peor que un conteo
+   * viejo.** Las filas y las facetas salen de dos consultas distintas sobre
+   * la misma tabla; si una mira el reloj y la otra no, la pantalla dice «9
+   * avisos en Chacao» encima de una lista de ocho, y el número deja de ser
+   * verificable justo donde la regla transversal 3 lo exige — «si una
+   * etiqueta dice 9, hay 9».
+   *
+   * Por eso este bloque no inventa una aserción nueva: pone una fila que sólo
+   * el reloj distingue y deja que la comparación contra `DrizzleListingSearch`
+   * que ya vive arriba haga el trabajo. Con las dos consultas de acuerdo, el
+   * total baja de seis a cinco en las dos a la vez.
+   */
+  it("la fixture es realmente el caso: rótulo `active` y fecha ya pasada", async () => {
+    const { rows } = await pool.query<{ status: string; vencido: boolean }>(
+      `SELECT status, expires_at < now() AS vencido FROM "listing" WHERE id = $1`,
+      [VENCIDO_POR_RELOJ],
+    );
+
+    expect(rows[0]).toEqual({ status: "active", vencido: true });
+  });
+
+  it("no cuenta el aviso cuya fecha ya pasó, aunque su rótulo siga diciendo active", async () => {
+    const counts = await facets.countFacets({ cityId: MARACAIBO }, ZONAS_OFRECIDAS);
+
+    // Cae en todas estas facetas: si alguna lo sumara, se vería acá. Los
+    // números son los mismos que antes de que la fila existiera — que es la
+    // forma de decir que la fila es alcanzable y aun así no se cuenta.
+    expect(counts.total).toBe(5);
+    expect(counts.byZone[MCBO_CENTRO]).toBe(3);
+    expect(counts.byMinRooms[2]).toBe(4);
+    expect(counts.byPropertyType.apartamento).toBe(3);
+    expect(counts.byPublisherType.owner).toBe(3);
+    expect(counts.byAttribute.isFurnished).toBe(2);
+    expect(counts.cityTotal).toBe(5);
+  });
+
+  it("el total y las filas siguen de acuerdo con la fila vencida por reloj adentro", async () => {
+    // **El discriminador entre arreglar una consulta y arreglar las dos.**
+    // Con el reloj sólo en las filas este total diría seis sobre una lista de
+    // cinco; con el reloj sólo en los conteos, cinco sobre una lista de seis.
+    const criteria = { cityId: MARACAIBO, zoneIds: [MCBO_CENTRO] } as const;
+    const [counts, rows] = await Promise.all([
+      facets.countFacets(criteria, ZONAS_OFRECIDAS),
+      search.search(criteria),
+    ]);
+
+    expect(counts.total).toBe(rows.length);
+    expect(rows.map((row) => row.id)).not.toContain(VENCIDO_POR_RELOJ);
   });
 });
 

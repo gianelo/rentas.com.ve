@@ -47,6 +47,12 @@ const LISTING = randomUUID();
 const OTHER_LISTING = randomUUID();
 const EXPIRED_LISTING = randomUUID();
 const HIDDEN_LISTING = randomUUID();
+/**
+ * task 21.1. El rótulo todavía dice `active` porque el trabajo diario que lo
+ * mueve no ha corrido; la fecha ya pasó. Es la misma fila que la búsqueda
+ * dejó de ofrecer, vista una capa más abajo.
+ */
+const CLOCK_EXPIRED_LISTING = randomUUID();
 
 /** Ana reveals the same listing three times, a week apart. */
 const REVEALS = [
@@ -55,12 +61,23 @@ const REVEALS = [
   new Date("2026-03-15T10:00:00.000Z"),
 ];
 
-async function insertListing(id: string, status = "active") {
+const THIRTY_DAYS_IN_MINUTES = 30 * 24 * 60;
+
+/**
+ * `expiresInMinutes` se cuenta desde el `now()` de Postgres y no es una fecha
+ * escrita a mano: un literal cambia de significado solo cuando el calendario
+ * lo pasa, y la prueba se queda verde midiendo otra cosa. Negativo = vencido.
+ */
+async function insertListing(
+  id: string,
+  status = "active",
+  expiresInMinutes = THIRTY_DAYS_IN_MINUTES,
+) {
   await pool.query(
     `INSERT INTO "listing" (id, publisher_id, publisher_type, property_type, city_id, zone_id, title,
        description, price_usd, rooms, area_m2, bathrooms, contact_method, contact_value, status, published_at, expires_at)
-     VALUES ($1,$2,'owner','apartamento',$3,$4,'Título','x',450,2,78,2,'whatsapp','04121234567',$5,now(),now() + interval '30 days')`,
-    [id, PUBLISHER, CITY, ZONE, status],
+     VALUES ($1,$2,'owner','apartamento',$3,$4,'Título','x',450,2,78,2,'whatsapp','04121234567',$5,now(),now() + make_interval(mins => $6::int))`,
+    [id, PUBLISHER, CITY, ZONE, status, expiresInMinutes],
   );
 }
 
@@ -77,6 +94,7 @@ beforeAll(async () => {
   await insertListing(OTHER_LISTING);
   await insertListing(EXPIRED_LISTING, "expired");
   await insertListing(HIDDEN_LISTING, "hidden");
+  await insertListing(CLOCK_EXPIRED_LISTING, "active", -60);
 
   for (const revealedAt of REVEALS) {
     await events.record({
@@ -160,6 +178,29 @@ describe("DrizzleRevealableListing", () => {
     ["oculto por moderación", () => HIDDEN_LISTING],
   ])("no devuelve nada de un aviso %s", async (_estado, id) => {
     await expect(revealable.findRevealable(id())).resolves.toBeNull();
+  });
+
+  /**
+   * **task 21.1 — la misma ventana, una capa más abajo.** Entre que un aviso
+   * vence y que el cron diario lo marca hay de 0 a casi 24 horas en las que
+   * la fila sigue diciendo `active`. Con la lista ya cerrada, quien llega a
+   * la ficha por un enlace de WhatsApp todavía podía gastar uno de sus 40
+   * revelados del día en un aviso que ya no está — y el revelado es
+   * irreversible: queda escrito en un registro que sólo agrega.
+   */
+  it("no devuelve nada de un aviso cuya fecha ya pasó, aunque su rótulo siga diciendo active", async () => {
+    // La precondición primero: sin esto la aserción de abajo podría estar
+    // verde porque la fila quedó `expired`, o porque la fecha nunca pasó.
+    const { rows } = await pool.query<{ status: string; vencido: boolean }>(
+      `SELECT status, expires_at < now() AS vencido FROM "listing" WHERE id = $1`,
+      [CLOCK_EXPIRED_LISTING],
+    );
+    expect(rows[0]).toEqual({ status: "active", vencido: true });
+
+    await expect(revealable.findRevealable(CLOCK_EXPIRED_LISTING)).resolves.toBeNull();
+    // La guarda obligatoria al lado: un puerto que devolviera siempre `null`
+    // pasaría la línea de arriba con las dos manos.
+    await expect(revealable.findRevealable(LISTING)).resolves.not.toBeNull();
   });
 
   it("no distingue un aviso dado de baja de uno que nunca existió", async () => {
