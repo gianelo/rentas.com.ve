@@ -5,6 +5,7 @@ import type {
   SearchPanelModel,
 } from "@/modules/listing-search/domain/search-panel";
 import { AppLink } from "../atoms/AppLink";
+import { LiveResultCount } from "./LiveResultCount";
 import styles from "./SearchPanel.module.css";
 
 /**
@@ -76,6 +77,10 @@ export function SearchPanel({ model }: { readonly model: SearchPanelModel }) {
       role="dialog"
       aria-label="Filtros de búsqueda"
       data-testid="search-panel"
+      // El alcance del oyente del conteo en vivo (14.34). Un atributo propio y
+      // no el `data-testid`: ése es de las pruebas, y colgar comportamiento de
+      // producción de él lo vuelve imposible de renombrar.
+      data-search-panel=""
     >
       <div className={styles.sheet}>
         <header className={styles.head}>
@@ -136,14 +141,20 @@ export function SearchPanel({ model }: { readonly model: SearchPanelModel }) {
           {/* «Limpiar todo» vuelve al valor por defecto TODO menos la ciudad
               (F8). La dirección ya la calculó el dominio; acá es un enlace
               porque es una dirección, y tiene que poder abrirse y pegarse. */}
-          <AppLink className={styles.clear} href={model.clearAllHref}>
+          <AppLink
+            className={styles.clear}
+            href={model.clearAllHref}
+            data-preview={model.clearAllPreviewLabel ?? undefined}
+          >
             Limpiar todo
           </AppLink>
 
           {model.confirm.kind === "empty" ? (
             <div className={styles.empty}>
               {/* No se deshabilita nada: un botón apagado no explica por qué. */}
-              <p className={styles.emptyLabel}>{model.confirm.label}</p>
+              <p className={styles.emptyLabel}>
+                <LiveResultCount label={model.confirm.label} />
+              </p>
               {model.confirm.relief === null ? null : (
                 <AppLink className={styles.confirm} href={model.confirm.relief.href}>
                   {model.confirm.relief.label}
@@ -156,7 +167,7 @@ export function SearchPanel({ model }: { readonly model: SearchPanelModel }) {
               href={model.confirm.href}
               data-testid="search-confirm"
             >
-              {model.confirm.label}
+              <LiveResultCount label={model.confirm.label} />
             </AppLink>
           )}
         </div>
@@ -231,6 +242,7 @@ function PublisherStep({ model }: { readonly model: SearchPanelModel }) {
           href={model.publisher.href}
           aria-current={model.publisher.chosen ? "true" : undefined}
           data-chosen={model.publisher.chosen ? "" : undefined}
+          data-preview={model.publisher.previewLabel ?? undefined}
         >
           <span className={styles.optionName}>
             {model.publisher.chosen ? "✓ " : ""}
@@ -286,6 +298,7 @@ function RoomOptionItem({ room }: { readonly room: RoomChoice }) {
           href={room.href}
           aria-current={room.chosen ? "true" : undefined}
           data-chosen={room.chosen ? "" : undefined}
+          data-preview={room.previewLabel ?? undefined}
         >
           {body}
         </AppLink>
@@ -321,6 +334,7 @@ function AttributeOptionItem({ attribute }: { readonly attribute: AttributeChoic
           href={attribute.href}
           aria-current={attribute.chosen ? "true" : undefined}
           data-chosen={attribute.chosen ? "" : undefined}
+          data-preview={attribute.previewLabel ?? undefined}
         >
           {body}
         </AppLink>

@@ -578,4 +578,73 @@ test.describe("el panel de filtros a los dos anchos (14.32)", () => {
     // pregunta de verdad; `grid-template-columns` sólo dice qué se declaró.
     expect(firstRow).toBe(4);
   });
+
+  /**
+   * **14.34 — el número baja antes de que el servidor conteste.**
+   *
+   * Vive acá y no en `tests/e2e/` a propósito: aquella suite corre los MISMOS
+   * archivos en el proyecto `crawlability`, con el script apagado, donde una
+   * mejora de cliente no puede existir. Ponerla ahí obligaba a un `test.skip`,
+   * y un `skip` es un gate en verde que no mide nada — hoy hay CERO y no se
+   * agrega uno. Este arnés tiene un solo proyecto, con JavaScript, y monta el
+   * componente de producción con conteos deterministas.
+   *
+   * **La navegación se deja colgada a propósito.** El manejador de ruta nunca
+   * contesta, así que la petición del enlace queda pendiente para siempre:
+   * es exactamente el estado que la mejora existe para cubrir —el medio
+   * segundo en que Neon todavía no contestó desde Venezuela— y lo vuelve
+   * determinista en vez de una carrera contra el reloj.
+   */
+  test("14.34: el botón baja de 16 a 9 al tocar el filtro, sin esperar al servidor", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    await page.goto("/measure");
+
+    const confirm = page.getByTestId("search-confirm");
+    await expect(confirm).toHaveText("Ver 16 avisos");
+
+    // Nada de `/alquiler/**` va a contestar nunca: el enlace queda navegando.
+    await page.route("**/alquiler/**", () => {});
+
+    await page.getByRole("link", { name: "2 9" }).click();
+    await expect(confirm).toHaveText("Ver 9 avisos");
+    console.log("[14.34] 16 -> 9 con la navegación todavía en vuelo");
+
+    // Y el teclado entra por la misma puerta: `Enter` sobre un enlace dispara
+    // el mismo `click`, así que no hay un segundo camino que mantener.
+    await page.getByRole("link", { name: "3 4" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(confirm).toHaveText("Ver 4 avisos");
+    console.log("[14.34] 9 -> 4 con el teclado");
+
+    // El anuncio: sin esto el cambio existe sólo para quien lo ve.
+    await expect(confirm.locator("[aria-live='polite']")).toHaveAttribute("aria-live", "polite");
+
+    // Tocar algo que NO adelanta un número borra la vista previa en vez de
+    // dejarla colgada: el encabezado de un grupo no es un filtro.
+    await page.getByRole("link", { name: "Precio" }).click();
+    await expect(confirm).toHaveText("Ver 16 avisos");
+    console.log("[14.34] el encabezado de grupo devuelve el conteo del servidor");
+  });
+
+  /**
+   * **El piso, medido y no afirmado.** El mismo botón dice el número correcto
+   * en los bytes que el servidor manda, sin una línea de script ejecutada.
+   */
+  test("14.34: con el script apagado el botón sigue diciendo el número del servidor", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const sinScript = await context.newPage();
+    await sinScript.setViewportSize({ width: 1280, height: 1200 });
+    await sinScript.goto("/measure");
+
+    await expect(sinScript.getByTestId("search-confirm")).toHaveText("Ver 16 avisos");
+    // Y cada opción sigue siendo un enlace de verdad con su dirección: el
+    // filtro se aplica volviendo al servidor, igual que antes de la mejora.
+    await expect(sinScript.getByRole("link", { name: "2 9" })).toHaveAttribute("href", /hab=2/);
+    console.log("[14.34] piso intacto: el conteo y los enlaces sin JavaScript");
+    await context.close();
+  });
 });
