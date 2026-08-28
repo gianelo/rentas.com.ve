@@ -114,6 +114,16 @@ const VENCIDO_SLUG = `apartamento-3-habitaciones-en-tierra-negra-${VENCIDO_ID}`;
 /** El teléfono que ninguna de estas respuestas puede contener (11.11). */
 const TELEFONO = "+58 412 7654321";
 
+/**
+ * **Relativas al reloj de la corrida, no fijas** (11.23). Una fecha futura
+ * escrita a mano es una prueba con fecha de caducidad: el día que el calendario
+ * la alcanza, la prueba cambia de sujeto sin que nadie la toque. Una hora de
+ * margen sobra para cualquier render.
+ */
+const HORA = 60 * 60 * 1000;
+const VIGENTE = () => new Date(Date.now() + HORA);
+const VENCIDO_POR_RELOJ = () => new Date(Date.now() - HORA);
+
 function detail(overrides: Record<string, unknown> = {}) {
   return {
     id: VENCIDO_ID,
@@ -331,6 +341,64 @@ describe("un visitante anónimo no ve ningún contacto (11.11)", () => {
   });
 });
 
+describe("la disponibilidad sale del reloj y no del rótulo (11.23)", () => {
+  /**
+   * **La ventana dura hasta casi un día, y está medida.** `vercel.json` corre
+   * `/api/jobs/expiry-reminders` con `0 13 * * *` — una vez al día, a las 13:00
+   * UTC— y `markExpired` vive adentro de ese trabajo: nada más mueve el rótulo.
+   * Un aviso vence a los 30 días de la hora en que se publicó, así que entre
+   * «vencido por reloj» y «vencido en la base» pasan de 0 a casi 24 horas.
+   *
+   * En esa ventana la misma pantalla se contradecía: el `<head>` pedía
+   * `noindex` porque `resolveListingIndexing` lee el reloj, mientras el cuerpo
+   * dibujaba el bloque de contacto con llave y ofrecía revelar. Quien llega
+   * desde un enlace de WhatsApp gastaba una de sus 40 revelaciones diarias y
+   * escribía un mensaje para que le contestaran «ya lo alquilé» — el mensaje
+   * desperdiciado que la 5.5 evita del lado de la búsqueda.
+   */
+  it("un aviso que todavía dice active pero cuya fecha ya pasó se dibuja vencido", async () => {
+    findForDetail.mockResolvedValue(detail({ status: "active", expiresAt: VENCIDO_POR_RELOJ() }));
+    zonaConAvisos();
+
+    const html = await servedBody();
+
+    expect(html).toContain("Aviso vencido");
+    expect(html).toContain("No mostramos el contacto de avisos vencidos");
+    expect(html).not.toContain("Ver WhatsApp del dueño");
+  });
+
+  /**
+   * **La otra mitad, y sin ella la de arriba no afirma nada.** Una página que
+   * dibujara siempre el estado vencido pasaría aquélla con las dos manos. Ésta
+   * es la que obliga a que el reloj se lea de verdad en vez de responder que
+   * todo venció.
+   */
+  it("un aviso active cuya fecha no pasó sigue ofreciendo el contacto", async () => {
+    findForDetail.mockResolvedValue(detail({ status: "active", expiresAt: VIGENTE() }));
+
+    const html = await servedBody();
+
+    expect(html).toContain("Ver WhatsApp del dueño");
+    expect(html).not.toContain("Aviso vencido");
+  });
+
+  /**
+   * Y el rescate de la 11.8 alcanza a esa ventana: si la pantalla dice que
+   * venció, tiene que ofrecer la salida que la pantalla vencida ofrece. Sin
+   * esto, la corrección dejaría a ese visitante en una ficha muerta y sin
+   * ninguna puerta.
+   */
+  it("y rescata al visitante con los avisos vivos de su zona", async () => {
+    findForDetail.mockResolvedValue(detail({ status: "active", expiresAt: VENCIDO_POR_RELOJ() }));
+    zonaConAvisos();
+
+    const html = await servedBody();
+
+    expect(html).toContain("Otros avisos activos en Tierra Negra");
+    expect(html).toContain(VECINO_1.title);
+  });
+});
+
 describe("el deber canónico de la ruta de la ficha (11.21)", () => {
   /**
    * **Sólo el id identifica un aviso** (11.1), así que toda ruta que termine en
@@ -391,8 +459,16 @@ describe("un aviso activo no arrastra el costo de las sugerencias", () => {
    * visitada del sitio— cada consulta de más es un viaje HTTP a Neon que nadie
    * pidió.
    */
+  /**
+   * **La fecha vigente es parte del sujeto, y antes faltaba** (11.23). Este
+   * caso decía `status: "active"` sobre la fila de ejemplo, cuya fecha de
+   * vencimiento ya pasó — o sea que describía exactamente la ventana en la que
+   * el rótulo y el reloj no coinciden, y afirmaba que ahí SÍ se ofrece el
+   * contacto. Con la disponibilidad saliendo del reloj, un aviso activo es el
+   * que además no venció.
+   */
   it("la ficha activa no consulta el catálogo ni la búsqueda", async () => {
-    findForDetail.mockResolvedValue(detail({ status: "active" }));
+    findForDetail.mockResolvedValue(detail({ status: "active", expiresAt: VIGENTE() }));
 
     const html = await servedBody();
 
