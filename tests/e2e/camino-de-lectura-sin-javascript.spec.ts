@@ -164,4 +164,84 @@ test.describe("el camino de lectura con el script apagado (11.16)", () => {
     const saltos = response?.request().redirectedFrom();
     expect(saltos).not.toBeNull();
   });
+
+  /**
+   * **El 404 aterrizando en una pantalla y no en un vacío** (11b.3), servido
+   * en el HTML y caminado con el script apagado. Es el cableado que una
+   * prueba de render no puede probar: que Next llame a `app/not-found.tsx`.
+   */
+  test("una dirección que no coincide con ninguna ruta responde 404 con pantalla y salida", async ({
+    page,
+  }) => {
+    const response = await page.goto("/una-direccion-que-nadie-publico");
+
+    expect(response?.status()).toBe(404);
+    await expect(page.getByRole("heading", { name: "No encontramos esa página" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ir al inicio" })).toHaveAttribute("href", "/");
+  });
+
+  /**
+   * **El `notFound()` de la ficha, y acá sólo se afirma el código.**
+   *
+   * El cuerpo no se afirma porque **hoy no viaja en el HTML**: Next 15.5.23
+   * dibuja del lado del cliente el `not-found` que se lanza desde una ruta
+   * dinámica —el cuerpo servido son 234 bytes con un límite de suspenso vacío
+   * y el contenido sólo en la carga de Flight—, así que con el script apagado
+   * esta dirección sigue quedando en blanco. **No lo causó `not-found.tsx`**:
+   * antes era la pantalla por defecto de Next por el mismo camino. Está
+   * medido y anotado como tarea 22.16; afirmar acá el encabezado sería pedirle
+   * a esta prueba que falle por un defecto que no es suyo.
+   */
+  test("un aviso que no existe responde 404", async ({ page }) => {
+    const response = await page.goto(`${ZONA_MARACAIBO}/apartamento-que-nunca-existio`);
+
+    expect(response?.status()).toBe(404);
+  });
+
+  /**
+   * **La 16.9, caminada entera y con el script apagado.**
+   *
+   * Es la historia del producto y no una afirmación sobre una función: alguien
+   * estrecha la lista con un filtro, abre uno de los avisos que quedaron, y
+   * aprieta la vuelta. Tiene que aterrizar en ESOS avisos. Perder el filtro
+   * ahí significa rehacer el trabajo o irse.
+   *
+   * **Las tres afirmaciones son una sola cadena y ninguna sobra.** El conteo de
+   * antes fija que el filtro hizo algo —sin él, «vuelve a lo mismo» sería
+   * cierto por no haber recortado nada—; el TEXTO del enlace es la mitad de la
+   * regla, porque `resultsLink` devuelve dos acciones distintas y el respaldo
+   * («Ver avisos en Tierra Negra») es exactamente lo que se dibujaba antes de
+   * esta corrección; y la dirección más el conteo de después son el aterrizaje.
+   *
+   * **Con `javaScriptEnabled: false` en el proyecto `crawlability`** (F14): el
+   * estado viaja por la dirección, así que es un enlace y no historia del
+   * navegador. `history.back()` no sabe si hay algo atrás y `document.referrer`
+   * no llega siempre — las dos están descartadas por escrito en el dominio.
+   */
+  test("volver de un aviso devuelve a la búsqueda filtrada, no a la zona pelada (16.9)", async ({
+    page,
+  }) => {
+    // 480 y 250 pasan; la casa de 900 no, y el vencido tampoco por su estado.
+    const busqueda = `${CIUDAD_MARACAIBO}?max=500`;
+    await page.goto(busqueda);
+    await expect(page.getByTestId("result-count")).toHaveText("2 propiedades activas");
+
+    await page.getByText(tituloDe(ID.mcboTierraNegra1)).click();
+    // **`toHaveURL` y no `page.url()`, y es una corrección medida.** Con el
+    // script encendido el enrutador de Next navega en el cliente, así que la
+    // lectura inmediata devolvía todavía la dirección de la búsqueda: el
+    // proyecto `crawlability` pasaba y `chromium` fallaba por la carrera, no
+    // por el producto. Ésta reintenta hasta que el navegador llegó.
+    await expect(page).toHaveURL((url) => url.pathname === fichaDe(ID.mcboTierraNegra1));
+
+    // El texto es la mitad de la regla: sin origen la ficha dibuja «Ver avisos
+    // en Tierra Negra», que es una salida honesta y NO una vuelta.
+    const vuelta = page.getByRole("link", { name: "← Resultados" });
+    await expect(vuelta).toBeVisible();
+    await vuelta.click();
+
+    // La búsqueda entera, no la ruta sola: el `?max=500` es lo que la 16.9 pide.
+    await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === busqueda);
+    await expect(page.getByTestId("result-count")).toHaveText("2 propiedades activas");
+  });
 });

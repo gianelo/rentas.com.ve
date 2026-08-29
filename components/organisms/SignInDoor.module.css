@@ -1,0 +1,96 @@
+/* La puerta de entrar: hoja abajo en el móvil (lámina 8b), diálogo centrado de
+   460 px sobre el aviso oscurecido en escritorio (9b). Una sola pieza y un solo
+   punto de quiebre: en el servidor no se sabe el ancho, así que dos componentes
+   obligarían a la ficha a elegir cuál dibuja. */
+.door {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.veil {
+  position: absolute;
+  inset: 0;
+  background: var(--door-veil);
+}
+.panel {
+  position: relative;
+  width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 16px 20px 22px;
+  background: var(--surface);
+  border-radius: var(--door-r) var(--door-r) 0 0;
+  box-shadow: var(--door-sheet-shadow);
+}
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.title {
+  margin: 0;
+  font-size: var(--title-fs);
+  font-weight: var(--title-fw);
+  line-height: var(--title-lh);
+}
+.close {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--target-min);
+  height: var(--target-min);
+  border: 1px solid var(--line);
+  border-radius: var(--rs);
+  color: var(--ink);
+  text-decoration: none;
+}
+.reason {
+  margin: 8px 0 0;
+  font-size: var(--control-fs);
+  line-height: var(--ficha-body-lh);
+  color: var(--soft);
+}
+/* El botón ocupa el ancho: es la acción única del panel. */
+.form {
+  margin-top: 16px;
+}
+.form button {
+  width: 100%;
+}
+.stay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--target-min);
+  margin-top: 12px;
+  font-size: var(--nav-action-fs);
+  color: var(--soft);
+  text-decoration: none;
+}
+.assurance {
+  margin: 10px 0 0;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  line-height: 1.7;
+  color: var(--soft);
+  text-align: center;
+}
+/* Escritorio: el pulgar no manda, así que la hoja se vuelve el diálogo de 460
+   anclado arriba, con el aviso reconocible bajo el velo. */
+@media (min-width: 768px) {
+  .door {
+    align-items: flex-start;
+    padding-top: 96px;
+  }
+  .panel {
+    width: var(--door-w);
+    padding: 28px;
+    border-radius: var(--door-r);
+    box-shadow: var(--door-shadow);
+  }
+}

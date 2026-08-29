@@ -143,6 +143,7 @@ Escala: `4 · 8 · 12 · 16 · 24 · 32 · 48`. Nada fuera de esa escala.
 - Columna de resultados: el ancho entero del contenedor.
 - Ficha: foto 640px + columna de datos de 420px fija y sticky. *(Los 328 px que la tabla §8 de la especificación de la ficha pone bajo «Escritorio» son el ancho útil del **teléfono**: la lámina de escritorio no dibuja ningún bloque de 328 y la móvil lo dibuja seis veces — medido, tarea 16.29.)*
 - Formularios: una sola columna de 600px.
+- **La puerta de entrar** (láminas 8b/9b, tarea 15.8): en móvil es una hoja que sube desde abajo y ocupa el ancho; en escritorio es un diálogo de **460px** (`--door-w`) centrado sobre el aviso oscurecido. El sistema no definía ni el velo, ni el radio de 18 que las dos láminas dibujan (`--r` es 12), ni una sombra de esa escala, así que se extiende con `--door-veil`, `--door-r`, `--door-w`, `--door-shadow` y `--door-sheet-shadow` — no se escriben literales en la hoja del componente. Las medidas dibujadas se comprueban en `tests/measure/puerta.spec.ts`, no en la hoja.
 - Altura mínima de control: **44px en las dos pantallas**. Era 36 en escritorio; **decidido por el fundador el 2026-08-27** (tarea 16.24) porque de los tres candidatos —36, los 40 de su especificación y 44— **sólo 44 alcanza WCAG 2.2 SC 2.5.5 (AAA)**. Los botones de acción miden 46 (`--action-h`), que es un valor propio y no una variante de éste.
 
 ## Jerarquía de botones
@@ -280,6 +281,18 @@ El color aparece solo en los dos estados que piden algo. Activa y vencida son ne
 **Layout móvil:** la tabla se convierte en tarjetas de error, una por fila con problema, más un resumen de las filas correctas. No es una tabla con scroll.
 
 **Acciones:** "Crear las 38 propiedades" (acción) y "Corregir el archivo y volver a subir" (neutro).
+
+### 8. Entrar — la pantalla con su propia dirección
+
+**Propósito:** es la puerta que se pega en un correo y a la que Google devuelve. La hoja de la ficha (§Layout de escritorio, «La puerta de entrar») no la reemplaza porque una hoja no tiene dirección.
+
+**Layout móvil (360, lámina 8a):** barra con `← Volver` a la izquierda y la marca al centro → título → motivo → botón «Continuar con Google» a todo el ancho → línea legal; y debajo, sólo por la puerta de publicar, la caja `--bg` con los tres pasos.
+
+**Layout escritorio (1280, lámina 9a):** misma barra con la marca a la izquierda y la vuelta contra el borde → dentro del contenedor de 1100, cuadrícula de **420 + 80 + 600**: el motivo y el botón en la columna de 420 y los pasos al costado, «así el botón queda alto». El 420 es el mismo ancho de la columna de datos de la ficha y se escribe literal como en `DetailSplit`: es una medida estructural que este documento ya fija, y un segundo nombre para un valor existente hace discrepar la paleta. Medido en `tests/measure/entrar.spec.ts`, no declarado en la hoja.
+
+**Lo que dice depende de por qué puerta se entró** (`signInPageFor`, `src/modules/identity/domain/sign-in-page.ts`): publicar trae los tres pasos, un aviso trae la promesa de vuelta, y la cuenta no promete ninguno de los dos. La copia es de producto y vive en el dominio, no en la pantalla.
+
+**Desvíos de la lámina, deliberados.** El `<h1>` usa `--title-fs` como el de todas las demás pantallas, y no el 22/28 que estas dos láminas dibujan sólo acá: un tamaño de encabezado propio de una pantalla es cómo empieza la deriva. El enlace de vuelta va en `--ink`, igual que el «← Resultados» de la ficha, y no en `--accent`. El campo de correo y su botón «Enviarme el enlace» **no están dibujados todavía**: desembocan en la pantalla de espera, que no existe (tarea 15.9). Y el botón va **sin la marca de Google**, en el nivel 1 — ver Assets y la tarea 22.20.
 
 ## Interactions & Behavior
 

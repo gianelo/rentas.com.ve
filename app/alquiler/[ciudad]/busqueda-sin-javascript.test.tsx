@@ -183,4 +183,32 @@ describe("la búsqueda sin JavaScript", () => {
       /<form[^>]*action="\/alquiler\/distrito-capital"[^>]*method="get"/,
     );
   });
+
+  /**
+   * **La 16.9 en la ruta de la ciudad, que también ES una búsqueda** (14.24).
+   *
+   * Va acá y no sólo en la zona porque las dos pantallas tienen que componer el
+   * MISMO origen y son dos archivos distintos: la que se olvidara del cuarto
+   * argumento dejaría a media mitad del producto perdiendo los filtros al
+   * volver, sin romper nada visible. Es exactamente la forma en que la 16.9
+   * estuvo abierta con todo su dominio ya escrito y probado.
+   *
+   * Se lee sobre el cuerpo servido: probar la regla y probar que la pantalla la
+   * INSTALA son dos afirmaciones distintas, y sólo una la ve un render.
+   */
+  it("cuelga de cada tarjeta la búsqueda entera, para que la vuelta la traiga (16.9)", async () => {
+    const html = await servedBody({ max: "500", pag: "2", filtros: "precio" });
+
+    const ficha = /href="(\/alquiler\/distrito-capital\/[^"]+)"/.exec(html)?.[1];
+    expect(ficha).toBeDefined();
+
+    const volver = new URL(
+      (ficha as string).replaceAll("&amp;", "&"),
+      "https://rentas.com.ve",
+    ).searchParams.get("volver");
+
+    // Literal, no derivado de las mismas funciones que compone la página: la
+    // página en la que alguien estaba parado viaja, el panel abierto no.
+    expect(volver).toBe("/alquiler/distrito-capital?max=500&pag=2");
+  });
 });

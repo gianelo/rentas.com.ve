@@ -1,0 +1,56 @@
+/* Las tres pantallas del fallo (tareas 11b.2 y 11b.3).
+
+   **Derivada, no inventada** (AGENTS.md §2): ni un valor propio. Título =
+   papel «Título de página», cuerpo = papel «Cuerpo», recuadro del código =
+   el relleno `--bg` y el radio `--r` que el sistema le da a todo bloque, y
+   los espacios salen de la escala 4·8·12·16·24·32·48. */
+.page {
+  background: var(--surface);
+  color: var(--ink);
+  padding: 48px 0;
+}
+
+.title {
+  margin: 0 0 16px;
+  font-size: var(--title-fs);
+  font-weight: var(--title-fw);
+  line-height: var(--title-lh);
+  text-wrap: pretty;
+}
+
+.text {
+  margin: 0;
+  font-size: var(--ficha-body-fs);
+  line-height: var(--ficha-body-lh);
+  text-wrap: pretty;
+}
+
+/* El código y su instrucción. `--bg` sobre `--surface` es el mismo contraste
+   con el que el sistema separa un bloque de su página. */
+.reference {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 24px 0;
+  padding: 12px 16px;
+  border-radius: var(--r);
+  background: var(--bg);
+  color: var(--soft);
+  font-size: var(--meta-fs);
+  font-weight: var(--meta-fw);
+}
+
+/* `--mono` y `tabular-nums`, igual que el precio: son cifras que alguien va a
+   copiar carácter por carácter. */
+.code {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: var(--control-fs);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.hint {
+  flex-basis: 100%;
+}

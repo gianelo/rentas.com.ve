@@ -1,0 +1,108 @@
+/* La pantalla de espera (láminas 8c/9c, 15.9). El 520 se escribe literal por
+   lo mismo que el 420 de la puerta vecina y el 1100 de `Container`: es una
+   medida estructural que SISTEMA.md fija, no una de las cuatro categorías que
+   D16 tokeniza, y un segundo nombre para un valor existente hace discrepar la
+   paleta. Quiebre 768, el de `Container`. */
+.screen {
+  min-block-size: 100dvh;
+  background: var(--surface);
+}
+.column {
+  margin-inline: auto;
+  max-inline-size: 520px;
+  padding-block: 36px 32px;
+  text-align: center;
+}
+.mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--wait-mark-size);
+  block-size: var(--wait-mark-size);
+  border-radius: var(--rs);
+  background: var(--tint);
+  font-size: var(--wait-mark-fs);
+}
+.title {
+  margin: 18px 0 0;
+  font-size: var(--title-fs);
+  font-weight: var(--title-fw);
+  line-height: var(--title-lh);
+  text-wrap: pretty;
+}
+.lead {
+  margin: 10px 0 0;
+  font-size: var(--control-fs);
+  line-height: var(--ficha-body-lh);
+  color: var(--soft);
+  text-wrap: pretty;
+}
+/* La dirección tecleada es lo único que la persona vino a verificar acá, así
+   que sube al color del texto principal mientras el resto queda en `--soft`. */
+.address {
+  color: var(--ink);
+}
+/* A la izquierda: es una lista de razones, y centrar viñetas las vuelve
+   ilegibles. La caja centrada de arriba es el mensaje; esto es el detalle. */
+.troubles {
+  margin-top: 26px;
+  padding: 16px;
+  background: var(--bg);
+  border-radius: var(--r);
+  text-align: start;
+}
+.troublesTitle {
+  margin: 0;
+  font-family: var(--meta);
+  font-weight: 700;
+  font-size: var(--meta-fs-sm);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--soft);
+}
+.troubleList {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 10px 0 0;
+  padding-inline-start: 18px;
+  font-size: var(--ficha-body-fs);
+  line-height: 1.45;
+}
+/* Apiladas en el teléfono (8c) y lado a lado en escritorio (9c): con 520 de
+   ancho las dos entran, y a 360 una al lado de la otra parte las etiquetas. */
+.actions {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+.actions button {
+  inline-size: 100%;
+}
+/* La cuenta regresiva mientras la ventana corre. Es texto y no un control: no
+   hay nada que apretar todavía, y un rectángulo gris que no hace nada es
+   justo lo que la nota de la lámina pide evitar. */
+.waiting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: var(--target-min);
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--soft);
+  font-weight: 600;
+}
+@media (min-width: 768px) {
+  .column {
+    padding-block: 64px 80px;
+  }
+  .troubles {
+    margin-top: 32px;
+    padding: 20px 22px;
+  }
+  .actions {
+    grid-template-columns: 1fr 1fr;
+    margin-top: 20px;
+  }
+}

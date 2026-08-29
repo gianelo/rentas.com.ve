@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { safeResultsOrigin } from "@/modules/listing-discovery/domain/return-to-results";
 import {
   buildSearchHref,
   clearAllHref,
   planCityChange,
   readZoneList,
+  resultsOriginHref,
   SEARCH_QUERY_NAMES,
   toggleZone,
 } from "./search-query";
@@ -231,5 +233,80 @@ describe("cambiar de ciudad borra las zonas elegidas (F3)", () => {
     );
 
     expect(plan.href).not.toContain("pag=");
+  });
+});
+
+/**
+ * **La dirección de esta pantalla de resultados, tal como viaja en el enlace a
+ * un aviso** (tarea 16.9).
+ *
+ * La pregunta que estas pruebas hacen no es «¿hay una vuelta?» —eso ya lo
+ * decidía `return-to-results.ts`— sino **qué viaja con ella**. Una vuelta que
+ * aterriza en la zona pelada, sin el precio ni las habitaciones, cumple la
+ * letra de «← Resultados» y le devuelve a quien había estrechado 70 avisos a 9
+ * los 70 otra vez.
+ */
+describe("resultsOriginHref", () => {
+  it("se lleva los filtros puestos, no sólo la ruta", () => {
+    expect(
+      resultsOriginHref("/alquiler/distrito-capital/chacao", {
+        min: "200",
+        max: "400",
+        hab: "2",
+        amoblado: "1",
+      }),
+    ).toBe("/alquiler/distrito-capital/chacao?min=200&max=400&hab=2&amoblado=1");
+  });
+
+  /**
+   * **La página también.** Quien estaba en la 3 de 13 y abre un aviso vuelve a
+   * la 3: aterrizar en la 1 es perder el lugar aunque los filtros estén.
+   */
+  it("se lleva la página, que es dónde estaba parado", () => {
+    expect(resultsOriginHref("/alquiler/maracaibo", { min: "200", pag: "3" })).toBe(
+      "/alquiler/maracaibo?min=200&pag=3",
+    );
+  });
+
+  /**
+   * **El panel abierto NO es parte de la búsqueda.** `filtros` dice qué grupo
+   * del acordeón está desplegado y `busca` es el texto que achica la lista de
+   * zonas ofrecidas — ninguno de los dos recorta un solo aviso. Arrastrarlos
+   * hace que «← Resultados» devuelva a la pantalla con el modal encima: quien
+   * pidió sus resultados recibe el panel de filtros.
+   */
+  it("no se lleva el estado del panel, que no filtra nada", () => {
+    const href = resultsOriginHref("/alquiler/distrito-capital", {
+      min: "200",
+      filtros: "precio",
+      busca: "chac",
+      pag: "2",
+    });
+
+    expect(href).toBe("/alquiler/distrito-capital?min=200&pag=2");
+  });
+
+  it("sin nada puesto es la ruta sola, sin un «?» colgando", () => {
+    expect(resultsOriginHref("/alquiler/maracaibo/tierra-negra", {})).toBe(
+      "/alquiler/maracaibo/tierra-negra",
+    );
+  });
+
+  /**
+   * **La invariante que ata este archivo con el lector de la ficha**: todo lo
+   * que esta función escribe, `safeResultsOrigin` lo acepta y lo devuelve
+   * igual. Un origen que el lector fuera a rechazar sería un parámetro que
+   * viaja por las veinticuatro tarjetas de la cuadrícula para terminar
+   * descartado en silencio, y la ficha caería en el respaldo sin que nadie vea
+   * un error.
+   */
+  it("lo que escribe, la ficha lo acepta", () => {
+    const origen = resultsOriginHref("/alquiler/distrito-capital/chacao", {
+      min: "200",
+      hab: "2",
+      pag: "2",
+    });
+
+    expect(safeResultsOrigin(origen)).toBe(origen);
   });
 });

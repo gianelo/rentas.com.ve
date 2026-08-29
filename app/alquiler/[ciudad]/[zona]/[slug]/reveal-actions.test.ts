@@ -46,10 +46,13 @@ vi.mock("next/navigation", () => ({ redirect }));
 // porque `revealContact` está doblado.
 vi.mock("@/shared/db/client", () => ({ db: {} }));
 
-// Arrastra Auth.js entero y no participa de lo que se prueba.
+// Arrastran Auth.js entero y no participan de lo que se prueba. `auth.ts` se
+// construye al importarse —arma el adaptador de Drizzle sobre `db`—, así que
+// sin este doble el archivo ni siquiera carga.
 vi.mock("@/modules/identity/infrastructure/session-port", () => ({
   nextAuthSessionPort: { getSession: async () => null },
 }));
+vi.mock("@/modules/identity/infrastructure/auth", () => ({ signIn: vi.fn() }));
 
 // Sólo se dobla `revealContact`. Las clases de error salen del módulo REAL —
 // con copias locales, un renombre en producción dejaría este archivo en verde
@@ -67,12 +70,13 @@ import { MissingRevealMessageError } from "@/modules/contact-reveal/domain/revea
 import { UnauthenticatedError } from "@/modules/identity/application/require-authenticated-session";
 import {
   SIGN_IN_FALLBACK,
-  safeSignInDestination,
+  safeReturnPath,
 } from "@/modules/identity/domain/safe-return-destination";
 import { revealListingContact } from "./reveal-actions";
 
 const FICHA = "/alquiler/caracas/chacao/apartamento-listing-1";
-const SIGN_IN_HREF = `/signin?callbackUrl=${encodeURIComponent(FICHA)}`;
+/** La puerta abre SOBRE la ficha, así que el destino es la ficha misma (15.8). */
+const PUERTA = `${FICHA}?entrar=si`;
 
 function form(fields: Record<string, string>): FormData {
   const data = new FormData();
@@ -84,7 +88,7 @@ function submit(overrides: Record<string, string> = {}) {
   return revealListingContact(
     form({
       listingId: "listing-1",
-      signInHref: SIGN_IN_HREF,
+      doorHref: PUERTA,
       message: "Hola, me interesa. ¿Sigue disponible?",
       ...overrides,
     }),
@@ -119,14 +123,16 @@ describe("cuando no hay sesión", () => {
    * El punto de fuga principal del producto: es el único momento en que se le
    * pide algo al inquilino, y si vuelve a la raíz en vez de a la ficha, se va.
    */
-  it("manda a entrar por el destino que decide el dominio", async () => {
+  it("abre la puerta sobre la misma ficha en vez de mandar a otra pantalla", async () => {
     revealContact.mockRejectedValueOnce(new UnauthenticatedError());
 
     await expect(submit()).rejects.toBeInstanceOf(RedirectSignal);
 
     // Se compara contra la función real, no contra una cadena escrita a mano:
     // así el test no repite la regla, la usa.
-    expect(redirect).toHaveBeenCalledWith(safeSignInDestination(SIGN_IN_HREF));
+    expect(redirect).toHaveBeenCalledWith(safeReturnPath(PUERTA));
+    // Y lo que la 15.8 prohíbe, dicho aparte: sacarlo del aviso que lee.
+    expect(redirect.mock.lastCall?.[0]).not.toContain("/signin");
   });
 
   /**
@@ -138,7 +144,7 @@ describe("cuando no hay sesión", () => {
     revealContact.mockRejectedValueOnce(new UnauthenticatedError());
 
     await expect(
-      submit({ signInHref: "/signin?callbackUrl=https%3A%2F%2Fevil.test" }),
+      submit({ doorHref: "https://evil.test/alquiler/caracas/chacao/aviso" }),
     ).rejects.toBeInstanceOf(RedirectSignal);
 
     const destination = redirect.mock.lastCall?.[0];

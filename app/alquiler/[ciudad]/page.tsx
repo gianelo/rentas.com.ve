@@ -30,6 +30,7 @@ import { toPanelZones } from "@/modules/listing-search/domain/search-panel";
 import {
   buildSearchHref,
   readZoneList,
+  resultsOriginHref,
   SEARCH_QUERY_NAMES,
 } from "@/modules/listing-search/domain/search-query";
 import { resolveZoneTokens, toSearchZones } from "@/modules/listing-search/domain/zone-catalogue";
@@ -165,6 +166,13 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
     })),
     covers,
     readPhotoPublicBaseUrl(),
+    // El mismo origen que compone la página de zona, por la misma función
+    // (16.9): la ruta de la ciudad ES una búsqueda (14.24), así que volver
+    // desde una ficha abierta acá tiene que traer los filtros y la página en
+    // la que la persona estaba parada. Una segunda copia de esta expresión
+    // escrita a mano deja de coincidir con la de la zona en el próximo
+    // parámetro que alguien agregue, y la discrepancia no rompe nada visible.
+    resultsOriginHref(cityPath, query),
   );
 
   // El panel va después de las filas por la misma razón que en la página de
