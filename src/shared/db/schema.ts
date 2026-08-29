@@ -135,6 +135,69 @@ export const verificationTokens = pgTable(
   ],
 );
 
+/**
+ * verified_contact (tasks.md 19.9). Qué valores de contacto de una cuenta
+ * están verificados, y desde cuándo.
+ *
+ * **La clave es el triple `(user_id, method, value)` y no la cuenta**, porque
+ * la verificación pertenece al VALOR y no a la persona (19d): quien verifica
+ * un número y después publica con otro no publicó un número verificado. La
+ * clave primaria natural también le sirve sin inventar nada a una
+ * inmobiliaria con dos números.
+ *
+ * **Estado, no bitácora — y por eso NO es append-only**, a diferencia de
+ * `contact_reveal_event`, `listing_report` y `moderation_action`. Aquellas
+ * registran que algo OCURRIÓ y una fila borrada sería evidencia perdida; ésta
+ * contesta una pregunta con una sola respuesta útil («¿está verificado este
+ * valor, y desde cuándo?»). Volver a verificar mueve el instante con un
+ * `ON CONFLICT DO UPDATE`. Como bitácora, esa misma pregunta sería un
+ * `max(verified_at)` agrupado en cada dibujo de ficha, y el propio enunciado
+ * de la 19.9 nombra cuatro columnas sin id de evento ni nada que registrar
+ * sobre el acto.
+ *
+ * **De esa clave cae sola la 19.13** —«una inmobiliaria que sube cincuenta
+ * avisos verifica una vez, no cincuenta»—: un segundo aviso con el mismo
+ * contacto no puede crear una segunda fila, y eso lo garantiza Postgres y no
+ * un `if` de la aplicación que alguien recuerde escribir. Mismo razonamiento
+ * que `listing_report_listing_reporter_unique`.
+ *
+ * **La ausencia de fila ES «no verificado» (AGENTS.md §7).** No hay columna
+ * `verified` con un default, no hay `NOT VALID` que rellenar y no hay estado
+ * intermedio: nada puede hacer que un contacto se lea como verificado sin que
+ * alguien haya escrito su instante. Con el canal de WhatsApp diferido al
+ * final del proyecto (fundador, 2026-08-29), ésa es la única razón por la que
+ * su ausencia no deja un agujero.
+ *
+ * **`verified_at` con zona horaria y sin ventana escrita en el esquema**: los
+ * doce meses de la 19.11 son un `WHERE verified_at > $1` del puerto de
+ * lectura, así que expiran sin tocar la base — un cambio de consulta, nunca
+ * una migración. La 19.12 tampoco pide nada acá: el aviso ya copia
+ * `contact_method`/`contact_value` al publicar, y la ficha escribe la FECHA
+ * («verificado por WhatsApp el 19 ago») en vez de un estado, que es lo que la
+ * mantiene honesta cuando los dos relojes se cruzan.
+ *
+ * **`ON DELETE cascade`, y es deliberadamente lo contrario de
+ * `listing_report`.** Esto no es evidencia de nada que alguien pudiera querer
+ * hacer desaparecer: es una propiedad de una cuenta que ya no existe. Un
+ * `restrict` acá haría imposible borrar una cuenta para proteger una fila que
+ * sin esa cuenta no significa nada.
+ */
+export const verifiedContacts = pgTable(
+  "verified_contact",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    method: text("method").$type<ContactMethod>().notNull(),
+    value: text("value").notNull(),
+    verifiedAt: timestamp("verified_at", { mode: "date", withTimezone: true }).notNull(),
+  },
+  // Sin índice extra: la ficha entra por la clave entera y «qué tiene
+  // verificado esta cuenta» entra por su prefijo `user_id`. La primaria sirve
+  // a las dos, y un índice que nadie usa se paga en cada escritura.
+  (verified) => [primaryKey({ columns: [verified.userId, verified.method, verified.value] })],
+);
+
 // city / zone (design.md D5, tasks.md 2.1). City isolation is enforced by
 // schema, not a runtime filter a caller could forget. `zone` carries an
 // explicit UNIQUE(id, city_id) alongside its own primary key: a plain

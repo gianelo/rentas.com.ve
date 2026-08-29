@@ -6,6 +6,11 @@ import type {
   AuthenticatedSession,
   SessionPort,
 } from "../../src/modules/identity/application/ports/session.port";
+import {
+  DrizzleContactVerificationEvidence,
+  DrizzleVerifiedContacts,
+  type VerifiedContactDatabase,
+} from "../../src/modules/identity/infrastructure/drizzle-verified-contact";
 import { attachPhotoToDraft } from "../../src/modules/listing-publication/application/attach-photo-to-draft";
 import type { PhotoDerivationPort } from "../../src/modules/listing-publication/application/ports/photo-derivation.port";
 import type { PhotoHashComputationPort } from "../../src/modules/listing-publication/application/ports/photo-hash-computation.port";
@@ -67,6 +72,13 @@ const repository = new DrizzleListingRepository(db as unknown as PublicationData
 const activation = new DrizzleListingActivation(db as unknown as PublicationDatabase);
 const zones = new DrizzleZoneCatalogue(db as unknown as PublicationDatabase);
 const photoHashes = new DrizzlePhotoHash(db as unknown as TrustDatabase);
+// Los de verdad y no dobles (tasks.md 19.9): las tres cuentas de este archivo
+// publican por WhatsApp, así que lo que estas dos líneas mantienen medido es
+// que publicar por teléfono NO deja ninguna fila de verificación.
+const contactEvidence = new DrizzleContactVerificationEvidence(
+  db as unknown as VerifiedContactDatabase,
+);
+const verifiedContacts = new DrizzleVerifiedContacts(db as unknown as VerifiedContactDatabase);
 
 const CITY = randomUUID();
 const ZONE = randomUUID();
@@ -227,6 +239,8 @@ describe("publishListing — D4 cross-account perceptual-hash duplicate rejectio
       derive: fakeDerive,
       computeHash: computeHashReturning(NEAR),
       photoHashes,
+      contactEvidence,
+      verifiedContacts,
       now: () => new Date("2026-08-24T10:00:00.000Z"),
     }).catch((error: unknown) => error);
 
@@ -248,6 +262,8 @@ describe("publishListing — D4 cross-account perceptual-hash duplicate rejectio
       derive: fakeDerive,
       computeHash: computeHashReturning(BASE),
       photoHashes,
+      contactEvidence,
+      verifiedContacts,
       now: () => new Date("2026-08-24T10:05:00.000Z"),
     });
 
@@ -268,6 +284,8 @@ describe("publishListing — D4 cross-account perceptual-hash duplicate rejectio
       derive: fakeDerive,
       computeHash: computeHashReturning(EXPIRED_HASH),
       photoHashes,
+      contactEvidence,
+      verifiedContacts,
       now: () => new Date("2026-08-24T10:10:00.000Z"),
     });
 
@@ -284,6 +302,8 @@ describe("publishListing — D4 cross-account perceptual-hash duplicate rejectio
       derive: fakeDerive,
       computeHash: computeHashReturning(FAR_HASH),
       photoHashes,
+      contactEvidence,
+      verifiedContacts,
       now: () => new Date("2026-08-24T10:15:00.000Z"),
     });
 
@@ -293,6 +313,18 @@ describe("publishListing — D4 cross-account perceptual-hash duplicate rejectio
         WHERE p.listing_id = $1`,
       [listingId],
     );
+    // tasks.md 19.9/19.10 — de punta a punta y contra Postgres de verdad:
+    // Carla publicó por WhatsApp, y el canal está diferido al final del
+    // proyecto (fundador, 2026-08-29), así que NO puede quedar fila. Sin
+    // fila, la ficha no tiene fecha que dibujar y un teléfono sin verificar
+    // se lee como lo que es. La suite del correo vive en
+    // tests/integration/contact-verification.test.ts.
+    const verificaciones = await pool.query(
+      `SELECT count(*)::int AS n FROM "verified_contact" WHERE user_id = $1`,
+      [CARLA],
+    );
+    expect(verificaciones.rows[0].n).toBe(0);
+
     // The last one matters as much as the rest: if recording silently
     // failed, this row simply would not exist, and every rejection test
     // above would still pass while the table stayed empty forever.

@@ -12,7 +12,8 @@ import { expect, test } from "@playwright/test";
  *
  * Contra eso, una aserción sobre el contenido de la hoja no sirve: `.price`
  * apuntando a `--fpb` (26) en vez de a `--ficha-price-fs` (30) deja verde
- * cualquier `expect(css).toContain("var(--")`. Lo único que distingue un
+ * cualquier `expect(css).toContain("var(--")`. (`--fpb` salió del conjunto que
+ * ship*a* en la 16.37; el agujero del gate no se fue con él.) Lo único que distingue un
  * token del token de al lado es **el número dibujado**, y eso se lee del
  * navegador. Por eso estas medidas viven acá y no en un `*.test.tsx`.
  *
@@ -76,21 +77,88 @@ test.describe("la ficha: tipografía dibujada (16.23)", () => {
     expect(Number.parseFloat(price.fontSize)).toBeGreaterThan(Number.parseFloat(title.fontSize));
   });
 
-  test("16.23: la descripción pinta 15px con interlineado 1.6 en las dos pantallas", async ({
+  test("16.23: a 360 la descripción pinta 15px con interlineado 1.6", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 1000 });
+    await page.goto("/measure");
+
+    const text = await typography(page, "ficha-description");
+    console.log(`[16.23] 360px descripción=${JSON.stringify(text)}`);
+
+    expect(text.fontSize).toBe("15px");
+    // 1.6 × 15 = 24. El navegador resuelve el interlineado a px, así que el
+    // número es comparable y no una razón declarada.
+    expect(text.lineHeight).toBe("24px");
+  });
+
+  /**
+   * **16.38 — el par del cuerpo tiene paso de escritorio** (fundador,
+   * 2026-08-29, salida A).
+   *
+   * Este `it` anclaba 15/24 en los DOS anchos, y eso era exactamente lo que la
+   * lámina de escritorio de la ficha contradice: dibuja
+   * `font-size:16px;line-height:1.65`. La tabla de §8 escribe 15/1.6 para las
+   * dos pantallas; manda la lámina (AGENTS.md §2), y el fundador eligió que el
+   * par crezca para TODAS las pantallas que lo comparten, no sólo para la
+   * ficha.
+   *
+   * **1.65 × 16 = 26.4**, y el navegador lo resuelve a px: el interlineado se
+   * verifica como número dibujado y no como razón declarada. Sin esta segunda
+   * mitad, una hoja que subiera el tamaño y se olvidara del interlineado
+   * quedaría verde con el texto apretado.
+   */
+  test("16.38: a 1280 la descripción sube a 16px con interlineado 1.65 — el par tiene paso de escritorio", async ({
     page,
   }) => {
-    for (const width of [360, 1280]) {
-      await page.setViewportSize({ width, height: 1000 });
-      await page.goto("/measure");
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.goto("/measure");
 
-      const text = await typography(page, "ficha-description");
-      console.log(`[16.23] ${width}px descripción=${JSON.stringify(text)}`);
+    const text = await typography(page, "ficha-description");
+    console.log(`[16.38] 1280px descripción=${JSON.stringify(text)}`);
 
-      expect(text.fontSize).toBe("15px");
-      // 1.6 × 15 = 24. El navegador resuelve el interlineado a px, así que el
-      // número es comparable y no una razón declarada.
-      expect(text.lineHeight).toBe("24px");
-    }
+    expect(text.fontSize).toBe("16px");
+    expect(text.lineHeight).toBe("26.4px");
+  });
+
+  /**
+   * **La decisión es de OCHO pantallas, no de una** (16.38).
+   *
+   * Medir sólo la ficha dejaría siete hojas creciendo sin que nada lo vea: se
+   * podría revertir `publish-steps.module.css` entero y la suite seguiría en
+   * verde, que es exactamente el agujero que la trampa 4 de tasks.md describe.
+   * Publicar es la que más lo comparte —nueve de las veinte declaraciones— así
+   * que es la segunda que se mide, y con el componente REAL que sirve
+   * `/publicar/paso/[paso]`, no con una copia del arnés.
+   */
+  test("16.38: a 1280 el cuerpo de publicar sube igual que el de la ficha — el paso es de las ocho", async ({
+    page,
+  }) => {
+    const ayuda = "Un estudio cuenta como 1 habitación";
+
+    await page.setViewportSize({ width: 360, height: 1200 });
+    await page.goto("/measure");
+    const movil = await page
+      .getByTestId("publish-step-tamano")
+      .getByText(ayuda, { exact: false })
+      .evaluate((node) => {
+        const style = getComputedStyle(node);
+        return { fontSize: style.fontSize, lineHeight: style.lineHeight };
+      });
+    console.log(`[16.38] 360px ayuda de publicar=${JSON.stringify(movil)}`);
+    expect(movil.fontSize).toBe("15px");
+    expect(movil.lineHeight).toBe("24px");
+
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    await page.goto("/measure");
+    const escritorio = await page
+      .getByTestId("publish-step-tamano")
+      .getByText(ayuda, { exact: false })
+      .evaluate((node) => {
+        const style = getComputedStyle(node);
+        return { fontSize: style.fontSize, lineHeight: style.lineHeight };
+      });
+    console.log(`[16.38] 1280px ayuda de publicar=${JSON.stringify(escritorio)}`);
+    expect(escritorio.fontSize).toBe("16px");
+    expect(escritorio.lineHeight).toBe("26.4px");
   });
 });
 

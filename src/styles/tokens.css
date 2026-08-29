@@ -156,15 +156,39 @@
      **Y el número dibujado se mide, no se declara**: `tests/measure/ficha.spec.ts`
      lee `getComputedStyle` sobre la ficha real, porque `lint:tokens` acepta
      por igual `var(--ficha-price-fs)` y `var(--fpb)` — comprobado: con la
-     ficha apuntando a `--fpb` el gate sale 0 y la pantalla pinta 26. */
+     ficha apuntando a `--fpb` el gate sale 0 y la pantalla pinta 26.
+     (Esa comprobación es de la 16.23 y se deja escrita como ocurrió: desde la
+     16.37 `--fpb` ya no se declara acá, así que hoy la misma mutación sale 0
+     igual y pinta el tamaño heredado en vez de 26. El gate sigue sin verla.) */
   --ficha-price-fs: 30px;
   --ficha-price-fs-desktop: 34px;
   --ficha-price-fw: 700;
   --ficha-title-fs: 17px;
   --ficha-title-fs-desktop: 19px;
   --ficha-title-fw: 600;
+  /* El par del cuerpo, con su paso de escritorio (16.38, fundador
+     2026-08-29). La tabla de §8 de la especificación da `15px / 1.6` para las
+     DOS pantallas y la lámina móvil dibuja exactamente eso; la lámina de
+     escritorio dibuja `font-size:16px;line-height:1.65`. Manda la lámina
+     (AGENTS.md §2), igual que en el precio de acá arriba.
+
+     **El paso lo toman las OCHO pantallas que comparten el par, no sólo la
+     ficha**, y ésa es la decisión del fundador tomada con el número delante:
+     `var(--ficha-body-fs)` aparece 20 veces en 8 hojas —la descripción de la
+     ficha, nueve en los pasos de publicar, cuatro en importar, más entrar, la
+     espera del correo, reportar, /mis-avisos y las pantallas de fallo—. Un
+     token propio para la ficha habría dejado a las otras siete dibujando un
+     cuerpo más chico que el de la lámina sin que ninguna lámina lo pida.
+
+     **`--ficha-body-lh` se usa además en cinco declaraciones que NO llevan
+     `--ficha-body-fs`** (`ContactBlock`, `DeclaredFeatures`, `SignInDoor`):
+     ahí acompaña a `--meta-fs` o a `--control-fs` y no es el par del cuerpo,
+     así que NO crecen — crecerlas sería estirar un metadato que ninguna lámina
+     dibuja distinto. Queda anotado como tarea 16.42 en vez de decidido acá. */
   --ficha-body-fs: 15px;
+  --ficha-body-fs-desktop: 16px;
   --ficha-body-lh: 1.6;
+  --ficha-body-lh-desktop: 1.65;
   /* La cifra de la tira de cuatro celdas y el rótulo debajo. */
   --ficha-stat-fs: 17px;
   --ficha-stat-label-fs: 10px;
@@ -400,7 +424,25 @@
   --gap: 8px;
   --rowpad: 7px 12px;
   --fp: 15px;
-  --fpb: 26px;
+  /* **`--fpb` («Precio en ficha», 26px) NO se declara acá, y la ausencia es
+     deliberada** (16.37, fundador 2026-08-29, salida A).
+
+     Sigue siendo un token DEL SISTEMA: `design/reference/sistema/tokens.css`
+     lo declara para las cuatro estructuras y SISTEMA.md lo nombra. Lo que se
+     retiró es su presencia en el subconjunto que este producto ship*a*, porque
+     el papel que nombra lo cumple `--ficha-price-fs` (30/34), que es lo que
+     las láminas de la ficha dibujan. Un token del sistema sin uso conviviendo
+     con uno propio que hace su trabajo es cómo el próximo lector elige el
+     equivocado — y ya pasó una vez acá: el `<h1>` del inicio agarró `--fpb`
+     justamente porque estaba disponible y el número le quedaba plausible.
+
+     **`lint:tokens` no podía verlo, y ése es el punto que la retirada deja
+     escrito.** Ese gate verifica que un valor SEA una propiedad personalizada
+     y que los dos temas la declaren; nunca que alguien la USE. Un token
+     huérfano es invisible para él por construcción. Es la misma forma de
+     defecto que las tareas 14.48 (`--searchbar-h`/`--searchbar-fs`) y 22.13
+     (`--ft`/`--tclamp`) siguen abiertas por, y la causa común —el gate no
+     cuenta usos— sigue sin resolverse. */
   --fpw: 700;
   --ft: 13px;
   --ftw: 400;

@@ -250,3 +250,22 @@
   border-radius: var(--r-thumb);
   padding: 0 4px;
 }
+
+/* 16.38 — el par del cuerpo toma su paso de escritorio (fundador,
+   2026-08-29). **Bloque propio al final de la hoja y no dentro del `@media`
+   de arriba**: `.problemaTitulo` se declara DESPUÉS de aquél, y con la misma
+   especificidad gana la declaración posterior — el mismo orden de fuente que
+   la 22.2 ya dejó escrito. Un `font-size` metido allá arriba habría quedado
+   verde en la hoja y sin efecto en la pantalla. */
+@media (min-width: 768px) {
+  .explicacion {
+    font-size: var(--ficha-body-fs-desktop);
+    line-height: var(--ficha-body-lh-desktop);
+  }
+
+  .cuenta,
+  .problemaRazon,
+  .problemaTitulo {
+    font-size: var(--ficha-body-fs-desktop);
+  }
+}

@@ -55,4 +55,11 @@
   .title {
     font-size: var(--ficha-title-fs-desktop);
   }
+
+  /* 16.38 — el par del cuerpo crece con la ficha, que es de donde esta
+     pantalla se cuelga. */
+  .text {
+    font-size: var(--ficha-body-fs-desktop);
+    line-height: var(--ficha-body-lh-desktop);
+  }
 }

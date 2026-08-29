@@ -548,7 +548,10 @@
     align-items: center;
     gap: 10px;
     min-block-size: var(--target-min-desktop);
-    font-size: var(--ficha-body-fs);
+    /* 16.38 — el riel SÓLO existe a partir de 768, así que su cuerpo es el de
+       escritorio y no el del teléfono. Dejarlo en `--ficha-body-fs` lo habría
+       congelado en 15 mientras el resto de la columna sube a 16. */
+    font-size: var(--ficha-body-fs-desktop);
     color: var(--soft);
   }
 
@@ -587,7 +590,9 @@
     min-block-size: var(--target-min-desktop);
     margin-block-start: 12px;
     color: var(--accent);
-    font-size: var(--ficha-body-fs);
+    /* 16.38 — pie del riel, y el riel es de escritorio: el mismo motivo que
+       `.railItem`. */
+    font-size: var(--ficha-body-fs-desktop);
   }
 
   .column {
@@ -641,5 +646,24 @@
   .reviewChange {
     grid-column: 3;
     grid-row: 1;
+  }
+
+  /* 16.38 — el par del cuerpo toma su paso de escritorio (fundador,
+     2026-08-29). Nueve declaraciones en esta hoja: es la pantalla que más lo
+     comparte, y por eso el fundador vio el número antes de decidir. */
+  .help,
+  .reviewValue {
+    font-size: var(--ficha-body-fs-desktop);
+    line-height: var(--ficha-body-lh-desktop);
+  }
+
+  /* Sin interlineado: son de una línea, y el par sólo viaja entero donde hay
+     párrafo que interlinear. */
+  .escape,
+  .error,
+  .notice,
+  .warning,
+  .reviewChange {
+    font-size: var(--ficha-body-fs-desktop);
   }
 }

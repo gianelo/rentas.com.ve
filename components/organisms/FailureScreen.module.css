@@ -54,3 +54,13 @@
 .hint {
   flex-basis: 100%;
 }
+
+/* 16.38 — el par del cuerpo toma su paso de escritorio (fundador,
+   2026-08-29). La pantalla de fallo comparte el par con la ficha y crece con
+   ella: la explicación de un error es texto de lectura, no un metadato. */
+@media (min-width: 768px) {
+  .text {
+    font-size: var(--ficha-body-fs-desktop);
+    line-height: var(--ficha-body-lh-desktop);
+  }
+}

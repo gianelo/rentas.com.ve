@@ -355,7 +355,7 @@ export default async function MeasureHarnessPage({
                     listingId="00000000-0000-4000-8000-000000000000"
                     listingTitle="Apartamento 2 habitaciones con puesto de estacionamiento"
                     revealAction={measureRevealAction}
-                    verifiedAt={null}
+                    verificationNotice={null}
                     expiresAt={new Date("2026-09-12T00:00:00.000Z")}
                     zoneName="Chacao"
                     zoneHref="/alquiler/distrito-capital/chacao"

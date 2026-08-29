@@ -214,3 +214,15 @@
   color: var(--err);
   font-size: var(--meta-fs);
 }
+
+/* 16.38 — el par del cuerpo toma su paso de escritorio (fundador,
+   2026-08-29). Es la primera `@media` de esta hoja: hasta hoy /mis-avisos
+   dibujaba igual en los dos anchos. */
+@media (min-width: 768px) {
+  .resumen,
+  .importar,
+  .vacio {
+    font-size: var(--ficha-body-fs-desktop);
+    line-height: var(--ficha-body-lh-desktop);
+  }
+}

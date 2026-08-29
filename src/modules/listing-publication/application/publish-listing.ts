@@ -1,5 +1,10 @@
 import type { SessionPort } from "../../identity/application/ports/session.port";
+import type {
+  ContactVerificationEvidencePort,
+  VerifiedContactPort,
+} from "../../identity/application/ports/verified-contact.port";
 import { requireAuthenticatedSession } from "../../identity/application/require-authenticated-session";
+import { resolveContactVerification } from "../../identity/application/resolve-contact-verification";
 import type { PhotoHashPort } from "../../listing-trust/application/ports/photo-hash.port";
 import type { PerceptualHash } from "../../listing-trust/domain/perceptual-hash";
 import {
@@ -64,6 +69,17 @@ export interface PublishListingDependencies {
    * `listings.save` returns) — see the ordering note above `listings.save`.
    */
   readonly photoHashes: PhotoHashPort;
+  /**
+   * tasks.md 19.9/19.10 — los dos lados de `verified_contact`. Van juntos y
+   * no como un `PhoneVerificationPort`: eso sería el puerto que D7 y el
+   * comentario de `phone-verification.port.ts` prohíben inyectar acá, porque
+   * es el momento en que «publicar funciona sea cual sea el estado de
+   * verificación» deja de ser una garantía. Estos dos NO deciden si se
+   * publica; registran un hecho de la CUENTA para que la ficha tenga qué
+   * fecha dibujar (16.12/16.34/15.11).
+   */
+  readonly contactEvidence: ContactVerificationEvidencePort;
+  readonly verifiedContacts: VerifiedContactPort;
   readonly now?: () => Date;
 }
 
@@ -117,6 +133,22 @@ export async function publishListing(
   if (violations.length > 0) {
     throw new PublishRejectedError(violations);
   }
+
+  // Antes de las fotos y sin poder frenar nada. Es un hecho sobre el CONTACTO
+  // DE LA CUENTA —cierto se complete o no esta publicación—, así que no tiene
+  // por qué colgar del camino caro. Devuelve la decisión y nadie la mira
+  // todavía: lo que este producto necesita hoy es la FILA, que es de donde
+  // 16.12, 16.34 y 15.11 van a leer «verificado el …» sin una segunda regla.
+  await resolveContactVerification(
+    {
+      userId: session.userId,
+      contact: {
+        method: present(request.contactMethod, "contactMethod"),
+        value: present(request.contactValue, "contactValue"),
+      },
+    },
+    { evidence: dependencies.contactEvidence, verifiedContacts: dependencies.verifiedContacts },
+  );
 
   const photos: NewListingPhoto[] = [];
   // Parallel to `photos` — the perceptual hash `processUploadedPhoto` (D4,

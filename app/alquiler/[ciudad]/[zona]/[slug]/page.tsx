@@ -25,6 +25,7 @@ import {
   DrizzleRevealableListing,
 } from "@/modules/contact-reveal/infrastructure/drizzle-contact-reveal";
 import { resolveNavAccount, resolveNavPublish } from "@/modules/identity/domain/nav-account";
+import { DrizzleContactVerificationEvidence } from "@/modules/identity/infrastructure/drizzle-verified-contact";
 import { DrizzleCatalogue } from "@/modules/listing-catalogue/infrastructure/drizzle-catalogue";
 import { suggestActiveListings } from "@/modules/listing-discovery/application/suggest-active-listings";
 import { resolveListingAvailability } from "@/modules/listing-discovery/domain/listing-availability";
@@ -48,6 +49,7 @@ import { DrizzleListingPhotos } from "@/modules/listing-discovery/infrastructure
 import { readSiteBaseUrl } from "@/modules/listing-discovery/infrastructure/site-base-url";
 import { DrizzleListingSearch } from "@/modules/listing-search/infrastructure/drizzle-listing-search";
 import { db } from "@/shared/db/client";
+import { shortSpanishDate } from "@/shared/format/spanish-date";
 import { readSession, requestSessionPort } from "../../../../_lib/session";
 import styles from "./ficha.module.css";
 import { continueWithGoogle, revealListingContact } from "./reveal-actions";
@@ -173,7 +175,7 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
   // Los tres estados del bloque salen de acá, no de un `if` en esta página: si
   // quien mira ya reveló, el caso de uso lee el valor; si no, no lo lee — el
   // contacto no sale de Postgres para quien no lo reveló.
-  const contact = await viewListingContact(
+  const { contact, verificationNotice } = await viewListingContact(
     { listingId: detail.id, method: detail.contactMethod, availability },
     {
       // Memoizado por petición: la barra de arriba necesita la misma sesión, y
@@ -184,6 +186,10 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
       // tasks.md 6.14 — el mensaje del inquilino, para que el enlace revelado
       // abra ya escrito y no con la plantilla genérica.
       messages: new DrizzleContactRevealEvents(db),
+      // tasks.md 16.12 — «desde cuándo está verificado» sale de
+      // `verified_contact`, con la consulta que la 19.9 dejó montada. Sólo se
+      // paga en el render de quien ya reveló.
+      verification: new DrizzleContactVerificationEvidence(db),
     },
   );
 
@@ -380,11 +386,11 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
                     listingId={detail.id}
                     listingTitle={detail.title}
                     revealAction={revealListingContact}
-                    // `null` mientras `phone_verified_at` no exista (tasks.md
-                    // 16.12): la verificación por WhatsApp es todavía un stub, y
-                    // certificar un número que nadie comprobó sería peor que no
-                    // decir nada.
-                    verifiedAt={null}
+                    // **Ya no es un `null` escrito acá** (tasks.md 16.12). La
+                    // frase la trae el caso de uso junto al contacto, así que
+                    // esta página no puede volver a certificar —ni a callar—
+                    // por su cuenta lo que `verified_contact` dice.
+                    verificationNotice={verificationNotice}
                     expiresAt={detail.expiresAt}
                     zoneName={detail.zoneName}
                     zoneHref={`/alquiler/${ciudad}/${zona}`}
@@ -449,7 +455,7 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
               Reportar este aviso
             </AppLink>
             <span className={styles.meta}>
-              ID {detail.id.slice(0, 8)} · vence {formatDate(detail.expiresAt)}
+              ID {detail.id.slice(0, 8)} · vence {shortSpanishDate(detail.expiresAt)}
             </span>
           </footer>
         </Container>
@@ -476,10 +482,6 @@ const PROPERTY_LABEL = {
   anexo: "Anexo",
   habitacion: "Habitación",
 } as const;
-
-function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat("es-VE", { day: "numeric", month: "short" }).format(date);
-}
 
 export async function generateMetadata({ params }: FichaProps): Promise<Metadata> {
   const { slug } = await params;
