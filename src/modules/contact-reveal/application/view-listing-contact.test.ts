@@ -3,6 +3,8 @@ import type {
   AuthenticatedSession,
   SessionPort,
 } from "../../identity/application/ports/session.port";
+import type { ContactVerificationEvidencePort } from "../../identity/application/ports/verified-contact.port";
+import type { ContactVerificationEvidence } from "../../identity/domain/contact-verification";
 import type {
   ContactRevealMetricsPort,
   UniqueRevealPair,
@@ -39,6 +41,7 @@ function dependencies(
   pairs: readonly UniqueRevealPair[] = [],
   listing: RevealableListing | null = LISTING,
   message: string | null = null,
+  evidence: ContactVerificationEvidence | null = null,
 ) {
   const sessionPort: SessionPort = { getSession: vi.fn().mockResolvedValue(session) };
   const listings: RevealableListingPort = { findRevealable: vi.fn().mockResolvedValue(listing) };
@@ -48,8 +51,11 @@ function dependencies(
   const messages: RevealMessageHistoryPort = {
     findLatestMessage: vi.fn().mockResolvedValue(message),
   };
+  const verification: ContactVerificationEvidencePort = {
+    findEvidence: vi.fn().mockResolvedValue(evidence),
+  };
 
-  return { sessionPort, listings, reveals, messages };
+  return { sessionPort, listings, reveals, messages, verification };
 }
 
 const ACTIVE = {
@@ -70,9 +76,9 @@ describe("viewListingContact", () => {
   it("no le pide el valor al catálogo cuando el visitante es anónimo", async () => {
     const deps = dependencies(null);
 
-    const presentation = await viewListingContact(ACTIVE, deps);
+    const view = await viewListingContact(ACTIVE, deps);
 
-    expect(presentation).toEqual({ state: "locked", method: "whatsapp" });
+    expect(view.contact).toEqual({ state: "locked", method: "whatsapp" });
     expect(deps.listings.findRevealable).not.toHaveBeenCalled();
     // tasks.md 6.14 — el bloqueado no puede filtrar el mensaje: ni la clave
     // ni el viaje que lo trae.
@@ -85,9 +91,9 @@ describe("viewListingContact", () => {
     // inflaría el número — lo dejaría ciego.
     const deps = dependencies(TENANT, []);
 
-    const presentation = await viewListingContact(ACTIVE, deps);
+    const view = await viewListingContact(ACTIVE, deps);
 
-    expect(presentation).toEqual({ state: "locked", method: "whatsapp" });
+    expect(view.contact).toEqual({ state: "locked", method: "whatsapp" });
     expect(deps.listings.findRevealable).not.toHaveBeenCalled();
     expect(deps.messages.findLatestMessage).not.toHaveBeenCalled();
   });
@@ -95,7 +101,7 @@ describe("viewListingContact", () => {
   it("entrega el valor a quien ya reveló este aviso", async () => {
     const deps = dependencies(TENANT, [PAIR]);
 
-    await expect(viewListingContact(ACTIVE, deps)).resolves.toEqual({
+    expect((await viewListingContact(ACTIVE, deps)).contact).toEqual({
       state: "revealed",
       method: "whatsapp",
       value: "+58 412 555 0134",
@@ -110,7 +116,7 @@ describe("viewListingContact", () => {
   it("entrega el mensaje más reciente que el inquilino escribió al revelar", async () => {
     const deps = dependencies(TENANT, [PAIR], LISTING, "Hola, vi tu aviso y me interesa.");
 
-    await expect(viewListingContact(ACTIVE, deps)).resolves.toEqual({
+    expect((await viewListingContact(ACTIVE, deps)).contact).toEqual({
       state: "revealed",
       method: "whatsapp",
       value: "+58 412 555 0134",
@@ -125,7 +131,7 @@ describe("viewListingContact", () => {
   it("no revienta cuando la revelación es anterior al requisito del mensaje", async () => {
     const deps = dependencies(TENANT, [PAIR], LISTING, null);
 
-    await expect(viewListingContact(ACTIVE, deps)).resolves.toEqual({
+    expect((await viewListingContact(ACTIVE, deps)).contact).toEqual({
       state: "revealed",
       method: "whatsapp",
       value: "+58 412 555 0134",
@@ -160,9 +166,9 @@ describe("viewListingContact", () => {
   it("resuelve el aviso vencido sin leer sesión, métrica ni catálogo", async () => {
     const deps = dependencies(TENANT, [PAIR]);
 
-    const presentation = await viewListingContact({ ...ACTIVE, availability: "expired" }, deps);
+    const view = await viewListingContact({ ...ACTIVE, availability: "expired" }, deps);
 
-    expect(presentation).toEqual({ state: "expired" });
+    expect(view.contact).toEqual({ state: "expired" });
     expect(deps.sessionPort.getSession).not.toHaveBeenCalled();
     expect(deps.reveals.findUniquePairs).not.toHaveBeenCalled();
     expect(deps.listings.findRevealable).not.toHaveBeenCalled();
@@ -178,14 +184,14 @@ describe("viewListingContact", () => {
   it("vuelve a bloquear si el aviso dejó de ser revelable después de la revelación", async () => {
     const deps = dependencies(TENANT, [PAIR], null, "Hola, me interesa.");
 
-    const presentation = await viewListingContact(ACTIVE, deps);
+    const view = await viewListingContact(ACTIVE, deps);
 
-    expect(presentation).toEqual({ state: "locked", method: "whatsapp" });
+    expect(view.contact).toEqual({ state: "locked", method: "whatsapp" });
     // Bloqueado por esta rama también, aunque `hasRevealed` sea `true` y el
     // mensaje SÍ se haya leído: el tipo `ContactPresentation` ni siquiera
     // declara `message` en su variante `locked`, así que esto no podría
     // filtrarse de otra forma — la prueba lo hace visible igual.
-    expect(Object.keys(presentation)).not.toContain("message");
+    expect(Object.keys(view.contact)).not.toContain("message");
   });
 
   /**
@@ -201,11 +207,93 @@ describe("viewListingContact", () => {
       contactValue: "duenio@ejemplo.com",
     });
 
-    await expect(viewListingContact(ACTIVE, deps)).resolves.toEqual({
+    expect((await viewListingContact(ACTIVE, deps)).contact).toEqual({
       state: "revealed",
       method: "email",
       value: "duenio@ejemplo.com",
       message: null,
     });
+  });
+
+  /**
+   * **La verificación se pregunta por el TRIPLE, nunca por la persona**
+   * (tasks.md 19.9). Si María verificó un número y publica con otro, ese otro
+   * no está verificado: preguntar sólo por la cuenta daría por bueno
+   * cualquier valor que escriba después, y distinguir un aviso real de uno
+   * falso es lo único para lo que la verificación existe.
+   *
+   * La cuenta es la del aviso —`publisherId` de la fila recién leída— y no
+   * la de quien mira. Preguntando con `session.userId` la ficha diría que el
+   * teléfono del dueño está verificado porque el INQUILINO verificó el suyo.
+   */
+  it("pregunta por el triple del aviso, no por la persona ni por quien mira", async () => {
+    const deps = dependencies(TENANT, [PAIR]);
+
+    await viewListingContact(ACTIVE, deps);
+
+    expect(deps.verification.findEvidence).toHaveBeenCalledWith({
+      userId: "publisher-1",
+      contact: { method: "whatsapp", value: "+58 412 555 0134" },
+    });
+  });
+
+  /**
+   * **Ni una consulta más en el camino normal.** Quien llega de Google no
+   * tiene sesión y quien tiene sesión casi nunca reveló este aviso: la ficha
+   * es la pantalla más visitada del sitio, y una lectura de `verified_contact`
+   * por visita anónima se paga en cada una de ellas. Además no habría nada que
+   * preguntar — sin valor revelado no hay contacto del que hablar.
+   */
+  it("no lee `verified_contact` mientras nadie haya revelado", async () => {
+    const anonima = dependencies(null);
+    await viewListingContact(ACTIVE, anonima);
+    expect(anonima.verification.findEvidence).not.toHaveBeenCalled();
+
+    const sinRevelar = dependencies(TENANT, []);
+    await viewListingContact(ACTIVE, sinRevelar);
+    expect(sinRevelar.verification.findEvidence).not.toHaveBeenCalled();
+
+    const vencida = dependencies(TENANT, [PAIR]);
+    await viewListingContact({ ...ACTIVE, availability: "expired" }, vencida);
+    expect(vencida.verification.findEvidence).not.toHaveBeenCalled();
+  });
+
+  /**
+   * **La cuenta existe y este contacto no está verificado — que NO es lo
+   * mismo que no existir la cuenta.** El puerto devuelve la fila del `LEFT
+   * JOIN` con `verifiedAt` en `null`, y eso tiene que llegar a la pantalla
+   * como «no hay nada que decir». Un texto por defecto acá certificaría lo
+   * que nadie comprobó.
+   */
+  it("no dice nada de la verificación cuando el triple no tiene fila", async () => {
+    const deps = dependencies(TENANT, [PAIR], LISTING, null, {
+      verifiedAt: null,
+      accountEmail: "maria@ejemplo.com",
+      accountEmailVerifiedAt: new Date("2026-08-19T12:00:00.000Z"),
+    });
+
+    const view = await viewListingContact(ACTIVE, deps);
+
+    expect(view.contact.state).toBe("revealed");
+    expect(view.verificationNotice).toBeNull();
+  });
+
+  /**
+   * **La 16.12 en una línea: el instante que la ficha necesita ES
+   * `verified_contact.verified_at`.** Fijada por valor, con el canal del
+   * contacto que efectivamente se entrega — no un «por WhatsApp» fijo, que
+   * hoy sería falso para toda fila (el canal de WhatsApp está diferido,
+   * fundador 2026-08-29).
+   */
+  it("dice desde cuándo está verificado cuando el triple tiene fila", async () => {
+    const deps = dependencies(TENANT, [PAIR], LISTING, null, {
+      verifiedAt: new Date("2026-08-19T12:00:00.000Z"),
+      accountEmail: "maria@ejemplo.com",
+      accountEmailVerifiedAt: null,
+    });
+
+    const view = await viewListingContact(ACTIVE, deps);
+
+    expect(view.verificationNotice).toBe("verificado por WhatsApp el 19 ago.");
   });
 });

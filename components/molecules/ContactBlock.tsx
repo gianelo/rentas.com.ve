@@ -6,6 +6,7 @@ import {
   contactActionHref,
   contactChannelNoun,
 } from "@/modules/contact-reveal/domain/revealable-contact";
+import { longSpanishDate } from "@/shared/format/spanish-date";
 import { ActionButton, ActionLink } from "../atoms/buttons";
 import { CopyContact } from "../client/CopyContact";
 import styles from "./ContactBlock.module.css";
@@ -25,8 +26,12 @@ export interface ContactBlockProps {
   readonly doorHref: string;
   /** La revelación, que es un caso de uso y no un enlace. */
   readonly revealAction: (formData: FormData) => Promise<void>;
-  /** `null` mientras no exista `phone_verified_at` (tasks.md 16.12). */
-  readonly verifiedAt: Date | null;
+  /**
+   * Qué dice la ficha sobre la verificación del contacto (tasks.md
+   * 16.12/16.34), ya redactado por `contactVerificationNotice`. `null` es «no
+   * hay nada que decir» y no se dibuja ninguna línea.
+   */
+  readonly verificationNotice: string | null;
   readonly expiresAt: Date;
   readonly zoneName: string;
   readonly zoneHref: string;
@@ -68,16 +73,6 @@ const REVEALED_LABEL: Record<ContactMethod, (noun: string) => string> = {
   email: () => "Escribir un correo",
 };
 
-/** "19 ago." — la misma escala corta que el pie de la ficha usa para el vencimiento. */
-function shortDate(date: Date): string {
-  return new Intl.DateTimeFormat("es-VE", { day: "numeric", month: "short" }).format(date);
-}
-
-/** "12 de septiembre" — el estado vencido dice la fecha entera, no una abreviatura. */
-function longDate(date: Date): string {
-  return new Intl.DateTimeFormat("es-VE", { day: "numeric", month: "long" }).format(date);
-}
-
 /**
  * Redacción sugerida, en dos lugares con papeles distintos.
  *
@@ -118,7 +113,7 @@ export function ContactBlock({
   listingTitle,
   doorHref,
   revealAction,
-  verifiedAt,
+  verificationNotice,
   expiresAt,
   zoneName,
   zoneHref,
@@ -133,8 +128,8 @@ export function ContactBlock({
         <div className={styles.expired} data-testid="expired-notice">
           <h2 className={styles.expiredTitle}>Aviso vencido</h2>
           <p className={styles.expiredText}>
-            Venció el {longDate(expiresAt)} y no fue renovado. No mostramos el contacto de avisos
-            vencidos.
+            Venció el {longSpanishDate(expiresAt)} y no fue renovado. No mostramos el contacto de
+            avisos vencidos.
           </p>
         </div>
         <div className={styles.control}>
@@ -205,15 +200,16 @@ export function ContactBlock({
           </>
         ) : (
           <>
-            {/* Sólo si se sabe. `phone_verified_at` no existe todavía
-                (tasks.md 16.12) y la verificación por WhatsApp es un stub, así
-                que con `null` la línea no se dibuja: certificar un número que
-                nadie comprobó sería peor que no decir nada. Dice CUÁNDO y no
-                "vigente" — un aviso puede publicarse el último día de una
-                verificación, y los dos relojes se cruzan (tasks.md 19.12). */}
-            {verifiedAt ? (
-              <p className={styles.verified}>
-                Verificado por {contactChannelNoun(contact.method)} el {shortDate(verifiedAt)}
+            {/* Sólo si se sabe: con `null` la línea no se dibuja, porque sin
+                fila en `verified_contact` no hay verificación que afirmar
+                (tasks.md 16.12, 19.9). La FRASE la decide
+                `contactVerificationNotice` — este componente no elige el
+                canal, ni el formato de la fecha, ni si hay algo que decir.
+                Dice CUÁNDO y no "vigente": un aviso puede publicarse el
+                último día de una verificación (tasks.md 19.12). */}
+            {verificationNotice ? (
+              <p className={styles.verified} data-testid="contact-verification">
+                {verificationNotice}
               </p>
             ) : null}
 

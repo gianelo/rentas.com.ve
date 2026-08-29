@@ -1,4 +1,6 @@
 import type { SessionPort } from "../../identity/application/ports/session.port";
+import type { ContactVerificationEvidencePort } from "../../identity/application/ports/verified-contact.port";
+import { contactVerificationNotice } from "../domain/contact-verification-notice";
 import type {
   ContactAvailability,
   ContactMethod,
@@ -23,6 +25,24 @@ import type { RevealableListingPort } from "./ports/revealable-listing.port";
  * visitada del sitio, y ninguno de los dos datos es sensible: el canal es
  * exactamente lo que el botón bloqueado ya anuncia.
  */
+/**
+ * Lo que la ficha dibuja del bloque de contacto: el estado, y lo que la
+ * pantalla afirma sobre su verificación (tasks.md 16.12 y 16.34).
+ *
+ * **Los dos viajan juntos y no como dos props sueltas de la página.** La
+ * ficha pasaba `verifiedAt={null}` escrito a mano —un dato que ninguna
+ * consulta llenaba nunca—, que es la forma exacta del defecto que este
+ * repositorio ya encontró con `resultsOrigin`: un módulo probado al 100% y
+ * muerto en producción porque su llamador nunca le pasó el argumento.
+ *
+ * `null` significa que no hay nada que decir, y es la respuesta normal: sin
+ * fila en `verified_contact` la pantalla no dibuja ninguna línea.
+ */
+export interface ListingContactView {
+  readonly contact: ContactPresentation;
+  readonly verificationNotice: string | null;
+}
+
 export interface ViewListingContactRequest {
   readonly listingId: string;
   readonly method: ContactMethod;
@@ -46,24 +66,40 @@ export interface ViewListingContactDependencies {
    * this stays a fourth database read no locked render ever pays for.
    */
   readonly messages: RevealMessageHistoryPort;
+  /**
+   * tasks.md 16.12 — el instante que la F29 pide («desde cuándo está
+   * verificado») ES `verified_contact.verified_at`, y se lee con la consulta
+   * que la 19.9 dejó montada: una sola, por el triple (cuenta, método,
+   * valor), sin una segunda regla.
+   *
+   * Sólo se consulta en la rama revelada, así que ninguna visita anónima —la
+   * mayoría, en la pantalla más visitada del sitio— la paga.
+   */
+  readonly verification: ContactVerificationEvidencePort;
 }
 
 export async function viewListingContact(
   request: ViewListingContactRequest,
   dependencies: ViewListingContactDependencies,
-): Promise<ContactPresentation> {
-  const { sessionPort, listings, reveals, messages } = dependencies;
+): Promise<ListingContactView> {
+  const { sessionPort, listings, reveals, messages, verification } = dependencies;
+
+  /** Sin valor revelado no hay contacto del que hablar, así que no hay frase. */
+  const sinVerificacion = (contact: ContactPresentation): ListingContactView => ({
+    contact,
+    verificationNotice: null,
+  });
 
   // Un aviso vencido no tiene contacto para nadie, así que no hay nada que
   // preguntar: ni sesión, ni métrica, ni catálogo. La regla es del dominio;
   // lo que se decide acá es no gastar tres viajes en llegar a ella.
   if (request.availability === "expired") {
-    return presentListingContact({ ...request, value: null }, null);
+    return sinVerificacion(presentListingContact({ ...request, value: null }, null));
   }
 
   const session = await sessionPort.getSession();
   if (!session) {
-    return presentListingContact({ ...request, value: null }, null);
+    return sinVerificacion(presentListingContact({ ...request, value: null }, null));
   }
 
   // Las dos claves, siempre. Con una sola el fallo es enorme y mudo: por
@@ -75,7 +111,7 @@ export async function viewListingContact(
   });
   const viewer = { hasRevealed: pairs.length > 0 };
   if (!viewer.hasRevealed) {
-    return presentListingContact({ ...request, value: null }, viewer);
+    return sinVerificacion(presentListingContact({ ...request, value: null }, viewer));
   }
 
   // Recién acá sale el valor de Postgres, y sólo para quien ya lo reveló.
@@ -88,7 +124,7 @@ export async function viewListingContact(
     messages.findLatestMessage(session.userId, request.listingId),
   ]);
 
-  return presentListingContact(
+  const contact = presentListingContact(
     {
       // El canal lo manda quien trae el valor: un rótulo que nombre otro canal
       // que el del número mostrado es la promesa que el producto no cumple.
@@ -98,4 +134,27 @@ export async function viewListingContact(
     },
     { ...viewer, message },
   );
+
+  // **La cuenta es la del aviso y el contacto es el que el aviso copió al
+  // publicar** (tasks.md 19.9/19.12). Preguntar con `session.userId` diría que
+  // el número del dueño está verificado porque lo verificó el inquilino que
+  // mira; preguntar sólo por la cuenta daría por bueno cualquier valor que
+  // esa cuenta escriba después.
+  //
+  // Va DESPUÉS de `findRevealable` y no en paralelo porque necesita el valor
+  // que aquélla trae. Es un viaje más, y sólo en el render de quien ya reveló.
+  if (contact.state !== "revealed" || !listing) return sinVerificacion(contact);
+
+  const evidence = await verification.findEvidence({
+    userId: listing.publisherId,
+    contact: { method: listing.contactMethod, value: listing.contactValue },
+  });
+
+  return {
+    contact,
+    // Qué dice la pantalla lo decide el dominio; acá sólo se junta lo que dos
+    // puertos trajeron. `null` de `findEvidence` es una cuenta que no existe y
+    // se lee igual que una sin fila: no verificado.
+    verificationNotice: contactVerificationNotice(contact.method, evidence?.verifiedAt ?? null),
+  };
 }

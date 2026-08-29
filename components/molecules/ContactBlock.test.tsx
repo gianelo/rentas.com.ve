@@ -19,7 +19,7 @@ function render(contact: ContactPresentation, overrides: Partial<ContactBlockPro
       listingTitle="Apartamento 2 habitaciones en Chacao"
       doorHref="/alquiler/caracas/chacao/apartamento-listing-1?entrar=si"
       revealAction={reveal}
-      verifiedAt={null}
+      verificationNotice={null}
       expiresAt={new Date("2026-09-12T12:00:00.000Z")}
       zoneName="Chacao"
       zoneHref="/alquiler/caracas/chacao"
@@ -210,17 +210,29 @@ describe("con cuenta", () => {
   });
 
   /**
-   * **Nunca afirma una verificación que no ocurrió.** La columna
-   * `phone_verified_at` no existe todavía (tasks.md 16.12) y la verificación
-   * por WhatsApp es un stub, así que la ficha pasa `null` — y con `null` la
-   * línea no se dibuja. Escrita al revés, con un texto por defecto, la ficha
-   * certificaría un número que nadie comprobó.
+   * **Nunca afirma una verificación que no ocurrió** (tasks.md 16.12/16.34).
+   * `null` es la respuesta normal —sin fila en `verified_contact` no hay nada
+   * que decir— y con `null` la línea NO SE DIBUJA. Escrita al revés, con un
+   * texto por defecto, la ficha certificaría un contacto que nadie comprobó.
+   *
+   * **Y la frase le llega hecha.** Qué afirma la pantalla sobre un contacto es
+   * producto y lo decide `contactVerificationNotice`, donde el piso del 90%
+   * llega; acá se prueba que se dibuja y dónde, que es lo único que este
+   * componente puede equivocar.
    */
-  it("dice desde cuándo está verificado sólo si lo sabe", () => {
-    expect(render(REVEALED)).not.toContain("erificado");
+  it("dibuja la frase de verificación que le llega, y nada cuando no le llega ninguna", () => {
+    const sinFrase = render(REVEALED);
+    expect(sinFrase).not.toContain("erificado");
+    // Y NI SIQUIERA el envase vacío: sin fila no hay línea, no una línea sin
+    // texto. Un `<p>` vacío con el estilo de la verificación es una insignia
+    // en blanco, que es justo lo que la ausencia de fila tiene que evitar.
+    expect(sinFrase).not.toContain('data-testid="contact-verification"');
 
-    const conFecha = render(REVEALED, { verifiedAt: new Date("2026-08-19T12:00:00.000Z") });
-    expect(conFecha).toContain("Verificado por WhatsApp el 19 ago");
+    const conFrase = render(REVEALED, {
+      verificationNotice: "verificado por WhatsApp el 19 ago.",
+    });
+    expect(conFrase).toContain("verificado por WhatsApp el 19 ago.");
+    expect(conFrase).toContain('data-testid="contact-verification"');
   });
 
   /**
