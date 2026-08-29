@@ -147,4 +147,18 @@ console.log(
 );
 console.log("deploy-migrate: applying pending migrations to production…");
 execSync("pnpm drizzle-kit migrate", { stdio: "inherit" });
-console.log("deploy-migrate: schema is up to date.");
+
+// **"Up to date" is drizzle-kit's opinion, and 11b.5 exists because an
+// opinion is not a check.** `_journal.json` says which files ran; it cannot
+// say whether the database now holds the columns this code selects. A schema
+// generated on a branch, a migration applied by hand, a `_journal` restored
+// from a backup -- each leaves the journal happy and the deploy broken in
+// exactly the way that cost four days: search keeps working because it selects
+// none of the missing columns, and signing in dies on `column
+// "contact_method" does not exist`.
+//
+// Called from here rather than from `vercel-build` so there is ONE entry point
+// and two questions: may we migrate, and did the migration leave the schema the
+// code expects. It exits non-zero on its own, so `execSync` stops the build.
+console.log("deploy-migrate: verifying the schema matches the code…");
+execSync("pnpm tsx scripts/schema-smoke.ts", { stdio: "inherit" });
