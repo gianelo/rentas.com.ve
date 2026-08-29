@@ -164,4 +164,37 @@ test.describe("el camino de lectura con el script apagado (11.16)", () => {
     const saltos = response?.request().redirectedFrom();
     expect(saltos).not.toBeNull();
   });
+
+  /**
+   * **El 404 aterrizando en una pantalla y no en un vacío** (11b.3), servido
+   * en el HTML y caminado con el script apagado. Es el cableado que una
+   * prueba de render no puede probar: que Next llame a `app/not-found.tsx`.
+   */
+  test("una dirección que no coincide con ninguna ruta responde 404 con pantalla y salida", async ({
+    page,
+  }) => {
+    const response = await page.goto("/una-direccion-que-nadie-publico");
+
+    expect(response?.status()).toBe(404);
+    await expect(page.getByRole("heading", { name: "No encontramos esa página" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ir al inicio" })).toHaveAttribute("href", "/");
+  });
+
+  /**
+   * **El `notFound()` de la ficha, y acá sólo se afirma el código.**
+   *
+   * El cuerpo no se afirma porque **hoy no viaja en el HTML**: Next 15.5.23
+   * dibuja del lado del cliente el `not-found` que se lanza desde una ruta
+   * dinámica —el cuerpo servido son 234 bytes con un límite de suspenso vacío
+   * y el contenido sólo en la carga de Flight—, así que con el script apagado
+   * esta dirección sigue quedando en blanco. **No lo causó `not-found.tsx`**:
+   * antes era la pantalla por defecto de Next por el mismo camino. Está
+   * medido y anotado como tarea 22.16; afirmar acá el encabezado sería pedirle
+   * a esta prueba que falle por un defecto que no es suyo.
+   */
+  test("un aviso que no existe responde 404", async ({ page }) => {
+    const response = await page.goto(`${ZONA_MARACAIBO}/apartamento-que-nunca-existio`);
+
+    expect(response?.status()).toBe(404);
+  });
 });
