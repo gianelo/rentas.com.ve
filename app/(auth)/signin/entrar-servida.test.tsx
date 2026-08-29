@@ -55,6 +55,39 @@ describe("la pantalla de entrar sale entera en el HTML (15.7)", () => {
   });
 
   /**
+   * **La segunda puerta, en los bytes** (22.22, láminas 8a/9a). Trampa 4 otra
+   * vez: que `signInPageFor` tenga la copia del campo y que la pantalla la
+   * dibuje son dos afirmaciones, y la infraestructura del enlace está entera
+   * desde la 15.3 — lo único que faltaba era esto.
+   */
+  it("debajo de Google dibuja el separador, el campo de correo y su botón", async () => {
+    const html = await servida("/publicar");
+
+    expect(html).toContain("o con tu correo");
+    expect(html).toContain("Te mandamos un enlace que te deja entrar. No manejamos contraseñas.");
+    // Etiqueta real asociada al control, no un `placeholder` que se borra al
+    // escribir (SISTEMA.md, «etiquetas reales en formularios»).
+    expect(html).toMatch(/<label[^>]*for="correo"[^>]*>Correo<\/label>/);
+    expect(html).toMatch(/<input[^>]*type="email"[^>]*name="correo"/);
+    // `required` lo valida el navegador sin una línea de script, y el servidor
+    // se vuelve a negar igual (`actions.test.ts`).
+    expect(html).toMatch(/<input[^>]*id="correo"[^>]*required/);
+    expect(html).toContain(">Enviarme el enlace</button>");
+    // Google arriba y el correo debajo, que es la nota de la propia lámina.
+    expect(html.indexOf("Continuar con Google")).toBeLessThan(html.indexOf("o con tu correo"));
+  });
+
+  /** El destino cruza los dos formularios: el de Google y el del correo. */
+  it("el formulario del correo se lleva el destino en un campo oculto", async () => {
+    const html = await servida(FICHA);
+
+    expect(html).toMatch(
+      new RegExp(`<input[^>]*type="hidden"[^>]*name="callbackUrl"[^>]*value="${FICHA}"`),
+    );
+    expect(html.match(/<form/g)).toHaveLength(2);
+  });
+
+  /**
    * **Falla cerrado**: sin la regla instalada, la ruta hostil vuelve a salir
    * dentro de un enlace que se ve nuestro, que es lo que un phishing necesita.
    */

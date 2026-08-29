@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
+import { SIGN_IN_WAIT_PATH } from "../domain/safe-return-destination";
 import { signInRedirect } from "./redirect-callback";
 
 /**
@@ -40,12 +41,22 @@ describe("signInRedirect", () => {
  * con la línea adentro de un comentario.
  */
 describe("auth.ts instala la regla", () => {
-  it("le pasa `signInRedirect` a NextAuth como `callbacks.redirect`", async () => {
-    const configuracion: { valor: unknown } = { valor: undefined };
+  interface ConfiguracionDeAuth {
+    readonly callbacks?: { redirect?: unknown };
+    readonly pages?: { verifyRequest?: unknown };
+  }
 
+  const capturada: { valor: unknown } = { valor: undefined };
+
+  /**
+   * **Se importa una sola vez**, y eso no es una optimización: el registro de
+   * módulos cachea `./auth`, así que un segundo `await import` no vuelve a
+   * llamar a `NextAuth` y la segunda prueba leería `undefined` — medido.
+   */
+  beforeAll(async () => {
     vi.doMock("next-auth", () => ({
       default: (config: unknown) => {
-        configuracion.valor = config;
+        capturada.valor = config;
         return { handlers: {}, auth: () => null, signIn: () => {}, signOut: () => {} };
       },
     }));
@@ -53,9 +64,24 @@ describe("auth.ts instala la regla", () => {
     vi.doMock("@auth/drizzle-adapter", () => ({ DrizzleAdapter: () => ({}) }));
 
     await import("./auth");
+  });
 
-    expect(
-      (configuracion.valor as { callbacks?: { redirect?: unknown } }).callbacks?.redirect,
-    ).toBe(signInRedirect);
+  function configuracionDeAuth(): ConfiguracionDeAuth {
+    return capturada.valor as ConfiguracionDeAuth;
+  }
+
+  it("le pasa `signInRedirect` a NextAuth como `callbacks.redirect`", () => {
+    expect(configuracionDeAuth().callbacks?.redirect).toBe(signInRedirect);
+  });
+
+  /**
+   * **La pantalla en inglés de la librería deja de ser alcanzable** (15.9,
+   * 22.22). Sin esta línea, quien pide el enlace por correo aterriza en la
+   * página que trae Auth.js: en inglés, sin la dirección tecleada y sin salida.
+   * Se afirma acá porque es una configuración que ninguna otra prueba toca —
+   * el arnés de la ida y vuelta arma su propio `NextAuth`.
+   */
+  it("apunta `pages.verifyRequest` a la pantalla de espera y no a la de Auth.js", () => {
+    expect(configuracionDeAuth().pages?.verifyRequest).toBe(SIGN_IN_WAIT_PATH);
   });
 });
