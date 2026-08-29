@@ -103,25 +103,56 @@ describe("stepSummary — el riel muestra el valor, no el numero", () => {
 
 describe("changeNoticeMessage — se dice que cambio", () => {
   it("nombra el campo y sus dos valores, y aclara que el resto quedo igual", () => {
-    expect(changeNoticeMessage({ field: "rooms", before: "2", after: "3" })).toBe(
+    expect(changeNoticeMessage([{ field: "rooms", before: "2", after: "3" }])).toBe(
       "Cambiaste habitaciones de 2 a 3. El resto del aviso quedó como estaba.",
     );
   });
 
+  it("nombra los tres campos que cambio un mismo paso, no solo uno", () => {
+    // Con uno solo, "el resto del aviso quedó como estaba" seria falso sobre
+    // los otros dos — y esa segunda oracion es la unica prueba que recibe
+    // quien corrigio un paso de que los demas siguen ahi.
+    expect(
+      changeNoticeMessage([
+        { field: "rooms", before: "2", after: "3" },
+        { field: "bathrooms", before: "2", after: "3" },
+        { field: "areaM2", before: "78", after: "90" },
+      ]),
+    ).toBe(
+      "Cambiaste habitaciones de 2 a 3, baños de 2 a 3 y metros cuadrados de 78 a 90. " +
+        "El resto del aviso quedó como estaba.",
+    );
+  });
+
   it("dice 'pusiste' cuando antes no habia nada que cambiar", () => {
-    expect(changeNoticeMessage({ field: "propertyType", before: "", after: "quinta" })).toBe(
+    expect(changeNoticeMessage([{ field: "propertyType", before: "", after: "quinta" }])).toBe(
       "Pusiste el tipo de propiedad en quinta. El resto del aviso quedó como estaba.",
     );
   });
 
+  it("separa lo que cambio de lo que se puso por primera vez, cada uno con su verbo", () => {
+    // "Cambiaste habitaciones de 2 a 3 y metros cuadrados de  a 90" es lo que
+    // sale de meter las dos cosas en una sola oracion, y ese hueco antes de
+    // la "a" se lee como un dato que el sitio perdio.
+    expect(
+      changeNoticeMessage([
+        { field: "rooms", before: "2", after: "3" },
+        { field: "areaM2", before: "", after: "90" },
+      ]),
+    ).toBe(
+      "Cambiaste habitaciones de 2 a 3. Pusiste metros cuadrados en 90. " +
+        "El resto del aviso quedó como estaba.",
+    );
+  });
+
   it("nombra la cantidad de fotos, no una clave de archivo", () => {
-    expect(changeNoticeMessage({ field: "photos", before: "1", after: "3" })).toBe(
+    expect(changeNoticeMessage([{ field: "photos", before: "1", after: "3" }])).toBe(
       "Cambiaste las fotos de 1 a 3. El resto del aviso quedó como estaba.",
     );
   });
 
   it("dice el precio en dolares, como el resto del producto", () => {
-    expect(changeNoticeMessage({ field: "priceUsd", before: "450", after: "500" })).toBe(
+    expect(changeNoticeMessage([{ field: "priceUsd", before: "450", after: "500" }])).toBe(
       "Cambiaste el precio de $450 a $500. El resto del aviso quedó como estaba.",
     );
   });
@@ -129,8 +160,28 @@ describe("changeNoticeMessage — se dice que cambio", () => {
   it("no lee un booleano en voz alta: nombra el paso", () => {
     // "Cambiaste hasPowerPlant de false a true" no es una frase que alguien
     // pueda usar. Lo que cambio es lo que el aviso declara.
-    expect(changeNoticeMessage({ field: "hasPowerPlant", before: "false", after: "true" })).toBe(
+    expect(changeNoticeMessage([{ field: "hasPowerPlant", before: "false", after: "true" }])).toBe(
       "Cambiaste lo que tiene la propiedad. El resto del aviso quedó como estaba.",
     );
+  });
+
+  it("los cinco atributos comparten un nombre y se dicen una sola vez", () => {
+    // Destildar tres casillas del paso 5 son tres cambios con la misma
+    // etiqueta. Repetirla produce "lo que tiene la propiedad, lo que tiene la
+    // propiedad y lo que tiene la propiedad", que no es una frase.
+    expect(
+      changeNoticeMessage([
+        { field: "hasPowerPlant", before: "true", after: "false" },
+        { field: "isFurnished", before: "false", after: "true" },
+        { field: "hasSecurity", before: "true", after: "false" },
+      ]),
+    ).toBe("Cambiaste lo que tiene la propiedad. El resto del aviso quedó como estaba.");
+  });
+
+  it("sin cambios no dice nada, porque el silencio no miente", () => {
+    // Un aviso que dice "cambiaste" cuando nadie cambio nada es peor que uno
+    // callado: ensena a desconfiar del mensaje justo cuando el mensaje es lo
+    // unico que distingue "se guardó" de "se perdió".
+    expect(changeNoticeMessage([])).toBeNull();
   });
 });

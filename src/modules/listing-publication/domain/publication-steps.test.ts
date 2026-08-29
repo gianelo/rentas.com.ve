@@ -3,7 +3,7 @@ import {
   applyStepAnswers,
   completedSteps,
   currentStepId,
-  describeDraftChange,
+  describeDraftChanges,
   draftListingOf,
   isDraftReadyForReview,
   isStepComplete,
@@ -12,6 +12,7 @@ import {
   PUBLISH_STEP_ORDER,
   type PublicationDraft,
   type PublishStepId,
+  parseDraftChanges,
   parseStepId,
   primaryActionFor,
   progressPercent,
@@ -390,7 +391,7 @@ describe("nextStepAfter", () => {
   });
 });
 
-describe("describeDraftChange — se dice que cambio", () => {
+describe("describeDraftChanges — se dice que cambio", () => {
   it("nombra el campo y sus dos valores", () => {
     const before = completeDraft();
     const after = applyStepAnswers(before, "tamano", {
@@ -398,16 +399,46 @@ describe("describeDraftChange — se dice que cambio", () => {
       photos: [],
     });
 
-    expect(describeDraftChange(before, after)).toEqual({
-      field: "rooms",
-      before: "2",
-      after: "3",
-    });
+    expect(describeDraftChanges(before, after)).toEqual([
+      { field: "rooms", before: "2", after: "3" },
+    ]);
   });
 
-  it("devuelve null cuando no cambio nada, para no anunciar un cambio que no hubo", () => {
+  it("nombra TODOS los campos que cambiaron, no solo el primero", () => {
+    // El paso 4 escribe cuatro campos de una sola vez. Devolver solo el
+    // primero deja a la frase afirmando "el resto del aviso quedo como
+    // estaba" mientras dos datos mas acaban de cambiar — una mentira que se
+    // lee exactamente igual que la verdad.
     const before = completeDraft();
-    expect(describeDraftChange(before, before)).toBeNull();
+    const after = applyStepAnswers(before, "tamano", {
+      listing: { rooms: 3, bathrooms: 3, parkingSpots: 1, areaM2: 90 },
+      photos: [],
+    });
+
+    expect(describeDraftChanges(before, after)).toEqual([
+      { field: "rooms", before: "2", after: "3" },
+      { field: "bathrooms", before: "2", after: "3" },
+      { field: "areaM2", before: "78", after: "90" },
+    ]);
+  });
+
+  it("los devuelve en el orden de los pasos, que es el orden en que se leen", () => {
+    const before = completeDraft();
+    const after = applyStepAnswers(before, "quien", {
+      listing: { publisherType: "broker", contactMethod: "email", contactValue: "a@b.com" },
+      photos: [],
+    });
+
+    expect(describeDraftChanges(before, after).map((change) => change.field)).toEqual([
+      "publisherType",
+      "contactMethod",
+      "contactValue",
+    ]);
+  });
+
+  it("no devuelve ninguno cuando no cambio nada, para no anunciar un cambio que no hubo", () => {
+    const before = completeDraft();
+    expect(describeDraftChanges(before, before)).toEqual([]);
   });
 
   it("informa un valor que aparece donde antes no habia nada", () => {
@@ -417,11 +448,9 @@ describe("describeDraftChange — se dice que cambio", () => {
       photos: [],
     });
 
-    expect(describeDraftChange(before, after)).toEqual({
-      field: "propertyType",
-      before: "",
-      after: "quinta",
-    });
+    expect(describeDraftChanges(before, after)).toEqual([
+      { field: "propertyType", before: "", after: "quinta" },
+    ]);
   });
 
   it("informa el cambio de fotos por su cantidad", () => {
@@ -434,11 +463,39 @@ describe("describeDraftChange — se dice que cambio", () => {
       ],
     });
 
-    expect(describeDraftChange(before, after)).toEqual({
-      field: "photos",
-      before: "1",
-      after: "2",
-    });
+    expect(describeDraftChanges(before, after)).toEqual([
+      { field: "photos", before: "1", after: "2" },
+    ]);
+  });
+});
+
+describe("parseDraftChanges — lo que llega en la URL no se cree", () => {
+  it("reconoce los campos del borrador y descarta cualquier otro", () => {
+    expect(
+      parseDraftChanges(["rooms", "inventado", "priceUsd"], ["2", "x", "450"], ["3", "y", "500"]),
+    ).toEqual([
+      { field: "rooms", before: "2", after: "3" },
+      { field: "priceUsd", before: "450", after: "500" },
+    ]);
+  });
+
+  it("no cuenta como cambio un valor identico al anterior", () => {
+    // "Cambiaste habitaciones de 2 a 2" es peor que el silencio: afirma un
+    // cambio que no ocurrio, y quien lo lee ya no sabe que creerle a la
+    // pantalla la proxima vez.
+    expect(parseDraftChanges(["rooms"], ["2"], ["2"])).toEqual([]);
+  });
+
+  it("descarta el lote entero cuando falta un pedazo, en vez de inventarlo", () => {
+    // Tres listas paralelas que no miden lo mismo no dicen que par va con
+    // que campo. Sin la respuesta, el silencio; adivinarla es como se
+    // publica "Cambiaste el precio de 3 a 78".
+    expect(parseDraftChanges(["rooms", "areaM2"], ["2"], ["3", "90"])).toEqual([]);
+    expect(parseDraftChanges(["rooms"], ["2", "78"], ["3"])).toEqual([]);
+  });
+
+  it("sin nada en la URL no hay nada que decir", () => {
+    expect(parseDraftChanges([], [], [])).toEqual([]);
   });
 });
 

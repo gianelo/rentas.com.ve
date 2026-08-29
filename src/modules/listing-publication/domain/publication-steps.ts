@@ -386,24 +386,32 @@ function asText(value: unknown): string {
  * Sin eso nadie sabe si se guardo, y quien no sabe si se guardo vuelve a
  * entrar al paso a comprobarlo — o publica sin comprobarlo, que es peor.
  *
- * Devuelve el PRIMER campo distinto, no todos: la frase que la pantalla dibuja
- * nombra uno, y un paso escribe un solo dato en el caso normal.
+ * **Devuelve TODOS los campos distintos, no el primero.** La segunda oracion
+ * de la frase afirma que el resto del aviso quedo igual, y un paso escribe
+ * hasta cuatro campos de una sola vez: nombrar uno solo convierte esa segunda
+ * oracion en una afirmacion falsa sobre los otros tres. Una frase que miente
+ * sobre lo que se guardo cuesta mas que no decir nada, porque se lee
+ * exactamente igual que la verdad.
+ *
+ * El orden es el de los pasos, que es el orden en que la persona los contesto.
  */
-export function describeDraftChange(
+export function describeDraftChanges(
   before: PublicationDraft,
   after: PublicationDraft,
-): DraftChange | null {
+): readonly DraftChange[] {
+  const changes: DraftChange[] = [];
+
   for (const field of CHANGE_FIELDS) {
     if (field === "photos") {
       // Las fotos se comparan por cantidad: es el dato que la pantalla de
       // revisar muestra ("3 fotos · 449 KB") y el unico que significa algo
       // dicho en voz alta.
       if (before.photos.length !== after.photos.length) {
-        return {
+        changes.push({
           field,
           before: String(before.photos.length),
           after: String(after.photos.length),
-        };
+        });
       }
       continue;
     }
@@ -412,11 +420,53 @@ export function describeDraftChange(
     const current = field === "reference" ? after.reference : after.listing[field];
 
     if (asText(previous) !== asText(current)) {
-      return { field, before: asText(previous), after: asText(current) };
+      changes.push({ field, before: asText(previous), after: asText(current) });
     }
   }
 
-  return null;
+  return changes;
+}
+
+/**
+ * Reconoce cambios que llegan sueltos en una URL, sin creerles nada.
+ *
+ * La pantalla de revisar recibe lo que cambio por la barra de direcciones, y
+ * una barra de direcciones se escribe a mano. **Es la puerta por la que entra
+ * una frase que el producto nunca dijo**: un campo inventado se dibujaria como
+ * "Cambiaste undefined", y un par de valores iguales como "Cambiaste
+ * habitaciones de 2 a 2" — un cambio anunciado que no ocurrio.
+ *
+ * Se cierra en los tres frentes, y en los tres la salida es el silencio y no
+ * una suposicion: un campo que no es del borrador se descarta, un valor igual
+ * al anterior no es un cambio, y tres listas paralelas de distinto largo no
+ * dicen que par va con que campo, asi que no se reparte ninguno.
+ */
+export function parseDraftChanges(
+  fields: readonly string[],
+  befores: readonly string[],
+  afters: readonly string[],
+): readonly DraftChange[] {
+  if (fields.length !== befores.length || fields.length !== afters.length) return [];
+
+  const changes: DraftChange[] = [];
+
+  for (const [index, name] of fields.entries()) {
+    // Buscando en la lista y no casteando: el cast diria que es un campo del
+    // borrador, y esta funcion existe justamente porque no se sabe.
+    const field = CHANGE_FIELDS.find((candidate) => candidate === name);
+    if (field === undefined) continue;
+
+    // El `?? ""` no se alcanza: los tres largos ya se compararon arriba. Esta
+    // por `noUncheckedIndexedAccess`, y se prefiere a una asercion que le
+    // mienta al compilador sobre un arreglo que llego de afuera.
+    const before = befores[index] ?? "";
+    const after = afters[index] ?? "";
+    if (before === after) continue;
+
+    changes.push({ field, before, after });
+  }
+
+  return changes;
 }
 
 /** Reconoce un segmento de URL como paso, sin confiar en lo que llego. */
