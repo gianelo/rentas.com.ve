@@ -114,11 +114,30 @@ export function safeReturnPath(candidate: string): string | null {
  */
 const ACCOUNT_DOORS = ["/publicar", "/mis-avisos", "/importar"] as const;
 
-function isSignInDoor(pathname: string): boolean {
-  if (pathname.startsWith(RETURN_PREFIX)) return true;
+/** Cuál puerta, no sólo si la hay: la pantalla de entrar dibuja una por cada una. */
+export type SignInDoor = typeof RETURN_PREFIX | (typeof ACCOUNT_DOORS)[number];
+
+function doorOf(pathname: string): SignInDoor | null {
+  if (pathname.startsWith(RETURN_PREFIX)) return RETURN_PREFIX;
 
   // La barra del segundo caso importa: sin ella `/publicarx` sería una puerta.
-  return ACCOUNT_DOORS.some((door) => pathname === door || pathname.startsWith(`${door}/`));
+  return ACCOUNT_DOORS.find((door) => pathname === door || pathname.startsWith(`${door}/`)) ?? null;
+}
+
+function isSignInDoor(pathname: string): boolean {
+  return doorOf(pathname) !== null;
+}
+
+/**
+ * Por qué puerta se pidió entrar, o `null` cuando el destino no es legal
+ * (tasks.md 15.7). **Una sola lista para las dos preguntas**: si se admite y
+ * cuál es. Dos listas es cómo la pantalla termina dibujando una puerta que la
+ * regla de vuelta ya no acepta.
+ */
+export function signInDoorOf(candidate: string): SignInDoor | null {
+  const url = internalUrl(candidate.trim());
+
+  return url === null ? null : doorOf(url.pathname);
 }
 
 /**
