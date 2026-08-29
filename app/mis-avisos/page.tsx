@@ -234,7 +234,7 @@ function FichaDeAviso({
       <div className={styles.cuerpo}>
         <Price usd={card.priceUsd} />
         {/* El mismo título y el mismo metadato que dibuja la cuadrícula, y por
-            los mismos átomos (21.9/21.10): esta hoja tenía su propia copia y
+            los mismos átomos (22.3/22.4): esta hoja tenía su propia copia y
             ya había perdido `font-family`, `font-weight` y `line-height`, así
             que la misma frase salía en dos pesos según la pantalla. */}
         <ListingTitle level={2}>{card.title}</ListingTitle>

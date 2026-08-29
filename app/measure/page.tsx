@@ -211,7 +211,7 @@ export default function MeasureHarnessPage() {
 
         {/* **La fila de `/mis-avisos`, al lado de la tarjeta y a propósito.**
             Las dos dibujan el mismo aviso con la misma anatomía —precio,
-            título de lista, metadatos— y hasta la 21.9/21.10 lo hacían con
+            título de lista, metadatos— y hasta la 22.3/22.4 lo hacían con
             tres copias del mismo CSS que ya habían empezado a discrepar. Que
             digan lo mismo es una medida, no una lectura, así que las dos
             tienen que estar en la misma página para poder compararlas.
@@ -219,7 +219,7 @@ export default function MeasureHarnessPage() {
             Sólo la carcasa: nada del borrador, su formulario ni su Server
             Action — el arnés dibuja y no consulta. */}
         {/* **Las dos fichas de selección, juntas para poder compararlas**
-            (21.11). Son el mismo componente dibujado dos veces —un enlace que
+            (22.5). Son el mismo componente dibujado dos veces —un enlace que
             elige una opción de un conjunto, con una marcada— y hasta acá el
             estado elegido se pintaba con dos idiomas distintos. Que digan lo
             mismo es una medida y no una lectura, así que las dos viven en la

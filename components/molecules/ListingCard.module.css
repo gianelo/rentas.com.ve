@@ -55,7 +55,7 @@
 }
 
 /* El título y los metadatos ya no se declaran acá: los dibujan `ListingTitle`
-   y `ListingMeta` (21.9/21.10). Eran dos de las tres copias del mismo papel
+   y `ListingMeta` (22.3/22.4). Eran dos de las tres copias del mismo papel
    tipográfico, y la tercera ya había discrepado. El recorte a dos líneas
    viaja con el átomo como `clamp`, porque es del contenedor y no del tipo. */
 

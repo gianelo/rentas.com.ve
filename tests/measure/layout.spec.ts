@@ -668,9 +668,9 @@ test.describe("el panel de filtros a los dos anchos (14.32)", () => {
  * meses pintando 15px con el token declarando 17 y la lámina dibujando 16,
  * con el gate de hoja en verde todo el tiempo.
  */
-test.describe("los átomos de la lista y la ficha de selección (21.8-21.11)", () => {
+test.describe("los átomos de la lista y la ficha de selección (22.2-22.5)", () => {
   /**
-   * **21.8 — el precio de la tarjeta se DIBUJA con el token que declara.**
+   * **22.2 — el precio de la tarjeta se DIBUJA con el token que declara.**
    *
    * Esta prueba existe porque la que había no podía fallar. `ListingCard.test.tsx`
    * afirmaba `block(cardCss, "price")` contiene `var(--card-price-fs)`, y eso
@@ -689,7 +689,7 @@ test.describe("los átomos de la lista y la ficha de selección (21.8-21.11)", (
     [360, "--card-price-fs", "16px"],
     [1280, "--card-price-fs-desktop", "17px"],
   ] as const) {
-    test(`21.8: a ${ancho} el precio de la tarjeta mide ${esperado}, que es ${token}`, async ({
+    test(`22.2: a ${ancho} el precio de la tarjeta mide ${esperado}, que es ${token}`, async ({
       page,
     }) => {
       await page.setViewportSize({ width: ancho, height: 1200 });
@@ -705,7 +705,7 @@ test.describe("los átomos de la lista y la ficha de selección (21.8-21.11)", (
         token,
       );
 
-      console.log(`[21.8] ${ancho}px: dibujado ${medido} · ${token}=${declarado}`);
+      console.log(`[22.2] ${ancho}px: dibujado ${medido} · ${token}=${declarado}`);
       // La lámina, que es la fuente visual de verdad (AGENTS.md §2): 6c dibuja
       // 16px a 360 y 7c dibuja 17px a 1280.
       expect(declarado).toBe(esperado);
@@ -716,7 +716,7 @@ test.describe("los átomos de la lista y la ficha de selección (21.8-21.11)", (
   }
 
   /**
-   * **21.9 / 21.10 — el metadato y el título de lista dicen lo mismo en las dos
+   * **22.3 / 22.4 — el metadato y el título de lista dicen lo mismo en las dos
    * pantallas que los dibujan.**
    *
    * Antes de esto había tres copias de la regla de metadato —`ListingCard`,
@@ -728,7 +728,7 @@ test.describe("los átomos de la lista y la ficha de selección (21.8-21.11)", (
    *
    * Se comparan los estilos **calculados por el navegador**, no los declarados:
    * una hoja puede declarar lo correcto y dibujar otra cosa, que es exactamente
-   * lo que pasó con el precio (21.8). Lo que NO se compara es el recorte a dos
+   * lo que pasó con el precio (22.2). Lo que NO se compara es el recorte a dos
    * líneas — eso es del contenedor y no del papel de tipografía: la cuadrícula
    * lo necesita para que dos tarjetas de al lado alineen, y una lista apilada
    * no.
@@ -751,7 +751,7 @@ test.describe("los átomos de la lista y la ficha de selección (21.8-21.11)", (
     );
   }
 
-  test("21.9: el metadato se dibuja igual en la tarjeta y en /mis-avisos", async ({ page }) => {
+  test("22.3: el metadato se dibuja igual en la tarjeta y en /mis-avisos", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 1400 });
     await page.goto("/measure");
 
@@ -762,8 +762,8 @@ test.describe("los átomos de la lista y la ficha de selección (21.8-21.11)", (
       page.getByTestId("mis-avisos-harness").getByText("Chacao · 2 hab · 78 m²").first(),
     );
 
-    console.log(`[21.9] tarjeta=${JSON.stringify(tarjeta)}`);
-    console.log(`[21.9] mis-avisos=${JSON.stringify(misAvisos)}`);
+    console.log(`[22.3] tarjeta=${JSON.stringify(tarjeta)}`);
+    console.log(`[22.3] mis-avisos=${JSON.stringify(misAvisos)}`);
     expect(misAvisos).toEqual(tarjeta);
     // Y el papel es el que SISTEMA.md llama "Metadato": 12px / 600 / 1.4, gris
     // `--soft`. Fijado con números para que converger hacia el valor
@@ -773,7 +773,7 @@ test.describe("los átomos de la lista y la ficha de selección (21.8-21.11)", (
     expect(tarjeta["line-height"]).toBe("16.8px");
   });
 
-  test("21.10: el título de lista se dibuja igual en la tarjeta y en /mis-avisos", async ({
+  test("22.4: el título de lista se dibuja igual en la tarjeta y en /mis-avisos", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 1400 });
@@ -789,8 +789,8 @@ test.describe("los átomos de la lista y la ficha de selección (21.8-21.11)", (
         .first(),
     );
 
-    console.log(`[21.10] tarjeta=${JSON.stringify(tarjeta)}`);
-    console.log(`[21.10] mis-avisos=${JSON.stringify(misAvisos)}`);
+    console.log(`[22.4] tarjeta=${JSON.stringify(tarjeta)}`);
+    console.log(`[22.4] mis-avisos=${JSON.stringify(misAvisos)}`);
     expect(misAvisos).toEqual(tarjeta);
     // La lámina 7c dibuja el título de la tarjeta en 13px / 1.35 y **sin peso
     // declarado**, o sea 400 — que es `--ftw`, no `--ficha-title-fw` (600).
@@ -800,7 +800,7 @@ test.describe("los átomos de la lista y la ficha de selección (21.8-21.11)", (
   });
 
   /**
-   * **21.11 — el estado elegido de una ficha se pinta con UN idioma.**
+   * **22.5 — el estado elegido de una ficha se pinta con UN idioma.**
    *
    * Dos pantallas dibujaban el mismo componente —un enlace que elige una
    * opción de un conjunto, con una marcada— y lo pintaban distinto: el inicio
@@ -813,7 +813,7 @@ test.describe("los átomos de la lista y la ficha de selección (21.8-21.11)", (
    * propiedades a la vez: comparar sólo el relleno habría estado verde desde
    * antes, porque el relleno era la única que ya coincidía.
    */
-  test("21.11: la ficha elegida se pinta igual en el inicio y en /mis-avisos", async ({ page }) => {
+  test("22.5: la ficha elegida se pinta igual en el inicio y en /mis-avisos", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 1400 });
     await page.goto("/measure");
 
@@ -832,8 +832,8 @@ test.describe("los átomos de la lista y la ficha de selección (21.8-21.11)", (
       page.getByTestId("chips-mis-avisos").locator('[aria-current="page"]'),
     );
 
-    console.log(`[21.11] inicio=${JSON.stringify(inicio)}`);
-    console.log(`[21.11] mis-avisos=${JSON.stringify(misAvisos)}`);
+    console.log(`[22.5] inicio=${JSON.stringify(inicio)}`);
+    console.log(`[22.5] mis-avisos=${JSON.stringify(misAvisos)}`);
     expect(misAvisos).toEqual(inicio);
     // Y es el idioma del nivel 2, con sus tres partes: `--tint` (#E3F6F5),
     // `--accent` (#272343) en el borde y `--accent` en el texto.

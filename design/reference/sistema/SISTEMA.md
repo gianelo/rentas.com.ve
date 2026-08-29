@@ -100,7 +100,7 @@ En la estructura "Directorio compacto" el precio usa `--mono` (`--disp: var(--mo
 | Metadato | 12px / 600 / 1.4 | color `--soft` |
 | Badge / etiqueta | 11px / 700 / 1.4 | `letter-spacing: .06em`, mayúsculas |
 
-**Un papel tipográfico se declara en un solo sitio** (2026-08-28, tareas 21.9 y 21.10). El metadato y el título de lista estaban escritos tres veces cada uno, y las copias ya habían empezado a discrepar: `/mis-avisos` dibujaba el metadato en 400 donde la cuadrícula lo dibujaba en 600, y el título al revés. Hoy los dibujan `components/atoms/ListingMeta.tsx` y `components/atoms/ListingTitle.tsx`, y que las dos pantallas coincidan **se mide en un navegador**, no se afirma leyendo una hoja.
+**Un papel tipográfico se declara en un solo sitio** (2026-08-28, tareas 22.3 y 22.4). El metadato y el título de lista estaban escritos tres veces cada uno, y las copias ya habían empezado a discrepar: `/mis-avisos` dibujaba el metadato en 400 donde la cuadrícula lo dibujaba en 600, y el título al revés. Hoy los dibujan `components/atoms/ListingMeta.tsx` y `components/atoms/ListingTitle.tsx`, y que las dos pantallas coincidan **se mide en un navegador**, no se afirma leyendo una hoja.
 
 **El recorte del título es del contenedor.** La cuadrícula lo necesita —un título largo empuja los metadatos y desalinea la tarjeta vecina— y la lista apilada de `/mis-avisos` no: la lámina 14c la dibuja sin recortar. Por eso viaja como una bandera de quien dibuja (`clamp`) y no como parte del tipo.
 

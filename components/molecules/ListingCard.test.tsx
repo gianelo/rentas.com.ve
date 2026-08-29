@@ -64,12 +64,12 @@ describe("ListingCard — el precio manda", () => {
    * versión anterior afirmaba que `.price` contenía `var(--card-price-fs)` y
    * estuvo verde mientras la tarjeta pintaba 15px: la declaración vivía en el
    * `<p>` que envuelve y el `<span>` de `Price` la pisaba. Lo dibujado lo mide
-   * `tests/measure/layout.spec.ts` (21.8) en un navegador de verdad; acá sólo
+   * `tests/measure/layout.spec.ts` (22.2) en un navegador de verdad; acá sólo
    * queda la relación entre los dos cuerpos, que sí es una afirmación sobre
    * valores declarados.
    */
   it("declara el precio en un cuerpo mayor que el del título, en los dos anchos", () => {
-    // El enganche, no un `font-size`: el átomo es el que dibuja (ver 21.8).
+    // El enganche, no un `font-size`: el átomo es el que dibuja (ver 22.2).
     expect(block(cardCss, "price")).toContain("--price-fs: var(--card-price-fs)");
 
     const titulo = Number.parseFloat(tokenValue("--card-title-fs"));
@@ -79,7 +79,7 @@ describe("ListingCard — el precio manda", () => {
 
   /**
    * **La tarjeta no repinta la tipografía del precio: la delega.** Es la
-   * lección del defecto de 21.8 escrita como guardia — un `font-size` en el
+   * lección del defecto de 22.2 escrita como guardia — un `font-size` en el
    * envoltorio no cambia lo que se ve y hace creer que sí.
    */
   it("no vuelve a declarar la tipografía del precio sobre el átomo", () => {
@@ -185,7 +185,7 @@ describe("ListingCard — la cuadrícula y sus reglas transversales", () => {
   it("no atenúa texto con opacity — el gris es --soft", () => {
     // Regla transversal 3: `opacity` atenúa también el borde y el fondo, y
     // deja el contraste fuera de control. El gris del metadato lo afirma ahora
-    // `ListingMeta.test.tsx`, que es donde se declara desde la 21.9 — la
+    // `ListingMeta.test.tsx`, que es donde se declara desde la 22.3 — la
     // aserción se mudó con su sujeto, no se reapuntó a otro.
     expect(cardCss).not.toMatch(/opacity\s*:/);
   });

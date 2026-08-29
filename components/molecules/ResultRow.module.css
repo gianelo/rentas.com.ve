@@ -42,7 +42,7 @@
 }
 
 /* El título y los metadatos los dibujan `ListingTitle` y `ListingMeta`
-   (21.9/21.10). Esta fila **no la ve ningún visitante desde la 14.25** —la
+   (22.3/22.4). Esta fila **no la ve ningún visitante desde la 14.25** —la
    cuadrícula la reemplazó y sus únicos consumidores son el arnés de medición y
    su propia prueba—, y aun así entra en la promoción: es la que 1b.10/1b.11/
    1b.12 miden, y un arnés que mide una copia privada no mide el producto. */

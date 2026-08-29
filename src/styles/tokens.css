@@ -210,7 +210,7 @@
      El tamaño llega al átomo por `--price-fs`, que es un **enganche y no un
      valor**: la superficie elige cuál token lo alimenta y no puede inventar un
      número, porque `lint:tokens` sigue rechazando el literal. Y lo dibujado se
-     mide, no se declara — `tests/measure/layout.spec.ts` (21.8) lee
+     mide, no se declara — `tests/measure/layout.spec.ts` (22.2) lee
      `getComputedStyle` sobre la tarjeta real, que es lo único que podía ver
      este defecto. */
   --card-price-fs: 16px;

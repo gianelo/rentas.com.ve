@@ -35,7 +35,7 @@ export interface ListingTitleProps {
  * la tarjeta dibujaba `--ftw` (400) recortado a dos líneas y `/mis-avisos`
  * `--ficha-title-fw` (600) sin recortar. Medido en un navegador, 400 contra
  * 600 y 17,55px contra 20,8px de interlínea — la misma frase con dos pesos
- * según la pantalla (tests/measure/layout.spec.ts, 21.10).
+ * según la pantalla (tests/measure/layout.spec.ts, 22.4).
  */
 export function ListingTitle({ level, clamp = false, children }: ListingTitleProps) {
   const Heading = level === 2 ? "h2" : "h3";

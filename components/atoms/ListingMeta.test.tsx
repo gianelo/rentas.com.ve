@@ -13,7 +13,7 @@ const metaCss = readFileSync("components/atoms/ListingMeta.module.css", "utf-8")
  * que la 14.42 prohíbe—: es la misma afirmación sobre el mismo CSS, que ahora
  * vive en un solo archivo en vez de tres.
  *
- * Lo que **se dibuja** lo mide `tests/measure/layout.spec.ts` (21.9) en un
+ * Lo que **se dibuja** lo mide `tests/measure/layout.spec.ts` (22.3) en un
  * navegador de verdad, comparando la tarjeta contra `/mis-avisos`.
  */
 describe("ListingMeta", () => {

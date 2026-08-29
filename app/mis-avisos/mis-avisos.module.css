@@ -130,7 +130,7 @@
 }
 
 /* El título del aviso y su línea de metadatos los dibujan ahora `ListingTitle`
-   y `ListingMeta` (21.9/21.10). Lo que había acá era la **tercera** copia del
+   y `ListingMeta` (22.3/22.4). Lo que había acá era la **tercera** copia del
    mismo papel tipográfico y la que ya había discrepado: sin `font-family`, sin
    `font-weight` y sin `line-height`, o sea la misma frase en 400 donde la
    cuadrícula la dibujaba en 600. Medido en un navegador antes de tocar nada. */
