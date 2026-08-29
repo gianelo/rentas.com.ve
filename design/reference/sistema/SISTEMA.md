@@ -282,6 +282,18 @@ El color aparece solo en los dos estados que piden algo. Activa y vencida son ne
 
 **Acciones:** "Crear las 38 propiedades" (acción) y "Corregir el archivo y volver a subir" (neutro).
 
+### 8. Entrar — la pantalla con su propia dirección
+
+**Propósito:** es la puerta que se pega en un correo y a la que Google devuelve. La hoja de la ficha (§Layout de escritorio, «La puerta de entrar») no la reemplaza porque una hoja no tiene dirección.
+
+**Layout móvil (360, lámina 8a):** barra con `← Volver` a la izquierda y la marca al centro → título → motivo → botón «Continuar con Google» a todo el ancho → línea legal; y debajo, sólo por la puerta de publicar, la caja `--bg` con los tres pasos.
+
+**Layout escritorio (1280, lámina 9a):** misma barra con la marca a la izquierda y la vuelta contra el borde → dentro del contenedor de 1100, cuadrícula de **420 + 80 + 600**: el motivo y el botón en la columna de 420 y los pasos al costado, «así el botón queda alto». El 420 es el mismo ancho de la columna de datos de la ficha y se escribe literal como en `DetailSplit`: es una medida estructural que este documento ya fija, y un segundo nombre para un valor existente hace discrepar la paleta. Medido en `tests/measure/entrar.spec.ts`, no declarado en la hoja.
+
+**Lo que dice depende de por qué puerta se entró** (`signInPageFor`, `src/modules/identity/domain/sign-in-page.ts`): publicar trae los tres pasos, un aviso trae la promesa de vuelta, y la cuenta no promete ninguno de los dos. La copia es de producto y vive en el dominio, no en la pantalla.
+
+**Desvíos de la lámina, deliberados.** El `<h1>` usa `--title-fs` como el de todas las demás pantallas, y no el 22/28 que estas dos láminas dibujan sólo acá: un tamaño de encabezado propio de una pantalla es cómo empieza la deriva. El enlace de vuelta va en `--ink`, igual que el «← Resultados» de la ficha, y no en `--accent`. El campo de correo y su botón «Enviarme el enlace» **no están dibujados todavía**: desembocan en la pantalla de espera, que no existe (tarea 15.9). Y el botón va **sin la marca de Google**, en el nivel 1 — ver Assets y la tarea 22.20.
+
 ## Interactions & Behavior
 
 - **Navegación:** enlaces reales. Resultados → ficha, ficha → resultados, zona → ficha.
