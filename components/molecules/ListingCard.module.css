@@ -44,14 +44,14 @@
   padding: 8px 10px 10px;
 }
 
+/* **Sólo la caja, nunca la tipografía.** Todo lo que este bloque declaraba
+   —familia, tamaño, peso, interlínea, color, `tabular-nums`— lo pisaba el
+   `<span>` del átomo `Price` que vive adentro, así que era una declaración que
+   no dibujaba nada y una prueba de hoja que no podía fallar. La tarjeta elige
+   qué token alimenta al átomo y el átomo lo dibuja; el resto es del átomo. */
 .price {
   margin: 2px 0 0;
-  font-family: var(--disp);
-  font-size: var(--card-price-fs);
-  font-weight: var(--fpw);
-  line-height: 1.15;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
+  --price-fs: var(--card-price-fs);
 }
 
 .title {
@@ -112,5 +112,12 @@
   .grid {
     grid-template-columns: repeat(4, minmax(0, var(--card-w-desktop)));
     justify-content: start;
+  }
+
+  /* 17px acá y 16 en el teléfono: las dos láminas dibujan números distintos
+     porque describen anchos distintos (6c contra 7c), igual que el nav de la
+     14.40. Un solo componente con puntos de quiebre, nunca dos. */
+  .price {
+    --price-fs: var(--card-price-fs-desktop);
   }
 }

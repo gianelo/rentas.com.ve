@@ -56,17 +56,39 @@ describe("ListingCard — el precio manda", () => {
   });
 
   /**
-   * Y la otra mitad de la misma regla: **pesa más visualmente**. Se mide
-   * contra los tokens en vez de contra una hoja de estilo, porque lo que hay
-   * que garantizar es la relación entre los dos números, no que uno de ellos
-   * valga 17.
+   * Y la otra mitad de la misma regla: **pesa más visualmente**. Se compara la
+   * relación entre los tokens y no un número suelto, porque lo que hay que
+   * garantizar es que uno sea mayor que el otro en los dos anchos.
+   *
+   * **Esta aserción no prueba lo que se dibuja, y hoy se sabe por qué.** Su
+   * versión anterior afirmaba que `.price` contenía `var(--card-price-fs)` y
+   * estuvo verde mientras la tarjeta pintaba 15px: la declaración vivía en el
+   * `<p>` que envuelve y el `<span>` de `Price` la pisaba. Lo dibujado lo mide
+   * `tests/measure/layout.spec.ts` (21.8) en un navegador de verdad; acá sólo
+   * queda la relación entre los dos cuerpos, que sí es una afirmación sobre
+   * valores declarados.
    */
-  it("dibuja el precio en un cuerpo mayor que el del título", () => {
-    expect(block(cardCss, "price")).toContain("var(--card-price-fs)");
+  it("declara el precio en un cuerpo mayor que el del título, en los dos anchos", () => {
+    // El enganche, no un `font-size`: el átomo es el que dibuja (ver 21.8).
+    expect(block(cardCss, "price")).toContain("--price-fs: var(--card-price-fs)");
     expect(block(cardCss, "title")).toContain("var(--card-title-fs)");
-    expect(Number.parseFloat(tokenValue("--card-price-fs"))).toBeGreaterThan(
-      Number.parseFloat(tokenValue("--card-title-fs")),
-    );
+
+    const titulo = Number.parseFloat(tokenValue("--card-title-fs"));
+    expect(Number.parseFloat(tokenValue("--card-price-fs"))).toBeGreaterThan(titulo);
+    expect(Number.parseFloat(tokenValue("--card-price-fs-desktop"))).toBeGreaterThan(titulo);
+  });
+
+  /**
+   * **La tarjeta no repinta la tipografía del precio: la delega.** Es la
+   * lección del defecto de 21.8 escrita como guardia — un `font-size` en el
+   * envoltorio no cambia lo que se ve y hace creer que sí.
+   */
+  it("no vuelve a declarar la tipografía del precio sobre el átomo", () => {
+    const precio = block(cardCss, "price");
+
+    expect(precio).not.toContain("font-size:");
+    expect(precio).not.toContain("font-family:");
+    expect(precio).not.toContain("font-weight:");
   });
 });
 

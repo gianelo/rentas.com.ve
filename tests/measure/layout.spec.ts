@@ -659,3 +659,59 @@ test.describe("el panel de filtros a los dos anchos (14.32)", () => {
     await context.close();
   });
 });
+
+/**
+ * **Los átomos de la tarjeta, medidos en un navegador de verdad.**
+ *
+ * Una aserción sobre el contenido de una hoja dice qué se declaró; estas dicen
+ * qué se dibujó. La diferencia no es teórica: el precio de la tarjeta llevaba
+ * meses pintando 15px con el token declarando 17 y la lámina dibujando 16,
+ * con el gate de hoja en verde todo el tiempo.
+ */
+test.describe("los átomos de la tarjeta (21.8-21.10)", () => {
+  /**
+   * **21.8 — el precio de la tarjeta se DIBUJA con el token que declara.**
+   *
+   * Esta prueba existe porque la que había no podía fallar. `ListingCard.test.tsx`
+   * afirmaba `block(cardCss, "price")` contiene `var(--card-price-fs)`, y eso
+   * era cierto mientras la pantalla pintaba otro número: la declaración vivía
+   * en el `<p>` que envuelve, y el `<span>` del átomo `Price` la pisaba con
+   * `var(--fp)`. El hijo gana. Nadie recibía lo que pedía — el token decía 17,
+   * el átomo dibujaba 15, y las láminas dibujan 16 en el teléfono y 17 en el
+   * escritorio.
+   *
+   * Se mide el número renderizado **contra el token resuelto en la misma
+   * página**, no contra una constante escrita acá: así la prueba se rompe
+   * tanto si el átomo vuelve a pisar el tamaño como si alguien cambia el token
+   * creyendo que eso cambia la pantalla.
+   */
+  for (const [ancho, token, esperado] of [
+    [360, "--card-price-fs", "16px"],
+    [1280, "--card-price-fs-desktop", "17px"],
+  ] as const) {
+    test(`21.8: a ${ancho} el precio de la tarjeta mide ${esperado}, que es ${token}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: ancho, height: 1200 });
+      await page.goto("/measure");
+
+      const precio = page
+        .getByTestId("listing-grid-harness")
+        .getByText("$400", { exact: true })
+        .first();
+      const medido = await precio.evaluate((node) => getComputedStyle(node).fontSize);
+      const declarado = await page.evaluate(
+        (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim(),
+        token,
+      );
+
+      console.log(`[21.8] ${ancho}px: dibujado ${medido} · ${token}=${declarado}`);
+      // La lámina, que es la fuente visual de verdad (AGENTS.md §2): 6c dibuja
+      // 16px a 360 y 7c dibuja 17px a 1280.
+      expect(declarado).toBe(esperado);
+      // Y lo dibujado ES lo declarado, que es lo que la aserción de hoja no
+      // podía ver.
+      expect(medido).toBe(esperado);
+    });
+  }
+});
