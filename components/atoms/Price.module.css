@@ -2,7 +2,14 @@
    tabular-nums so digits align as a column across rows (tasks.md 1b.9). */
 .price {
   font-family: var(--disp);
-  font-size: var(--fp);
+  /* **El tamaño lo elige la superficie, y sólo entre tokens del sistema.**
+     `--price-fs` es un enganche, no un valor: sin él manda `--fp`, la escala
+     de la fila. Existe porque envolver el átomo en un `<p>` con su propio
+     `font-size` NO cambia lo que se dibuja — el hijo gana — y durante meses la
+     tarjeta pintó 15px mientras `--card-price-fs` declaraba 17 y `lint:tokens`
+     salía 0. Un enganche pone la declaración donde está el texto; un envoltorio
+     la pone donde nadie la lee. */
+  font-size: var(--price-fs, var(--fp));
   font-weight: var(--fpw);
   line-height: 1.15;
   color: var(--ink);

@@ -193,8 +193,28 @@
      Separados de --fp/--ft (la fila) a propósito: aquella escala está
      calculada para 44 px de miniatura al lado del texto, y reusarla haría
      que cambiar la densidad de una fila que ya no existe redimensionara la
-     cuadrícula. */
-  --card-price-fs: 17px;
+     cuadrícula.
+
+     **16 en el teléfono y 17 en el escritorio, medido contra las láminas
+     (2026-08-28).** El token valía 17 en los dos anchos y la pantalla pintaba
+     **15**, porque la declaración vivía en el `<p>` que envuelve y el `<span>`
+     del átomo `Price` la pisaba con `var(--fp)`. Tres números y ninguno era el
+     que alguien pidió. Manda la lámina (AGENTS.md §2), y las dos tienen razón
+     porque describen anchos distintos — la misma resolución que la 14.40 ya
+     usó para el nav y la 16.23 para el precio de la ficha:
+     `Rentas - Lista y Filtros - Mobile.dc.html` artboard 6c dibuja
+     `font-size:16px` sobre una cuadrícula de `158px 158px`, y
+     `- Desktop.dc.html` artboard 7c dibuja `font-size:17px` sobre
+     `repeat(4,254px)`.
+
+     El tamaño llega al átomo por `--price-fs`, que es un **enganche y no un
+     valor**: la superficie elige cuál token lo alimenta y no puede inventar un
+     número, porque `lint:tokens` sigue rechazando el literal. Y lo dibujado se
+     mide, no se declara — `tests/measure/layout.spec.ts` (22.2) lee
+     `getComputedStyle` sobre la tarjeta real, que es lo único que podía ver
+     este defecto. */
+  --card-price-fs: 16px;
+  --card-price-fs-desktop: 17px;
   --card-title-fs: 13px;
   /* El punto de posición debajo de la tira. Propio y no `--r-thumb` ni una de
      las medidas de miniatura: es una marca, no una imagen, y compartir el

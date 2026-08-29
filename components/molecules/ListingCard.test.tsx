@@ -56,17 +56,38 @@ describe("ListingCard — el precio manda", () => {
   });
 
   /**
-   * Y la otra mitad de la misma regla: **pesa más visualmente**. Se mide
-   * contra los tokens en vez de contra una hoja de estilo, porque lo que hay
-   * que garantizar es la relación entre los dos números, no que uno de ellos
-   * valga 17.
+   * Y la otra mitad de la misma regla: **pesa más visualmente**. Se compara la
+   * relación entre los tokens y no un número suelto, porque lo que hay que
+   * garantizar es que uno sea mayor que el otro en los dos anchos.
+   *
+   * **Esta aserción no prueba lo que se dibuja, y hoy se sabe por qué.** Su
+   * versión anterior afirmaba que `.price` contenía `var(--card-price-fs)` y
+   * estuvo verde mientras la tarjeta pintaba 15px: la declaración vivía en el
+   * `<p>` que envuelve y el `<span>` de `Price` la pisaba. Lo dibujado lo mide
+   * `tests/measure/layout.spec.ts` (22.2) en un navegador de verdad; acá sólo
+   * queda la relación entre los dos cuerpos, que sí es una afirmación sobre
+   * valores declarados.
    */
-  it("dibuja el precio en un cuerpo mayor que el del título", () => {
-    expect(block(cardCss, "price")).toContain("var(--card-price-fs)");
-    expect(block(cardCss, "title")).toContain("var(--card-title-fs)");
-    expect(Number.parseFloat(tokenValue("--card-price-fs"))).toBeGreaterThan(
-      Number.parseFloat(tokenValue("--card-title-fs")),
-    );
+  it("declara el precio en un cuerpo mayor que el del título, en los dos anchos", () => {
+    // El enganche, no un `font-size`: el átomo es el que dibuja (ver 22.2).
+    expect(block(cardCss, "price")).toContain("--price-fs: var(--card-price-fs)");
+
+    const titulo = Number.parseFloat(tokenValue("--card-title-fs"));
+    expect(Number.parseFloat(tokenValue("--card-price-fs"))).toBeGreaterThan(titulo);
+    expect(Number.parseFloat(tokenValue("--card-price-fs-desktop"))).toBeGreaterThan(titulo);
+  });
+
+  /**
+   * **La tarjeta no repinta la tipografía del precio: la delega.** Es la
+   * lección del defecto de 22.2 escrita como guardia — un `font-size` en el
+   * envoltorio no cambia lo que se ve y hace creer que sí.
+   */
+  it("no vuelve a declarar la tipografía del precio sobre el átomo", () => {
+    const precio = block(cardCss, "price");
+
+    expect(precio).not.toMatch(/font-size/);
+    expect(precio).not.toMatch(/font-family/);
+    expect(precio).not.toMatch(/font-weight/);
   });
 });
 
@@ -163,9 +184,23 @@ describe("ListingCard — la cuadrícula y sus reglas transversales", () => {
 
   it("no atenúa texto con opacity — el gris es --soft", () => {
     // Regla transversal 3: `opacity` atenúa también el borde y el fondo, y
-    // deja el contraste fuera de control.
+    // deja el contraste fuera de control. El gris del metadato lo afirma ahora
+    // `ListingMeta.test.tsx`, que es donde se declara desde la 22.3 — la
+    // aserción se mudó con su sujeto, no se reapuntó a otro.
     expect(cardCss).not.toMatch(/opacity\s*:/);
-    expect(block(cardCss, "meta")).toContain("color: var(--soft)");
+  });
+
+  /**
+   * **La tarjeta delega el título y el metadato, no los repinta.** Es la misma
+   * guardia que ya existe para `PublisherBadge`: así es como una regla probada
+   * deja de aplicarse en la pantalla siguiente.
+   */
+  it("reusa ListingTitle y ListingMeta en vez de declarar su propia tipografía", () => {
+    const source = readFileSync("components/molecules/ListingCard.tsx", "utf-8");
+
+    expect(source).toContain("ListingTitle");
+    expect(source).toContain("ListingMeta");
+    expect(cardCss).not.toMatch(/\.(title|meta)\s*\{/);
   });
 
   it("no ship*a* JavaScript de cliente", () => {

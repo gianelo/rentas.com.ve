@@ -90,14 +90,21 @@ En la estructura "Directorio compacto" el precio usa `--mono` (`--disp: var(--mo
 
 | Rol | Tamaño / peso / interlínea | Notas |
 |---|---|---|
-| Precio en lista | 15px / 700 / 1.15 | `--mono`, `font-variant-numeric: tabular-nums` |
-| Precio en ficha | 26px / 700 / 1.1 | `--mono`, `letter-spacing: -.02em` |
+| Precio en tarjeta | **16px móvil / 17px escritorio** / 700 / 1.15 | `--mono`, `tabular-nums`. `--card-price-fs` y `--card-price-fs-desktop` |
+| Precio en fila | 15px / 700 / 1.15 | `--fp`. La fila ya no está en el camino de lectura (ver la corrección de abajo) |
+| Precio en ficha | 30px móvil / 34px escritorio / 700 / 1.1 | `--mono`. La lámina móvil dibuja 30 y la especificación escribe 28 dos veces: **manda la lámina** (16.23) |
 | Título de página | 20px / 700 / 1.25 | |
-| Título de aviso (ficha) | 17px / 600 / 1.35 | `text-wrap: pretty` |
-| Título de aviso (lista) | 13px / 400 / 1.35 | recortado a 2 líneas (`max-height: 36px`) |
-| Cuerpo | 15px / 400 / 1.55 | ancho de lectura máx. 520px |
+| Título de aviso (ficha) | 17px móvil / 19px escritorio / 600 / 1.35 | `text-wrap: pretty` |
+| Título de aviso (lista) | 13px / 400 / 1.35 | `--card-title-fs` / `--ftw`. **El recorte a dos líneas es del contenedor, no del tipo** |
+| Cuerpo | 15px / 400 / 1.55 | ancho de lectura máx. 520px. La ficha y las pantallas que comparten `--ficha-body-lh` dibujan 1.6, y la lámina de escritorio de la ficha dibuja 16/1.65 — sin decidir, tarea 16.38 |
 | Metadato | 12px / 600 / 1.4 | color `--soft` |
 | Badge / etiqueta | 11px / 700 / 1.4 | `letter-spacing: .06em`, mayúsculas |
+
+**Un papel tipográfico se declara en un solo sitio** (2026-08-28, tareas 22.3 y 22.4). El metadato y el título de lista estaban escritos tres veces cada uno, y las copias ya habían empezado a discrepar: `/mis-avisos` dibujaba el metadato en 400 donde la cuadrícula lo dibujaba en 600, y el título al revés. Hoy los dibujan `components/atoms/ListingMeta.tsx` y `components/atoms/ListingTitle.tsx`, y que las dos pantallas coincidan **se mide en un navegador**, no se afirma leyendo una hoja.
+
+**El recorte del título es del contenedor.** La cuadrícula lo necesita —un título largo empuja los metadatos y desalinea la tarjeta vecina— y la lista apilada de `/mis-avisos` no: la lámina 14c la dibuja sin recortar. Por eso viaja como una bandera de quien dibuja (`clamp`) y no como parte del tipo.
+
+**Contradicción abierta, verificada y NO resuelta acá — requiere al fundador.** Las láminas nuevas dibujan la tipografía de la tarjeta más chica que lo que este documento declara: título **12,5px** a 360 y 13 a 1280 contra los 13 de la tabla, y metadato **10,5px** a 360 y 11 a 1280 en `--meta` (mono, peso 400) contra los 12 / 600 / `--sans` de la fila «Metadato». Bajarlos es un cambio visible en dos pantallas y no lo pidió ninguna tarea; lo que sí se hizo fue **dejar un solo sitio donde cambiarlos** el día que se decida.
 
 ### Espaciado
 
@@ -108,23 +115,35 @@ Escala: `4 · 8 · 12 · 16 · 24 · 32 · 48`. Nada fuera de esa escala.
 | `--rowpad` | `7px 12px` | Padding vertical/horizontal de fila de resultado |
 | `--gap` | `8px` | Separación entre miniatura y contenido |
 
-### Geometría de la fila de resultado
+### Geometría de la tarjeta de resultado
 
-| Token | Móvil | Escritorio |
+> **RESINCRONIZADO 2026-08-28 contra las láminas del 2026-08-25.** Este apartado describía una **fila** con miniatura al costado, y el producto dibuja una **cuadrícula de tarjetas** desde la 14.25 (PR #77). Lo que decía antes, y qué decisión lo cambió, está en «Lo que este documento decía y por qué cambió», al final.
+
+| Token | Móvil (lámina 6c) | Escritorio (lámina 7c) |
 |---|---|---|
-| `--tw` / `--th` (miniatura) | 44 × 34 px | — |
-| `--twd` / `--thd` (miniatura) | — | 64 × 48 px |
+| `--card-w` / `--card-w-desktop` (ancho de tarjeta) | 158 px | 254 px |
+| columnas de la cuadrícula | 2 | 4 |
+| `--card-gap` | 12 px | 12 px |
+| `--card-photo-ratio` (portada) | 4 / 3 | 4 / 3 |
 
-Alto de fila resultante: ~62px en móvil. **Nunca convertir la lista en cuadrícula de tarjetas** — con catálogo chico se ve vacío y baja la densidad.
+**La portada va por proporción y no por alto fijo:** las dos derivadas —`thumb` 160×120 y `card` 256×192— son 4:3, y la columna se encoge por debajo de 158 px en un teléfono angosto, donde un alto fijo deformaría la foto.
+
+**Sin foto no hay tarjeta.** Una fila sin miniatura se ve pobre; una tarjeta sin imagen se lee como *rota*, y quien la ve no culpa al aviso sino al sitio. El aviso sin portada se cuenta pero no se dibuja (F9).
+
+#### La miniatura de 44 × 34, y por qué sigue declarada
+
+`--tw`/`--th` (44 × 34) y `--twd`/`--thd` (64 × 48) siguen en el conjunto porque **siguen vistiendo dos superficies**: la fila de `/mis-avisos` y el subidor de fotos del paso 2 de publicar. Lo que ya no visten es el camino de lectura, que es la anatomía que este apartado describía.
+
+**Contradicción abierta, verificada y NO resuelta acá — requiere al fundador.** Ninguna de las nueve láminas dibuja una miniatura de 44 × 34, y la de `/mis-avisos` (artboards 14c y 14d) dibuja **74 × 56**, que no es ninguno de los dos pares. El código usa `--tw`/`--th`. No se cambió de oficio porque mover esa miniatura es un cambio visible que ninguna tarea pidió y ninguna decisión del fundador cubre.
 
 ### Layout de escritorio
 
 - Contenedor: 1100px centrado, dentro de viewport de 1280.
-- Barra lateral de filtros: 240px, `position: sticky; top: 24px`.
-- Columna de resultados: resto del ancho, `gap: 32px`.
-- Ficha: foto 640px + columna de datos de 420px fija y sticky.
+- **Sin barra lateral de filtros.** La lámina 7c lo escribe con todas las letras: *«Sin barra lateral: los filtros viven solo en el modal»*. Lo entregó la 14.33, **resuelta por el fundador el 2026-08-26 «en TODOS los anchos»**, y lo que la lista compró con ese ancho es la cuarta columna de la cuadrícula.
+- Columna de resultados: el ancho entero del contenedor.
+- Ficha: foto 640px + columna de datos de 420px fija y sticky. *(Los 328 px que la tabla §8 de la especificación de la ficha pone bajo «Escritorio» son el ancho útil del **teléfono**: la lámina de escritorio no dibuja ningún bloque de 328 y la móvil lo dibuja seis veces — medido, tarea 16.29.)*
 - Formularios: una sola columna de 600px.
-- Altura mínima de control: 36px en escritorio, 44px en móvil.
+- Altura mínima de control: **44px en las dos pantallas**. Era 36 en escritorio; **decidido por el fundador el 2026-08-27** (tarea 16.24) porque de los tres candidatos —36, los 40 de su especificación y 44— **sólo 44 alcanza WCAG 2.2 SC 2.5.5 (AAA)**. Los botones de acción miden 46 (`--action-h`), que es un valor propio y no una variante de éste.
 
 ## Jerarquía de botones
 
@@ -149,17 +168,21 @@ El badge **no** usa el color de acento: el contraste es relleno vs borde. Aparec
 
 **Propósito:** la pantalla del producto. El inquilino filtra por ciudad, zona y precio, y compara.
 
-**Layout móvil (360):** barra de marca 48px → fila de chips de filtro con scroll horizontal contenido, fondo `--bg` → conteo de resultados → filas de resultado → botón de paginación.
+**Layout móvil (360, lámina 6c):** barra de marca 60px con la **pastilla de búsqueda** dentro → miga de pan → título de la pantalla → conteo de resultados → fichas de filtro puesto, quitables de a una → **cuadrícula de dos columnas de 158px** → paginación.
 
-**Layout escritorio (1280):** barra 56px con logo y botón Publicar → contenedor 1100 en grid `240px 1fr` con gap 32. La barra lateral trae ciudad (dos opciones exclusivas), zona (checkboxes), rango de precio (dos campos), habitaciones (segmentado 1/2/3/4+) y el botón de acción.
+**Layout escritorio (1280, lámina 7c):** barra de 68px con marca, pastilla al centro y las acciones contra el borde → contenedor 1100, **sin barra lateral** → miga de pan, título, conteo → fichas de filtro puesto → **cuadrícula de cuatro columnas de 254px** → paginación. Los filtros viven sólo en el modal, que se abre desde la propia pastilla y **por dirección**, no por un manejador de clic.
 
-**Fila de resultado:** grid `[miniatura] 1fr`. En la columna de contenido, precio y badge de publicador comparten la primera línea (`justify-content: space-between`); debajo el título recortado a dos líneas; debajo los metadatos (`zona · N hab · N m²`). El precio va antes del título en el orden de lectura y con más peso visual.
+**Tarjeta de resultado:** portada 4:3 arriba, y debajo, en este orden de documento: placa de publicador, precio, título recortado a dos líneas, metadatos (`zona · N hab · N m²`). El precio va antes del título en el orden de lectura y con más peso visual. Un solo enlace por tarjeta —su nombre accesible es el título— y el área tocable se extiende a la tarjeta entera con un `::after`, porque dos líneas de texto no llegan a 44px de forma confiable y errarle en una cuadrícula de dos columnas abre el aviso de al lado.
 
-**Densidad:** lista densa, nunca grilla de tarjetas.
+**Densidad:** cuadrícula de tarjetas con portada. Ver la corrección de abajo — este documento decía lo contrario.
 
-> **Corrección medida.** Este documento decía "10 propiedades sobre el pliegue de 640px" como criterio de aceptación. No se sostiene contra el propio mockup: con la anatomía de fila de arriba (precio + título a dos líneas + metadatos) la fila mide ~90px, y con la barra, los chips y el conteo por encima entran **cinco**. El alto de la fila lo manda el texto, no la miniatura — por eso pasar de 96 × 72 a 44 × 34 casi no cambia cuántas entran; lo que cambia mucho es el peso transferido, que es la ganancia real de `compacto`.
+**Orden de la lista:** la lámina 7c dibuja **«Recientes ▾»** junto al conteo. **No está construido**: hoy el orden lo fija el adaptador de búsqueda y no se puede cambiar desde la pantalla. Queda como tarea 14.47, y con una consecuencia que no es cosmética — si el orden es parte de la dirección entra en `FILTER_KEYS`, porque la misma lista en otro orden es la misma página.
+
+> **Corrección medida, primera vuelta (2026-08-16).** Este documento decía "10 propiedades sobre el pliegue de 640px" como criterio de aceptación. No se sostenía contra el propio mockup: con la anatomía de fila de entonces entraban **cinco**. **El criterio implementado no fue un conteo sino una cota: la fila no supera 96px a 360px.** Un conteo se mueve con la tipografía del sistema, el alto del encabezado y el largo de un título — o sea, falla por razones que no son la regresión que quería detectar.
 >
-> **El criterio de aceptación implementado no es un conteo, es una cota: la fila no supera 96px a 360px.** Un conteo se mueve con la tipografía del sistema, el alto del encabezado y el largo de un título — o sea, falla por razones que no son la regresión que quería detectar. Si en algún momento se quieren más avisos por pantalla, hay que sacar una línea de texto, y eso es una decisión de producto sobre qué necesita decir un aviso para valer un toque.
+> **Corrección medida, segunda vuelta (2026-08-28): la fila ya no existe en el camino de lectura.** La reemplazó la tarjeta (14.25, PR #77) y la cuadrícula ganó una columna al irse la barra lateral (14.33). El criterio de aceptación de la densidad vuelve a ser un conteo, y esta vez a propósito, porque lo que se cuenta es una caja de alto fijo y no una de alto tipográfico: **4 avisos completos sobre el pliegue a 360 px y 6 a 1280** (tarea 14.29, todavía sin medir; lo que sí se mide hoy es que a 1280 la primera fila lleva cuatro tarjetas).
+>
+> **Lo que decide si la cuadrícula sobrevive sigue siendo el peso, no el gusto** (14.27). El argumento original de «fila y nunca cuadrícula» era el presupuesto de bytes: una cuadrícula de portadas de 158px gasta el margen que hoy queda entre la página y su tope de 150 KB. `budget:bundle` y Lighthouse son las que contestan, y hay que mirarlas antes de dar la cuadrícula por buena.
 
 **Paginación:** enlaces `GET`, no scroll infinito (requisito de "sin JS").
 
@@ -206,18 +229,45 @@ Es un formulario, no un embudo de cinco pasos. Paso 2 son las fotos (el único l
 
 **Propósito:** que quien publica vea el estado de sus avisos y renueve.
 
-**Cuatro estados:**
+**Cinco estados, y el estado NO es un badge:** es una **línea de metadato con color**, debajo de la de `zona · N hab · N m²`. Resincronizado 2026-08-28 contra los artboards 14c y 14d, que es donde se ve; este documento describía cuatro estados y una pastilla.
 
-| Estado | Badge | Acción en la fila |
-|---|---|---|
-| Activa | borde `--strong`, texto `--soft` + "vence en 22 días" | ninguna |
-| Vence pronto | fondo `--warn-bg`, borde y texto `--warn` + "en 3 días" | **Renovar 30 días** (acción) |
-| Vencida | borde `--strong`, texto `--soft`, precio y título atenuados a `--soft` | **Volver a publicar** (neutro) |
-| Oculta | fondo `--err-bg`, borde y texto `--err` + "por reportes" | ninguna |
+| Estado | Línea de estado | Recuadro de la fila | Acción en la fila |
+|---|---|---|---|
+| Activa | `--soft` — "Activa · vence en 22 días" | neutro | ninguna |
+| Vence pronto | `--warn` — "Vence en 3 días" | fondo `--warn-bg`, borde `--warn` | **Renovar 30 días** (acción) |
+| Vencida | `--soft` — "Vencida el 2 de agosto", con precio y título atenuados a `--soft` | neutro | **Volver a publicar** (neutro) |
+| Oculta | `--err` — "Oculta por reportes" | fondo `--err-bg`, borde `--err` | ninguna |
+| **Borrador** | `--ink` — "Borrador · faltan fotos" | **borde punteado `--strong`**, y el marcador de foto también punteado | **Subir fotos** / **Publicar** |
 
 El color aparece solo en los dos estados que piden algo. Activa y vencida son neutras.
 
+**El borrador se distingue por punteado y no por un color nuevo** — la anotación al pie de 14d lo dice: el punteado se lee en blanco y negro sin robarle urgencia al `--warn` ni al `--err`. Es el quinto estado porque la importación de cartera crea avisos sin fotos, y fotografiar cincuenta propiedades toma una semana mientras importarlas toma un minuto: por eso los borradores van primero y con su cuenta, no escondidos al pie de una lista de cincuenta.
+
+**Las fichas de filtro por estado** (una por estado, más «Todos», con su conteo) usan el **nivel 2 de la jerarquía de botones** cuando están elegidas: relleno `--tint`, borde y texto `--accent`. **Decidido por el fundador el 2026-08-28**, después de que la pantalla las dibujara con relleno `--tint` pero borde `--strong` y texto `--ink` — el mismo componente pintado con dos idiomas según la pantalla.
+
 **Layout escritorio:** grid `120px 1fr 200px` — la acción vive en su propia columna, alineada a la derecha.
+
+### 7. La pastilla de búsqueda y la barra que la lleva
+
+**Faltaba entera en este documento**, y no es una pantalla sino el componente que aparece en casi todas: se agregó el 2026-08-28 al resincronizar contra las láminas del 2026-08-25, donde tiene su propio artboard (14i).
+
+**Tres piezas dentro de un mismo borde y sin divisores:** el texto, el control de filtro y la lupa. La pastilla es un `<form method="get">` de verdad — sin script sigue buscando, y las sugerencias al escribir son una mejora encima, nunca el mecanismo.
+
+| Estado | Qué dibuja |
+|---|---|
+| vacía | "¿En qué zona buscás?" y la lupa. **El control de filtro no aparece**: sin búsqueda no hay nada que filtrar |
+| con zona | el nombre de la zona y, en la segunda línea, el conteo — "9 avisos" |
+| con filtros puestos | la etiqueta del control pasa a "3 filtros" en `--accent`. **Sin badge: la palabra dice el estado** |
+
+**En móvil el filtro pierde la palabra, nunca el número:** a 360 px "Filtros" le robaba 44 px al nombre de la zona, y el nombre es contenido.
+
+**El conteo de la pastilla NO es el del engranaje.** Es el del engranaje **menos la zona**, porque desde la resolución de ubicación del fundador la ubicación vive sólo en la ruta y ya no es un filtro del panel — la lámina 7c lo dibuja: con dos zonas, precio, habitaciones y dueños puestos, la pastilla dice «3 filtros», no 4.
+
+**Está en cuatro pantallas y en la ficha NO**, acotado por el fundador el 2026-08-25 (*«seguí el diseño, que fue lo que se decidió acá»*): ninguna de las dos láminas de la ficha la dibuja, y una ficha no es una búsqueda — no hay nada que filtrar ni conteo que resumir. La ficha lleva en su lugar el enlace de vuelta.
+
+**La barra que la contiene** es una sola con puntos de quiebre, nunca dos implementaciones: `--nav-h` 60px en móvil y `--nav-h-desktop` 68px, en grid `250px 1fr 250px` a 1280 con la pastilla en la columna del centro y las acciones contra el borde. En la ficha a 1280 la marca **no cede**: el `←` toma un tercer slot y la marca se corre al centro; a 360 sí cede, porque no caben tres. Las dos láminas tienen razón y describen anchos distintos (14.40, resuelto por el fundador el 2026-08-25).
+
+**Publicar depende de la sesión** (14.38, resuelto por el fundador el 2026-08-25): sin sesión queda afuera y en acento, que es cuando hay que provocar; con sesión se muda a la primera fila del menú de cuenta.
 
 ### 6. Importar cartera
 
@@ -335,9 +385,35 @@ Los dos ejes se dejan tokenizados por dos razones prácticas, más allá de pode
 
 Las líneas punteadas horizontales con la etiqueta "640" son guías de diseño que marcan el pliegue del móvil, y las listas en monoespaciado bajo cada pantalla son notas para el diseñador. Ninguna de las dos es parte de la interfaz.
 
+## Lo que este documento decía y por qué cambió
+
+**El sistema se escribió antes que las pantallas, y ése es el origen de todo lo de abajo.** Cuando arrancó el proyecto no había láminas: esta anatomía de componentes se redactó como **hipótesis**. Las nueve pantallas llegaron el **2026-08-25** y contestaron distinto en varios puntos. Nadie rompió el sistema — el sistema se escribió primero.
+
+Se deja escrito porque dentro de tres meses alguien va a leer «nunca una cuadrícula» en una versión vieja, o en un `.dc.html` histórico, y va a creer que se violó una regla.
+
+| Decía | Dice | Qué lo cambió |
+|---|---|---|
+| «Nunca convertir la lista en cuadrícula de tarjetas» y «lista densa, nunca grilla de tarjetas» | Cuadrícula de tarjetas con portada: 2 columnas de 158 en móvil, 4 de 254 en escritorio | Las láminas 6c y 7c del **2026-08-25**, entregadas por la 14.25 (PR #77) y la 14.33. El argumento original era el **peso**, no el gusto, y sigue vivo como la tarea 14.27 |
+| Barra lateral de filtros de 240px, `sticky` | Sin barra lateral: los filtros viven sólo en el modal, **en todos los anchos** | Lámina 7c, y **el fundador el 2026-08-26** cerrando la 14.33. La cuarta columna de la cuadrícula es exactamente lo que se compró con ese ancho |
+| Fila de resultado con miniatura de 44 × 34 | La fila no está en el camino de lectura. `--tw`/`--th` siguen vistiendo `/mis-avisos` y el subidor de fotos | La misma cuadrícula. **Ninguna lámina nueva dibuja 44 × 34**, y la de `/mis-avisos` dibuja 74 × 56 — contradicción abierta, anotada arriba |
+| `/mis-avisos`: cuatro estados, cada uno un **badge** | Cinco estados, y el estado es una **línea de metadato con color** | Artboards 14c y 14d. El quinto es **Borrador**, que la importación de cartera hace inevitable |
+| Nada sobre la pastilla de búsqueda | Su propia sección, con sus tres estados | Artboard 14i, más las acotaciones del fundador del **2026-08-25** (14.30b, 14.38, 14.40) |
+| «No hay iconos» | Conjunto **cerrado** de dos SVG en línea: las tres rayas del filtro y la lupa | **RESUELTO por el fundador el 2026-08-25** (14.37). Ganó la lámina, y el sistema quedó con las condiciones escritas |
+| Altura mínima de control: 36px en escritorio | 44px en las dos pantallas | **Decidido por el fundador el 2026-08-27** (16.24): es el único de los tres candidatos que alcanza WCAG 2.2 SC 2.5.5 (AAA) |
+| Precio en ficha 26px | 30px en móvil, 34px en escritorio | Lámina móvil de la ficha contra la tabla §8 de la especificación, que escribe 28 dos veces. **Manda la lámina** (16.23) |
+| Precio en lista 15px, un solo valor | Precio **en tarjeta** 16/17; el 15 es el de la fila | Láminas 6c y 7c. Las dos tienen razón porque describen anchos distintos, la misma resolución que la 14.40 usó para el nav |
+
+**El orden de autoridad, fijado por el fundador:** manda la lámina, y donde una decisión posterior del fundador corrigió una lámina, manda la decisión. Las dos direcciones ya ocurrieron: *«la lámina de móvil tenía el bug — el panel NO lleva ciudad ni zona»* (14.36) corrigió una lámina, y *«seguí el diseño, que fue lo que se decidió acá»* (14.40) corrigió un texto del plan.
+
+**Lo que queda abierto y NO se resolvió acá** — cada uno necesita al fundador, y ninguno se decidió en silencio:
+
+1. La miniatura de `/mis-avisos`: el código usa `--tw`/`--th` (44 × 34) y las láminas 14c/14d dibujan 74 × 56.
+2. La tipografía de la tarjeta: las láminas dibujan título 12,5/13 y metadato 10,5/11 en `--meta`, contra los 13 y 12/600/`--sans` que declara la tabla de arriba.
+3. La franja de 768 a 1099 px no está dibujada en ninguna lámina (tarea 20.10). Los nueve artboards son 360 o 1280, y es justo donde se rompe una cuadrícula.
+
 ## Cómo se evalúa la implementación
 
-1. ¿La fila de resultado se mantiene por debajo de 96px de alto a 360px? (ver la corrección de densidad más arriba — la pregunta original era un conteo de avisos sobre el pliegue, y ese conteo es un proxy frágil)
+1. ¿Entran cuatro avisos completos sobre el pliegue a 360px y seis a 1280? (ver la corrección de densidad, segunda vuelta: la cota de 96px medía la **fila**, que ya no está en el camino de lectura, y una tarjeta es una caja de alto fijo donde el conteo vuelve a ser una pregunta honesta)
 2. ¿Se distingue dueño de inmobiliaria en blanco y negro?
 3. ¿El precio se lee antes que el título?
 4. ¿Entra en el presupuesto de bytes?

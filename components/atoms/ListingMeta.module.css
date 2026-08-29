@@ -1,0 +1,14 @@
+/* SISTEMA.md "Metadato": 12px / 600 / 1.4, color `--soft`. Un solo sitio
+   donde se declara — hasta la 22.3 eran tres, y la tercera
+   (`app/mis-avisos/mis-avisos.module.css`) ya había perdido `font-family`,
+   `font-weight` y `line-height` sin que nada se pusiera rojo. */
+.meta {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  font-weight: var(--meta-fw);
+  line-height: 1.4;
+  /* Nunca `opacity`: atenuar así se lleva puesto el borde y el fondo, y deja
+     el contraste fuera de control. El gris del sistema es --soft. */
+  color: var(--soft);
+}

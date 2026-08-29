@@ -44,41 +44,20 @@
   padding: 8px 10px 10px;
 }
 
+/* **Sólo la caja, nunca la tipografía.** Todo lo que este bloque declaraba
+   —familia, tamaño, peso, interlínea, color, `tabular-nums`— lo pisaba el
+   `<span>` del átomo `Price` que vive adentro, así que era una declaración que
+   no dibujaba nada y una prueba de hoja que no podía fallar. La tarjeta elige
+   qué token alimenta al átomo y el átomo lo dibuja; el resto es del átomo. */
 .price {
   margin: 2px 0 0;
-  font-family: var(--disp);
-  font-size: var(--card-price-fs);
-  font-weight: var(--fpw);
-  line-height: 1.15;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
+  --price-fs: var(--card-price-fs);
 }
 
-.title {
-  margin: 0;
-  font-family: var(--sans);
-  font-size: var(--card-title-fs);
-  font-weight: var(--ftw);
-  line-height: 1.35;
-  color: var(--ink);
-  /* Dos líneas y corta. Un título largo empujaría los metadatos fuera de la
-     tarjeta de al lado y rompería la alineación de la fila entera. */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.meta {
-  margin: 0;
-  font-family: var(--sans);
-  font-size: var(--meta-fs);
-  font-weight: var(--meta-fw);
-  line-height: 1.4;
-  /* Nunca `opacity`: atenuar así se lleva puesto el borde y el fondo, y deja
-     el contraste fuera de control. El gris del sistema es --soft. */
-  color: var(--soft);
-}
+/* El título y los metadatos ya no se declaran acá: los dibujan `ListingTitle`
+   y `ListingMeta` (22.3/22.4). Eran dos de las tres copias del mismo papel
+   tipográfico, y la tercera ya había discrepado. El recorte a dos líneas
+   viaja con el átomo como `clamp`, porque es del contenedor y no del tipo. */
 
 .link {
   color: inherit;
@@ -112,5 +91,12 @@
   .grid {
     grid-template-columns: repeat(4, minmax(0, var(--card-w-desktop)));
     justify-content: start;
+  }
+
+  /* 17px acá y 16 en el teléfono: las dos láminas dibujan números distintos
+     porque describen anchos distintos (6c contra 7c), igual que el nav de la
+     14.40. Un solo componente con puntos de quiebre, nunca dos. */
+  .price {
+    --price-fs: var(--card-price-fs-desktop);
   }
 }

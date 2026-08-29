@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { AppLink } from "../../components/atoms/AppLink";
+import { ListingMeta } from "../../components/atoms/ListingMeta";
+import { ListingTitle } from "../../components/atoms/ListingTitle";
 import { Price } from "../../components/atoms/Price";
 import { Container } from "../../components/layout/Container";
 import type { SearchPillProps } from "../../components/molecules/SearchPill";
@@ -231,11 +233,15 @@ function FichaDeAviso({
       </div>
       <div className={styles.cuerpo}>
         <Price usd={card.priceUsd} />
-        <h2 className={styles.avisoTitulo}>{card.title}</h2>
-        <p className={styles.meta}>
+        {/* El mismo título y el mismo metadato que dibuja la cuadrícula, y por
+            los mismos átomos (22.3/22.4): esta hoja tenía su propia copia y
+            ya había perdido `font-family`, `font-weight` y `line-height`, así
+            que la misma frase salía en dos pesos según la pantalla. */}
+        <ListingTitle level={2}>{card.title}</ListingTitle>
+        <ListingMeta>
           {card.zoneName} · {card.rooms} hab · {card.areaM2} m²
           {card.externalReference === null ? null : ` · ref. ${card.externalReference}`}
-        </p>
+        </ListingMeta>
         <p className={styles.estado}>{etiquetaDeEstado(card)}</p>
 
         {card.state === "draft" ? (
