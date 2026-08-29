@@ -49,8 +49,22 @@
   text-decoration: none;
 }
 
+/* **El estado elegido, con el idioma que el sistema ya tiene para una
+   selección** — nivel 2 de la jerarquía de botones de SISTEMA.md: relleno
+   `--tint`, borde y texto `--accent`. Antes era relleno `--tint` con el borde
+   `--strong` y el texto `--ink` heredados de `.ficha`, o sea el mismo
+   componente pintado con dos idiomas según la pantalla. **Resuelto por el
+   fundador el 2026-08-28: vale el idioma del inicio**, que es el que
+   `home.module.css .chipSelected` y `FilterChips.module.css .chip` ya usaban
+   — dos contra uno, y el que coincide con el sistema.
+
+   Estructural antes que cromático: el borde teñido y el relleno se distinguen
+   en escala de grises, que es el criterio que la placa de publicador ya cumple
+   del otro lado del producto. */
 .ficha[aria-current="page"] {
+  border-color: var(--accent);
   background: var(--tint);
+  color: var(--accent);
 }
 
 .fichaCuenta {

@@ -668,7 +668,7 @@ test.describe("el panel de filtros a los dos anchos (14.32)", () => {
  * meses pintando 15px con el token declarando 17 y la lámina dibujando 16,
  * con el gate de hoja en verde todo el tiempo.
  */
-test.describe("los átomos de la tarjeta (21.8-21.10)", () => {
+test.describe("los átomos de la lista y la ficha de selección (21.8-21.11)", () => {
   /**
    * **21.8 — el precio de la tarjeta se DIBUJA con el token que declara.**
    *
@@ -797,5 +797,50 @@ test.describe("los átomos de la tarjeta (21.8-21.10)", () => {
     expect(tarjeta["font-size"]).toBe("13px");
     expect(tarjeta["font-weight"]).toBe("400");
     expect(tarjeta["line-height"]).toBe("17.55px");
+  });
+
+  /**
+   * **21.11 — el estado elegido de una ficha se pinta con UN idioma.**
+   *
+   * Dos pantallas dibujaban el mismo componente —un enlace que elige una
+   * opción de un conjunto, con una marcada— y lo pintaban distinto: el inicio
+   * con relleno `--tint`, borde `--accent` y texto `--accent`, que es el nivel
+   * 2 de la jerarquía de botones de SISTEMA.md ("Selección / estado");
+   * `/mis-avisos` con el mismo relleno pero borde `--strong` y texto `--ink`.
+   * Resuelto por el fundador el 2026-08-28: vale el idioma del inicio.
+   *
+   * Se compara el color **calculado**, no el declarado, y las tres
+   * propiedades a la vez: comparar sólo el relleno habría estado verde desde
+   * antes, porque el relleno era la única que ya coincidía.
+   */
+  test("21.11: la ficha elegida se pinta igual en el inicio y en /mis-avisos", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1400 });
+    await page.goto("/measure");
+
+    const pintura = (locator: import("@playwright/test").Locator) =>
+      locator.evaluate((node) => {
+        const calculado = getComputedStyle(node);
+        return {
+          background: calculado.backgroundColor,
+          borde: calculado.borderTopColor,
+          texto: calculado.color,
+        };
+      });
+
+    const inicio = await pintura(page.getByTestId("chips-inicio").getByText("Distrito Capital"));
+    const misAvisos = await pintura(
+      page.getByTestId("chips-mis-avisos").locator('[aria-current="page"]'),
+    );
+
+    console.log(`[21.11] inicio=${JSON.stringify(inicio)}`);
+    console.log(`[21.11] mis-avisos=${JSON.stringify(misAvisos)}`);
+    expect(misAvisos).toEqual(inicio);
+    // Y es el idioma del nivel 2, con sus tres partes: `--tint` (#E3F6F5),
+    // `--accent` (#272343) en el borde y `--accent` en el texto.
+    expect(inicio).toEqual({
+      background: "rgb(227, 246, 245)",
+      borde: "rgb(39, 35, 67)",
+      texto: "rgb(39, 35, 67)",
+    });
   });
 });

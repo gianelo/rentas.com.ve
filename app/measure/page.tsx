@@ -31,6 +31,7 @@ import { SearchFilters } from "../../components/molecules/SearchFilters";
 import { Nav } from "../../components/organisms/Nav";
 import { SearchPanel } from "../../components/organisms/SearchPanel";
 import fichaStyles from "../alquiler/[ciudad]/[zona]/[slug]/ficha.module.css";
+import homeStyles from "../home.module.css";
 import misAvisosStyles from "../mis-avisos/mis-avisos.module.css";
 import { PhotoUploader } from "../publicar/fotos/PhotoUploader";
 import { PublishStep, type RailEntry } from "../publicar/PublishStep";
@@ -217,6 +218,38 @@ export default function MeasureHarnessPage() {
 
             Sólo la carcasa: nada del borrador, su formulario ni su Server
             Action — el arnés dibuja y no consulta. */}
+        {/* **Las dos fichas de selección, juntas para poder compararlas**
+            (21.11). Son el mismo componente dibujado dos veces —un enlace que
+            elige una opción de un conjunto, con una marcada— y hasta acá el
+            estado elegido se pintaba con dos idiomas distintos. Que digan lo
+            mismo es una medida y no una lectura, así que las dos viven en la
+            misma página. */}
+        <div data-testid="chips-inicio">
+          <ul className={homeStyles.chips}>
+            <li>
+              <span className={homeStyles.chipSelected}>Distrito Capital</span>
+            </li>
+            <li>
+              <span className={homeStyles.chip}>Maracaibo</span>
+            </li>
+          </ul>
+        </div>
+
+        <div data-testid="chips-mis-avisos">
+          <ul className={misAvisosStyles.fichas}>
+            <li>
+              <span className={misAvisosStyles.ficha} aria-current="page">
+                Todos <span className={misAvisosStyles.fichaCuenta}>3</span>
+              </span>
+            </li>
+            <li>
+              <span className={misAvisosStyles.ficha}>
+                Activas <span className={misAvisosStyles.fichaCuenta}>2</span>
+              </span>
+            </li>
+          </ul>
+        </div>
+
         <div data-testid="mis-avisos-harness">
           <ul className={misAvisosStyles.lista}>
             <li className={misAvisosStyles.aviso} data-estado="active">
