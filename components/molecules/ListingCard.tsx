@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { AppLink } from "../atoms/AppLink";
+import { ListingMeta } from "../atoms/ListingMeta";
+import { ListingTitle } from "../atoms/ListingTitle";
 import { Price } from "../atoms/Price";
 import { PublisherBadge } from "../atoms/PublisherBadge";
 import styles from "./ListingCard.module.css";
@@ -69,7 +71,7 @@ export function ListingCard({
         <p className={styles.price}>
           <Price usd={priceUsd} />
         </p>
-        <h3 className={styles.title}>
+        <ListingTitle level={3} clamp>
           {/* Un solo enlace por tarjeta, y su nombre accesible es el título.
               La foto no lleva otro `<AppLink>` al mismo destino: serían dos paradas
               para un solo aviso al tabular. El área tocable la extiende
@@ -79,10 +81,10 @@ export function ListingCard({
           <AppLink className={styles.link} href={href}>
             {title}
           </AppLink>
-        </h3>
-        <p className={styles.meta}>
+        </ListingTitle>
+        <ListingMeta>
           {zone} · {rooms} hab · {areaM2} m²
-        </p>
+        </ListingMeta>
       </div>
     </article>
   );

@@ -17,6 +17,9 @@ import {
 import type { PublicationZoneOption } from "@/modules/listing-publication/domain/zone-search";
 import { buildSearchPanel } from "@/modules/listing-search/domain/search-panel";
 import { ActionButton, NeutralButton, SelectionButton } from "../../components/atoms/buttons";
+import { ListingMeta } from "../../components/atoms/ListingMeta";
+import { ListingTitle } from "../../components/atoms/ListingTitle";
+import { Price } from "../../components/atoms/Price";
 import { Container } from "../../components/layout/Container";
 import { DetailSplit } from "../../components/layout/DetailSplit";
 import { FormShell } from "../../components/layout/FormShell";
@@ -28,6 +31,7 @@ import { SearchFilters } from "../../components/molecules/SearchFilters";
 import { Nav } from "../../components/organisms/Nav";
 import { SearchPanel } from "../../components/organisms/SearchPanel";
 import fichaStyles from "../alquiler/[ciudad]/[zona]/[slug]/ficha.module.css";
+import misAvisosStyles from "../mis-avisos/mis-avisos.module.css";
 import { PhotoUploader } from "../publicar/fotos/PhotoUploader";
 import { PublishStep, type RailEntry } from "../publicar/PublishStep";
 import publishStyles from "../publicar/publish-page.module.css";
@@ -202,6 +206,31 @@ export default function MeasureHarnessPage() {
               </li>
             ))}
           </ListingGrid>
+        </div>
+
+        {/* **La fila de `/mis-avisos`, al lado de la tarjeta y a propósito.**
+            Las dos dibujan el mismo aviso con la misma anatomía —precio,
+            título de lista, metadatos— y hasta la 21.9/21.10 lo hacían con
+            tres copias del mismo CSS que ya habían empezado a discrepar. Que
+            digan lo mismo es una medida, no una lectura, así que las dos
+            tienen que estar en la misma página para poder compararlas.
+
+            Sólo la carcasa: nada del borrador, su formulario ni su Server
+            Action — el arnés dibuja y no consulta. */}
+        <div data-testid="mis-avisos-harness">
+          <ul className={misAvisosStyles.lista}>
+            <li className={misAvisosStyles.aviso} data-estado="active">
+              <div className={misAvisosStyles.miniatura} aria-hidden="true" />
+              <div className={misAvisosStyles.cuerpo}>
+                <Price usd={450} />
+                <ListingTitle level={2}>
+                  Apartamento 2 habitaciones con puesto de estacionamiento
+                </ListingTitle>
+                <ListingMeta>Chacao · 2 hab · 78 m²</ListingMeta>
+                <p className={misAvisosStyles.estado}>Activa · vence en 22 días</p>
+              </div>
+            </li>
+          </ul>
         </div>
       </Container>
 

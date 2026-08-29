@@ -714,4 +714,88 @@ test.describe("los átomos de la tarjeta (21.8-21.10)", () => {
       expect(medido).toBe(esperado);
     });
   }
+
+  /**
+   * **21.9 / 21.10 — el metadato y el título de lista dicen lo mismo en las dos
+   * pantallas que los dibujan.**
+   *
+   * Antes de esto había tres copias de la regla de metadato —`ListingCard`,
+   * `ResultRow` y `/mis-avisos`— y la tercera ya había perdido `font-family`,
+   * `font-weight` y `line-height` sin que nada se pusiera rojo. El título de
+   * lista tenía dos consumidores vivos que **ya discrepaban**: uno en
+   * `--ftw` recortado a dos líneas, el otro en `--ficha-title-fw` y sin
+   * recorte.
+   *
+   * Se comparan los estilos **calculados por el navegador**, no los declarados:
+   * una hoja puede declarar lo correcto y dibujar otra cosa, que es exactamente
+   * lo que pasó con el precio (21.8). Lo que NO se compara es el recorte a dos
+   * líneas — eso es del contenedor y no del papel de tipografía: la cuadrícula
+   * lo necesita para que dos tarjetas de al lado alineen, y una lista apilada
+   * no.
+   */
+  const PAPEL_TIPOGRAFICO = [
+    "font-family",
+    "font-size",
+    "font-weight",
+    "line-height",
+    "color",
+  ] as const;
+
+  async function papel(locator: import("@playwright/test").Locator) {
+    return locator.evaluate(
+      (node, props) => {
+        const calculado = getComputedStyle(node);
+        return Object.fromEntries(props.map((prop) => [prop, calculado.getPropertyValue(prop)]));
+      },
+      PAPEL_TIPOGRAFICO as unknown as string[],
+    );
+  }
+
+  test("21.9: el metadato se dibuja igual en la tarjeta y en /mis-avisos", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1400 });
+    await page.goto("/measure");
+
+    const tarjeta = await papel(
+      page.getByTestId("listing-grid-harness").getByText("Chacao · 2 hab · 78 m²").first(),
+    );
+    const misAvisos = await papel(
+      page.getByTestId("mis-avisos-harness").getByText("Chacao · 2 hab · 78 m²").first(),
+    );
+
+    console.log(`[21.9] tarjeta=${JSON.stringify(tarjeta)}`);
+    console.log(`[21.9] mis-avisos=${JSON.stringify(misAvisos)}`);
+    expect(misAvisos).toEqual(tarjeta);
+    // Y el papel es el que SISTEMA.md llama "Metadato": 12px / 600 / 1.4, gris
+    // `--soft`. Fijado con números para que converger hacia el valor
+    // equivocado no cuente como converger.
+    expect(tarjeta["font-size"]).toBe("12px");
+    expect(tarjeta["font-weight"]).toBe("600");
+    expect(tarjeta["line-height"]).toBe("16.8px");
+  });
+
+  test("21.10: el título de lista se dibuja igual en la tarjeta y en /mis-avisos", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 1400 });
+    await page.goto("/measure");
+
+    const tarjeta = await papel(
+      page.getByTestId("listing-grid-harness").getByText("Apartamento 2 hab con puesto 1").first(),
+    );
+    const misAvisos = await papel(
+      page
+        .getByTestId("mis-avisos-harness")
+        .getByText("Apartamento 2 habitaciones con puesto de estacionamiento")
+        .first(),
+    );
+
+    console.log(`[21.10] tarjeta=${JSON.stringify(tarjeta)}`);
+    console.log(`[21.10] mis-avisos=${JSON.stringify(misAvisos)}`);
+    expect(misAvisos).toEqual(tarjeta);
+    // La lámina 7c dibuja el título de la tarjeta en 13px / 1.35 y **sin peso
+    // declarado**, o sea 400 — que es `--ftw`, no `--ficha-title-fw` (600).
+    expect(tarjeta["font-size"]).toBe("13px");
+    expect(tarjeta["font-weight"]).toBe("400");
+    expect(tarjeta["line-height"]).toBe("17.55px");
+  });
 });

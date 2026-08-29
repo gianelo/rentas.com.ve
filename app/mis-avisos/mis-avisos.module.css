@@ -115,19 +115,11 @@
   min-inline-size: 0;
 }
 
-.avisoTitulo {
-  margin: 0;
-  color: var(--ink);
-  font-size: var(--card-title-fs);
-  font-weight: var(--ficha-title-fw);
-  line-height: var(--ficha-body-lh);
-}
-
-.meta {
-  margin: 0;
-  color: var(--soft);
-  font-size: var(--meta-fs);
-}
+/* El título del aviso y su línea de metadatos los dibujan ahora `ListingTitle`
+   y `ListingMeta` (21.9/21.10). Lo que había acá era la **tercera** copia del
+   mismo papel tipográfico y la que ya había discrepado: sin `font-family`, sin
+   `font-weight` y sin `line-height`, o sea la misma frase en 400 donde la
+   cuadrícula la dibujaba en 600. Medido en un navegador antes de tocar nada. */
 
 .estado {
   margin: 4px 0 0;

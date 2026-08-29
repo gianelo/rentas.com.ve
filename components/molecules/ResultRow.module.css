@@ -41,28 +41,11 @@
   gap: 8px;
 }
 
-.title {
-  margin: 0;
-  font-family: var(--sans);
-  font-size: var(--ft);
-  font-weight: var(--ftw);
-  line-height: 1.35;
-  color: var(--ink);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  max-height: var(--tclamp);
-}
-
-.meta {
-  margin: 0;
-  font-family: var(--sans);
-  font-size: var(--meta-fs);
-  font-weight: var(--meta-fw);
-  line-height: 1.4;
-  color: var(--soft);
-}
+/* El título y los metadatos los dibujan `ListingTitle` y `ListingMeta`
+   (21.9/21.10). Esta fila **no la ve ningún visitante desde la 14.25** —la
+   cuadrícula la reemplazó y sus únicos consumidores son el arnés de medición y
+   su propia prueba—, y aun así entra en la promoción: es la que 1b.10/1b.11/
+   1b.12 miden, y un arnés que mide una copia privada no mide el producto. */
 
 /* The whole row is the target, but only the title carries the link: a row
    wrapped in an anchor makes every word of metadata sound like a destination

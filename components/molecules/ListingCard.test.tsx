@@ -71,7 +71,6 @@ describe("ListingCard — el precio manda", () => {
   it("declara el precio en un cuerpo mayor que el del título, en los dos anchos", () => {
     // El enganche, no un `font-size`: el átomo es el que dibuja (ver 21.8).
     expect(block(cardCss, "price")).toContain("--price-fs: var(--card-price-fs)");
-    expect(block(cardCss, "title")).toContain("var(--card-title-fs)");
 
     const titulo = Number.parseFloat(tokenValue("--card-title-fs"));
     expect(Number.parseFloat(tokenValue("--card-price-fs"))).toBeGreaterThan(titulo);
@@ -86,9 +85,9 @@ describe("ListingCard — el precio manda", () => {
   it("no vuelve a declarar la tipografía del precio sobre el átomo", () => {
     const precio = block(cardCss, "price");
 
-    expect(precio).not.toContain("font-size:");
-    expect(precio).not.toContain("font-family:");
-    expect(precio).not.toContain("font-weight:");
+    expect(precio).not.toMatch(/font-size/);
+    expect(precio).not.toMatch(/font-family/);
+    expect(precio).not.toMatch(/font-weight/);
   });
 });
 
@@ -185,9 +184,23 @@ describe("ListingCard — la cuadrícula y sus reglas transversales", () => {
 
   it("no atenúa texto con opacity — el gris es --soft", () => {
     // Regla transversal 3: `opacity` atenúa también el borde y el fondo, y
-    // deja el contraste fuera de control.
+    // deja el contraste fuera de control. El gris del metadato lo afirma ahora
+    // `ListingMeta.test.tsx`, que es donde se declara desde la 21.9 — la
+    // aserción se mudó con su sujeto, no se reapuntó a otro.
     expect(cardCss).not.toMatch(/opacity\s*:/);
-    expect(block(cardCss, "meta")).toContain("color: var(--soft)");
+  });
+
+  /**
+   * **La tarjeta delega el título y el metadato, no los repinta.** Es la misma
+   * guardia que ya existe para `PublisherBadge`: así es como una regla probada
+   * deja de aplicarse en la pantalla siguiente.
+   */
+  it("reusa ListingTitle y ListingMeta en vez de declarar su propia tipografía", () => {
+    const source = readFileSync("components/molecules/ListingCard.tsx", "utf-8");
+
+    expect(source).toContain("ListingTitle");
+    expect(source).toContain("ListingMeta");
+    expect(cardCss).not.toMatch(/\.(title|meta)\s*\{/);
   });
 
   it("no ship*a* JavaScript de cliente", () => {

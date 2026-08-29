@@ -1,0 +1,24 @@
+/* El título de un aviso **dentro de una lista** — SISTEMA.md "Título de aviso
+   (lista)": 13px / 400 / 1.35. No es el `<h1>` de la ficha (17/19px, 600) ni
+   el pie del visor de fotos: son papeles distintos, y fundirlos es cómo el
+   `<h1>` del inicio terminó agarrando `--fpb` (ver `src/styles/tokens.css`). */
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--card-title-fs);
+  font-weight: var(--ftw);
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+/* **El recorte es del contenedor, no del papel.** La cuadrícula lo necesita
+   —un título largo empuja los metadatos y desalinea la tarjeta de al lado— y
+   una lista apilada no: la lámina 14c dibuja el título de `/mis-avisos` sin
+   recortar. Por eso viaja como una decisión declarada por quien dibuja y no
+   como parte del tipo. */
+.clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

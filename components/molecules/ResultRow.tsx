@@ -1,4 +1,6 @@
 import { AppLink } from "../atoms/AppLink";
+import { ListingMeta } from "../atoms/ListingMeta";
+import { ListingTitle } from "../atoms/ListingTitle";
 import { Price } from "../atoms/Price";
 import { PublisherBadge } from "../atoms/PublisherBadge";
 import styles from "./ResultRow.module.css";
@@ -57,7 +59,7 @@ export function ResultRow({
           <Price usd={priceUsd} />
           <PublisherBadge publisherType={publisherType} />
         </div>
-        <h3 className={styles.title}>
+        <ListingTitle level={3} clamp>
           {href ? (
             <AppLink className={styles.link} href={href}>
               {title}
@@ -65,12 +67,12 @@ export function ResultRow({
           ) : (
             title
           )}
-        </h3>
-        <p className={styles.meta}>
+        </ListingTitle>
+        <ListingMeta>
           {zone}
           {city ? <span className={styles.wide}> · {city}</span> : null} · {rooms} hab · {areaM2} m²
           {ageLabel ? <span className={styles.wide}> · {ageLabel}</span> : null}
-        </p>
+        </ListingMeta>
       </div>
     </article>
   );

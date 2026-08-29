@@ -54,31 +54,10 @@
   --price-fs: var(--card-price-fs);
 }
 
-.title {
-  margin: 0;
-  font-family: var(--sans);
-  font-size: var(--card-title-fs);
-  font-weight: var(--ftw);
-  line-height: 1.35;
-  color: var(--ink);
-  /* Dos líneas y corta. Un título largo empujaría los metadatos fuera de la
-     tarjeta de al lado y rompería la alineación de la fila entera. */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.meta {
-  margin: 0;
-  font-family: var(--sans);
-  font-size: var(--meta-fs);
-  font-weight: var(--meta-fw);
-  line-height: 1.4;
-  /* Nunca `opacity`: atenuar así se lleva puesto el borde y el fondo, y deja
-     el contraste fuera de control. El gris del sistema es --soft. */
-  color: var(--soft);
-}
+/* El título y los metadatos ya no se declaran acá: los dibujan `ListingTitle`
+   y `ListingMeta` (21.9/21.10). Eran dos de las tres copias del mismo papel
+   tipográfico, y la tercera ya había discrepado. El recorte a dos líneas
+   viaja con el átomo como `clamp`, porque es del contenedor y no del tipo. */
 
 .link {
   color: inherit;
