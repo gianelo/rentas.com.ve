@@ -149,4 +149,43 @@ describe("la página de zona sin JavaScript", () => {
     }
     expect(search).toHaveBeenCalledTimes(1);
   });
+
+  /**
+   * **La 16.9, medida donde falla: el enlace de IDA.**
+   *
+   * El mecanismo de la vuelta ya existía entero —`safeResultsOrigin`,
+   * `withResultsOrigin`, `resultsLink`— y aun así el «← Resultados» de una
+   * búsqueda filtrada nunca ocurría, porque **esta página no le pasaba el
+   * origen a la cuadrícula**. La ficha caía en su respaldo («Ver avisos en
+   * Tierra Negra») y quien había estrechado su búsqueda a un aviso volvía a la
+   * zona pelada. Nada se veía roto: ése es exactamente el modo de fallo que la
+   * tarea nombra.
+   *
+   * Se lee sobre el cuerpo servido y no sobre `page.tsx`, porque probar la
+   * regla y probar que la pantalla la INSTALA son dos afirmaciones distintas
+   * (`resultsOriginHref` ya tiene la suya en `search-query.test.ts`). Un
+   * `toContain("resultsOriginHref")` seguiría verde con el argumento sin pasar.
+   *
+   * La dirección se pide con el panel abierto a propósito: lo que viaja es la
+   * búsqueda, no el estado del acordeón. Volver con `filtros=precio` puesto le
+   * devuelve el modal encima a quien pidió sus resultados.
+   */
+  it("cuelga de cada tarjeta la búsqueda entera, para que la vuelta la traiga (16.9)", async () => {
+    const html = await servedBody("maracaibo", "tierra-negra", {
+      max: "500",
+      filtros: "precio",
+    });
+
+    const ficha = /href="(\/alquiler\/maracaibo\/tierra-negra\/[^"]+)"/.exec(html)?.[1];
+    expect(ficha).toBeDefined();
+
+    const volver = new URL(
+      (ficha as string).replaceAll("&amp;", "&"),
+      "https://rentas.com.ve",
+    ).searchParams.get("volver");
+
+    // El literal, no una expresión derivada de las mismas funciones que la
+    // página usa: eso último pasaría en verde con las dos partes equivocadas.
+    expect(volver).toBe("/alquiler/maracaibo/tierra-negra?max=500");
+  });
 });
