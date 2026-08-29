@@ -507,6 +507,13 @@ export const listings = pgTable(
     // wrote to a number needs that advert to keep saying the number they
     // wrote to. NOT NULL, because a listing whose contact cannot be revealed
     // is a listing the product has no purpose for.
+    //
+    // **Y eso NO prohíbe editar el contacto de un aviso** (tasks.md 18.14,
+    // decisión del fundador del 2026-08-29). La copia protege contra un
+    // cambio de cuenta que reescribe avisos ajenos al acto; editar ESTE aviso
+    // es un acto deliberado sobre ESTE aviso, y quien vuelve ve el número
+    // vigente en vez de uno viejo. `contact_reveal_event` no guarda el valor
+    // del contacto, así que ninguna fila de evidencia se reescribe.
     contactMethod: text("contact_method").$type<ContactMethod>().notNull(),
     contactValue: text("contact_value").notNull(),
     publishedAt: timestamp("published_at", { mode: "date", withTimezone: true }).notNull(),
