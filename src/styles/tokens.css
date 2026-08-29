@@ -41,13 +41,29 @@
      shipped reference tokens.css — added here because PR1b-b's buttons
      need it and D16 forbids inlining a size the token set doesn't name. */
   --target-min: 44px;
-  /* **36 y no 40, y es una decisión pendiente del fundador, no un descuido.**
-     La especificación de la ficha §8 fija el área táctil mínima de escritorio
-     en 40 px; este conjunto ship*a* 36. Uno de los dos está mal y el cambio es
-     global — todo control de toda pantalla— así que se deja anotado en vez de
-     resuelto de paso. `design-contract.test.tsx` lo ancla en 36 para que nadie
-     lo mueva sin querer mientras toca los tokens de al lado (tasks.md 16.24). */
-  --target-min-desktop: 36px;
+  /* **44, decidido por el fundador el 2026-08-27 (tasks.md 16.24).**
+
+     Había tres candidatos y no eran equivalentes: 36 era lo que ship*aba*, 40
+     lo que pedía la especificación de la ficha §8, y 44 lo que pide WCAG 2.2
+     SC 2.5.5 (AAA). SC 2.5.8 (AA) se conforma con 24×24 y los tres lo pasaban,
+     así que la norma sólo separa a uno: **44 es el único que llega a AAA**, y
+     40 era «mejor que 36» sin ser suficiente. Con eso la pregunta dejó de ser
+     de gusto y el fundador eligió el valor que se puede comprobar.
+
+     **Vale lo mismo que `--target-min` y aun así NO es un alias.** Se conserva
+     como token propio porque el nombre registra la intención: el mínimo del
+     teléfono y el del escritorio son dos decisiones que hoy coinciden, y quien
+     mañana quiera bajar uno tiene que ver cuál está tocando. Atarlo con
+     `var(--target-min)` haría que bajar el del teléfono encogiera el
+     escritorio sin que nadie lo pidiera — el mismo error que este archivo ya
+     documenta con el `<h1>` del inicio agarrando `--fpb`.
+
+     Dos pruebas lo sostienen y miden cosas distintas: `design-contract.test.tsx`
+     fija el valor y que sigan siendo dos declaraciones;
+     `tests/measure/layout.spec.ts` mide el botón dibujado en un navegador de
+     verdad con `toBe(44)` — antes afirmaba `>= 36`, que aceptaba las tres
+     respuestas y por lo tanto no preguntaba nada. */
+  --target-min-desktop: 44px;
 
   /* ---------- La barra de búsqueda del inicio (16.23) ----------
 
@@ -118,7 +134,21 @@
 
      Se nombran por su lugar en la ficha y llevan su variante de escritorio,
      porque el diseño da los dos valores y una sola escala obligaría a elegir
-     cuál de las dos pantallas se ve mal. */
+     cuál de las dos pantallas se ve mal.
+
+     **30 y no 28, y es una corrección medida contra la lámina, no un
+     redondeo.** La especificación de la ficha lo escribe 28 dos veces (§4 R1 y
+     la tabla de §8) y la lámina móvil dibuja `font-size:30px`
+     (`design/pantallas/Rentas - Ficha - Mobile.dc.html`). Manda la lámina, por
+     la regla del propio AGENTS.md: el sistema de diseño es la fuente visual de
+     verdad. El paso de escritorio, 34, coincide en los dos documentos. Queda
+     anotado acá porque el siguiente lector va a abrir la tabla de §8 antes que
+     la lámina y va a creer que 30 es un error de tipeo (tasks.md 16.23).
+
+     **Y el número dibujado se mide, no se declara**: `tests/measure/ficha.spec.ts`
+     lee `getComputedStyle` sobre la ficha real, porque `lint:tokens` acepta
+     por igual `var(--ficha-price-fs)` y `var(--fpb)` — comprobado: con la
+     ficha apuntando a `--fpb` el gate sale 0 y la pantalla pinta 26. */
   --ficha-price-fs: 30px;
   --ficha-price-fs-desktop: 34px;
   --ficha-price-fw: 700;
@@ -163,8 +193,28 @@
      Separados de --fp/--ft (la fila) a propósito: aquella escala está
      calculada para 44 px de miniatura al lado del texto, y reusarla haría
      que cambiar la densidad de una fila que ya no existe redimensionara la
-     cuadrícula. */
-  --card-price-fs: 17px;
+     cuadrícula.
+
+     **16 en el teléfono y 17 en el escritorio, medido contra las láminas
+     (2026-08-28).** El token valía 17 en los dos anchos y la pantalla pintaba
+     **15**, porque la declaración vivía en el `<p>` que envuelve y el `<span>`
+     del átomo `Price` la pisaba con `var(--fp)`. Tres números y ninguno era el
+     que alguien pidió. Manda la lámina (AGENTS.md §2), y las dos tienen razón
+     porque describen anchos distintos — la misma resolución que la 14.40 ya
+     usó para el nav y la 16.23 para el precio de la ficha:
+     `Rentas - Lista y Filtros - Mobile.dc.html` artboard 6c dibuja
+     `font-size:16px` sobre una cuadrícula de `158px 158px`, y
+     `- Desktop.dc.html` artboard 7c dibuja `font-size:17px` sobre
+     `repeat(4,254px)`.
+
+     El tamaño llega al átomo por `--price-fs`, que es un **enganche y no un
+     valor**: la superficie elige cuál token lo alimenta y no puede inventar un
+     número, porque `lint:tokens` sigue rechazando el literal. Y lo dibujado se
+     mide, no se declara — `tests/measure/layout.spec.ts` (22.2) lee
+     `getComputedStyle` sobre la tarjeta real, que es lo único que podía ver
+     este defecto. */
+  --card-price-fs: 16px;
+  --card-price-fs-desktop: 17px;
   --card-title-fs: 13px;
   /* El punto de posición debajo de la tira. Propio y no `--r-thumb` ni una de
      las medidas de miniatura: es una marca, no una imagen, y compartir el
@@ -273,8 +323,8 @@
      token correcto (esta misma lección ya está escrita más arriba, sobre el
      `<h1>` que agarró `--fpb`) — así que ésta es una medida propia y la
      diferencia queda anotada en vez de resuelta en silencio, igual que
-     `--target-min-desktop` (36 contra los 40 de la especificación de la
-     ficha) sigue pendiente del fundador. */
+     `--target-min-desktop` quedó anotada hasta que el fundador la decidió
+     (36 → 44, tasks.md 16.24). */
   --nav-h: 60px;
   --nav-h-desktop: 68px;
   --nav-brand-fs: 17px;

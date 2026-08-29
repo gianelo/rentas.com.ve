@@ -264,7 +264,16 @@ describe("a draft is invisible everywhere, until activated — against real Post
     const userId = randomUUID();
     await insertUser(userId);
     const importedAt = new Date("2026-01-04T00:00:00.000Z");
-    const activatedAt = new Date("2026-02-10T09:30:00.000Z"); // well after import
+    /**
+     * **Relativo a `now()`, no un literal (task 21.1).** Esta fecha era
+     * `2026-02-10`, y su `expires_at` —treinta días después— quedó en el
+     * pasado cuando el calendario la alcanzó. Mientras la búsqueda miraba
+     * sólo el rótulo, la prueba siguió verde midiendo otra cosa: un aviso
+     * activado y ya vencido. Al agregarle el reloj a la consulta, la fixture
+     * caducada se delató. Un día antes de hoy sigue siendo «bastante después
+     * de la importación» y no puede envejecer.
+     */
+    const activatedAt = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const draft = await importOneDraft(userId, "ACT-VALID", importedAt);
     await attachPhoto(draft.id);
 

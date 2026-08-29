@@ -132,7 +132,7 @@ describe("buildListingStructuredData", () => {
   const BASE = "https://rentas.test";
 
   it("describe la página como un aviso inmobiliario en su dirección canónica", () => {
-    const data = buildListingStructuredData(BASE, listing());
+    const data = buildListingStructuredData(BASE, listing(), NOW);
 
     expect(data["@context"]).toBe("https://schema.org");
     expect(data["@type"]).toBe("RealEstateListing");
@@ -143,13 +143,13 @@ describe("buildListingStructuredData", () => {
   });
 
   it("lanza sin la base del sitio, igual que el sitemap", () => {
-    expect(() => buildListingStructuredData("  ", listing())).toThrow();
+    expect(() => buildListingStructuredData("  ", listing(), NOW)).toThrow();
   });
 
   it("traduce cada tipo de inmueble al alojamiento que le corresponde", () => {
     const typeOf = (propertyType: string) =>
       (
-        buildListingStructuredData(BASE, listing({ propertyType })).mainEntity as {
+        buildListingStructuredData(BASE, listing({ propertyType }), NOW).mainEntity as {
           "@type": string;
         }
       )["@type"];
@@ -162,7 +162,7 @@ describe("buildListingStructuredData", () => {
 
   /** Lo desconocido cae en el tipo más general, que sigue siendo verdadero. */
   it("deja un tipo que no conoce como alojamiento genérico", () => {
-    const data = buildListingStructuredData(BASE, listing({ propertyType: "galpon" }));
+    const data = buildListingStructuredData(BASE, listing({ propertyType: "galpon" }), NOW);
 
     expect((data.mainEntity as { "@type": string })["@type"]).toBe("Accommodation");
   });
@@ -173,7 +173,7 @@ describe("buildListingStructuredData", () => {
    * que el inmueble no tiene planta eléctrica, y eso el sistema no lo sabe.
    */
   it("lista sólo los atributos declarados y ninguno de los que faltan", () => {
-    const data = buildListingStructuredData(BASE, listing());
+    const data = buildListingStructuredData(BASE, listing(), NOW);
     const amenities = (data.mainEntity as { amenityFeature?: readonly { name: string }[] })
       .amenityFeature;
 
@@ -191,7 +191,7 @@ describe("buildListingStructuredData", () => {
       hasSecurity: false,
       parkingSpots: 0,
     });
-    const data = buildListingStructuredData(BASE, bare);
+    const data = buildListingStructuredData(BASE, bare, NOW);
 
     expect(data.mainEntity).not.toHaveProperty("amenityFeature");
   });
@@ -203,7 +203,10 @@ describe("buildListingStructuredData", () => {
    */
   it("omite las cifras en cero en vez de declararlas", () => {
     const unknown = listing({ rooms: 0, bathrooms: 0, areaM2: 0, parkingSpots: 0 });
-    const entity = buildListingStructuredData(BASE, unknown).mainEntity as Record<string, unknown>;
+    const entity = buildListingStructuredData(BASE, unknown, NOW).mainEntity as Record<
+      string,
+      unknown
+    >;
 
     expect(entity).not.toHaveProperty("numberOfRooms");
     expect(entity).not.toHaveProperty("numberOfBathroomsTotal");
@@ -217,7 +220,10 @@ describe("buildListingStructuredData", () => {
    * nosotros.
    */
   it("declara el precio como un alquiler mensual en dólares", () => {
-    const offer = buildListingStructuredData(BASE, listing()).offers as Record<string, unknown>;
+    const offer = buildListingStructuredData(BASE, listing(), NOW).offers as Record<
+      string,
+      unknown
+    >;
 
     expect(offer.businessFunction).toBe("http://purl.org/goodrelations/v1#LeaseOut");
     expect(offer.priceSpecification).toMatchObject({
@@ -231,12 +237,29 @@ describe("buildListingStructuredData", () => {
   });
 
   it("no ofrece como disponible un aviso vencido", () => {
-    const offer = buildListingStructuredData(BASE, listing({ status: "expired" })).offers as Record<
-      string,
-      unknown
-    >;
+    const offer = buildListingStructuredData(BASE, listing({ status: "expired" }), NOW)
+      .offers as Record<string, unknown>;
 
     expect(offer.availability).toBe("https://schema.org/OutOfStock");
+  });
+
+  /**
+   * **La misma ventana de la 11.23, del lado legible por máquina.** El rótulo
+   * lo mueve un trabajo diario, así que durante hasta casi 24 horas la fila
+   * dice `active` mientras el aviso ya venció. Mirando sólo el rótulo, este
+   * documento declaraba `InStock` junto a un `validThrough` que ya pasó — se
+   * contradecía a sí mismo, y lo hacía en el único formato que un agregador lee
+   * sin abrir la página.
+   */
+  it("tampoco el que todavía dice active pero cuya fecha ya pasó", () => {
+    const lapsed = listing({ expiresAt: new Date("2026-08-21T00:00:00.000Z") });
+
+    const offer = buildListingStructuredData(BASE, lapsed, NOW).offers as Record<string, unknown>;
+
+    expect(offer.availability).toBe("https://schema.org/OutOfStock");
+    // La guarda que hace que la de arriba signifique algo: la fecha declarada
+    // es la misma que se acaba de pasar, no otra.
+    expect(offer.validThrough).toBe("2026-08-21T00:00:00.000Z");
   });
 
   /**
@@ -246,26 +269,26 @@ describe("buildListingStructuredData", () => {
    * cuenta — y ni siquiera haría falta abrir la página para cosecharlo.
    */
   it("no publica el contacto por ninguna vía", () => {
-    const serialized = serializeStructuredData(buildListingStructuredData(BASE, listing()));
+    const serialized = serializeStructuredData(buildListingStructuredData(BASE, listing(), NOW));
 
     expect(serialized).not.toMatch(/telephone|contactPoint|contactMethod|whatsapp/i);
   });
 
   it("omite a quien publica cuando el aviso no trae su nombre", () => {
-    const anonymous = buildListingStructuredData(BASE, listing({ publisherName: null }));
+    const anonymous = buildListingStructuredData(BASE, listing({ publisherName: null }), NOW);
 
     expect(anonymous).not.toHaveProperty("provider");
-    expect(buildListingStructuredData(BASE, listing()).provider).toMatchObject({
+    expect(buildListingStructuredData(BASE, listing(), NOW).provider).toMatchObject({
       "@type": "Person",
       name: "María F.",
     });
     expect(
-      buildListingStructuredData(BASE, listing({ publisherType: "broker" })).provider,
+      buildListingStructuredData(BASE, listing({ publisherType: "broker" }), NOW).provider,
     ).toMatchObject({ "@type": "RealEstateAgent" });
   });
 
   it("nombra la zona y su padre sin inventar una dirección postal", () => {
-    const entity = buildListingStructuredData(BASE, listing()).mainEntity as Record<
+    const entity = buildListingStructuredData(BASE, listing(), NOW).mainEntity as Record<
       string,
       unknown
     >;
@@ -283,7 +306,7 @@ describe("buildListingStructuredData", () => {
 
   /** Los niveles de arriba del árbol no tienen padre, y no se les inventa uno. */
   it("nombra la zona sola cuando no tiene padre", () => {
-    const orphan = buildListingStructuredData(BASE, listing({ zoneParentName: null }));
+    const orphan = buildListingStructuredData(BASE, listing({ zoneParentName: null }), NOW);
 
     expect((orphan.mainEntity as Record<string, unknown>).containedInPlace).toEqual({
       "@type": "Place",
@@ -296,11 +319,14 @@ describe("buildListingStructuredData", () => {
    * un JSON-LD es una imagen rota declarada como buena.
    */
   it("sólo declara imágenes cuando las hay y son absolutas", () => {
-    expect(buildListingStructuredData(BASE, listing())).not.toHaveProperty("image");
-    expect(buildListingStructuredData(BASE, listing(), { images: [] })).not.toHaveProperty("image");
+    expect(buildListingStructuredData(BASE, listing(), NOW)).not.toHaveProperty("image");
+    expect(buildListingStructuredData(BASE, listing(), NOW, { images: [] })).not.toHaveProperty(
+      "image",
+    );
     expect(
-      buildListingStructuredData(BASE, listing(), { images: ["foto.jpg", "https://cdn/1.jpg"] })
-        .image,
+      buildListingStructuredData(BASE, listing(), NOW, {
+        images: ["foto.jpg", "https://cdn/1.jpg"],
+      }).image,
     ).toEqual(["https://cdn/1.jpg"]);
   });
 });
@@ -314,7 +340,7 @@ describe("serializeStructuredData", () => {
   it("no deja que una descripción cierre la etiqueta que la contiene", () => {
     const hostile = listing({ description: `${LONG_DESCRIPTION}</script><img src=x>` });
     const serialized = serializeStructuredData(
-      buildListingStructuredData("https://rentas.test", hostile),
+      buildListingStructuredData("https://rentas.test", hostile, NOW),
     );
 
     expect(serialized).not.toContain("</script>");

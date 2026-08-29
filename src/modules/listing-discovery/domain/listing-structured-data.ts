@@ -1,3 +1,4 @@
+import { resolveListingAvailability } from "./listing-availability";
 import { buildListingPath } from "./listing-url";
 
 /**
@@ -135,7 +136,7 @@ export function resolveListingIndexing(
   listing: Pick<StructuredDataListing, "description" | "status" | "expiresAt">,
   now: Date,
 ): ListingIndexing {
-  const live = listing.status === "active" && listing.expiresAt > now;
+  const live = resolveListingAvailability(listing, now) === "available";
   // El vencimiento manda: un aviso vencido no vuelve por escribir más texto.
   if (!live) return { index: false, follow: true, reason: "expired" };
 
@@ -227,10 +228,17 @@ export interface StructuredDataOptions {
  * **Tampoco hay `streetAddress`.** El producto nunca pide una dirección exacta:
  * inventarla, aunque fuera el nombre de la zona puesto en ese campo, es
  * declarar un dato que no existe.
+ *
+ * **`now` es obligatorio y va suelto, igual que en `resolveListingIndexing`.**
+ * La oferta declara si el aviso sigue disponible, y eso son dos condiciones:
+ * el rótulo y el reloj (11.23). Adentro de las opciones sería opcional, y una
+ * disponibilidad que se puede omitir vuelve a mirar sólo el rótulo por defecto
+ * — que es el defecto que este parámetro existe para cerrar.
  */
 export function buildListingStructuredData(
   baseUrl: string,
   listing: StructuredDataListing,
+  now: Date,
   { images = [] }: StructuredDataOptions = {},
 ): ListingStructuredData {
   // Ruidoso y a propósito, igual que `buildSitemap`: con la base vacía el
@@ -260,7 +268,12 @@ export function buildListingStructuredData(
     value: true,
   }));
 
-  const live = listing.status === "active";
+  // **Las mismas dos condiciones que el índice y que el sitemap** (11.23). Acá
+  // se miraba sólo el rótulo, así que durante la ventana en que el trabajo
+  // diario todavía no corrió este documento declaraba `InStock` junto a un
+  // `validThrough` que ya pasó: se contradecía a sí mismo, en el único formato
+  // que un agregador lee sin abrir la página.
+  const live = resolveListingAvailability(listing, now) === "available";
 
   const accommodation: JsonObject = {
     "@type": ACCOMMODATION_TYPE[listing.propertyType] ?? "Accommodation",

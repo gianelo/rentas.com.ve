@@ -39,6 +39,8 @@
     "db:test:up": "docker compose up -d --wait postgres",
     "db:test:down": "docker compose down -v",
     "db:test:migrate": "drizzle-kit migrate --config drizzle.test.config.ts",
+    "db:test:seed:e2e": "tsx scripts/seed-e2e.ts",
+    "e2e:proxy": "node scripts/neon-http-proxy.mjs",
     "calibrate:photo-hash": "tsx src/modules/listing-trust/infrastructure/calibrate-photo-hash.ts"
   },
   "dependencies": {

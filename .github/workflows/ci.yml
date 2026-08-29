@@ -12,8 +12,8 @@ name: CI
 #
 #   - The preview URL is resolved at run time from GitHub's Deployments API,
 #     which Vercel populates. Nothing to keep in sync by hand.
-#   - The `integration` job's Postgres container is ephemeral and local to
-#     the job, never the production Neon database.
+#   - The `integration` and `e2e` jobs each get their own ephemeral Postgres
+#     container, local to the job and never the production Neon database.
 #   - The `build` job uses a deliberately fake, unroutable DATABASE_URL.
 #
 # Founder-side setup that DOES matter, and lives in Vercel rather than here:
@@ -300,6 +300,37 @@ jobs:
     if: github.event_name == 'pull_request'
     needs: preview
     runs-on: ubuntu-latest
+    # **El arnés que le devuelve los dientes al proyecto `crawlability`**
+    # (tasks.md 11.22). Hasta acá este job compilaba contra una DATABASE_URL
+    # deliberadamente inalcanzable, asi que todo lo que lee el catalogo —el
+    # camino de lectura entero— solo podia contestar 500, y siete
+    # especificaciones se saltaban solas. El job instalaba un navegador, corria
+    # varios minutos y no podia fallar.
+    #
+    # La causa era estructural: la aplicacion habla el HTTP de Neon, no el
+    # protocolo de cable de Postgres. `scripts/neon-http-proxy.mjs` traduce uno
+    # al otro contra este contenedor, y `scripts/seed-e2e.ts` le pone dos
+    # ciudades con fotos. La aplicacion no cambia una linea, y
+    # `assertPooledConnectionString` no se debilita.
+    #
+    # **Sigue corriendo por PR y no por push** (decision del fundador,
+    # 2026-08-27): lo que tiene que morder es la fusion, y los minutos de
+    # Actions estan medidos en este repositorio.
+    services:
+      postgres:
+        # El mismo 18 que el job `integration` y que la instancia de Neon.
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: rentas_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentas_test
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -329,6 +360,22 @@ jobs:
       - name: Install the browser
         run: pnpm exec playwright install --with-deps chromium
 
+      # Las mismas migraciones generadas que la aplicacion despacha, para que la
+      # suite corra contra el esquema real y no contra una copia a mano.
+      # DATABASE_URL se pone SOLO en este paso: el CLI de drizzle-kit no tiene
+      # la exigencia del endpoint agrupado, que vive en el runtime de la
+      # aplicacion (src/shared/db/client.ts) y no acá.
+      - name: Apply migrations to the e2e container
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+        run: pnpm db:migrate
+
+      # Dos ciudades, cuatro zonas, avisos con portada y uno vencido. Poco y
+      # fijo: una suite que depende de estado acumulado pasa por razones que
+      # nadie puede reproducir.
+      - name: Seed the deterministic e2e catalogue
+        run: pnpm db:test:seed:e2e
+
       # The preview URL is used ONLY when a bypass secret exists to get past
       # Vercel's deployment-protection SSO wall. Without it every request
       # lands on vercel.com/login and the suite reports the app as broken --
@@ -352,6 +399,24 @@ jobs:
           # can only prove the route fails closed, which is the weaker half of
           # what it is there to prove (tasks.md 7.12).
           RENEWAL_TOKEN_SECRET: e2e-fake-secret-signs-nothing-real
+          # El origen público de las fotos. Hasta que 11.22 encendió las
+          # especificaciones que dibujan avisos, este job no lo necesitaba: todo
+          # lo que leía el catálogo se saltaba solo. Al prenderlas apareció la
+          # dependencia que el skip escondía, y `listing-discovery` se NIEGA a
+          # construir una URL de foto sin ella (falla cerrado, AGENTS.md §7) en
+          # vez de emitir una rota.
+          #
+          # Valor fijo y falso a propósito: estas pruebas afirman que la foto
+          # está en el HTML servido, nunca que la imagen cargue. Un origen real
+          # ataría la suite a un bucket, y un bucket vacío la pondría roja por
+          # algo que no es el código.
+          #
+          # **Sólo ésta se agrega.** Las otras que el job no define
+          # —CRON_SECRET, OPERATOR_SECRET, RESEND_API_KEY, el resto de R2—
+          # quedan ausentes a propósito: sus rutas fallan cerradas sin ellas, y
+          # eso es justo lo que sus especificaciones miden. Dárselas taparía la
+          # afirmación.
+          R2_BUCKET_PUBLIC_URL: https://fotos-de-prueba.rentas.invalid
           PLAYWRIGHT_WEB_COMMAND: pnpm start
         run: |
           # Built once here rather than by each project's webServer. The two
@@ -400,7 +465,7 @@ jobs:
           else
             cause="VERCEL_AUTOMATION_BYPASS_SECRET is not set on this repository, so the preview's SSO wall cannot be passed"
           fi
-          echo "::warning title=Read path not verified::$cause. The suite fell back to a production build served locally against an unroutable database, so every spec that reads the catalogue skipped itself."
+          echo "::warning title=No preview deployment::$cause. The suite ran against a production build served locally, backed by the seeded e2e catalogue (tasks.md 11.22) rather than an unroutable database — so the read path WAS verified. What this run could not verify is Vercel's own routing, its environment, and the real deployment."
 
   budget:
     if: github.event_name == 'pull_request'

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { cache } from "react";
 import { AppLink } from "@/../components/atoms/AppLink";
 import { PublisherBadge } from "@/../components/atoms/PublisherBadge";
@@ -8,6 +8,7 @@ import { DetailSplit } from "@/../components/layout/DetailSplit";
 import { ReadingWidth } from "@/../components/layout/ReadingWidth";
 import { ContactBlock } from "@/../components/molecules/ContactBlock";
 import { DeclaredFeatures } from "@/../components/molecules/DeclaredFeatures";
+import { ListingCard, ListingGrid } from "@/../components/molecules/ListingCard";
 import { PhotoStrip } from "@/../components/molecules/PhotoStrip";
 import { StatStrip } from "@/../components/molecules/StatStrip";
 import { Nav } from "@/../components/organisms/Nav";
@@ -18,13 +19,18 @@ import {
   DrizzleRevealableListing,
 } from "@/modules/contact-reveal/infrastructure/drizzle-contact-reveal";
 import { resolveNavAccount, resolveNavPublish } from "@/modules/identity/domain/nav-account";
+import { DrizzleCatalogue } from "@/modules/listing-catalogue/infrastructure/drizzle-catalogue";
+import { suggestActiveListings } from "@/modules/listing-discovery/application/suggest-active-listings";
+import { resolveListingAvailability } from "@/modules/listing-discovery/domain/listing-availability";
 import { resolveListingRoute } from "@/modules/listing-discovery/domain/listing-detail-route";
+import { buildListingGrid } from "@/modules/listing-discovery/domain/listing-grid";
 import { photoUrl } from "@/modules/listing-discovery/domain/listing-photo-view";
 import {
   buildListingStructuredData,
   resolveListingIndexing,
   serializeStructuredData,
 } from "@/modules/listing-discovery/domain/listing-structured-data";
+import { suggestionHeading } from "@/modules/listing-discovery/domain/listing-suggestions";
 import { listingIdFromSlug } from "@/modules/listing-discovery/domain/listing-url";
 import {
   RETURN_PARAM,
@@ -34,6 +40,7 @@ import {
 import { DrizzleListingDetail } from "@/modules/listing-discovery/infrastructure/drizzle-listing-detail";
 import { DrizzleListingPhotos } from "@/modules/listing-discovery/infrastructure/drizzle-listing-photos";
 import { readSiteBaseUrl } from "@/modules/listing-discovery/infrastructure/site-base-url";
+import { DrizzleListingSearch } from "@/modules/listing-search/infrastructure/drizzle-listing-search";
 import { db } from "@/shared/db/client";
 import { readSession, requestSessionPort } from "../../../../_lib/session";
 import styles from "./ficha.module.css";
@@ -122,7 +129,12 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
     // correcta y sin vuelta.
     returnTo,
   );
-  if (route.kind === "redirect") redirect(route.to);
+  // **308 y no 307**, que es la pregunta que la 11.21 dejo abierta. Un 307 es
+  // temporal: le pide al rastreador que CONSERVE la direccion vieja en el
+  // indice, que es exactamente el problema que esta redireccion existe para
+  // resolver -- un aviso con dos direcciones vivas reparte su autoridad entre
+  // las dos. El 308 mueve el indice al camino canonico y lo deja ahi.
+  if (route.kind === "redirect") permanentRedirect(route.to);
 
   // La misma ficha con el origen puesto. Es lo que la pantalla de entrar tiene
   // que devolver (F19): volver al aviso sin el origen deja el «← Resultados»
@@ -135,11 +147,18 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
   // desde Google o desde el inicio.
   const back = resultsLink(returnTo, { cityName: detail.cityName, zoneName: detail.zoneName });
 
-  // **Al revés de como se lee: sólo `active` habilita el contacto.** Escrito
-  // como "vencido = expired", un cuarto estado que alguien agregue mañana
-  // caería en la rama que MUESTRA el contacto, y ese descuido no falla en
-  // ningún lado. Así, lo desconocido cae en la pantalla que no revela nada.
-  const availability = detail.status === "active" ? "available" : "expired";
+  // **Un solo reloj para toda la respuesta.** Leerlo dos veces dejaría al
+  // cuerpo y al `<head>` mirando instantes distintos, que es exactamente la
+  // contradicción que esta página venía teniendo por otro motivo.
+  const now = new Date();
+
+  // **Del reloj, no del rótulo** (11.23). Acá había un ternario que miraba sólo
+  // `detail.status`, mientras `resolveListingIndexing` —a dos pantallas de
+  // distancia, en el mismo render— ya leía las DOS condiciones. En la ventana
+  // en que el trabajo diario todavía no corrió, el `<head>` pedía `noindex` por
+  // vencido y el cuerpo ofrecía revelar el contacto. La regla vive en el
+  // dominio, que es lo único que el piso del 90% alcanza.
+  const availability = resolveListingAvailability(detail, now);
 
   // Los tres estados del bloque salen de acá, no de un `if` en esta página: si
   // quien mira ya reveló, el caso de uso lee el valor; si no, no lo lee — el
@@ -174,11 +193,57 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
   // arma el dominio: qué tipo de schema.org corresponde, qué se declara y qué
   // no es una regla, y esta página sólo la imprime. Recibe el aviso y las
   // fotos; el contacto no viaja acá ni podría — `detail` no lo trae.
-  const structuredData = buildListingStructuredData(readSiteBaseUrl(), detail, {
+  const structuredData = buildListingStructuredData(readSiteBaseUrl(), detail, now, {
     // Sin base pública las direcciones salen relativas, y el dominio las
     // descarta: una imagen relativa en un JSON-LD es una imagen rota declarada
     // como buena.
     images: photos.flatMap(({ keys }) => (keys.full ? [photoUrl(photoBase, keys.full)] : [])),
+  });
+
+  // **La otra mitad de la pantalla vencida** (11.8, 11.10, 11.11). El bloque de
+  // contacto ya decía que venció y ya llevaba un enlace a la zona; lo que la
+  // tarea pide —y lo que `design.md` llama la conversión que rescata al
+  // visitante más valioso que el sitio recibe— son los avisos vivos dibujados
+  // acá mismo. Un enlace a otra pantalla le pide un toque más justo a quien
+  // acaba de encontrarse con un apartamento que ya no está.
+  //
+  // **Sólo en la rama vencida.** En la ficha activa —la más visitada del
+  // sitio— esto no cuesta ni una consulta: la expresión no se evalúa.
+  //
+  // Qué se ofrece, hasta dónde se amplía y dónde para lo decide el caso de uso;
+  // acá no hay ni un `if` de producto.
+  const suggestions =
+    availability === "expired"
+      ? await suggestActiveListings(
+          {
+            listingId: detail.id,
+            cityId: detail.cityId,
+            cityName: detail.cityName,
+            zoneId: detail.zoneId,
+            zoneName: detail.zoneName,
+          },
+          { search: new DrizzleListingSearch(db), catalogue: new DrizzleCatalogue(db) },
+        )
+      : { scope: "none" as const, listings: [] };
+
+  // Las portadas de las cuatro en UNA llamada, por la misma razón que la
+  // cuadrícula de resultados: contra Neon, de a una son cuatro viajes HTTP.
+  const suggestionCovers =
+    suggestions.listings.length > 0
+      ? await new DrizzleListingPhotos(db).coversFor(suggestions.listings.map((row) => row.id))
+      : new Map();
+
+  // La misma regla F9 que la cuadrícula de resultados: un aviso sin portada no
+  // entra. Media tarjeta con un ícono roto encima de un aviso vencido es la
+  // segunda mala noticia de la misma pantalla.
+  const suggestionCards = buildListingGrid(suggestions.listings, suggestionCovers, photoBase);
+
+  // El encabezado lo escribe el dominio porque tiene que decir el alcance real
+  // de lo que hay debajo: ampliado a la ciudad, «Otros avisos en <zona>» sería
+  // mentira encima de cuatro tarjetas de otra zona.
+  const suggestionsTitle = suggestionHeading(suggestions.scope, {
+    zoneName: detail.zoneName,
+    cityName: detail.cityName,
   });
 
   return (
@@ -321,6 +386,40 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
               </>
             }
           />
+
+          {/* **Las salidas de la ficha vencida** (11.8). No se dibuja nada
+              cuando no hay nada: una ciudad sin avisos activos no ofrece los de
+              la otra ciudad, y una cuadrícula vacía bajo un título sería peor
+              que el silencio. Los dos lados de la condición vienen decididos —
+              `suggestionsTitle` es `null` en el alcance `none`, y las tarjetas
+              ya pasaron por la regla F9. */}
+          {suggestionsTitle !== null && suggestionCards.length > 0 ? (
+            <section className={styles.suggestions} aria-labelledby="sugerencias">
+              <h2 className={styles.suggestionsTitle} id="sugerencias">
+                {suggestionsTitle}
+              </h2>
+              <ListingGrid>
+                {suggestionCards.map((card) => (
+                  <li key={card.id}>
+                    {/* La misma tarjeta que la búsqueda dibuja, y a propósito:
+                        una segunda tarjeta «de sugerencia» arrancaría idéntica y
+                        se separaría en el primer arreglo apurado. Y no lleva
+                        contacto porque `GridCard` no tiene dónde llevarlo. */}
+                    <ListingCard
+                      href={card.href}
+                      priceUsd={card.priceUsd}
+                      title={card.title}
+                      zone={card.zoneName}
+                      rooms={card.rooms}
+                      areaM2={card.areaM2}
+                      publisherType={card.publisherType}
+                      photo={card.photo}
+                    />
+                  </li>
+                ))}
+              </ListingGrid>
+            </section>
+          ) : null}
 
           <footer className={styles.footer}>
             {/* **Tenía destino y no llevaba a ningún lado** (tasks.md 8.7):

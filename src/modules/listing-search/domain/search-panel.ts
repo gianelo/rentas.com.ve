@@ -26,6 +26,7 @@ import {
   resolveZoneOptions,
   type ZoneOption,
 } from "./search-options";
+import { type PreviewChange, previewConfirmLabel } from "./search-preview";
 import {
   buildSearchHref,
   clearAllHref,
@@ -60,6 +61,16 @@ export interface PanelCounts {
   readonly byMinRooms: Readonly<Record<RoomStep, number>>;
   readonly byAttribute: Readonly<Record<ListingAttribute, number>>;
   readonly byPublisherType: Readonly<Record<PublisherType, number>>;
+  /**
+   * Cuántos quedarían soltando ese filtro y ningún otro (F10 y F11).
+   *
+   * **Ya viajaban**: `FacetCounts` los trae desde la 14.11 y `buildFilterPanel`
+   * pasa ese mismo objeto entero. Declararlos acá no agrega una consulta — le
+   * da nombre a la mitad del conteo en vivo que faltaba (14.34), la de quitar.
+   */
+  readonly withoutFilter: Readonly<Record<RelaxableFilter, number>>;
+  /** La ciudad sin un solo filtro del panel: el número de «Limpiar todo». */
+  readonly cityTotal: number;
 }
 
 export interface PanelCity {
@@ -245,10 +256,23 @@ export interface CityChoice {
 }
 
 export type ZoneChoice = ZoneOption & { readonly href: string };
-export type RoomChoice = RoomOption & { readonly href: string };
-export type AttributeChoice = AttributeOption & { readonly href: string };
 
-export interface PublisherChoice {
+/**
+ * **Qué va a decir el botón en cuanto se toque esta opción** (14.34), o `null`
+ * cuando el número no viajó con la página o la opción no se puede tocar.
+ *
+ * Va en el modelo y no se deriva en el componente por la regla permanente del
+ * fundador: qué conteo corresponde a qué opción es producto, y escrito en un
+ * `"use client"` quedaría fuera del suelo de cobertura del 90 %.
+ */
+interface Previewable {
+  readonly previewLabel: string | null;
+}
+
+export type RoomChoice = RoomOption & Previewable & { readonly href: string };
+export type AttributeChoice = AttributeOption & Previewable & { readonly href: string };
+
+export interface PublisherChoice extends Previewable {
   readonly label: string;
   readonly note: string;
   readonly count: number;
@@ -312,6 +336,8 @@ export interface SearchPanelModel {
   readonly publisher: PublisherChoice;
   readonly attributes: readonly AttributeChoice[];
   readonly clearAllHref: string;
+  /** Lo que dirá el botón al limpiar: la ciudad entera, que no es un filtro. */
+  readonly clearAllPreviewLabel: string | null;
   readonly confirm: SearchConfirm;
   /** «Chacao, Altamira», o la ciudad si no hay zonas. */
   readonly headline: string;
@@ -388,6 +414,10 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
     },
     rooms: resolveRoomOptions(counts.byMinRooms, criteria.minRooms).map((option) => ({
       ...option,
+      previewLabel: preview(counts, option.disabled, {
+        kind: "rooms",
+        step: option.nextValue === null ? null : option.step,
+      }),
       href: buildSearchHref(basePath, query, {
         minRooms: option.nextValue,
         step: "habitaciones",
@@ -400,6 +430,11 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
       criteria.attributes ?? [],
     ).map((option) => ({
       ...option,
+      previewLabel: preview(counts, option.disabled, {
+        kind: "attribute",
+        attribute: option.attribute,
+        add: option.nextValue !== null,
+      }),
       href: buildSearchHref(basePath, query, {
         [option.attribute]: option.nextValue,
         // Cada opción devuelve a SU grupo: saltar a otro después de tocar una
@@ -408,6 +443,7 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
       }),
     })),
     clearAllHref: clearAllHref(cityPath, query),
+    clearAllPreviewLabel: preview(counts, false, { kind: "clearAll" }),
     // Confirmar **cierra el acordeón y nada más**: los filtros ya están en la
     // dirección desde que se tocaron, así que este botón no aplica nada — dice
     // cuántos hay y lleva a verlos.
@@ -540,11 +576,24 @@ function toPublisherChoice(input: SearchPanelInput): PublisherChoice {
     count,
     chosen,
     disabled: count === 0 && !chosen,
+    previewLabel: preview(input.counts, count === 0 && !chosen, {
+      kind: "publisher",
+      value: chosen ? null : "owner",
+    }),
     href: buildSearchHref(input.basePath, input.query, {
       publisherType: chosen ? null : "owner",
       step: "publica",
     }),
   };
+}
+
+/**
+ * **Una opción apagada no adelanta nada.** Se dibuja como un `<span>` sin
+ * dirección, así que un número al lado prometería una interacción que no
+ * existe — y llevaría a la pantalla vacía que la regla transversal 4 prohíbe.
+ */
+function preview(counts: PanelCounts, disabled: boolean, change: PreviewChange): string | null {
+  return disabled ? null : previewConfirmLabel(counts, change);
 }
 
 /**

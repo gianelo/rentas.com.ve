@@ -22,6 +22,21 @@ const COUNTS = {
   },
   byPropertyType: { apartamento: 10, casa: 3, quinta: 1, anexo: 1, habitacion: 1 },
   byPublisherType: { owner: 11, broker: 5 },
+  // Las nueve relajaciones y el total pelado de la ciudad viajan en la MISMA
+  // consulta que las facetas (14.11), y son la otra mitad del conteo en vivo:
+  // cuántos quedarían al soltar cada filtro (14.34).
+  withoutFilter: {
+    zone: 40,
+    price: 22,
+    rooms: 31,
+    publisherType: 25,
+    hasPowerPlant: 18,
+    hasRegularWater: 19,
+    isFurnished: 20,
+    hasSecurity: 21,
+    hasAppliances: 23,
+  },
+  cityTotal: 70,
 } as const;
 
 const BASE: SearchPanelInput = {
@@ -590,5 +605,69 @@ describe("las fichas quitables de los filtros puestos (14.33, lámina 7c)", () =
     }).chips.map((chip) => chip.label);
 
     expect(labels).toEqual(["planta", "agua"]);
+  });
+});
+
+describe("cada opción lleva el número que va a producir (14.34)", () => {
+  it("el escalón de habitaciones adelanta su propia faceta", () => {
+    // «Ver 16 avisos» → «Ver 9 avisos» sin esperar la respuesta: el 9 es el
+    // conteo real de la faceta de 2 habitaciones, no una estimación.
+    const rooms = panel().rooms;
+    expect(rooms.map((room) => room.previewLabel)).toEqual([
+      "Ver 16 avisos",
+      "Ver 9 avisos",
+      "Ver 4 avisos",
+      null,
+    ]);
+  });
+
+  it("el escalón elegido adelanta lo que queda al soltarlo, no lo que ya hay", () => {
+    // Volver a tocarlo lo suelta, así que su número es el de la relajación (31)
+    // y NO el 9 de su propia faceta. Adelantar el 9 acá sería el botón diciendo
+    // que quitar un filtro no cambia nada.
+    const [uno, dos] = panel({ criteria: { minRooms: 2 } }).rooms;
+    expect(dos?.previewLabel).toBe("Ver 31 avisos");
+    expect(uno?.previewLabel).toBe("Ver 16 avisos");
+  });
+
+  it("los atributos, en los dos sentidos", () => {
+    const sinMarcar = panel().attributes.find((option) => option.attribute === "isFurnished");
+    expect(sinMarcar?.previewLabel).toBe("Ver 4 avisos");
+
+    const marcado = panel({ criteria: { attributes: ["isFurnished"] } }).attributes.find(
+      (option) => option.attribute === "isFurnished",
+    );
+    expect(marcado?.previewLabel).toBe("Ver 20 avisos");
+  });
+
+  it("quién publica, en los dos sentidos", () => {
+    expect(panel().publisher.previewLabel).toBe("Ver 11 avisos");
+    expect(panel({ criteria: { publisherType: "owner" } }).publisher.previewLabel).toBe(
+      "Ver 25 avisos",
+    );
+  });
+
+  it("«Limpiar todo» adelanta el total de la ciudad", () => {
+    expect(panel().clearAllPreviewLabel).toBe("Ver 70 avisos");
+  });
+
+  it("una opción apagada no adelanta nada: no se puede tocar", () => {
+    // `hasSecurity` cuenta 0 y llega deshabilitada, así que se dibuja como un
+    // `<span>` sin dirección. Un número adelantado para algo que nadie puede
+    // tocar es marcado que promete una interacción que no existe.
+    const apagada = panel().attributes.find((option) => option.attribute === "hasSecurity");
+    expect(apagada?.disabled).toBe(true);
+    expect(apagada?.previewLabel).toBeNull();
+  });
+
+  it("sin los conteos de relajación no inventa un número", () => {
+    // Falla cerrado: sin `withoutFilter` el botón se queda con lo que el
+    // servidor escribió hasta que llegue la respuesta.
+    const { withoutFilter: _sin, ...resto } = COUNTS;
+    const sinRelajaciones = panel({
+      counts: resto as unknown as SearchPanelInput["counts"],
+      criteria: { minRooms: 2 },
+    });
+    expect(sinRelajaciones.rooms[1]?.previewLabel).toBeNull();
   });
 });

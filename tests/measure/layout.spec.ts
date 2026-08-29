@@ -61,7 +61,18 @@ test.describe("layout measurement", () => {
     expect(bodyBox.width).toBeLessThanOrEqual(520);
   });
 
-  test("1b.14: interactive targets are >= 44px on mobile and >= 36px on desktop", async ({
+  /**
+   * **`toBe(44)` y no `toBeGreaterThanOrEqual(44)`, y ésa es toda la lección de
+   * la 16.24.** Esta prueba afirmaba `>= 36` en escritorio mientras el fundador
+   * decidía entre 36, 40 y 44: las tres respuestas posibles pasaban la
+   * aserción, así que la suite de medición habría dejado entrar cualquiera de
+   * ellas en silencio. Una cota inferior que acepta todas las respuestas
+   * válidas no está preguntando nada — el mismo defecto que la 16.25 acababa de
+   * encontrar en `--action-h`. Con la decisión tomada (44 en las dos pantallas,
+   * WCAG 2.2 SC 2.5.5 AAA) el número se fija, y mover el token pone esto rojo
+   * diciendo qué midió.
+   */
+  test("1b.14/16.24: interactive targets measure exactly 44px on mobile and on desktop", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 360, height: 800 });
@@ -71,8 +82,8 @@ test.describe("layout measurement", () => {
       const box = await page.getByTestId(testid).locator("button").boundingBox();
       if (!box) throw new Error(`${testid} did not render a measurable box`);
       const smallest = Math.min(box.width, box.height);
-      console.log(`[1b.14] mobile ${testid}: smallest dimension ${smallest}px (bound: >= 44px)`);
-      expect(smallest).toBeGreaterThanOrEqual(44);
+      console.log(`[1b.14] mobile ${testid}: smallest dimension ${smallest}px (bound: === 44px)`);
+      expect(smallest).toBe(44);
     }
 
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -82,8 +93,8 @@ test.describe("layout measurement", () => {
       const box = await page.getByTestId(testid).locator("button").boundingBox();
       if (!box) throw new Error(`${testid} did not render a measurable box`);
       const smallest = Math.min(box.width, box.height);
-      console.log(`[1b.14] desktop ${testid}: smallest dimension ${smallest}px (bound: >= 36px)`);
-      expect(smallest).toBeGreaterThanOrEqual(36);
+      console.log(`[1b.14] desktop ${testid}: smallest dimension ${smallest}px (bound: === 44px)`);
+      expect(smallest).toBe(44);
     }
   });
 });
@@ -577,5 +588,259 @@ test.describe("el panel de filtros a los dos anchos (14.32)", () => {
     // (lámina 7c). Contar cuántas tarjetas comparten el borde superior es la
     // pregunta de verdad; `grid-template-columns` sólo dice qué se declaró.
     expect(firstRow).toBe(4);
+  });
+
+  /**
+   * **14.34 — el número baja antes de que el servidor conteste.**
+   *
+   * Vive acá y no en `tests/e2e/` a propósito: aquella suite corre los MISMOS
+   * archivos en el proyecto `crawlability`, con el script apagado, donde una
+   * mejora de cliente no puede existir. Ponerla ahí obligaba a un `test.skip`,
+   * y un `skip` es un gate en verde que no mide nada — hoy hay CERO y no se
+   * agrega uno. Este arnés tiene un solo proyecto, con JavaScript, y monta el
+   * componente de producción con conteos deterministas.
+   *
+   * **La navegación se deja colgada a propósito.** El manejador de ruta nunca
+   * contesta, así que la petición del enlace queda pendiente para siempre:
+   * es exactamente el estado que la mejora existe para cubrir —el medio
+   * segundo en que Neon todavía no contestó desde Venezuela— y lo vuelve
+   * determinista en vez de una carrera contra el reloj.
+   */
+  test("14.34: el botón baja de 16 a 9 al tocar el filtro, sin esperar al servidor", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    await page.goto("/measure");
+
+    const confirm = page.getByTestId("search-confirm");
+    await expect(confirm).toHaveText("Ver 16 avisos");
+
+    // Nada de `/alquiler/**` va a contestar nunca: el enlace queda navegando.
+    await page.route("**/alquiler/**", () => {});
+
+    await page.getByRole("link", { name: "2 9" }).click();
+    await expect(confirm).toHaveText("Ver 9 avisos");
+    console.log("[14.34] 16 -> 9 con la navegación todavía en vuelo");
+
+    // Y el teclado entra por la misma puerta: `Enter` sobre un enlace dispara
+    // el mismo `click`, así que no hay un segundo camino que mantener.
+    await page.getByRole("link", { name: "3 4" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(confirm).toHaveText("Ver 4 avisos");
+    console.log("[14.34] 9 -> 4 con el teclado");
+
+    // El anuncio: sin esto el cambio existe sólo para quien lo ve.
+    await expect(confirm.locator("[aria-live='polite']")).toHaveAttribute("aria-live", "polite");
+
+    // Tocar algo que NO adelanta un número borra la vista previa en vez de
+    // dejarla colgada: el encabezado de un grupo no es un filtro.
+    await page.getByRole("link", { name: "Precio" }).click();
+    await expect(confirm).toHaveText("Ver 16 avisos");
+    console.log("[14.34] el encabezado de grupo devuelve el conteo del servidor");
+  });
+
+  /**
+   * **El piso, medido y no afirmado.** El mismo botón dice el número correcto
+   * en los bytes que el servidor manda, sin una línea de script ejecutada.
+   */
+  test("14.34: con el script apagado el botón sigue diciendo el número del servidor", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const sinScript = await context.newPage();
+    await sinScript.setViewportSize({ width: 1280, height: 1200 });
+    await sinScript.goto("/measure");
+
+    await expect(sinScript.getByTestId("search-confirm")).toHaveText("Ver 16 avisos");
+    // Y cada opción sigue siendo un enlace de verdad con su dirección: el
+    // filtro se aplica volviendo al servidor, igual que antes de la mejora.
+    await expect(sinScript.getByRole("link", { name: "2 9" })).toHaveAttribute("href", /hab=2/);
+    console.log("[14.34] piso intacto: el conteo y los enlaces sin JavaScript");
+    await context.close();
+  });
+});
+
+/**
+ * **Los átomos de la tarjeta, medidos en un navegador de verdad.**
+ *
+ * Una aserción sobre el contenido de una hoja dice qué se declaró; estas dicen
+ * qué se dibujó. La diferencia no es teórica: el precio de la tarjeta llevaba
+ * meses pintando 15px con el token declarando 17 y la lámina dibujando 16,
+ * con el gate de hoja en verde todo el tiempo.
+ */
+test.describe("los átomos de la lista y la ficha de selección (22.2-22.5)", () => {
+  /**
+   * **22.2 — el precio de la tarjeta se DIBUJA con el token que declara.**
+   *
+   * Esta prueba existe porque la que había no podía fallar. `ListingCard.test.tsx`
+   * afirmaba `block(cardCss, "price")` contiene `var(--card-price-fs)`, y eso
+   * era cierto mientras la pantalla pintaba otro número: la declaración vivía
+   * en el `<p>` que envuelve, y el `<span>` del átomo `Price` la pisaba con
+   * `var(--fp)`. El hijo gana. Nadie recibía lo que pedía — el token decía 17,
+   * el átomo dibujaba 15, y las láminas dibujan 16 en el teléfono y 17 en el
+   * escritorio.
+   *
+   * Se mide el número renderizado **contra el token resuelto en la misma
+   * página**, no contra una constante escrita acá: así la prueba se rompe
+   * tanto si el átomo vuelve a pisar el tamaño como si alguien cambia el token
+   * creyendo que eso cambia la pantalla.
+   */
+  for (const [ancho, token, esperado] of [
+    [360, "--card-price-fs", "16px"],
+    [1280, "--card-price-fs-desktop", "17px"],
+  ] as const) {
+    test(`22.2: a ${ancho} el precio de la tarjeta mide ${esperado}, que es ${token}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: ancho, height: 1200 });
+      await page.goto("/measure");
+
+      const precio = page
+        .getByTestId("listing-grid-harness")
+        .getByText("$400", { exact: true })
+        .first();
+      const medido = await precio.evaluate((node) => getComputedStyle(node).fontSize);
+      const declarado = await page.evaluate(
+        (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim(),
+        token,
+      );
+
+      console.log(`[22.2] ${ancho}px: dibujado ${medido} · ${token}=${declarado}`);
+      // La lámina, que es la fuente visual de verdad (AGENTS.md §2): 6c dibuja
+      // 16px a 360 y 7c dibuja 17px a 1280.
+      expect(declarado).toBe(esperado);
+      // Y lo dibujado ES lo declarado, que es lo que la aserción de hoja no
+      // podía ver.
+      expect(medido).toBe(esperado);
+    });
+  }
+
+  /**
+   * **22.3 / 22.4 — el metadato y el título de lista dicen lo mismo en las dos
+   * pantallas que los dibujan.**
+   *
+   * Antes de esto había tres copias de la regla de metadato —`ListingCard`,
+   * `ResultRow` y `/mis-avisos`— y la tercera ya había perdido `font-family`,
+   * `font-weight` y `line-height` sin que nada se pusiera rojo. El título de
+   * lista tenía dos consumidores vivos que **ya discrepaban**: uno en
+   * `--ftw` recortado a dos líneas, el otro en `--ficha-title-fw` y sin
+   * recorte.
+   *
+   * Se comparan los estilos **calculados por el navegador**, no los declarados:
+   * una hoja puede declarar lo correcto y dibujar otra cosa, que es exactamente
+   * lo que pasó con el precio (22.2). Lo que NO se compara es el recorte a dos
+   * líneas — eso es del contenedor y no del papel de tipografía: la cuadrícula
+   * lo necesita para que dos tarjetas de al lado alineen, y una lista apilada
+   * no.
+   */
+  const PAPEL_TIPOGRAFICO = [
+    "font-family",
+    "font-size",
+    "font-weight",
+    "line-height",
+    "color",
+  ] as const;
+
+  async function papel(locator: import("@playwright/test").Locator) {
+    return locator.evaluate(
+      (node, props) => {
+        const calculado = getComputedStyle(node);
+        return Object.fromEntries(props.map((prop) => [prop, calculado.getPropertyValue(prop)]));
+      },
+      PAPEL_TIPOGRAFICO as unknown as string[],
+    );
+  }
+
+  test("22.3: el metadato se dibuja igual en la tarjeta y en /mis-avisos", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1400 });
+    await page.goto("/measure");
+
+    const tarjeta = await papel(
+      page.getByTestId("listing-grid-harness").getByText("Chacao · 2 hab · 78 m²").first(),
+    );
+    const misAvisos = await papel(
+      page.getByTestId("mis-avisos-harness").getByText("Chacao · 2 hab · 78 m²").first(),
+    );
+
+    console.log(`[22.3] tarjeta=${JSON.stringify(tarjeta)}`);
+    console.log(`[22.3] mis-avisos=${JSON.stringify(misAvisos)}`);
+    expect(misAvisos).toEqual(tarjeta);
+    // Y el papel es el que SISTEMA.md llama "Metadato": 12px / 600 / 1.4, gris
+    // `--soft`. Fijado con números para que converger hacia el valor
+    // equivocado no cuente como converger.
+    expect(tarjeta["font-size"]).toBe("12px");
+    expect(tarjeta["font-weight"]).toBe("600");
+    expect(tarjeta["line-height"]).toBe("16.8px");
+  });
+
+  test("22.4: el título de lista se dibuja igual en la tarjeta y en /mis-avisos", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 1400 });
+    await page.goto("/measure");
+
+    const tarjeta = await papel(
+      page.getByTestId("listing-grid-harness").getByText("Apartamento 2 hab con puesto 1").first(),
+    );
+    const misAvisos = await papel(
+      page
+        .getByTestId("mis-avisos-harness")
+        .getByText("Apartamento 2 habitaciones con puesto de estacionamiento")
+        .first(),
+    );
+
+    console.log(`[22.4] tarjeta=${JSON.stringify(tarjeta)}`);
+    console.log(`[22.4] mis-avisos=${JSON.stringify(misAvisos)}`);
+    expect(misAvisos).toEqual(tarjeta);
+    // La lámina 7c dibuja el título de la tarjeta en 13px / 1.35 y **sin peso
+    // declarado**, o sea 400 — que es `--ftw`, no `--ficha-title-fw` (600).
+    expect(tarjeta["font-size"]).toBe("13px");
+    expect(tarjeta["font-weight"]).toBe("400");
+    expect(tarjeta["line-height"]).toBe("17.55px");
+  });
+
+  /**
+   * **22.5 — el estado elegido de una ficha se pinta con UN idioma.**
+   *
+   * Dos pantallas dibujaban el mismo componente —un enlace que elige una
+   * opción de un conjunto, con una marcada— y lo pintaban distinto: el inicio
+   * con relleno `--tint`, borde `--accent` y texto `--accent`, que es el nivel
+   * 2 de la jerarquía de botones de SISTEMA.md ("Selección / estado");
+   * `/mis-avisos` con el mismo relleno pero borde `--strong` y texto `--ink`.
+   * Resuelto por el fundador el 2026-08-28: vale el idioma del inicio.
+   *
+   * Se compara el color **calculado**, no el declarado, y las tres
+   * propiedades a la vez: comparar sólo el relleno habría estado verde desde
+   * antes, porque el relleno era la única que ya coincidía.
+   */
+  test("22.5: la ficha elegida se pinta igual en el inicio y en /mis-avisos", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1400 });
+    await page.goto("/measure");
+
+    const pintura = (locator: import("@playwright/test").Locator) =>
+      locator.evaluate((node) => {
+        const calculado = getComputedStyle(node);
+        return {
+          background: calculado.backgroundColor,
+          borde: calculado.borderTopColor,
+          texto: calculado.color,
+        };
+      });
+
+    const inicio = await pintura(page.getByTestId("chips-inicio").getByText("Distrito Capital"));
+    const misAvisos = await pintura(
+      page.getByTestId("chips-mis-avisos").locator('[aria-current="page"]'),
+    );
+
+    console.log(`[22.5] inicio=${JSON.stringify(inicio)}`);
+    console.log(`[22.5] mis-avisos=${JSON.stringify(misAvisos)}`);
+    expect(misAvisos).toEqual(inicio);
+    // Y es el idioma del nivel 2, con sus tres partes: `--tint` (#E3F6F5),
+    // `--accent` (#272343) en el borde y `--accent` en el texto.
+    expect(inicio).toEqual({
+      background: "rgb(227, 246, 245)",
+      borde: "rgb(39, 35, 67)",
+      texto: "rgb(39, 35, 67)",
+    });
   });
 });

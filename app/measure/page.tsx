@@ -17,14 +17,22 @@ import {
 import type { PublicationZoneOption } from "@/modules/listing-publication/domain/zone-search";
 import { buildSearchPanel } from "@/modules/listing-search/domain/search-panel";
 import { ActionButton, NeutralButton, SelectionButton } from "../../components/atoms/buttons";
+import { ListingMeta } from "../../components/atoms/ListingMeta";
+import { ListingTitle } from "../../components/atoms/ListingTitle";
+import { Price } from "../../components/atoms/Price";
 import { Container } from "../../components/layout/Container";
+import { DetailSplit } from "../../components/layout/DetailSplit";
 import { FormShell } from "../../components/layout/FormShell";
 import { ReadingWidth } from "../../components/layout/ReadingWidth";
+import { ContactBlock } from "../../components/molecules/ContactBlock";
 import { ListingCard, ListingGrid } from "../../components/molecules/ListingCard";
 import { ResultRow } from "../../components/molecules/ResultRow";
 import { SearchFilters } from "../../components/molecules/SearchFilters";
 import { Nav } from "../../components/organisms/Nav";
 import { SearchPanel } from "../../components/organisms/SearchPanel";
+import fichaStyles from "../alquiler/[ciudad]/[zona]/[slug]/ficha.module.css";
+import homeStyles from "../home.module.css";
+import misAvisosStyles from "../mis-avisos/mis-avisos.module.css";
 import { PhotoUploader } from "../publicar/fotos/PhotoUploader";
 import { PublishStep, type RailEntry } from "../publicar/PublishStep";
 import publishStyles from "../publicar/publish-page.module.css";
@@ -200,6 +208,63 @@ export default function MeasureHarnessPage() {
             ))}
           </ListingGrid>
         </div>
+
+        {/* **La fila de `/mis-avisos`, al lado de la tarjeta y a propósito.**
+            Las dos dibujan el mismo aviso con la misma anatomía —precio,
+            título de lista, metadatos— y hasta la 22.3/22.4 lo hacían con
+            tres copias del mismo CSS que ya habían empezado a discrepar. Que
+            digan lo mismo es una medida, no una lectura, así que las dos
+            tienen que estar en la misma página para poder compararlas.
+
+            Sólo la carcasa: nada del borrador, su formulario ni su Server
+            Action — el arnés dibuja y no consulta. */}
+        {/* **Las dos fichas de selección, juntas para poder compararlas**
+            (22.5). Son el mismo componente dibujado dos veces —un enlace que
+            elige una opción de un conjunto, con una marcada— y hasta acá el
+            estado elegido se pintaba con dos idiomas distintos. Que digan lo
+            mismo es una medida y no una lectura, así que las dos viven en la
+            misma página. */}
+        <div data-testid="chips-inicio">
+          <ul className={homeStyles.chips}>
+            <li>
+              <span className={homeStyles.chipSelected}>Distrito Capital</span>
+            </li>
+            <li>
+              <span className={homeStyles.chip}>Maracaibo</span>
+            </li>
+          </ul>
+        </div>
+
+        <div data-testid="chips-mis-avisos">
+          <ul className={misAvisosStyles.fichas}>
+            <li>
+              <span className={misAvisosStyles.ficha} aria-current="page">
+                Todos <span className={misAvisosStyles.fichaCuenta}>3</span>
+              </span>
+            </li>
+            <li>
+              <span className={misAvisosStyles.ficha}>
+                Activas <span className={misAvisosStyles.fichaCuenta}>2</span>
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        <div data-testid="mis-avisos-harness">
+          <ul className={misAvisosStyles.lista}>
+            <li className={misAvisosStyles.aviso} data-estado="active">
+              <div className={misAvisosStyles.miniatura} aria-hidden="true" />
+              <div className={misAvisosStyles.cuerpo}>
+                <Price usd={450} />
+                <ListingTitle level={2}>
+                  Apartamento 2 habitaciones con puesto de estacionamiento
+                </ListingTitle>
+                <ListingMeta>Chacao · 2 hab · 78 m²</ListingMeta>
+                <p className={misAvisosStyles.estado}>Activa · vence en 22 días</p>
+              </div>
+            </li>
+          </ul>
+        </div>
       </Container>
 
       <div data-testid="publish-step-zona">
@@ -218,8 +283,91 @@ export default function MeasureHarnessPage() {
           },
         ])}
       </div>
+
+      {/* **La ficha, para medirla de verdad** (16.23, 16.25, 16.29).
+
+          Monta la hoja REAL de la ficha —`ficha.module.css`, la misma que sirve
+          `/alquiler/<ciudad>/<zona>/<slug>`— dentro de las mismas primitivas:
+          `Container` (1100) y `DetailSplit` (640 + 40 + 420). Lo único escrito
+          acá son los tres elementos de texto, y `ficha-medida.test.ts` ata sus
+          clases a las que la página usa: si alguien renombra `.price` allá,
+          esa prueba se pone roja antes de que ésta mida una clase huérfana.
+
+          Existe porque una aserción sobre el contenido de la hoja no puede
+          distinguir `--ficha-price-fs` (30) de `--fpb` (26): las dos son
+          propiedades personalizadas y `lint:tokens` acepta las dos. Lo único
+          que las distingue es el número dibujado. */}
+      <div className={fichaStyles.page}>
+        <Container>
+          <DetailSplit
+            media={
+              <>
+                {/* La columna de 640. No es la tira de fotos real porque lo que
+                    se mide es la CELDA de la grilla, no la galería: la tira
+                    lleva su propio ancho por token (`--ficha-photo-w-desktop`)
+                    y mediría ese token en vez de la columna. */}
+                <div data-testid="ficha-media" style={{ blockSize: 200 }} />
+                <div className={fichaStyles.body}>
+                  <section className={fichaStyles.description}>
+                    <h2 className={fichaStyles.heading}>Descripción</h2>
+                    <ReadingWidth>
+                      <p className={fichaStyles.text} data-testid="ficha-description">
+                        Edificio de 2007, piso 6 con ascensor y vigilancia las 24 horas. Tiene
+                        planta eléctrica y tanque propio, así que el agua llega todos los días.
+                      </p>
+                    </ReadingWidth>
+                  </section>
+                </div>
+              </>
+            }
+            data={
+              <>
+                <div className={fichaStyles.summary}>
+                  <p className={fichaStyles.price} data-testid="ficha-price">
+                    $450
+                    <span className={fichaStyles.perMonth}> / mes</span>
+                  </p>
+                  <h1 className={fichaStyles.title} data-testid="ficha-title">
+                    Apartamento 2 habitaciones con puesto de estacionamiento
+                  </h1>
+                  <p className={fichaStyles.location}>Apartamento · Chacao · Distrito Capital</p>
+                </div>
+                <div className={fichaStyles.contact}>
+                  <ContactBlock
+                    contact={{ state: "locked", method: "whatsapp" }}
+                    publisherType="owner"
+                    publisherName="María F."
+                    listingId="00000000-0000-4000-8000-000000000000"
+                    listingTitle="Apartamento 2 habitaciones con puesto de estacionamiento"
+                    revealAction={measureRevealAction}
+                    verifiedAt={null}
+                    expiresAt={new Date("2026-09-12T00:00:00.000Z")}
+                    zoneName="Chacao"
+                    zoneHref="/alquiler/distrito-capital/chacao"
+                    signInHref="/signin"
+                  />
+                </div>
+              </>
+            }
+          />
+        </Container>
+      </div>
     </>
   );
+}
+
+/**
+ * La acción del bloque de contacto, que este arnés nunca dispara.
+ *
+ * `ContactBlock` la exige porque el revelado es un caso de uso y no un enlace,
+ * pero acá se mide geometría: nada se envía. Se declara vacía en vez de
+ * importar `revealListingContact` para que el arnés no arrastre la sesión de
+ * Auth.js ni el cliente de la base sólo para dibujar un botón — y para que un
+ * error de medición no pueda escribir jamás en `contact_reveal_event`, que es
+ * un registro de sólo-agregar.
+ */
+async function measureRevealAction(_formData: FormData): Promise<void> {
+  "use server";
 }
 
 /**
@@ -334,6 +482,21 @@ function harnessPanel() {
         hasAppliances: 6,
       },
       byPublisherType: { owner: 11, broker: 5 },
+      // Las nueve relajaciones y el total pelado de la ciudad. Son la otra
+      // mitad del conteo en vivo (14.34): cuántos quedarían al SOLTAR cada
+      // filtro, que es lo que dice el botón al volver a tocar el elegido.
+      withoutFilter: {
+        zone: 40,
+        price: 22,
+        rooms: 31,
+        publisherType: 25,
+        hasPowerPlant: 18,
+        hasRegularWater: 19,
+        isFurnished: 20,
+        hasSecurity: 21,
+        hasAppliances: 23,
+      },
+      cityTotal: 70,
     },
     criteria: {},
   });

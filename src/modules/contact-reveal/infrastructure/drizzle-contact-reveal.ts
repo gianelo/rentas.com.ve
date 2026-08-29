@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, gte, type SQL, sql } from "drizzle-orm";
+import { and, desc, eq, gt, gte, type SQL, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import { contactRevealEvents, listings } from "../../../shared/db/schema";
@@ -112,6 +112,16 @@ export class DrizzleContactRevealEvents
  * Devolver `null` cubre inexistente, vencido y oculto por igual, que es lo que
  * el puerto promete: quien sondea URLs no puede distinguir un aviso dado de
  * baja de uno que nunca existió.
+ *
+ * **Y «vencido» son DOS condiciones, no una** (task 21.1, la misma regla que
+ * la 11.13 dejó escrita en el sitemap). `markExpired` corre una vez al día,
+ * así que entre que un aviso vence y que su fila lo dice hay de 0 a casi 24
+ * horas. Sin la fecha, el filtro por rótulo cerraba la lista y dejaba la
+ * puerta de atrás abierta: quien llega a la ficha por un enlace de WhatsApp
+ * gastaba uno de sus 40 revelados del día en un aviso que ya no está — y el
+ * revelado es irreversible, porque queda escrito en un registro que sólo
+ * agrega. Es el mismo defecto de la búsqueda, una capa más abajo, y por eso
+ * se cierra en el mismo `WHERE` y no en un `if` del lado de la aplicación.
  */
 export class DrizzleRevealableListing implements RevealableListingPort {
   constructor(private readonly db: ContactRevealDatabase) {}
@@ -126,7 +136,13 @@ export class DrizzleRevealableListing implements RevealableListingPort {
         contactValue: listings.contactValue,
       })
       .from(listings)
-      .where(and(eq(listings.id, listingId), eq(listings.status, "active")))
+      .where(
+        and(
+          eq(listings.id, listingId),
+          eq(listings.status, "active"),
+          gt(listings.expiresAt, sql`now()`),
+        ),
+      )
       .limit(1);
 
     return rows[0] ?? null;
