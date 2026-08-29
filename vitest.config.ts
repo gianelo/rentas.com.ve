@@ -31,6 +31,11 @@ export default defineConfig({
       "src/**/*.{test,spec}.{ts,tsx}",
       "components/**/*.{test,spec}.{ts,tsx}",
       "app/**/*.{test,spec}.{ts,tsx}",
+      // `instrumentation.ts` tiene que vivir en la raíz —Next sólo lo busca
+      // ahí o en `src/` cuando `app/` está dentro de `src/`, y acá no lo
+      // está—, así que su prueba se nombra una por una en vez de abrir la
+      // raíz entera a este glob.
+      "instrumentation.{test,spec}.ts",
     ],
     coverage: {
       provider: "v8",
