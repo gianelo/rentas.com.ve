@@ -223,26 +223,68 @@ function changeValue(field: ChangedField, value: string): string {
 
 const UNCHANGED = "El resto del aviso quedó como estaba.";
 
+/** Una vez cada una: los cinco atributos comparten etiqueta a proposito. */
+function addOnce(clauses: string[], clause: string): void {
+  if (!clauses.includes(clause)) clauses.push(clause);
+}
+
+/** "a", "a y b", "a, b y c" — el espanol no lleva coma antes de la "y". */
+function joinClauses(clauses: readonly string[]): string {
+  if (clauses.length === 1) return clauses[0] as string;
+  return `${clauses.slice(0, -1).join(", ")} y ${clauses[clauses.length - 1]}`;
+}
+
 /**
  * **Regla 4 de la seccion 4, dicha como la escribe el diseno:** "Cambiaste
  * habitaciones de 2 a 3. El resto del aviso quedó como estaba."
  *
  * La segunda oracion no es relleno. Es la unica prueba que recibe quien
  * corrigio un paso de que los otros ocho siguen ahi — y sin ella, la salida
- * razonable es volver a recorrerlos para comprobarlo.
+ * razonable es volver a recorrerlos para comprobarlo. Por eso **se nombran
+ * todos los campos que cambiaron**: con uno solo, esa segunda oracion afirma
+ * de los demas algo que no es cierto.
+ *
+ * Dos verbos y no uno, cada uno con sus campos: "Cambiaste X de A a B" y
+ * "Pusiste Y en C". Mezclarlos en una sola oracion produce "Cambiaste
+ * habitaciones de 2 a 3 y metros cuadrados de  a 90", con un hueco donde
+ * nunca hubo un valor anterior.
+ *
+ * `null` cuando no cambio nada, y el silencio no es una omision: un aviso que
+ * dice "cambiaste" sin que nadie haya cambiado nada ensena a desconfiar del
+ * mensaje justo cuando el mensaje es lo unico que distingue "se guardó" de
+ * "se perdió".
  */
-export function changeNoticeMessage(change: DraftChange): string {
-  const label = CHANGE_FIELD_LABEL[change.field];
+export function changeNoticeMessage(changes: readonly DraftChange[]): string | null {
+  if (changes.length === 0) return null;
 
-  if (OPAQUE_CHANGE_FIELDS.has(change.field)) {
-    return `Cambiaste ${label}. ${UNCHANGED}`;
+  const changed: string[] = [];
+  const added: string[] = [];
+
+  for (const change of changes) {
+    const label = CHANGE_FIELD_LABEL[change.field];
+
+    if (OPAQUE_CHANGE_FIELDS.has(change.field)) {
+      addOnce(changed, label);
+      continue;
+    }
+
+    if (change.before === "") {
+      // No hubo cambio: hubo una respuesta donde no habia ninguna. Decir
+      // "cambiaste de nada a X" describe algo que no paso.
+      addOnce(added, `${label} en ${changeValue(change.field, change.after)}`);
+      continue;
+    }
+
+    addOnce(
+      changed,
+      `${label} de ${changeValue(change.field, change.before)} a ${changeValue(change.field, change.after)}`,
+    );
   }
 
-  if (change.before === "") {
-    // No hubo cambio: hubo una respuesta donde no habia ninguna. Decir
-    // "cambiaste de nada a X" describe algo que no paso.
-    return `Pusiste ${label} en ${changeValue(change.field, change.after)}. ${UNCHANGED}`;
-  }
+  const sentences: string[] = [];
+  if (changed.length > 0) sentences.push(`Cambiaste ${joinClauses(changed)}.`);
+  if (added.length > 0) sentences.push(`Pusiste ${joinClauses(added)}.`);
+  sentences.push(UNCHANGED);
 
-  return `Cambiaste ${label} de ${changeValue(change.field, change.before)} a ${changeValue(change.field, change.after)}. ${UNCHANGED}`;
+  return sentences.join(" ");
 }

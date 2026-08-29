@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AppLink } from "@/../components/atoms/AppLink";
 import {
-  type ChangedField,
   isDraftReadyForReview,
   PUBLISH_STEP_ORDER,
   type PublishStepId,
+  parseDraftChanges,
 } from "@/modules/listing-publication/domain/publication-steps";
 import { requireSession } from "../../_lib/require-session";
 import { publishFromReview } from "../actions";
@@ -19,8 +19,23 @@ export const metadata: Metadata = {
 };
 
 interface ReviewPageProps {
-  /** Los tres pedazos del "que cambio". La frase se arma acá, no en la URL. */
-  readonly searchParams: Promise<{ campo?: string; antes?: string; ahora?: string }>;
+  /**
+   * Los tres pedazos del "qué cambió", uno por campo. La frase se arma acá y
+   * no en la URL, y **nada de esto se cree**: un paso escribe hasta cuatro
+   * campos, así que llegan repetidos —una cadena cuando es uno solo, un
+   * arreglo cuando son varios— y una barra de direcciones se escribe a mano.
+   */
+  readonly searchParams: Promise<{
+    campo?: string | string[];
+    antes?: string | string[];
+    ahora?: string | string[];
+  }>;
+}
+
+/** Un valor repetido llega como arreglo; uno solo, como cadena. */
+function list(value: string | string[] | undefined): readonly string[] {
+  if (value === undefined) return [];
+  return Array.isArray(value) ? value : [value];
 }
 
 /**
@@ -55,14 +70,9 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
   );
   const totalBytes = draft.photos.reduce((sum, photo) => sum + photo.bytes, 0);
 
-  const notice =
-    campo && ahora !== undefined
-      ? changeNoticeMessage({
-          field: campo as ChangedField,
-          before: antes ?? "",
-          after: ahora,
-        })
-      : null;
+  // Qué llegó por la URL lo decide el dominio, no esta página: un campo
+  // inventado o dos valores iguales salen de acá como "no hay nada que decir".
+  const notice = changeNoticeMessage(parseDraftChanges(list(campo), list(antes), list(ahora)));
 
   const rows: ReadonlyArray<{ step: PublishStepId; term: string; value: string }> = [
     {
