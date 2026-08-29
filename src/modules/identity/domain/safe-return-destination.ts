@@ -34,23 +34,32 @@ const SAME_ORIGIN = "https://destino.invalid";
 /** La vuelta sólo puede ser a una ficha: es el único lugar del que se sale. */
 const RETURN_PREFIX = "/alquiler/";
 
-export function safeSignInDestination(candidate: string): string {
+/**
+ * El parseo, una sola vez para las tres reglas de abajo: lo que cambia entre
+ * ellas es a qué pantallas se deja ir, no cómo se lee la dirección.
+ *
+ * `null` cuando el candidato viene vacío, no parsea, o trae su propio origen —
+ * eso cubre `https://evil.test/…`, `//evil.test/…` y `/\evil.test/…` de una
+ * vez, y sin una lista de esquemas que alguien tenga que mantener.
+ */
+function internalUrl(candidate: string): URL | null {
   const value = candidate.trim();
-  if (value === "") return SIGN_IN_FALLBACK;
+  if (value === "") return null;
 
-  let url: URL;
   try {
-    url = new URL(value, SAME_ORIGIN);
+    const url = new URL(value, SAME_ORIGIN);
+    return url.origin === SAME_ORIGIN ? url : null;
   } catch {
     // Basura que ni siquiera parsea. Lanzar acá le daría una pantalla rota a
     // alguien que sólo quería un número de teléfono.
-    return SIGN_IN_FALLBACK;
+    return null;
   }
+}
 
-  // Cualquier candidato que traiga su propio origen sale con uno distinto del
-  // inventado. Eso cubre `https://evil.test/…` y `//evil.test/…` de una vez, y
-  // sin una lista de esquemas que alguien tenga que mantener.
-  if (url.origin !== SAME_ORIGIN) return SIGN_IN_FALLBACK;
+export function safeSignInDestination(candidate: string): string {
+  const value = candidate.trim();
+  const url = internalUrl(value);
+  if (url === null) return SIGN_IN_FALLBACK;
   if (url.pathname !== SIGN_IN_FALLBACK) return SIGN_IN_FALLBACK;
 
   // `searchParams` decodifica una sola vez, que es lo correcto: `%252F` queda
@@ -92,20 +101,41 @@ export function safeSignInDestination(candidate: string): string {
  */
 export function safeReturnPath(candidate: string): string | null {
   const value = candidate.trim();
-  if (value === "") return null;
-
-  let url: URL;
-  try {
-    url = new URL(value, SAME_ORIGIN);
-  } catch {
-    return null;
-  }
-
-  // Cubre `https://evil.test/…`, `//evil.test/…` y `/\evil.test/…` de una vez:
-  // los tres salen con un origen distinto del inventado. La barra invertida la
-  // normaliza el propio parser antes de llegar acá.
-  if (url.origin !== SAME_ORIGIN) return null;
+  const url = internalUrl(value);
+  if (url === null) return null;
   if (!url.pathname.startsWith(RETURN_PREFIX)) return null;
+
+  return value;
+}
+
+/**
+ * Las pantallas de cuenta desde las que se pide entrar. Van con la ruta exacta
+ * porque abajo cuelgan pasos —`/publicar/paso/fotos`— y la vuelta es al paso.
+ */
+const ACCOUNT_DOORS = ["/publicar", "/mis-avisos", "/importar"] as const;
+
+function isSignInDoor(pathname: string): boolean {
+  if (pathname.startsWith(RETURN_PREFIX)) return true;
+
+  // La barra del segundo caso importa: sin ella `/publicarx` sería una puerta.
+  return ACCOUNT_DOORS.some((door) => pathname === door || pathname.startsWith(`${door}/`));
+}
+
+/**
+ * A dónde puede volver quien entró (tasks.md 15.10, F19).
+ *
+ * **Es más estrecha que la regla de Auth.js, y ésa es toda la razón por la que
+ * existe.** La librería acepta cualquier destino del mismo origen —conducido y
+ * medido en `infrastructure/magic-link-ida-y-vuelta.test.ts`—, así que el
+ * inicio le vale. La F19 dice «vuelve a la pantalla de donde salió, nunca al
+ * inicio»: eso es una lista de puertas, no una comprobación de origen. `null` y
+ * no un respaldo, igual que `safeReturnPath`: quien llama sabe qué hacer.
+ */
+export function safeSignInReturn(candidate: string): string | null {
+  const value = candidate.trim();
+  const url = internalUrl(value);
+  if (url === null) return null;
+  if (!isSignInDoor(url.pathname)) return null;
 
   return value;
 }

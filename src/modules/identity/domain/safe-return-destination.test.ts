@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { SIGN_IN_FALLBACK, safeReturnPath, safeSignInDestination } from "./safe-return-destination";
+import {
+  SIGN_IN_FALLBACK,
+  safeReturnPath,
+  safeSignInDestination,
+  safeSignInReturn,
+} from "./safe-return-destination";
 
 const VALID = "/signin?callbackUrl=%2Falquiler%2Fmaracaibo%2Fbella-vista%2Fapto-abc123";
 
@@ -129,5 +134,52 @@ describe("safeReturnPath", () => {
   it("no inventa un respaldo: quien llama tiene que ver el rechazo", () => {
     expect(safeReturnPath("https://evil.test/alquiler/x")).not.toBe(SIGN_IN_FALLBACK);
     expect(safeReturnPath("https://evil.test/alquiler/x")).toBeNull();
+  });
+});
+
+/**
+ * **La misma regla, sobre el destino que se emite al salir de entrar**
+ * (tasks.md 15.10, F19).
+ *
+ * `safeSignInDestination` valida el enlace *hacia* entrar y `safeReturnPath` la
+ * ruta de una ficha. Ninguna sirve acá, y no es cuestión de estilo: **de entrar
+ * se sale hacia cuatro pantallas, no hacia una.** Las puertas que ya existen
+ * mandan `/alquiler/…`, `/publicar…`, `/mis-avisos` e `/importar`; medir esto
+ * con el prefijo de la ficha mandaría al inicio a quien venía de publicar, que
+ * es justo lo que la F19 prohíbe. El parseo es compartido; lo que cambia es la
+ * lista de puertas.
+ */
+describe("safeSignInReturn", () => {
+  it.each([
+    ["la ficha", "/alquiler/maracaibo/bella-vista/apto-abc123"],
+    ["la ficha con su búsqueda de origen", "/alquiler/maracaibo?desde=%2Fx"],
+    ["publicar", "/publicar"],
+    ["un paso de publicar", "/publicar/paso/fotos"],
+    ["mis avisos", "/mis-avisos"],
+    ["importar", "/importar"],
+  ])("deja pasar %s, que es una puerta del producto", (_caso, candidato) => {
+    expect(safeSignInReturn(candidato)).toBe(candidato);
+  });
+
+  it.each([
+    ["otro origen escrito completo", "https://evil.test/publicar"],
+    ["el origen relativo al protocolo", "//evil.test/publicar"],
+    ["la barra invertida que algunos navegadores normalizan", "/\\evil.test/publicar"],
+    // Auth.js sí acepta ésta: su regla es «mismo origen», y el inicio es del
+    // mismo origen. La F19 dice «nunca al inicio», así que la regla del
+    // producto es más estrecha que la de la librería, y por eso existe.
+    ["el inicio, que la F19 prohíbe por su nombre", "/"],
+    ["una ruta interna que no es una puerta", "/terminos"],
+    ["la propia pantalla de entrar, que sería un bucle", "/signin"],
+    ["un prefijo que sólo se le parece", "/publicarx"],
+    // Se compara la ruta YA RESUELTA: `/publicar/../terminos` empieza con el
+    // prefijo y el navegador lo resuelve a `/terminos`.
+    ["una escapada por segmentos relativos", "/publicar/../terminos"],
+    ["el campo vacío", ""],
+    ["el campo en blanco", "   "],
+    ["basura que ni siquiera parsea", "://"],
+    ["un host que hace lanzar al parser", "//["],
+  ])("rechaza %s", (_caso, candidato) => {
+    expect(safeSignInReturn(candidato)).toBeNull();
   });
 });

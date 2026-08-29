@@ -5,6 +5,7 @@ import { db } from "@/shared/db/client";
 import { accounts, sessions, users, verificationTokens } from "@/shared/db/schema";
 import { buildEmailProvider } from "./email-provider";
 import { toMinimalGoogleProfile } from "./google-profile";
+import { signInRedirect } from "./redirect-callback";
 
 // account-identity spec, Requirement: Google-Only Authentication has been
 // superseded by "Two Authentication Doors" (tasks.md Phase 15, F16/F17):
@@ -27,4 +28,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     buildEmailProvider(),
   ],
   session: { strategy: "database" },
+  // F19, tasks.md 15.10: el único paso por donde cruzan las dos puertas y los
+  // dos momentos del enlace por correo. Ver `redirect-callback.ts`.
+  callbacks: { redirect: signInRedirect },
 });
