@@ -261,6 +261,17 @@
      misma clase de control y separarlos sería inventar una diferencia. */
   --viewer-glyph-fs: 16px;
 
+  /* **La puerta de entrar** (láminas 8b y 9b, tasks.md 15.8): la misma pieza
+     es hoja abajo en el móvil y diálogo centrado de 460 en escritorio. El
+     velo va acá y no en el tema porque oscurece lo que haya detrás, igual que
+     `--viewer-scrim`: no es un color de la paleta, es una sombra sobre ella.
+     El radio es propio y no `--r` (12): las dos láminas dibujan 18. */
+  --door-veil: rgba(30, 32, 34, 0.55);
+  --door-r: 18px;
+  --door-w: 460px;
+  --door-shadow: 0 24px 64px rgba(30, 32, 34, 0.34);
+  --door-sheet-shadow: 0 -8px 28px rgba(30, 32, 34, 0.16);
+
   --title-fs: 20px;
   --title-fw: 700;
   --title-lh: 1.25;

@@ -12,7 +12,11 @@ import {
   DrizzleRevealableListing,
 } from "@/modules/contact-reveal/infrastructure/drizzle-contact-reveal";
 import { UnauthenticatedError } from "@/modules/identity/application/require-authenticated-session";
-import { safeSignInDestination } from "@/modules/identity/domain/safe-return-destination";
+import {
+  SIGN_IN_FALLBACK,
+  safeReturnPath,
+} from "@/modules/identity/domain/safe-return-destination";
+import { signIn } from "@/modules/identity/infrastructure/auth";
 import { nextAuthSessionPort } from "@/modules/identity/infrastructure/session-port";
 import { db } from "@/shared/db/client";
 
@@ -32,7 +36,7 @@ import { db } from "@/shared/db/client";
  */
 export async function revealListingContact(formData: FormData): Promise<void> {
   const listingId = String(formData.get("listingId") ?? "");
-  const signInHref = String(formData.get("signInHref") ?? "");
+  const doorHref = String(formData.get("doorHref") ?? "");
   const message = String(formData.get("message") ?? "");
 
   try {
@@ -51,14 +55,15 @@ export async function revealListingContact(formData: FormData): Promise<void> {
       },
     );
   } catch (error) {
-    // El punto de fuga principal del producto: quien no tiene cuenta va a
-    // entrar y **vuelve a esta misma ficha**, no a la raíz.
+    // El punto de fuga principal del producto. **Ya no lo saca del aviso**
+    // (tasks.md 15.8): vuelve a ESTA ficha con la puerta abierta, que es un
+    // estado de la dirección y por eso se dibuja sin una línea de cliente.
     if (error instanceof UnauthenticatedError) {
       // A dónde se puede mandar a alguien lo decide el dominio. Este campo lo
       // manda el navegador, así que es entrada de quien envía: sin esa regla
       // la acción es un redirector abierto, y lo caro es que el enlace se ve
-      // nuestro.
-      redirect(safeSignInDestination(signInHref));
+      // nuestro. `null` obliga a decidir, y la decisión es la pantalla propia.
+      redirect(safeReturnPath(doorHref) ?? SIGN_IN_FALLBACK);
     }
 
     // El aviso venció, lo ocultó la moderación o nunca existió. No es un
@@ -75,4 +80,19 @@ export async function revealListingContact(formData: FormData): Promise<void> {
 
     throw error;
   }
+}
+
+/**
+ * Entrar con Google **desde la puerta de la ficha** (tasks.md 15.8). Una acción
+ * y no un enlace a `/signin`: la puerta ya está sobre el aviso, y una pantalla
+ * intermedia pone dos pasos donde el diseño dibuja uno. Sin JavaScript es un
+ * POST nativo, como el formulario de revelar.
+ *
+ * **Acá no se valida el destino, a propósito**: lo juzga `safeSignInReturn` en
+ * `callbacks.redirect`, el único paso por donde cruzan las dos puertas y los
+ * dos momentos del enlace (15.10). Repetirlo sería una segunda regla que algún
+ * día discrepa de la única.
+ */
+export async function continueWithGoogle(formData: FormData): Promise<void> {
+  await signIn("google", { redirectTo: String(formData.get("callbackUrl") ?? "") || "/" });
 }

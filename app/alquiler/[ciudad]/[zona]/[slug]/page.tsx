@@ -12,7 +12,13 @@ import { ListingCard, ListingGrid } from "@/../components/molecules/ListingCard"
 import { PhotoStrip } from "@/../components/molecules/PhotoStrip";
 import { StatStrip } from "@/../components/molecules/StatStrip";
 import { Nav } from "@/../components/organisms/Nav";
+import { SignInDoor } from "@/../components/organisms/SignInDoor";
 import { viewListingContact } from "@/modules/contact-reveal/application/view-listing-contact";
+import {
+  contactDoorFor,
+  DOOR_QUERY_NAME,
+  doorHrefFor,
+} from "@/modules/contact-reveal/domain/sign-in-door";
 import {
   DrizzleContactRevealEvents,
   DrizzleContactRevealMetrics,
@@ -44,7 +50,7 @@ import { DrizzleListingSearch } from "@/modules/listing-search/infrastructure/dr
 import { db } from "@/shared/db/client";
 import { readSession, requestSessionPort } from "../../../../_lib/session";
 import styles from "./ficha.module.css";
-import { revealListingContact } from "./reveal-actions";
+import { continueWithGoogle, revealListingContact } from "./reveal-actions";
 
 /**
  * **Una consulta por peticion, no dos.** `generateMetadata` y el componente
@@ -147,6 +153,10 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
   // desde Google o desde el inicio.
   const back = resultsLink(returnTo, { cityName: detail.cityName, zoneName: detail.zoneName });
 
+  // La misma ficha con la puerta abierta encima (15.8): un estado de la
+  // dirección, así que sale en el HTML servido y se cierra volviendo acá.
+  const doorHref = doorHrefFor(listingHref);
+
   // **Un solo reloj para toda la respuesta.** Leerlo dos veces dejaría al
   // cuerpo y al `<head>` mirando instantes distintos, que es exactamente la
   // contradicción que esta página venía teniendo por otro motivo.
@@ -175,6 +185,15 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
       // abra ya escrito y no con la plantilla genérica.
       messages: new DrizzleContactRevealEvents(db),
     },
+  );
+
+  // **Si hay puerta y qué dice lo decide el dominio**: el token lo escribe
+  // cualquiera, y sobre un contacto ya revelado sería un muro delante de algo
+  // que está abierto.
+  const door = contactDoorFor(
+    contact,
+    { type: detail.publisherType, name: detail.publisherName },
+    query[DOOR_QUERY_NAME],
   );
 
   // La barra del producto (14a). La sesión sale del MISMO puerto memoizado que
@@ -380,7 +399,7 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
                     // de `listingHref`: aquel dice de que pantalla de resultados salio
                     // quien mira, y este dice a que aviso volver despues de entrar. Son
                     // dos vueltas distintas, anidadas una en la otra.
-                    signInHref={`/signin?callbackUrl=${encodeURIComponent(listingHref)}`}
+                    doorHref={doorHref}
                   />
                 </div>
               </>
@@ -435,6 +454,17 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
           </footer>
         </Container>
       </main>
+
+      {/* **Encima del aviso y no en su lugar** (15.8). Si hay puerta ya lo
+          decidió `contactDoorFor`. */}
+      {door !== null ? (
+        <SignInDoor
+          copy={door}
+          stayHref={listingHref}
+          callbackUrl={listingHref}
+          signInAction={continueWithGoogle}
+        />
+      ) : null}
     </>
   );
 }

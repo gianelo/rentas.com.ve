@@ -143,6 +143,7 @@ Escala: `4 · 8 · 12 · 16 · 24 · 32 · 48`. Nada fuera de esa escala.
 - Columna de resultados: el ancho entero del contenedor.
 - Ficha: foto 640px + columna de datos de 420px fija y sticky. *(Los 328 px que la tabla §8 de la especificación de la ficha pone bajo «Escritorio» son el ancho útil del **teléfono**: la lámina de escritorio no dibuja ningún bloque de 328 y la móvil lo dibuja seis veces — medido, tarea 16.29.)*
 - Formularios: una sola columna de 600px.
+- **La puerta de entrar** (láminas 8b/9b, tarea 15.8): en móvil es una hoja que sube desde abajo y ocupa el ancho; en escritorio es un diálogo de **460px** (`--door-w`) centrado sobre el aviso oscurecido. El sistema no definía ni el velo, ni el radio de 18 que las dos láminas dibujan (`--r` es 12), ni una sombra de esa escala, así que se extiende con `--door-veil`, `--door-r`, `--door-w`, `--door-shadow` y `--door-sheet-shadow` — no se escriben literales en la hoja del componente. Las medidas dibujadas se comprueban en `tests/measure/puerta.spec.ts`, no en la hoja.
 - Altura mínima de control: **44px en las dos pantallas**. Era 36 en escritorio; **decidido por el fundador el 2026-08-27** (tarea 16.24) porque de los tres candidatos —36, los 40 de su especificación y 44— **sólo 44 alcanza WCAG 2.2 SC 2.5.5 (AAA)**. Los botones de acción miden 46 (`--action-h`), que es un valor propio y no una variante de éste.
 
 ## Jerarquía de botones

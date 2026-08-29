@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { contactDoorFor, DOOR_QUERY_NAME } from "@/modules/contact-reveal/domain/sign-in-door";
 import {
   draftListingOf,
   isStepComplete,
@@ -30,6 +31,7 @@ import { ResultRow } from "../../components/molecules/ResultRow";
 import { SearchFilters } from "../../components/molecules/SearchFilters";
 import { Nav } from "../../components/organisms/Nav";
 import { SearchPanel } from "../../components/organisms/SearchPanel";
+import { SignInDoor } from "../../components/organisms/SignInDoor";
 import fichaStyles from "../alquiler/[ciudad]/[zona]/[slug]/ficha.module.css";
 import homeStyles from "../home.module.css";
 import misAvisosStyles from "../mis-avisos/mis-avisos.module.css";
@@ -57,10 +59,23 @@ import { PRIMARY_ACTION_LABEL, STEP_COPY, stepSummary } from "../publicar/step-c
  * Content register is SISTEMA.md's own — Venezuelan zones, prices, and
  * titles "as people write them" — never lorem ipsum.
  */
-export default function MeasureHarnessPage() {
+export default async function MeasureHarnessPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   if (process.env.MEASURE_HARNESS_ENABLED !== "true") {
     notFound();
   }
+
+  // **Se abre por la dirección, igual que en la ficha**, y no montada siempre:
+  // encima de todo, su velo se come los clics de las otras mediciones — que fue
+  // exactamente lo que pasó al intentarlo.
+  const puerta = contactDoorFor(
+    { state: "locked", method: "whatsapp" },
+    { type: "owner", name: "María F." },
+    (await searchParams)[DOOR_QUERY_NAME],
+  );
 
   return (
     <>
@@ -344,7 +359,7 @@ export default function MeasureHarnessPage() {
                     expiresAt={new Date("2026-09-12T00:00:00.000Z")}
                     zoneName="Chacao"
                     zoneHref="/alquiler/distrito-capital/chacao"
-                    signInHref="/signin"
+                    doorHref="/alquiler/distrito-capital/chacao/apartamento-medida?entrar=si"
                   />
                 </div>
               </>
@@ -352,6 +367,17 @@ export default function MeasureHarnessPage() {
           />
         </Container>
       </div>
+
+      {/* **La puerta, montada de verdad** (15.8): el mismo componente que sirve
+          la ficha, para que la medición lea geometría dibujada. */}
+      {puerta ? (
+        <SignInDoor
+          copy={puerta}
+          stayHref="/alquiler/distrito-capital/chacao/apartamento-medida"
+          callbackUrl="/alquiler/distrito-capital/chacao/apartamento-medida"
+          signInAction={measureRevealAction}
+        />
+      ) : null}
     </>
   );
 }
