@@ -17,7 +17,7 @@ function render(contact: ContactPresentation, overrides: Partial<ContactBlockPro
       publisherName="María F."
       listingId="listing-1"
       listingTitle="Apartamento 2 habitaciones en Chacao"
-      signInHref="/signin?callbackUrl=%2Falquiler%2Fcaracas%2Fchacao%2Fapartamento-listing-1"
+      doorHref="/alquiler/caracas/chacao/apartamento-listing-1?entrar=si"
       revealAction={reveal}
       verifiedAt={null}
       expiresAt={new Date("2026-09-12T12:00:00.000Z")}
@@ -114,14 +114,18 @@ describe("sin cuenta", () => {
   });
 
   /**
-   * La vuelta a esta misma ficha (F19). Va en el formulario y no en el
+   * La vuelta a esta misma ficha (F19, 15.8). Va en el formulario y no en el
    * servidor porque la ficha es la única que conoce su URL canónica — la
-   * acción sólo la usa si hace falta mandar a entrar.
+   * acción sólo la usa si hace falta abrir la puerta. **Y el destino ya no es
+   * `/signin`**: la puerta se abre sobre el aviso, no en su lugar.
    */
-  it("lleva la vuelta a esta ficha para cuando la acción tenga que mandar a entrar", () => {
-    expect(render(LOCKED)).toContain(
-      "/signin?callbackUrl=%2Falquiler%2Fcaracas%2Fchacao%2Fapartamento-listing-1",
+  it("lleva la puerta sobre esta misma ficha, no una pantalla aparte", () => {
+    const markup = render(LOCKED);
+
+    expect(markup).toContain(
+      'name="doorHref" value="/alquiler/caracas/chacao/apartamento-listing-1?entrar=si"',
     );
+    expect(markup).not.toContain("/signin");
   });
 
   /**

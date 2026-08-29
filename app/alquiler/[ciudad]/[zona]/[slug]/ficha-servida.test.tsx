@@ -5,8 +5,8 @@ import type { ListingSearchResult } from "@/modules/listing-search/application/p
 import type { SearchCriteria } from "@/modules/listing-search/domain/search-criteria";
 
 /**
- * **La ficha vencida, en los bytes que salen de la ruta** (tareas 11.8, 11.10,
- * 11.11 y 11.21).
+ * **La ficha servida, en los bytes que salen de la ruta** (tareas 11.8, 11.10,
+ * 11.11, 11.21 y 15.8).
  *
  * Quien abre esta pantalla llegó por un enlace pegado en un grupo de WhatsApp
  * hace meses, o por un resultado de Google que sigue indexado. `design.md` lo
@@ -90,7 +90,10 @@ vi.mock("@/modules/listing-catalogue/infrastructure/drizzle-catalogue", () => ({
 }));
 // La acción de servidor arrastra `next/headers` y Auth.js; lo que se prueba acá
 // es lo que sale del servidor, no lo que la acción hace al recibir el POST.
-vi.mock("./reveal-actions", () => ({ revealListingContact: vi.fn() }));
+vi.mock("./reveal-actions", () => ({
+  revealListingContact: vi.fn(),
+  continueWithGoogle: vi.fn(),
+}));
 
 import FichaPage from "./page";
 
@@ -477,5 +480,54 @@ describe("un aviso activo no arrastra el costo de las sugerencias", () => {
     expect(html).not.toContain("Otros avisos activos en");
     // Y el bloque de contacto vuelve a su estado con llave.
     expect(html).toContain("Ver WhatsApp del dueño");
+  });
+});
+
+/**
+ * **La puerta de entrar, encima del aviso y no en su lugar** (15.8, F19/F20).
+ * Sale del mismo `renderToStaticMarkup`: la abre la dirección, así que quien
+ * tiene el script apagado la recibe entera. Y afirma el MEDIO —
+ * `sign-in-door.test.ts` prueba la regla, esto prueba que la ficha la usa.
+ */
+describe("la puerta del WhatsApp no saca al inquilino de la ficha (15.8)", () => {
+  const RUTA = `/alquiler/maracaibo/tierra-negra/${VENCIDO_SLUG}`;
+  const TITULO_PUERTA = "Entrá para ver el WhatsApp de Publicante de ejemplo";
+
+  beforeEach(() => {
+    findForDetail.mockResolvedValue(detail({ status: "active", expiresAt: VIGENTE() }));
+  });
+
+  it("no aparece mientras la dirección no la abra", async () => {
+    const html = await servedBody();
+
+    expect(html).not.toContain(TITULO_PUERTA);
+    expect(html).not.toContain("Seguir mirando sin entrar");
+  });
+
+  it("con el token abierto sale entera en el HTML, sin un solo script", async () => {
+    const html = await servedBody(VENCIDO_SLUG, { entrar: "si" });
+
+    expect(html).toContain(TITULO_PUERTA);
+    expect(html).toContain("Pedimos la cuenta para frenar avisos falsos.");
+    expect(html).toContain("Volvés a este mismo aviso al terminar.");
+    // Fail closed: dibujar la puerta nunca destapa el número.
+    expect(html).not.toContain(TELEFONO);
+  });
+
+  /** Lo que la 15.8 pide: el aviso sigue en la respuesta, debajo de la puerta. */
+  it("deja el aviso completo detrás, no una pantalla en su lugar", async () => {
+    const html = await servedBody(VENCIDO_SLUG, { entrar: "si" });
+
+    expect(html).toContain(VENCIDO_TITLE);
+    expect(html).toContain("$480");
+  });
+
+  /** Las dos salidas son anclas de verdad, y la vuelta de Google es a la ficha. */
+  it("sale por esta misma ficha y vuelve a ella después de Google", async () => {
+    const html = await servedBody(VENCIDO_SLUG, { entrar: "si" });
+
+    expect(html).toContain(`href="${RUTA}"`);
+    expect(html).toContain('aria-label="Cerrar sin entrar"');
+    expect(html).toContain(`name="callbackUrl" value="${RUTA}"`);
   });
 });

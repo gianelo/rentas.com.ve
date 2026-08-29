@@ -19,8 +19,10 @@ export interface ContactBlockProps {
   readonly listingId: string;
   /** Para el mensaje redactado — quien publica tiene que saber por cuál aviso le escriben. */
   readonly listingTitle: string;
-  /** A dónde va la acción cuando hay que entrar. Lleva la vuelta a esta ficha. */
-  readonly signInHref: string;
+  /** A dónde va la acción cuando hay que entrar: esta misma ficha con la puerta
+   * abierta (15.8). Se llamaba `signInHref` y apuntaba a `/signin` — justo
+   * sacar al inquilino del aviso que estaba leyendo. */
+  readonly doorHref: string;
   /** La revelación, que es un caso de uso y no un enlace. */
   readonly revealAction: (formData: FormData) => Promise<void>;
   /** `null` mientras no exista `phone_verified_at` (tasks.md 16.12). */
@@ -114,7 +116,7 @@ export function ContactBlock({
   publisherName,
   listingId,
   listingTitle,
-  signInHref,
+  doorHref,
   revealAction,
   verifiedAt,
   expiresAt,
@@ -173,8 +175,8 @@ export function ContactBlock({
             <form className={styles.control} action={revealAction}>
               <input type="hidden" name="listingId" value={listingId} />
               {/* La ficha es la única que conoce su URL canónica; la acción la
-                  usa sólo si hace falta mandar a entrar (F19). */}
-              <input type="hidden" name="signInHref" value={signInHref} />
+                  usa sólo si hace falta abrir la puerta (F19, 15.8). */}
+              <input type="hidden" name="doorHref" value={doorHref} />
               {/* La revelación ahora cuesta un mensaje escrito (tasks.md
                   6.11-6.13): se pide ACÁ, antes de mostrar el contacto, y no
                   después. `required` es el respaldo del navegador sin
