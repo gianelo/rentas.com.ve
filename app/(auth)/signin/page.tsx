@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import { AppLink } from "../../../components/atoms/AppLink";
 import { ActionButton } from "../../../components/atoms/buttons";
+import { Label } from "../../../components/atoms/Label";
 import { Container } from "../../../components/layout/Container";
 import { signInPageFor } from "../../../src/modules/identity/domain/sign-in-page";
 import { signIn } from "../../../src/modules/identity/infrastructure/auth";
+import { requestMagicLink } from "./actions";
+import { DoorBar } from "./DoorBar";
 import styles from "./signin.module.css";
 
 export const metadata: Metadata = {
@@ -36,18 +38,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
 
   return (
     <div className={styles.screen}>
-      <header className={styles.bar}>
-        <Container>
-          <div className={styles.barInner}>
-            <AppLink className={styles.brand} href="/">
-              rentas.
-            </AppLink>
-            <AppLink className={styles.back} href={page.wayOut.href}>
-              {page.wayOut.label}
-            </AppLink>
-          </div>
-        </Container>
-      </header>
+      <DoorBar wayOut={page.wayOut} />
 
       <main>
         <Container>
@@ -58,6 +49,34 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
 
               <form className={styles.form} action={continueWithGoogle}>
                 <ActionButton type="submit">Continuar con Google</ActionButton>
+              </form>
+
+              {/* La segunda puerta (22.22). Google arriba y el correo debajo,
+                  que es la nota de la lámina: un toque le gana a escribir una
+                  dirección en un teclado de teléfono. */}
+              <p className={styles.separator}>
+                <span>{page.email.separator}</span>
+              </p>
+
+              <form className={styles.emailForm} action={requestMagicLink}>
+                {/* El destino cruza los dos formularios. Ya pasó por
+                    `safeSignInReturn`, y la acción lo vuelve a juzgar: son dos
+                    momentos, no dos reglas. */}
+                <input type="hidden" name="callbackUrl" value={returnTo ?? ""} />
+                <Label htmlFor="correo">{page.email.label}</Label>
+                <div className={styles.emailRow}>
+                  <input
+                    autoComplete="email"
+                    className={styles.field}
+                    id="correo"
+                    name="correo"
+                    placeholder={page.email.placeholder}
+                    required
+                    type="email"
+                  />
+                  <ActionButton type="submit">{page.email.submit}</ActionButton>
+                </div>
+                <p className={styles.emailNote}>{page.email.note}</p>
               </form>
 
               {page.assurance ? <p className={styles.assurance}>{page.assurance}</p> : null}

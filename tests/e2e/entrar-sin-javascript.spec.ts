@@ -19,11 +19,79 @@ test("la puerta de entrar llega entera, con su envío real y su salida", async (
   await expect(page.getByRole("listitem")).toHaveCount(3);
   // Un `<button>` suelto no navega sin JavaScript: lo que envía es el
   // formulario, y el método tiene que ser el que el navegador solo entiende.
-  await expect(page.locator("form")).toHaveAttribute("method", /post/i);
+  await expect(page.locator("form").first()).toHaveAttribute("method", /post/i);
   await expect(page.getByRole("button", { name: "Continuar con Google" })).toBeVisible();
   // La salida visible (F20): mirar avisos nunca costó una cuenta.
   await expect(page.getByRole("link", { name: "← Volver a los avisos" })).toHaveAttribute(
     "href",
     "/",
   );
+});
+
+test("la puerta pide el enlace por correo con un campo y una etiqueta de verdad", async ({
+  page,
+}) => {
+  await page.goto("/signin?callbackUrl=%2Fpublicar");
+
+  await expect(page.getByText("o con tu correo")).toBeVisible();
+  // Etiqueta real asociada al control: `getByLabel` sólo lo encuentra si el
+  // `for`/`id` existe de verdad, que es lo que la lectura asistida necesita.
+  const campo = page.getByLabel("Correo");
+  await expect(campo).toHaveAttribute("type", "email");
+  // Sin una línea de script, esto es lo único que impide mandar un campo vacío.
+  await expect(campo).toHaveAttribute("required", "");
+  await expect(page.getByRole("button", { name: "Enviarme el enlace" })).toBeVisible();
+  // Dos formularios —Google y el correo— y los dos POST nativos.
+  await expect(page.locator("form")).toHaveCount(2);
+  await expect(page.locator("form").nth(1)).toHaveAttribute("method", /post/i);
+});
+
+/**
+ * **La pantalla de espera, con el script apagado** (15.9, láminas 8c/9c).
+ *
+ * El comprobante se pone como cookie porque es lo que tendría el navegador que
+ * acaba de pedir el enlace: la dirección tecleada no viaja en la barra. Lo que
+ * se mide acá es justamente lo que la 15.12 promete que sobrevive sin
+ * JavaScript — la cuenta regresiva del reenvío y la salida a Google.
+ */
+test("la espera del enlace se lee entera y sus dos salidas funcionan sin JavaScript", async ({
+  page,
+  baseURL,
+}) => {
+  const comprobante = (sentAtMs: number) => ({
+    name: "rentas_enlace",
+    value: encodeURIComponent(
+      JSON.stringify({ a: "maria.f@gmail.com", t: sentAtMs, r: "/publicar" }),
+    ),
+    url: `${baseURL ?? "http://localhost:3000"}/signin`,
+    httpOnly: true,
+  });
+
+  await page.context().addCookies([comprobante(Date.now())]);
+  await page.goto("/signin/revisa-tu-correo");
+
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Revisá tu correo");
+  // La dirección tecleada, de vuelta: es como se caza el tipeo sin volver.
+  await expect(page.getByText("maria.f@gmail.com", { exact: true })).toBeVisible();
+  await expect(page.getByRole("listitem")).toHaveCount(3);
+  await expect(page.getByText("El enlace sirve una sola vez y vence en 15 minutos.")).toBeVisible();
+  // **La cuenta, servida por el servidor.** No tictaquea sin script, y no hace
+  // falta que lo haga: dice cuándo se puede, que es lo que se vino a saber.
+  await expect(page.getByText(/^Volver a enviar en \d:\d\d$/)).toBeVisible();
+  await expect(page.getByRole("button", { name: /Volver a enviar/ })).toHaveCount(0);
+  // Las dos salidas: nadie queda atrapado esperando (F20).
+  await expect(page.getByRole("button", { name: "Mejor entro con Google" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "← Cambiar de correo" })).toHaveAttribute(
+    "href",
+    "/signin?callbackUrl=%2Fpublicar",
+  );
+
+  // Pasada la ventana, el reenvío es un formulario de verdad y no un texto.
+  await page.context().clearCookies();
+  await page.context().addCookies([comprobante(Date.now() - 120_000)]);
+  await page.reload();
+
+  await expect(page.getByRole("button", { name: "Volver a enviar el enlace" })).toBeVisible();
+  await expect(page.locator("form")).toHaveCount(2);
+  await expect(page.locator("form").first()).toHaveAttribute("method", /post/i);
 });

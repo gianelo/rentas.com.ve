@@ -26,6 +26,18 @@
 export const SIGN_IN_FALLBACK = "/signin";
 
 /**
+ * La pantalla de espera del enlace por correo (15.9, F18).
+ *
+ * **Vive acá, al lado de la anterior, y no en la carpeta de la ruta**, por lo
+ * mismo que `SIGN_IN_FALLBACK`: la nombran tres lugares que no se ven entre sí
+ * — la acción que redirige, la propia pantalla y el `pages.verifyRequest` que
+ * `auth.ts` le entrega a Auth.js. Escrita tres veces, la que se quedaría vieja
+ * es justo la de la librería, y el síntoma sería la pantalla en inglés
+ * volviendo sin que ninguna prueba se ponga roja.
+ */
+export const SIGN_IN_WAIT_PATH = "/signin/revisa-tu-correo";
+
+/**
  * Un origen que no existe. Nunca se emite: sólo sirve para que `URL` acepte una
  * ruta relativa y para tener contra qué comparar el origen del candidato.
  */

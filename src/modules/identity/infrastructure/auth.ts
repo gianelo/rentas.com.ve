@@ -3,6 +3,7 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { db } from "@/shared/db/client";
 import { accounts, sessions, users, verificationTokens } from "@/shared/db/schema";
+import { SIGN_IN_WAIT_PATH } from "../domain/safe-return-destination";
 import { buildEmailProvider } from "./email-provider";
 import { toMinimalGoogleProfile } from "./google-profile";
 import { signInRedirect } from "./redirect-callback";
@@ -28,6 +29,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     buildEmailProvider(),
   ],
   session: { strategy: "database" },
+  /**
+   * **La pantalla por defecto de Auth.js deja de ser alcanzable** (15.9, 22.22):
+   * sin esto, `/api/auth/verify-request` dibuja la de la librería, en inglés,
+   * sin la dirección tecleada y sin salida. **Es el seam y no un redirect
+   * nuestro** porque cubre todos los caminos: `@auth/core` manda ahí venga de
+   * donde venga la petición. La acción redirige además por su cuenta, para
+   * escribir el comprobante recién cuando el envío ya ocurrió.
+   */
+  pages: { verifyRequest: SIGN_IN_WAIT_PATH },
   // F19, tasks.md 15.10: el único paso por donde cruzan las dos puertas y los
   // dos momentos del enlace por correo. Ver `redirect-callback.ts`.
   callbacks: { redirect: signInRedirect },

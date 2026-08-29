@@ -83,6 +83,34 @@ describe("la pantalla de entrar dice por qué puerta se entró (15.7)", () => {
     expect(pagina.title).toBe("Entrá a tu cuenta");
   });
 
+  /**
+   * **La mitad de la lámina que la 15.7 dejó sin dibujar** (22.22, láminas 8a
+   * y 9a): debajo del botón de Google va el separador, el campo y su botón.
+   *
+   * Es la misma para las cuatro puertas y se afirma así: entrar por correo no
+   * cambia porque se venga de un aviso o de publicar, y una copia que variara
+   * por puerta sería otra frase que mantener en cuatro lugares.
+   */
+  it("debajo de Google pide el enlace por correo, con la misma copia en las cuatro puertas", () => {
+    const pagina = signInPageFor("/publicar");
+
+    expect(pagina.email).toEqual({
+      separator: "o con tu correo",
+      label: "Correo",
+      placeholder: "tucorreo@ejemplo.com",
+      // 8a dice «Enviarme el enlace» y 9a «Enviar enlace»: las dos son ciertas
+      // en los dos anchos, así que la regla de la 22.26 no elige. Se toma la
+      // que dice qué se recibe y no sólo qué se aprieta (ver 22.27).
+      submit: "Enviarme el enlace",
+      note: "Te mandamos un enlace que te deja entrar. No manejamos contraseñas.",
+    });
+
+    const bloques = [FICHA, "/publicar", "/mis-avisos", "/importar", undefined].map(
+      (d) => signInPageFor(d).email,
+    );
+    expect(new Set(bloques.map((b) => JSON.stringify(b))).size).toBe(1);
+  });
+
   it("la línea legal es una sola y dice que Rentas no participa en el trato", () => {
     const legales = [FICHA, "/publicar", "/mis-avisos", undefined].map(
       (d) => signInPageFor(d).legal,

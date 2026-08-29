@@ -70,6 +70,62 @@
 .form button {
   inline-size: 100%;
 }
+/* El separador de las láminas 8a/9a: una línea, la frase, otra línea. Las dos
+   reglas son elementos vacíos y no bordes del párrafo porque el texto va en el
+   medio; `aria-hidden` no hace falta: un `<span>` sin texto no anuncia nada. */
+.separator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 0;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  color: var(--soft);
+}
+.separator::before,
+.separator::after {
+  content: "";
+  flex: 1;
+  block-size: 1px;
+  background: var(--line);
+}
+.emailForm {
+  margin-top: 16px;
+}
+/* Apilado en el teléfono (8a) y en línea en escritorio (9a): la columna de 420
+   da para los dos, y a 360 un botón al lado dejaría el campo en la mitad. */
+.emailRow {
+  display: grid;
+  gap: 10px;
+}
+/* **El alto sale de `--target-min` (44) y no de los 50 que dibuja la 8a.** El
+   sistema fija el mínimo de control a los dos anchos desde la decisión del
+   fundador de la 16.24, la 9a ya dibuja 44, y un alto propio de una pantalla es
+   la deriva que SISTEMA.md prohíbe. Misma resolución que la 15.7 tomó con el
+   `<h1>`; queda anotado junto a la 22.25. */
+.field {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: var(--target-min);
+  padding: 0 14px;
+  border: 1px solid var(--strong);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+}
+.field:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.emailNote {
+  margin: 10px 0 0;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  line-height: 1.6;
+  color: var(--soft);
+}
 .assurance,
 .legal {
   margin: 28px 0 0;
@@ -152,6 +208,9 @@
     grid-template-columns: 420px 1fr;
     gap: 80px;
     padding-block: 56px 72px;
+  }
+  .emailRow {
+    grid-template-columns: 1fr auto;
   }
   .steps {
     padding: 24px;
