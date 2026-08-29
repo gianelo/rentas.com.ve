@@ -155,6 +155,40 @@ export function buildSearchHref(
   return search === "" ? basePath : `${basePath}?${search}`;
 }
 
+/**
+ * **La dirección de esta pantalla de resultados, tal como viaja en el enlace a
+ * un aviso** (tarea 16.9).
+ *
+ * `return-to-results.ts` ya decidía *si* hay una vuelta que prometer y a dónde
+ * apunta; lo que faltaba, y es lo que la 16.9 pide, es **qué viaja con ella**.
+ * La URL de la ficha es canónica y no lleva estado de búsqueda (11.1), así que
+ * el estado se cuelga del enlace de ida — y si ese enlace lleva sólo la ruta,
+ * «← Resultados» aterriza en la zona pelada. Quien había estrechado 70 avisos a
+ * 9 recibe los 70 otra vez: cumple la letra y derrota el propósito.
+ *
+ * **Viaja la búsqueda, no el panel.** `filtros` dice qué grupo del acordeón
+ * está desplegado y `busca` es el texto que achica la lista de zonas ofrecidas;
+ * ninguno recorta un solo aviso. Arrastrarlos devolvería a la pantalla con el
+ * modal encima — quien pidió sus resultados recibiría el panel de filtros. Es
+ * la misma distinción que `NON_FILTER_FIELDS` ya traza, menos `page`: la página
+ * no filtra, pero **es dónde la persona estaba parada**, y aterrizar en la 1
+ * desde la 3 pierde el lugar aunque los filtros estén.
+ *
+ * **Vive acá y no en las dos páginas** por la regla permanente del fundador:
+ * qué se lleva un enlace de vuelta es producto, no plantilla. Con su razón
+ * mecánica al lado — el suelo de cobertura del 90 % llega a `domain/` y no
+ * llega a `app/` —, y con una segunda: la zona y la ciudad tienen que componer
+ * el MISMO origen, y dos copias de esta expresión escritas en dos páginas
+ * dejan de coincidir en el próximo parámetro que alguien agregue.
+ *
+ * No valida: el que emite el enlace es `withResultsOrigin`, que comprueba
+ * contra `safeResultsOrigin` antes de escribir nada. Acá no hay entrada de un
+ * tercero — `basePath` lo afirma la ruta.
+ */
+export function resultsOriginHref(basePath: string, query: SearchQuery): string {
+  return buildSearchHref(basePath, query, { step: null, zoneSearch: null });
+}
+
 /** Una lista separada por comas, sin vacíos ni repetidas. Traducción, no decisión. */
 export function readZoneList(raw: string | null | undefined): readonly string[] {
   const kept: string[] = [];

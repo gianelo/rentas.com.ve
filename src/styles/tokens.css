@@ -65,7 +65,13 @@
      respuestas y por lo tanto no preguntaba nada. */
   --target-min-desktop: 44px;
 
-  /* ---------- La barra de búsqueda del inicio (16.23) ----------
+  /* ---------- La barra de búsqueda del inicio (14.21/14.42) ----------
+
+     **La referencia decía «16.23» y era la tarea equivocada** (corregido por la
+     16.39). La 16.23 es la TIPOGRAFÍA DE LA FICHA, doce líneas más abajo. Un
+     comentario que apunta a otra tarea es peor que ninguno: manda al próximo
+     lector a leer algo que no habla de lo que tiene delante, y no hay gate que
+     pueda verlo — `lint:tokens` lee valores, no prosa.
 
      Dos medidas que el conjunto no nombraba, y que la hoja de la barra estaba
      resolviendo con el token *vecino*: `--target-min` (44) por el alto y
@@ -124,7 +130,9 @@
      which happens to share the value but means "price" — two meanings on one
      token is how a price change silently resizes every text input. */
   --control-fs: 15px;
-  /* Ficha del aviso. Los declara el diseño nuevo y el conjunto que ship*a* no
+  /* Ficha del aviso (16.23) — el bloque que la referencia de arriba nombraba
+     por error mientras éste no llevaba número (16.39).
+     Los declara el diseño nuevo y el conjunto que ship*a* no
      los tenía, que es exactamente la situación que ya produjo un defecto real:
      sin un token de título de página, el <h1> de la home agarró --fpb, que el
      sistema define como "Precio en ficha". lint:tokens pasó — verifica que un

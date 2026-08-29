@@ -30,6 +30,7 @@ import { toPanelZones } from "@/modules/listing-search/domain/search-panel";
 import {
   buildSearchHref,
   readZoneList,
+  resultsOriginHref,
   SEARCH_QUERY_NAMES,
 } from "@/modules/listing-search/domain/search-query";
 import { resolveZoneTokens, toSearchZones } from "@/modules/listing-search/domain/zone-catalogue";
@@ -173,6 +174,15 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
     })),
     covers,
     readPhotoPublicBaseUrl(),
+    // **De acá salió el visitante, y con esto vuelve** (16.9). La URL de la
+    // ficha es canónica y no lleva estado de búsqueda (11.1), así que el
+    // estado tiene que viajar con el enlace de ida o «← Resultados» aterriza
+    // en la zona pelada: quien estrechó su búsqueda a nueve avisos recibiría
+    // los setenta otra vez. Qué se lleva ese origen lo decide
+    // `resultsOriginHref` y no esta página — la ciudad tiene que componer el
+    // mismo, y dos copias escritas en dos pantallas dejan de coincidir en el
+    // próximo parámetro.
+    resultsOriginHref(basePath, query),
   );
 
   // **El panel va después de las filas, y son tres viajes en serie y no dos.**

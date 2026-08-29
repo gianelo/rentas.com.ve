@@ -197,4 +197,51 @@ test.describe("el camino de lectura con el script apagado (11.16)", () => {
 
     expect(response?.status()).toBe(404);
   });
+
+  /**
+   * **La 16.9, caminada entera y con el script apagado.**
+   *
+   * Es la historia del producto y no una afirmación sobre una función: alguien
+   * estrecha la lista con un filtro, abre uno de los avisos que quedaron, y
+   * aprieta la vuelta. Tiene que aterrizar en ESOS avisos. Perder el filtro
+   * ahí significa rehacer el trabajo o irse.
+   *
+   * **Las tres afirmaciones son una sola cadena y ninguna sobra.** El conteo de
+   * antes fija que el filtro hizo algo —sin él, «vuelve a lo mismo» sería
+   * cierto por no haber recortado nada—; el TEXTO del enlace es la mitad de la
+   * regla, porque `resultsLink` devuelve dos acciones distintas y el respaldo
+   * («Ver avisos en Tierra Negra») es exactamente lo que se dibujaba antes de
+   * esta corrección; y la dirección más el conteo de después son el aterrizaje.
+   *
+   * **Con `javaScriptEnabled: false` en el proyecto `crawlability`** (F14): el
+   * estado viaja por la dirección, así que es un enlace y no historia del
+   * navegador. `history.back()` no sabe si hay algo atrás y `document.referrer`
+   * no llega siempre — las dos están descartadas por escrito en el dominio.
+   */
+  test("volver de un aviso devuelve a la búsqueda filtrada, no a la zona pelada (16.9)", async ({
+    page,
+  }) => {
+    // 480 y 250 pasan; la casa de 900 no, y el vencido tampoco por su estado.
+    const busqueda = `${CIUDAD_MARACAIBO}?max=500`;
+    await page.goto(busqueda);
+    await expect(page.getByTestId("result-count")).toHaveText("2 propiedades activas");
+
+    await page.getByText(tituloDe(ID.mcboTierraNegra1)).click();
+    // **`toHaveURL` y no `page.url()`, y es una corrección medida.** Con el
+    // script encendido el enrutador de Next navega en el cliente, así que la
+    // lectura inmediata devolvía todavía la dirección de la búsqueda: el
+    // proyecto `crawlability` pasaba y `chromium` fallaba por la carrera, no
+    // por el producto. Ésta reintenta hasta que el navegador llegó.
+    await expect(page).toHaveURL((url) => url.pathname === fichaDe(ID.mcboTierraNegra1));
+
+    // El texto es la mitad de la regla: sin origen la ficha dibuja «Ver avisos
+    // en Tierra Negra», que es una salida honesta y NO una vuelta.
+    const vuelta = page.getByRole("link", { name: "← Resultados" });
+    await expect(vuelta).toBeVisible();
+    await vuelta.click();
+
+    // La búsqueda entera, no la ruta sola: el `?max=500` es lo que la 16.9 pide.
+    await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === busqueda);
+    await expect(page.getByTestId("result-count")).toHaveText("2 propiedades activas");
+  });
 });
