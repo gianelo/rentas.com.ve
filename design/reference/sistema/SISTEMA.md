@@ -92,11 +92,11 @@ En la estructura "Directorio compacto" el precio usa `--mono` (`--disp: var(--mo
 |---|---|---|
 | Precio en tarjeta | **16px móvil / 17px escritorio** / 700 / 1.15 | `--mono`, `tabular-nums`. `--card-price-fs` y `--card-price-fs-desktop` |
 | Precio en fila | 15px / 700 / 1.15 | `--fp`. La fila ya no está en el camino de lectura (ver la corrección de abajo) |
-| Precio en ficha | 30px móvil / 34px escritorio / 700 / 1.1 | `--mono`. La lámina móvil dibuja 30 y la especificación escribe 28 dos veces: **manda la lámina** (16.23) |
+| Precio en ficha | 30px móvil / 34px escritorio / 700 / 1.1 | `--mono`. La lámina móvil dibuja 30 y la especificación escribe 28 dos veces: **manda la lámina** (16.23). Lo dibuja `--ficha-price-fs` / `--ficha-price-fs-desktop`; **`--fpb` (26) queda fuera del subconjunto que ship*a*** (16.37, ver abajo) |
 | Título de página | 20px / 700 / 1.25 | |
 | Título de aviso (ficha) | 17px móvil / 19px escritorio / 600 / 1.35 | `text-wrap: pretty` |
 | Título de aviso (lista) | 13px / 400 / 1.35 | `--card-title-fs` / `--ftw`. **El recorte a dos líneas es del contenedor, no del tipo** |
-| Cuerpo | 15px / 400 / 1.55 | ancho de lectura máx. 520px. La ficha y las pantallas que comparten `--ficha-body-lh` dibujan 1.6, y la lámina de escritorio de la ficha dibuja 16/1.65 — sin decidir, tarea 16.38 |
+| Cuerpo | **15px / 1.6 móvil / 16px / 1.65 escritorio** / 400 | ancho de lectura máx. 520px. `--ficha-body-fs` / `--ficha-body-fs-desktop` y su par de interlineado. **RESUELTO por el fundador el 2026-08-29** (16.38): el par gana paso de escritorio y crecen con él **las ocho pantallas que lo comparten**, no sólo la ficha |
 | Metadato | 12px / 600 / 1.4 | color `--soft` |
 | Badge / etiqueta | 11px / 700 / 1.4 | `letter-spacing: .06em`, mayúsculas |
 
@@ -415,6 +415,8 @@ Se deja escrito porque dentro de tres meses alguien va a leer «nunca una cuadr�
 | Altura mínima de control: 36px en escritorio | 44px en las dos pantallas | **Decidido por el fundador el 2026-08-27** (16.24): es el único de los tres candidatos que alcanza WCAG 2.2 SC 2.5.5 (AAA) |
 | Precio en ficha 26px | 30px en móvil, 34px en escritorio | Lámina móvil de la ficha contra la tabla §8 de la especificación, que escribe 28 dos veces. **Manda la lámina** (16.23) |
 | Precio en lista 15px, un solo valor | Precio **en tarjeta** 16/17; el 15 es el de la fila | Láminas 6c y 7c. Las dos tienen razón porque describen anchos distintos, la misma resolución que la 14.40 usó para el nav |
+| `--fpb` («Precio en ficha», 26px) forma parte del conjunto que ship*a* | **El subconjunto que ship*a* lo omite a propósito.** Sigue declarado en `design/reference/sistema/tokens.css` para las cuatro estructuras, porque la referencia describe el SISTEMA; `src/styles/tokens.css` describe lo que este producto usa, y no lo usa | **Decidido por el fundador el 2026-08-29** (16.37, salida A). El papel que `--fpb` nombra lo cumple `--ficha-price-fs` (30/34) desde la 16.23, así que quedaba un token del sistema sin un solo `var(--fpb)` conviviendo con uno propio haciendo su trabajo — que es exactamente cómo el `<h1>` del inicio terminó agarrando `--fpb`. **`lint:tokens` no puede ver un token sin uso**: verifica que un valor SEA una propiedad personalizada, nunca que alguien la use |
+| Cuerpo 15/1.6 en las dos pantallas | **15/1.6 en móvil y 16/1.65 en escritorio**, para las ocho pantallas que comparten el par | **Decidido por el fundador el 2026-08-29** (16.38, salida A). La tabla §8 de la especificación de la ficha da 15/1.6 para las dos y la lámina de escritorio dibuja 16/1.65: **manda la lámina**. El fundador vio el alcance antes de elegir — 20 declaraciones en 8 hojas — y eligió que crezcan todas, en vez de darle a la ficha un token propio y dejar a las otras siete más chicas sin que ninguna lámina lo pida |
 
 **El orden de autoridad, fijado por el fundador:** manda la lámina, y donde una decisión posterior del fundador corrigió una lámina, manda la decisión. Las dos direcciones ya ocurrieron: *«la lámina de móvil tenía el bug — el panel NO lleva ciudad ni zona»* (14.36) corrigió una lámina, y *«seguí el diseño, que fue lo que se decidió acá»* (14.40) corrigió un texto del plan.
 
@@ -423,6 +425,11 @@ Se deja escrito porque dentro de tres meses alguien va a leer «nunca una cuadr�
 1. La miniatura de `/mis-avisos`: el código usa `--tw`/`--th` (44 × 34) y las láminas 14c/14d dibujan 74 × 56.
 2. La tipografía de la tarjeta: las láminas dibujan título 12,5/13 y metadato 10,5/11 en `--meta`, contra los 13 y 12/600/`--sans` que declara la tabla de arriba.
 3. La franja de 768 a 1099 px no está dibujada en ninguna lámina (tarea 20.10). Los nueve artboards son 360 o 1280, y es justo donde se rompe una cuadrícula.
+
+**Y dos donde el fundador YA decidió, y lo que queda es corregir la lámina** (2026-08-29). Se anotan acá porque en los dos casos manda la decisión posterior y no el dibujo, que es el orden de autoridad fijado arriba:
+
+4. **El mes abreviado: la lámina dice «12 sep» y el producto escribe «12 sept.»** (16.40). `Intl.DateTimeFormat("es-VE", { month: "short" })` devuelve la abreviatura del CLDR, con punto y con cuatro letras en septiembre. **El fundador eligió quedarse con lo que da el idioma**: la única salida que produce exactamente lo dibujado es una tabla de doce literales escrita a mano, y eso sería inventar un valor que el sistema no define. Las dos láminas de la Ficha divergen del formato que ship*a* **a propósito**.
+5. **El aviso vencido: la lámina y la §6 escriben «y el dueño no lo renovó»; el producto escribe «y no fue renovado»** (16.41). **El fundador eligió la voz pasiva del código**, y la razón es de verdad y no de estilo: un aviso puede ser de una inmobiliaria, y ahí «el dueño» es falso. **Lo que queda pendiente es corregir las dos láminas de la Ficha y la §6 de la especificación**, no el código.
 
 ## Cómo se evalúa la implementación
 
