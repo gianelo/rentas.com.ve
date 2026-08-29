@@ -105,4 +105,10 @@
     grid-template-columns: 1fr 1fr;
     margin-top: 20px;
   }
+  /* 16.38 — el cuerpo toma su paso de escritorio. Sólo el tamaño: la lista
+     lleva su propio interlineado (1.45), más apretado a propósito porque son
+     viñetas cortas y no un párrafo. */
+  .troubleList {
+    font-size: var(--ficha-body-fs-desktop);
+  }
 }

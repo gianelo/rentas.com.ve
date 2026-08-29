@@ -215,4 +215,12 @@
   .steps {
     padding: 24px;
   }
+  /* 16.38 — el cuerpo toma su paso de escritorio. Acá crece SÓLO el tamaño:
+     estas dos filas llevan interlineado propio (1.5 y 1.55) y no el del par,
+     así que subirles `--ficha-body-lh-desktop` sería pisar una decisión que
+     esta hoja ya tomó. */
+  .step,
+  .asideNote {
+    font-size: var(--ficha-body-fs-desktop);
+  }
 }

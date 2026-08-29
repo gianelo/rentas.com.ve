@@ -178,4 +178,12 @@
     margin-top: 12px;
     font-size: var(--ficha-title-fs-desktop);
   }
+
+  /* 16.38 — la lámina de escritorio dibuja 16/1.65 donde la de móvil dibuja
+     15/1.6. El par viaja junto: subir el tamaño sin el interlineado aprieta
+     el párrafo justo cuando la columna se ensancha. */
+  .text {
+    font-size: var(--ficha-body-fs-desktop);
+    line-height: var(--ficha-body-lh-desktop);
+  }
 }
