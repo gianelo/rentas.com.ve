@@ -1,3 +1,7 @@
+import {
+  DrizzleContactVerificationEvidence,
+  DrizzleVerifiedContacts,
+} from "@/modules/identity/infrastructure/drizzle-verified-contact";
 import { nextAuthSessionPort } from "@/modules/identity/infrastructure/session-port";
 import type { PublishListingDependencies } from "@/modules/listing-publication/application/publish-listing";
 import {
@@ -27,6 +31,10 @@ import { getTransactionalDatabase } from "@/shared/db/transactional-client";
  * - **Derivation and hash computation are both adapted, not injected raw.**
  *   Both ports take `Uint8Array` so the application layer never mentions
  *   `Buffer`, which is Node's and not the domain's.
+ * - **La verificación del contacto lee por `db` y escribe por el cliente
+ *   transaccional** (tasks.md 19.9/19.10), por la misma razón de la primera
+ *   línea de esta lista y no por una nueva: la lectura es del camino de
+ *   lectura, y `neon-http` no sirve para la mitad que escribe.
  * - **`photoHashes` uses the transactional client, not `db`.** It both reads
  *   (`findMatchesFromOtherPublishers`, inside the upload guard) and writes
  *   (`record`, task 4.7) — `neon-http` cannot do the write half at all, the
@@ -48,5 +56,7 @@ export function publishListingDependencies(): PublishListingDependencies {
     derive: (source) => deriveListingPhoto(Buffer.from(source)),
     computeHash: (source) => computeDHash(Buffer.from(source)),
     photoHashes: new DrizzlePhotoHash(getTransactionalDatabase()),
+    contactEvidence: new DrizzleContactVerificationEvidence(db),
+    verifiedContacts: new DrizzleVerifiedContacts(getTransactionalDatabase()),
   };
 }

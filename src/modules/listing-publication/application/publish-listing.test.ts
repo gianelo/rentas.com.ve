@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { SessionPort } from "../../identity/application/ports/session.port";
+import type {
+  ContactVerificationEvidencePort,
+  NewVerifiedContact,
+  VerifiedContactPort,
+} from "../../identity/application/ports/verified-contact.port";
 import { UnauthenticatedError } from "../../identity/application/require-authenticated-session";
 import type {
   NewPhotoHash,
@@ -51,11 +56,35 @@ function submittedPhotos(count: number) {
   }));
 }
 
+const PUBLISHER_EMAIL = "publisher@example.com";
+const EMAIL_VERIFIED_AT = new Date("2026-06-01T07:00:00.000Z");
+
 const sessionPort: SessionPort = {
   async getSession() {
-    return { userId: PUBLISHER, email: "publisher@example.com", name: "Publisher" };
+    return { userId: PUBLISHER, email: PUBLISHER_EMAIL, name: "Publisher" };
   },
 };
+
+/** La cuenta entró por el enlace del correo, así que Auth.js dejó el instante. */
+const contactEvidence: ContactVerificationEvidencePort = {
+  async findEvidence() {
+    return {
+      verifiedAt: null,
+      accountEmail: PUBLISHER_EMAIL,
+      accountEmailVerifiedAt: EMAIL_VERIFIED_AT,
+    };
+  },
+};
+
+function makeVerifiedContacts(): VerifiedContactPort & { readonly written: NewVerifiedContact[] } {
+  const written: NewVerifiedContact[] = [];
+  return {
+    written,
+    async record(verified) {
+      written.push(verified);
+    },
+  };
+}
 
 const zones: ZoneCataloguePort = {
   async listZonesForCity(cityId: string) {
@@ -153,6 +182,8 @@ function deps<T extends Partial<PublishListingDependencies>>(overrides: T = {} a
     derive: makeDerive().derive,
     computeHash,
     photoHashes: noMatchPhotoHashes(),
+    contactEvidence,
+    verifiedContacts: makeVerifiedContacts(),
     now: () => NOW,
     ...overrides,
   };
@@ -478,6 +509,49 @@ describe("publishListing", () => {
 
       expect(listingId).toBe("lst_001");
       expect(seenExclusions).toEqual([PUBLISHER]);
+    });
+  });
+
+  /**
+   * tasks.md 19.9/19.10. Lo que se prueba acá NO es la regla —eso vive en
+   * `contact-verification.test.ts`— sino que este caso de uso le pasa el
+   * triple de verdad: el `userId` de la SESIÓN y el contacto que además copia
+   * al aviso. Es la trampa que este proyecto ya se comió: un módulo con todas
+   * sus pruebas verdes y muerto en producción porque quien lo llama nunca le
+   * pasó el argumento.
+   */
+  describe("verificación del contacto (19.9/19.10)", () => {
+    it("registra el correo de la cuenta con el mismo triple que copia al aviso", async () => {
+      const verifiedContacts = makeVerifiedContacts();
+
+      await publishListing(
+        request({ contactMethod: "email", contactValue: PUBLISHER_EMAIL }),
+        deps({ verifiedContacts }),
+      );
+
+      expect(verifiedContacts.written).toEqual([
+        {
+          userId: PUBLISHER,
+          contact: { method: "email", value: PUBLISHER_EMAIL },
+          verifiedAt: EMAIL_VERIFIED_AT,
+        },
+      ]);
+    });
+
+    it("no deja ninguna fila cuando el contacto es un teléfono, y publica igual", async () => {
+      // El canal de WhatsApp está diferido al final del proyecto (fundador,
+      // 2026-08-29). Cerrar la publicación por teléfono sería un retroceso de
+      // producto, no un cierre en falso; lo que cierra en falso es que no
+      // quede fila, porque sin fila nada puede dibujar «verificado».
+      const verifiedContacts = makeVerifiedContacts();
+
+      const { listingId } = await publishListing(
+        request({ contactMethod: "whatsapp", contactValue: "04121234567" }),
+        deps({ verifiedContacts }),
+      );
+
+      expect(listingId).toBe("lst_001");
+      expect(verifiedContacts.written).toEqual([]);
     });
   });
 });
