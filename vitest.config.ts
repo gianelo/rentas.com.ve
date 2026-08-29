@@ -23,6 +23,10 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // `next-auth` importa `next/server` por su mapa de `exports`, y la resolución
+    // de Node que Vite usa para las dependencias externalizadas no lo sigue.
+    // Inlinearlo hace que resuelva Vite: lo necesita el arnés de la 15.10.
+    server: { deps: { inline: ["next-auth"] } },
     // Widened in PR1b-a: components/ and app/ now carry their own tests
     // (layout primitives, root-shell landmarks). They stay outside the
     // coverage floor below (design.md, "Coverage policy" — app/ and
