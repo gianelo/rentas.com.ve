@@ -9,6 +9,7 @@ import {
   isStepComplete,
   isStepNavigable,
   nextStepAfter,
+  offersDiscardToReview,
   PUBLISH_STEP_ORDER,
   type PublicationDraft,
   type PublishStepId,
@@ -577,5 +578,48 @@ describe("isDraftReadyForReview — la puerta de revisar", () => {
 
     expect(completedSteps(draft, violations)).not.toContain("fotos");
     expect(isDraftReadyForReview(draft, violations)).toBe(false);
+  });
+});
+
+/**
+ * tasks.md 18.18 — **«Descartar el cambio», y por que la regla no es
+ * `returningToReview` a secas.**
+ *
+ * Descartar es un enlace a revisar sin postear: con el borrador en cookie, los
+ * valores anteriores siguen ahi hasta que alguien guarda. Pero revisar tiene
+ * puerta —`isDraftReadyForReview`—, y un enlace hacia una pantalla que redirige
+ * es una salida que no sale. AGENTS.md §7: la forma preferida es la negativa.
+ */
+describe("offersDiscardToReview — la salida que no escribe", () => {
+  it("se ofrece al paso abierto desde revisar, que es donde la lamina lo dibuja", () => {
+    const draft = completeDraft();
+    expect(offersDiscardToReview(true, draft, violationsOf(draft))).toBe(true);
+  });
+
+  /**
+   * **El par que la mutacion pide.** En el recorrido hacia adelante no hay
+   * revisar a donde volver: ofrecerlo prometeria un destino que todavia no
+   * existe, y quien lo tocara perderia el paso en vez de descartarlo.
+   */
+  it("no se ofrece en el recorrido hacia adelante, que no viene de ninguna revision", () => {
+    const draft = completeDraft();
+    expect(offersDiscardToReview(false, draft, violationsOf(draft))).toBe(false);
+  });
+
+  /**
+   * **La direccion la escribe quien quiera.** `volver=revisar` es una afirmacion
+   * de la barra de direcciones, no un hecho: con un paso sin contestar, revisar
+   * redirige al paso que falta. El enlace aterrizaria donde no dijo.
+   */
+  it("no se ofrece cuando revisar todavia redirige, aunque la URL diga que viene de ahi", () => {
+    const complete = completeDraft();
+    const draft: PublicationDraft = {
+      ...complete,
+      listing: { ...complete.listing, priceUsd: undefined },
+    };
+    const violations = violationsOf(draft);
+
+    expect(isDraftReadyForReview(draft, violations)).toBe(false);
+    expect(offersDiscardToReview(true, draft, violations)).toBe(false);
   });
 });
