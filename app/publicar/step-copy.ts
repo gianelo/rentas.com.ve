@@ -87,12 +87,17 @@ const PROPERTY_TYPE_LABEL: Record<string, string> = {
   habitacion: "Habitación",
 };
 
-const PUBLISHER_TYPE_LABEL: Record<string, string> = {
+/**
+ * Reusados por la pantalla de editar (18.20): dos listas de castellano para
+ * los mismos dos valores es como una pantalla termina diciendo «Propietario»
+ * donde la otra dice «Dueño».
+ */
+export const PUBLISHER_TYPE_LABEL: Record<string, string> = {
   owner: "Dueño",
   broker: "Inmobiliaria",
 };
 
-const CONTACT_METHOD_LABEL: Record<string, string> = {
+export const CONTACT_METHOD_LABEL: Record<string, string> = {
   whatsapp: "WhatsApp",
   telefono: "Llamada",
   email: "Correo",
@@ -184,7 +189,13 @@ export function stepSummary(
  * hasPowerPlant de false a true" no es una frase que alguien pueda usar. Lo
  * que cambio es lo que el aviso declara, y asi se dice.
  */
-const CHANGE_FIELD_LABEL: Record<ChangedField, string> = {
+/**
+ * **La única lista de nombres de campo en castellano del repositorio**, y se
+ * mantiene única a propósito: la pantalla de editar (18.20) toma de acá las
+ * etiquetas de su formulario en vez de abrir una segunda, que es la que
+ * después nadie mantiene cuando un campo se renombra.
+ */
+export const CHANGE_FIELD_LABEL: Record<ChangedField, string> = {
   propertyType: "el tipo de propiedad",
   cityId: "la ciudad",
   zoneId: "la zona",

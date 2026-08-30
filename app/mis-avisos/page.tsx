@@ -244,6 +244,23 @@ function FichaDeAviso({
         </ListingMeta>
         <p className={styles.estado}>{etiquetaDeEstado(card)}</p>
 
+        {/*
+          **«Editar» en la fila de un aviso activo** (tasks.md 18.20). Quién lo
+          ofrece lo decidió el dominio (`card.editable`): el puerto de edición
+          lee y escribe con `status = 'active'` EN el `WHERE`, así que un `if`
+          acá sobre `card.state` sería una segunda copia de esa regla en la
+          capa que el piso del 90% no alcanza (AGENTS.md §1).
+
+          Enlace y no botón: es una dirección, tiene que poder abrirse en otra
+          pestaña y funcionar con el script apagado — la misma razón que las
+          fichas de estado ya documentan para las suyas.
+        */}
+        {card.editable ? (
+          <AppLink className={styles.editar} href={`/mis-avisos/${card.id}/editar`}>
+            Editar
+          </AppLink>
+        ) : null}
+
         {card.state === "draft" ? (
           <>
             <FotosDelBorrador listingId={card.id} photoCount={card.photoCount} />

@@ -157,6 +157,48 @@ describe("/mis-avisos — la lista de avisos (14d)", () => {
   });
 
   /**
+   * tasks.md 18.20 — **el enlace que no existía.** `editListing` shipeó sin un
+   * solo llamador porque, entre otras cosas, ninguna fila ofrecía editar.
+   *
+   * **Qué fila lo ofrece lo decide el dominio** (`card.editable`), no un `if`
+   * de esta pantalla: el puerto lee y escribe con `status = 'active'` en el
+   * `WHERE`, así que ofrecerlo sobre un borrador o un vencido sería dibujar
+   * una puerta que la escritura cierra.
+   */
+  it("un aviso activo trae el enlace a editar; un borrador no", async () => {
+    listPublisherListings.mockResolvedValue(
+      boardOf([
+        listing({ id: "activa", status: "active", photoCount: 3 }),
+        listing({ id: "borrador", status: "draft", photoCount: 0 }),
+      ]),
+    );
+
+    const html = await draw();
+
+    expect(html).toContain('href="/mis-avisos/activa/editar"');
+    expect(html).not.toContain('href="/mis-avisos/borrador/editar"');
+  });
+
+  /**
+   * La segunda mitad, y hace falta por separado: una afirmación que aceptara
+   * las dos respuestas no estaría preguntando nada. Un vencido vuelve por
+   * renovar y un oculto no vuelve por editar — es el mismo agujero que el
+   * `WHERE status = 'active'` de `markExpired` cierra.
+   */
+  it("un aviso vencido y uno oculto no traen enlace a editar", async () => {
+    listPublisherListings.mockResolvedValue(
+      boardOf([
+        listing({ id: "vencida", status: "expired", photoCount: 1 }),
+        listing({ id: "oculta", status: "hidden", photoCount: 4 }),
+      ]),
+    );
+
+    const html = await draw();
+
+    expect(html).not.toContain("/editar");
+  });
+
+  /**
    * La contraparte de la de arriba, y la única forma de fijar a QUÉ se envía
    * ese formulario sin un empaquetador de por medio: la relación entre dos
    * archivos, que es exactamente el caso en el que `nav-contract.test.ts` ya

@@ -5,7 +5,7 @@ import {
   type ListingEditViolation,
   planListingEdit,
 } from "../domain/listing-edit";
-import type { ListingEditPort } from "./ports/listing-edit.port";
+import type { EditableListing, ListingEditPort } from "./ports/listing-edit.port";
 import type { ZoneCataloguePort } from "./ports/zone-catalogue.port";
 
 /**
@@ -39,6 +39,43 @@ export class EditListingRejectedError extends Error {
     this.name = "EditListingRejectedError";
     this.violations = violations;
   }
+}
+
+/**
+ * tasks.md 18.20 — **la lectura que precarga la pantalla de editar.**
+ *
+ * Vive acá y no en un archivo propio porque es la otra mitad de la MISMA
+ * capacidad: mismo puerto, mismas dos puertas y —lo que de verdad importa— el
+ * mismo `EditListingNotFoundError`. Si la pantalla refusara con un error
+ * distinto del que refusa el guardado, un aviso ajeno sería distinguible de
+ * uno inexistente en exactamente una de las dos, y basta una para contarlo.
+ *
+ * **No devuelve una decisión, devuelve la fila.** Qué campos se pueden tocar
+ * lo sigue contestando `planListingEdit` cuando alguien guarda; acá no hay
+ * ninguna regla nueva.
+ */
+export async function loadListingForEdit(
+  request: { readonly listingId: string },
+  dependencies: {
+    readonly sessionPort: SessionPort;
+    readonly listings: Pick<ListingEditPort, "findEditableById">;
+  },
+): Promise<EditableListing> {
+  const session = await requireAuthenticatedSession(dependencies.sessionPort);
+
+  const current = await dependencies.listings.findEditableById(request.listingId, session.userId);
+  if (!current) {
+    throw new EditListingNotFoundError(request.listingId);
+  }
+
+  // La misma comprobación redundante que hace `editListing`, y por la misma
+  // razón: la garantía «sólo el dueño lo ve» no puede depender de que un
+  // adaptador futuro se acuerde de pasar el segundo parámetro.
+  if (current.publisherId !== session.userId) {
+    throw new EditListingNotFoundError(request.listingId);
+  }
+
+  return current;
 }
 
 export interface EditListingRequest {

@@ -13,7 +13,12 @@ import { submitStep } from "./actions";
 import { PhotoUploader } from "./fotos/PhotoUploader";
 import styles from "./publish-steps.module.css";
 import { FEATURE_LABELS, STEP_COPY } from "./step-copy";
-import { PUBLISH_VIOLATION_COPY, type PublishField } from "./violation-copy";
+import {
+  PUBLISH_VIOLATION_COPY,
+  PUBLISHER_TYPE_IMMUTABLE_LEAD,
+  PUBLISHER_TYPE_IMMUTABLE_STRESS,
+  type PublishField,
+} from "./violation-copy";
 
 /**
  * Una pantalla del formulario de nueve pasos.
@@ -581,7 +586,8 @@ function StepFields(props: FieldsProps) {
           {/* La advertencia va ANTES, no despues de publicar. Declararlo mal
               es motivo de baja, y nadie puede corregirlo despues. */}
           <p className={styles.warning}>
-            Aparece siempre en tu aviso y <strong>no se puede cambiar después</strong>.
+            {PUBLISHER_TYPE_IMMUTABLE_LEAD}
+            <strong>{PUBLISHER_TYPE_IMMUTABLE_STRESS}</strong>.
           </p>
 
           <fieldset className={styles.choices}>

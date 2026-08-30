@@ -185,6 +185,26 @@
   outline-offset: 2px;
 }
 
+/* «Editar» en la fila de un aviso activo (tasks.md 18.20). La columna de
+   acción de 14d se reserva incluso vacía —«las filas no bailan»—, así que el
+   enlace toma el mismo lugar y el mismo papel que «Activar» en un borrador:
+   nivel 3 de la jerarquía de SISTEMA.md, borde neutro y texto de tinta.
+   `--target-min` porque se toca con el pulgar, igual que las fichas. */
+.editar {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-block-size: var(--target-min);
+  margin-block-start: 8px;
+  padding-inline: 20px;
+  border: 1px solid var(--strong);
+  border-radius: var(--r);
+  color: var(--ink);
+  font-size: var(--control-fs);
+  font-weight: var(--badge-fw);
+  text-decoration: none;
+}
+
 .activar {
   margin-block-start: 8px;
 }
