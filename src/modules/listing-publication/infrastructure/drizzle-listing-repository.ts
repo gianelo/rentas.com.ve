@@ -13,6 +13,7 @@ import type {
   DraftForActivation,
   ListingActivationPort,
 } from "../application/ports/listing-activation.port";
+import type { EditableListing, ListingEditPort } from "../application/ports/listing-edit.port";
 import type { ListingPhotoAttachmentPort } from "../application/ports/listing-photo-attachment.port";
 import type {
   ListingRepositoryPort,
@@ -20,6 +21,7 @@ import type {
   NewListingPhoto,
 } from "../application/ports/listing-repository.port";
 import type { ZoneCataloguePort } from "../application/ports/zone-catalogue.port";
+import type { ListingEditWrite } from "../domain/listing-edit";
 import type { CuratedZone } from "../domain/publishable-listing";
 
 /**
@@ -252,6 +254,95 @@ export class DrizzleListingActivation implements ListingActivationPort, ListingP
     });
 
     return { photoId };
+  }
+}
+
+/**
+ * tasks.md 18.14 — editar un aviso YA PUBLICADO.
+ *
+ * **Los dos guardas van EN el `WHERE`, en la lectura y en la escritura.** Un
+ * filtro en TypeScript sobre `id = $1` habría dejado la escritura sin
+ * protección: entre leer y actualizar, un aviso puede vencer o quedar oculto
+ * por reportes, y son justo los dos estados que una edición no debe poder
+ * volver a encender.
+ */
+export class DrizzleListingEdit implements ListingEditPort {
+  constructor(private readonly db: PublicationDatabase) {}
+
+  async findEditableById(listingId: string, publisherId: string): Promise<EditableListing | null> {
+    const rows = await this.db
+      .select({
+        id: listings.id,
+        publisherId: listings.publisherId,
+        publisherType: listings.publisherType,
+        propertyType: listings.propertyType,
+        cityId: listings.cityId,
+        zoneId: listings.zoneId,
+        title: listings.title,
+        description: listings.description,
+        priceUsd: listings.priceUsd,
+        rooms: listings.rooms,
+        areaM2: listings.areaM2,
+        bathrooms: listings.bathrooms,
+        parkingSpots: listings.parkingSpots,
+        contactMethod: listings.contactMethod,
+        contactValue: listings.contactValue,
+      })
+      .from(listings)
+      .where(
+        and(
+          eq(listings.id, listingId),
+          eq(listings.publisherId, publisherId),
+          eq(listings.status, "active"),
+        ),
+      )
+      .limit(1);
+
+    const row = rows[0];
+    if (!row) return null;
+
+    // Contadas, nunca declaradas por el pedido: es el mismo numero que el
+    // validador usa para el piso y el tope de fotos.
+    const photoCountRows = await this.db
+      .select({ photoCount: count() })
+      .from(listingPhotos)
+      .where(eq(listingPhotos.listingId, listingId));
+
+    return { ...row, photoCount: photoCountRows[0]?.photoCount ?? 0 };
+  }
+
+  /**
+   * `status` NO esta entre las columnas del `set`, y esa ausencia es la
+   * garantia: editar no puede resucitar nada. Lo que si esta en el `WHERE` es
+   * `status = 'active'`, el mismo compare-and-swap que `activate` y `renew`.
+   */
+  async applyEdit(
+    listingId: string,
+    publisherId: string,
+    write: ListingEditWrite,
+  ): Promise<boolean> {
+    const updated = await this.db
+      .update(listings)
+      .set({
+        title: write.title,
+        description: write.description,
+        priceUsd: write.priceUsd,
+        rooms: write.rooms,
+        bathrooms: write.bathrooms,
+        areaM2: write.areaM2,
+        contactMethod: write.contactMethod,
+        contactValue: write.contactValue,
+      })
+      .where(
+        and(
+          eq(listings.id, listingId),
+          eq(listings.publisherId, publisherId),
+          eq(listings.status, "active"),
+        ),
+      )
+      .returning({ id: listings.id });
+
+    return updated.length > 0;
   }
 }
 
