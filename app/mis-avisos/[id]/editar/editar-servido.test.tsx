@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { photoAltText, photoUrl } from "@/modules/listing-discovery/domain/listing-photo-view";
 import {
   coverChangedNotice,
   PHOTO_ACTION_COPY,
@@ -90,6 +91,20 @@ const AVISO = {
   photoCount: 3,
 };
 
+/**
+ * La base pública del bucket, que es de dónde el navegador lee una foto ya
+ * guardada. Se pone en el entorno y no se dobla `readPhotoPublicBaseUrl`: la
+ * negativa cuando falta es parte de lo que esta pantalla promete.
+ */
+const BASE = "https://fotos.rentas.com.ve";
+
+/** Tres fotos con su miniatura, como las devuelve la lectura de la 18.26. */
+const FOTOS = [
+  { photoId: "foto-a", thumbKey: "promoted/foto-a/thumb.webp" },
+  { photoId: "foto-b", thumbKey: "promoted/foto-b/thumb.webp" },
+  { photoId: "foto-c", thumbKey: "promoted/foto-c/thumb.webp" },
+];
+
 beforeEach(() => {
   findAccount.mockReset();
   requireSession.mockReset();
@@ -103,7 +118,12 @@ beforeEach(() => {
   findAccount.mockResolvedValue(null);
   loadListingForEdit.mockResolvedValue(AVISO);
   loadListingPhotosForEdit.mockReset();
-  loadListingPhotosForEdit.mockResolvedValue(["foto-a", "foto-b", "foto-c"]);
+  loadListingPhotosForEdit.mockResolvedValue(FOTOS);
+  process.env.R2_BUCKET_PUBLIC_URL = BASE;
+});
+
+afterEach(() => {
+  process.env.R2_BUCKET_PUBLIC_URL = BASE;
 });
 
 async function dibujar(motivos?: string): Promise<string> {
@@ -409,5 +429,114 @@ describe("/mis-avisos/[id]/editar — las fotos (18.21)", () => {
 
   it("dice que las fotos no esperan a «Guardar cambios», porque no lo hacen", async () => {
     expect(await dibujar()).toContain("Guardar cambios»");
+  });
+});
+
+/**
+ * tasks.md 18.26 — **la foto dibujada, no nombrada por su ordinal.**
+ *
+ * El costo que la 18.21 dejó dicho: quien tiene seis fotos parecidas elegía
+ * por «Foto 4» y podía quitar la que no era, irreversiblemente y sobre su
+ * propio aviso. Lo que faltaba no era una decisión sino un cable —`photoUrl` y
+ * `photoAltText` ya viven puros y probados en `listing-discovery`, y
+ * `listing_photo_derivative` ya guarda la clave de la `thumb`—, así que acá se
+ * afirma que el cable está: los bytes servidos traen la imagen y su frase.
+ *
+ * **Ninguna regla se afirma acá.** Cómo se compone el texto alternativo lo
+ * prueba `listing-photo-view.test.ts`; que la lectura no filtre una foto sin
+ * miniatura lo prueba `edit-listing-photos.test.ts`; que la clave leída sea la
+ * de la `thumb` y no la de otro tamaño lo prueba
+ * `tests/integration/listing-photo-editing.test.ts`.
+ */
+describe("/mis-avisos/[id]/editar — la foto dibujada (18.26)", () => {
+  it("cada foto sale como una imagen que apunta a su miniatura", async () => {
+    const html = await dibujar();
+
+    for (const foto of FOTOS) {
+      expect(html).toContain(`src="${photoUrl(BASE, foto.thumbKey)}"`);
+    }
+  });
+
+  /**
+   * **Miniatura, no la foto entera.** Las cuatro derivadas existen justamente
+   * para que un teléfono con datos caros no descargue una imagen de pantalla
+   * completa por cada renglón de una lista de seis.
+   */
+  it("apunta a la miniatura y a ningún otro tamaño", async () => {
+    const html = await dibujar();
+
+    expect(html).toContain("promoted/foto-a/thumb.webp");
+    for (const tamano of ["card", "strip", "detail", "full"]) {
+      expect(html).not.toContain(`promoted/foto-a/${tamano}.webp`);
+    }
+  });
+
+  /**
+   * **El texto alternativo es producto, no decoración.** Un `alt="foto"`
+   * escrito a mano sería peor que ninguno para quien usa lector de pantalla:
+   * la posición va primero (regla R7 del fundador) porque necesita saber dónde
+   * está antes que qué mira.
+   */
+  it("el alt de cada foto es la frase compuesta del dominio, con su posición y el total", async () => {
+    const html = await dibujar();
+
+    expect(html).toContain(
+      `alt="${photoAltText({ position: 0, total: 3, title: AVISO.title, zone: "" })}"`,
+    );
+    expect(html).toContain(
+      `alt="${photoAltText({ position: 2, total: 3, title: AVISO.title, zone: "" })}"`,
+    );
+    // Y son frases DISTINTAS: un alt igual para las seis es exactamente el
+    // ordinal a ciegas que esta tarea vino a cerrar, sólo que hablado.
+    expect(html).toContain("Foto 1 de 3 — Apartamento amoblado en La Castellana");
+    expect(html).toContain("Foto 3 de 3 — Apartamento amoblado en La Castellana");
+  });
+
+  /**
+   * **El par de la anterior.** Sin esto, un `alt` que dijera siempre «Foto 1
+   * de 3» pasaría la de arriba, y es justo lo que un lector de pantalla no
+   * puede distinguir de seis fotos bien nombradas.
+   */
+  it("no le pone a la segunda foto el nombre de la primera", async () => {
+    const html = await dibujar();
+
+    expect(html).toContain("Foto 2 de 3 —");
+    expect(html.split("Foto 1 de 3 —").length - 1).toBe(1);
+  });
+
+  /**
+   * **Una foto sin derivada no desaparece ni dibuja un ícono roto.** Su
+   * renglón es el único camino para quitarla, así que se queda con su nombre y
+   * su botón; lo que no se emite es una `<img>` cuyo `src` no existe.
+   */
+  it("una foto sin miniatura conserva su renglón y su botón, sin imagen rota", async () => {
+    loadListingPhotosForEdit.mockResolvedValueOnce([
+      { photoId: "foto-a", thumbKey: null },
+      { photoId: "foto-b", thumbKey: "promoted/foto-b/thumb.webp" },
+    ]);
+
+    const html = await dibujar();
+
+    expect(html).toContain('name="photoId" value="foto-a"');
+    expect(html).toContain("Foto 1 (portada)");
+    expect(html).toContain(`src="${photoUrl(BASE, "promoted/foto-b/thumb.webp")}"`);
+    // Ni una `<img>` sin fuente, ni un `src` vacío, ni la palabra que delata
+    // un valor que nadie escribió.
+    expect(html).not.toContain('src=""');
+    expect(html).not.toContain("undefined");
+    expect(html.split("<img").length - 1).toBe(1);
+  });
+
+  /**
+   * **Sin `R2_BUCKET_PUBLIC_URL` la pantalla se niega, no dibuja de menos**
+   * (AGENTS.md §7). Volver en silencio al ordinal sería regresar exactamente
+   * al daño que esta tarea cierra, ahora invisible: un despliegue mal
+   * configurado se vería igual que uno correcto. `listing-discovery` ya refusa
+   * construir una URL sin base, y esta pantalla no debilita esa negativa.
+   */
+  it("sin la base pública del bucket se niega en vez de dibujar imágenes rotas", async () => {
+    process.env.R2_BUCKET_PUBLIC_URL = "";
+
+    await expect(dibujar()).rejects.toThrow("R2_BUCKET_PUBLIC_URL");
   });
 });

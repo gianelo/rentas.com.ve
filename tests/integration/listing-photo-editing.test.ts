@@ -198,6 +198,21 @@ function attachDependencies(userId: string) {
   };
 }
 
+/**
+ * Las cinco derivadas de una foto, con una clave distinta cada una: es lo que
+ * hace que «devolvió la de la `thumb`» sea una afirmación y no una
+ * coincidencia de tener una sola fila.
+ */
+async function insertDerivatives(photoId: string): Promise<void> {
+  for (const name of ["thumb", "card", "strip", "detail", "full"]) {
+    await pool.query(
+      `INSERT INTO "listing_photo_derivative" (photo_id, name, key, bytes)
+       VALUES ($1,$2,$3,1)`,
+      [photoId, name, `promoted/${photoId}/${name}.webp`],
+    );
+  }
+}
+
 function detachDependencies(userId: string) {
   return {
     sessionPort: sessionFor(userId),
@@ -386,5 +401,68 @@ describe("detachPhotoFromListing — contra Postgres de verdad", () => {
     ).rejects.toBeInstanceOf(EditListingNotFoundError);
 
     expect(await positionsOf(listingId)).toHaveLength(2);
+  });
+});
+
+/**
+ * tasks.md 18.26 — **la lectura que une la foto con su miniatura**, contra
+ * Postgres de verdad.
+ *
+ * **Dos garantías que ningún doble puede dar**: que de las cinco derivadas
+ * vuelva la de la `thumb` —un doble devuelve lo que se le dice—, y que una
+ * foto sin ninguna derivada **siga apareciendo**, que es lo que un `INNER
+ * JOIN` rompería en silencio. Esa segunda es la que importa: el renglón es el
+ * único camino para quitar una foto, así que perderlo dejaría una fila que el
+ * aviso muestra y su dueño no puede sacar.
+ */
+describe("listPhotoThumbnailsInOrder — contra Postgres de verdad", () => {
+  it("devuelve la clave de la thumb de cada foto, y no la de ningún otro tamaño", async () => {
+    const owner = await insertUser();
+    const { listingId, photoIds } = await insertActiveListing(owner, 3);
+    for (const photoId of photoIds) await insertDerivatives(photoId);
+
+    const fotos = await photoSet.listPhotoThumbnailsInOrder(listingId);
+
+    expect(fotos).toEqual(
+      photoIds.map((photoId) => ({
+        photoId,
+        thumbKey: `promoted/${photoId}/thumb.webp`,
+      })),
+    );
+  });
+
+  /**
+   * El orden es el de `position`, no el que la tabla devuelva. Se prueba
+   * después de desprender la portada, que es cuando `position` deja de
+   * coincidir con el orden de inserción de las filas.
+   */
+  it("sigue el orden del aviso, también después de que quitar renumeró", async () => {
+    const owner = await insertUser();
+    const { listingId, photoIds } = await insertActiveListing(owner, 3);
+    for (const photoId of photoIds) await insertDerivatives(photoId);
+
+    await detachPhotoFromListing(
+      { listingId, photoId: photoIds[0] as string },
+      detachDependencies(owner),
+    );
+
+    const fotos = await photoSet.listPhotoThumbnailsInOrder(listingId);
+
+    expect(fotos.map((foto) => foto.photoId)).toEqual([photoIds[1], photoIds[2]]);
+  });
+
+  it("una foto sin derivadas sigue en la lista, con la miniatura en null", async () => {
+    const owner = await insertUser();
+    const { listingId, photoIds } = await insertActiveListing(owner, 2);
+    // Sólo la SEGUNDA tiene derivadas: si la lectura las exigiera, la primera
+    // desaparecería y su dueño se quedaría sin el único botón que la quita.
+    await insertDerivatives(photoIds[1] as string);
+
+    const fotos = await photoSet.listPhotoThumbnailsInOrder(listingId);
+
+    expect(fotos).toEqual([
+      { photoId: photoIds[0], thumbKey: null },
+      { photoId: photoIds[1], thumbKey: `promoted/${photoIds[1]}/thumb.webp` },
+    ]);
   });
 });

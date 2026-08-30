@@ -20,6 +20,8 @@ import type { ListingPhotoAttachmentPort } from "./ports/listing-photo-attachmen
 import type {
   ListingPhotoDetachmentPort,
   ListingPhotoOrderPort,
+  ListingPhotoThumbnail,
+  ListingPhotoThumbnailPort,
 } from "./ports/listing-photo-set.port";
 import type { PhotoDerivationPort } from "./ports/photo-derivation.port";
 import type { PhotoHashComputationPort } from "./ports/photo-hash-computation.port";
@@ -117,6 +119,10 @@ function attachmentPort(photoId = "photo-new"): ListingPhotoAttachmentPort {
 
 function orderPort(ids: readonly string[]): ListingPhotoOrderPort {
   return { listPhotoIdsInOrder: vi.fn(async () => ids) };
+}
+
+function thumbnailPort(photos: readonly ListingPhotoThumbnail[]): ListingPhotoThumbnailPort {
+  return { listPhotoThumbnailsInOrder: vi.fn(async () => photos) };
 }
 
 function detachmentPort(detached = true): ListingPhotoDetachmentPort {
@@ -326,29 +332,85 @@ describe("attachPhotoToListing", () => {
 
 describe("loadListingPhotosForEdit", () => {
   it("un aviso ajeno o inexistente no muestra sus fotos, ni siquiera cuántas son", async () => {
-    const order = orderPort(["a", "b"]);
+    const thumbnails = thumbnailPort([{ photoId: "a", thumbKey: "promoted/a/thumb.webp" }]);
 
     await expect(
       loadListingPhotosForEdit(
         { listingId: "listing-1" },
-        { sessionPort: sessionFor("stranger"), listings: listingsThatFind(null), order },
+        { sessionPort: sessionFor("stranger"), listings: listingsThatFind(null), thumbnails },
       ),
     ).rejects.toBeInstanceOf(EditListingNotFoundError);
 
-    expect(order.listPhotoIdsInOrder).not.toHaveBeenCalled();
+    expect(thumbnails.listPhotoThumbnailsInOrder).not.toHaveBeenCalled();
   });
 
   it("un aviso que llegó al tope sigue mostrando sus fotos: leer no es agregar", async () => {
-    const ids = await loadListingPhotosForEdit(
+    const fotos = await loadListingPhotosForEdit(
       { listingId: "listing-1" },
       {
         sessionPort: sessionFor(OWNER),
         listings: listingsThatFind(editableListing({ photoCount: MAX_PHOTOS_PER_LISTING })),
-        order: orderPort(["a", "b", "c"]),
+        thumbnails: thumbnailPort([
+          { photoId: "a", thumbKey: "promoted/a/thumb.webp" },
+          { photoId: "b", thumbKey: "promoted/b/thumb.webp" },
+          { photoId: "c", thumbKey: "promoted/c/thumb.webp" },
+        ]),
       },
     );
 
-    expect(ids).toEqual(["a", "b", "c"]);
+    expect(fotos.map((foto) => foto.photoId)).toEqual(["a", "b", "c"]);
+  });
+
+  /**
+   * tasks.md 18.26 — **la lectura que une las dos mitades.** El id solo
+   * alcanzaba para el formulario de quitar; la clave de la miniatura es lo
+   * único que le falta a la pantalla para dibujar CUÁL foto es. Vuelven juntas
+   * y en el orden del aviso, que es el orden en que se muestran.
+   */
+  it("cada foto vuelve con la clave de su miniatura al lado de su id, en el orden del aviso", async () => {
+    const fotos = await loadListingPhotosForEdit(
+      { listingId: "listing-1" },
+      {
+        sessionPort: sessionFor(OWNER),
+        listings: listingsThatFind(editableListing()),
+        thumbnails: thumbnailPort([
+          { photoId: "a", thumbKey: "promoted/a/thumb.webp" },
+          { photoId: "b", thumbKey: "promoted/b/thumb.webp" },
+        ]),
+      },
+    );
+
+    expect(fotos).toEqual([
+      { photoId: "a", thumbKey: "promoted/a/thumb.webp" },
+      { photoId: "b", thumbKey: "promoted/b/thumb.webp" },
+    ]);
+  });
+
+  /**
+   * **Una foto sin derivada NO desaparece de la lista, y es lo contrario de un
+   * detalle.** La única manera de quitar una foto es su renglón, así que
+   * filtrar la que no tiene miniatura dejaría una fila de `listing_photo` que
+   * el aviso muestra y su dueño no puede sacar — un fallo abierto justo donde
+   * AGENTS.md §7 pide el cerrado. Vuelve con `thumbKey` en `null` y la pantalla
+   * decide qué dibujar.
+   */
+  it("una foto sin miniatura vuelve igual, no se filtra de la lista", async () => {
+    const fotos = await loadListingPhotosForEdit(
+      { listingId: "listing-1" },
+      {
+        sessionPort: sessionFor(OWNER),
+        listings: listingsThatFind(editableListing()),
+        thumbnails: thumbnailPort([
+          { photoId: "a", thumbKey: null },
+          { photoId: "b", thumbKey: "promoted/b/thumb.webp" },
+        ]),
+      },
+    );
+
+    expect(fotos).toEqual([
+      { photoId: "a", thumbKey: null },
+      { photoId: "b", thumbKey: "promoted/b/thumb.webp" },
+    ]);
   });
 });
 

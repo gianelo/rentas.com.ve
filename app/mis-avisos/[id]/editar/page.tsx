@@ -4,6 +4,8 @@ import { DrizzleBulkImportAccounts } from "@/modules/broker-bulk-import/infrastr
 import { resolveNavAccount, resolveNavPublish } from "@/modules/identity/domain/nav-account";
 import { nextAuthSessionPort } from "@/modules/identity/infrastructure/session-port";
 import { homeSearchForm } from "@/modules/listing-catalogue/domain/search-destination";
+import { photoAltText, photoUrl } from "@/modules/listing-discovery/domain/listing-photo-view";
+import { readPhotoPublicBaseUrl } from "@/modules/listing-discovery/infrastructure/photo-public-base-url";
 import {
   EditListingNotFoundError,
   loadListingForEdit,
@@ -126,7 +128,7 @@ export default async function EditarAvisoPage({
       {
         sessionPort: nextAuthSessionPort,
         listings: new DrizzleListingEdit(db),
-        order: new DrizzleListingPhotoSet(db),
+        thumbnails: new DrizzleListingPhotoSet(db),
       },
     ).catch((error: unknown) => {
       if (error instanceof EditListingNotFoundError) return [];
@@ -135,6 +137,21 @@ export default async function EditarAvisoPage({
   ]);
 
   if (!aviso) notFound();
+
+  /**
+   * **Después del `notFound()`, y el orden es la garantía.** Un aviso ajeno se
+   * contesta como uno inexistente pase lo que pase con la configuración: leer
+   * la base antes haría que un despliegue sin `R2_BUCKET_PUBLIC_URL`
+   * distinguiera un id ajeno (500) de uno inventado (404), que es exactamente
+   * lo que `loadListingForEdit` se escribió para cerrar.
+   *
+   * **Y se niega en vez de dibujar de menos** (AGENTS.md §7). Volver en
+   * silencio al ordinal sería regresar al daño que la 18.26 cierra —elegir
+   * entre seis fotos parecidas por un número— con la diferencia de que ahora
+   * nadie lo vería: un despliegue mal configurado se vería igual que uno
+   * correcto.
+   */
+  const fotosBaseUrl = readPhotoPublicBaseUrl();
 
   const account = resolveNavAccount(
     { name: session.name, email: session.email },
@@ -244,9 +261,58 @@ export default async function EditarAvisoPage({
               ) : null}
 
               <ul className={styles.results}>
-                {fotos.map((photoId, index) => (
-                  <li key={photoId} className={styles.photoRow}>
-                    <span>
+                {fotos.map((foto, index) => (
+                  <li key={foto.photoId} className={styles.photoRow}>
+                    {/*
+                      **La foto, no su ordinal** (tasks.md 18.26). Antes de
+                      esto el renglón decía «Foto 4» y nada más, así que quien
+                      tiene seis parecidas elegía a ciegas y podía quitar la
+                      que no era, sobre su propio aviso y sin vuelta atrás.
+
+                      `<img>` y no `next/image` por la misma razón que la
+                      cuadrícula y el visor: el optimizador de la plataforma es
+                      un recurso medido del plan gratuito, y estas derivadas ya
+                      salen de R2 con egreso cero.
+
+                      **La miniatura, nunca la foto entera**: los cuatro
+                      tamaños existen para que un teléfono con datos caros no
+                      descargue seis imágenes de pantalla completa para elegir
+                      una.
+
+                      **Una foto sin derivada conserva su renglón**, sin
+                      `<img>`: filtrarla dejaría una fila que el aviso muestra
+                      y su dueño no puede sacar, porque este renglón es el
+                      único camino para quitarla (AGENTS.md §7).
+                    */}
+                    {foto.thumbKey === null ? null : (
+                      /* `next/image` optimiza contra un servicio medido del
+                         plan gratuito; estas derivadas YA se generaron una vez
+                         al subir, en cuatro tamaños, justamente para salir de
+                         R2 con egreso cero. Pasarlas por el optimizador
+                         gastaría una transformación paga por una imagen que ya
+                         está en el tamaño que se dibuja. */
+                      // biome-ignore lint/performance/noImgElement: derivada ya generada, egreso cero desde R2
+                      <img
+                        className={styles.photoThumb}
+                        src={photoUrl(fotosBaseUrl, foto.thumbKey)}
+                        /* **El texto alternativo es producto, no decoración**,
+                           y lo compone el dominio: la posición va primero
+                           porque quien usa lector de pantalla necesita saber
+                           dónde está antes que qué mira. Un `alt="foto"`
+                           escrito acá sería peor que ninguno. Sin zona: el
+                           dueño ya sabe dónde está su aviso, y traerla pediría
+                           una segunda lectura para una coma. */
+                        alt={photoAltText({
+                          position: index,
+                          total: fotos.length,
+                          title: aviso.title,
+                          zone: "",
+                        })}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    )}
+                    <span className={styles.photoName}>
                       {nombreDeFoto(index)}
                       {index === COVER_PHOTO_INDEX ? " (portada)" : ""}
                     </span>
@@ -255,7 +321,7 @@ export default async function EditarAvisoPage({
                         teléfono antes de que los bytes salgan. */}
                     <form action={quitarFotoDelAviso} method="post">
                       <input type="hidden" name="listingId" value={aviso.id} />
-                      <input type="hidden" name="photoId" value={photoId} />
+                      <input type="hidden" name="photoId" value={foto.photoId} />
                       <button
                         type="submit"
                         className={styles.secondary}

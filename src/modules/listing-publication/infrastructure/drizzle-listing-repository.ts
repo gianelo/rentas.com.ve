@@ -18,12 +18,15 @@ import type { ListingPhotoAttachmentPort } from "../application/ports/listing-ph
 import type {
   ListingPhotoDetachmentPort,
   ListingPhotoOrderPort,
+  ListingPhotoThumbnail,
+  ListingPhotoThumbnailPort,
 } from "../application/ports/listing-photo-set.port";
 import type {
   ListingRepositoryPort,
   NewListing,
   NewListingPhoto,
 } from "../application/ports/listing-repository.port";
+import type { DerivativeName } from "../application/ports/photo-derivation.port";
 import type { ZoneCataloguePort } from "../application/ports/zone-catalogue.port";
 import type { ListingEditWrite } from "../domain/listing-edit";
 import type { CuratedZone } from "../domain/publishable-listing";
@@ -351,6 +354,14 @@ export class DrizzleListingEdit implements ListingEditPort {
 }
 
 /**
+ * El tamaño que un renglón de foto dibuja (tasks.md 18.26). Nombrado y no
+ * escrito adentro de la consulta: `DerivativeName` es la unión que
+ * `photo-derivation.port.ts` declara, así que un tamaño que dejara de
+ * existir rompe acá al compilar en vez de devolver cero filas en producción.
+ */
+const THUMBNAIL_DERIVATIVE: DerivativeName = "thumb";
+
+/**
  * tasks.md 18.21 — el orden de las fotos de un aviso, y quitar una.
  *
  * **Una clase al lado de `DrizzleListingActivation`, que es la que adjunta.**
@@ -359,7 +370,9 @@ export class DrizzleListingEdit implements ListingEditPort {
  * en una sola le pondría al adjuntar una capacidad de borrado que nunca pidió
  * (AGENTS.md §3).
  */
-export class DrizzleListingPhotoSet implements ListingPhotoOrderPort, ListingPhotoDetachmentPort {
+export class DrizzleListingPhotoSet
+  implements ListingPhotoOrderPort, ListingPhotoThumbnailPort, ListingPhotoDetachmentPort
+{
   constructor(private readonly db: PublicationDatabase) {}
 
   /**
@@ -375,6 +388,44 @@ export class DrizzleListingPhotoSet implements ListingPhotoOrderPort, ListingPho
       .orderBy(asc(listingPhotos.position));
 
     return rows.map((row) => row.id);
+  }
+
+  /**
+   * tasks.md 18.26 — la misma lista, con la clave de R2 de cada miniatura.
+   *
+   * **`leftJoin` y no `innerJoin`, y la diferencia no es de estilo.** El
+   * `innerJoin` que la cuadrícula usa puede permitírselo: un aviso sin
+   * derivadas simplemente no se muestra en la lista de resultados. Acá el
+   * renglón es el ÚNICO camino para quitar una foto, así que dejar afuera a la
+   * que no tiene derivadas produciría una fila de `listing_photo` que el aviso
+   * sigue mostrando y su dueño ya no puede sacar — un fallo abierto justo
+   * donde AGENTS.md §7 pide el cerrado. Vuelve con `thumbKey` en `null` y
+   * quien dibuja decide.
+   *
+   * **`name = 'thumb'` va en el `ON`, no en el `WHERE`.** En el `WHERE`
+   * convertiría el `leftJoin` en un `innerJoin` de hecho: la fila sin derivada
+   * trae `name` nulo, y `null = 'thumb'` no es verdadero, así que la foto que
+   * este método existe para conservar sería la primera en desaparecer.
+   *
+   * `ORDER BY position`, como su hermana: la portada es la de `position` más
+   * baja, y una consulta sin orden explícito la elegiría por dónde quedó en el
+   * disco.
+   */
+  async listPhotoThumbnailsInOrder(listingId: string): Promise<readonly ListingPhotoThumbnail[]> {
+    const rows = await this.db
+      .select({ photoId: listingPhotos.id, thumbKey: listingPhotoDerivatives.key })
+      .from(listingPhotos)
+      .leftJoin(
+        listingPhotoDerivatives,
+        and(
+          eq(listingPhotoDerivatives.photoId, listingPhotos.id),
+          eq(listingPhotoDerivatives.name, THUMBNAIL_DERIVATIVE),
+        ),
+      )
+      .where(eq(listingPhotos.listingId, listingId))
+      .orderBy(asc(listingPhotos.position));
+
+    return rows.map((row) => ({ photoId: row.photoId, thumbKey: row.thumbKey }));
   }
 
   /**

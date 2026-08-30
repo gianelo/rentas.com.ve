@@ -375,6 +375,30 @@
   font-size: var(--control-fs);
 }
 
+/* El nombre crece y empuja la acción al borde, para que la miniatura no quede
+   separada de la foto que nombra: con `space-between` a secas, tres hijos se
+   repartirían el ancho y «Foto 2» flotaría en el medio. */
+.photoName {
+  flex: 1;
+}
+
+/* La miniatura del renglón (tasks.md 18.26). **Deriva de la del paso 8**, no
+   es una segunda: mismo `--twd` × `--thd`, mismo radio y mismo `object-fit`,
+   porque es la misma cosa vista en otra pantalla y dos medidas para una sola
+   son las que después quedan distintas.
+
+   `flex: none` para que no se encoja al lado de un título largo, y el fondo
+   reserva el hueco antes de que la imagen llegue: el renglón no salta. */
+.photoThumb {
+  display: block;
+  flex: none;
+  inline-size: var(--twd);
+  block-size: var(--thd);
+  object-fit: cover;
+  background: var(--thumb);
+  border-radius: var(--r-thumb);
+}
+
 /* ---------- avisos y errores ---------- */
 
 .error {

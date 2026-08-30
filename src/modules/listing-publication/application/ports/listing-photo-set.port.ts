@@ -28,6 +28,46 @@ export interface ListingPhotoOrderPort {
   listPhotoIdsInOrder(listingId: string): Promise<readonly string[]>;
 }
 
+/**
+ * tasks.md 18.26 — una foto del aviso **con lo único que hace falta para
+ * dibujarla**: su id, que es lo que el formulario de quitar manda, y la clave
+ * de R2 de su miniatura.
+ *
+ * **`thumb` y sólo `thumb`, no el `Record` de los cinco tamaños que
+ * `ListingPhotoView` devuelve.** Aquél existe porque la tarjeta, la tira y el
+ * visor eligen tamaños distintos sobre la misma lectura; acá hay una sola
+ * superficie y un solo tamaño, y devolver cinco claves para usar una
+ * convertiría en dato lo que es una decisión de esta pantalla.
+ *
+ * **`null` cuando la derivada no está, en vez de omitir la foto.** Es la
+ * diferencia entre una miniatura que falta y una foto que desaparece: el
+ * renglón es el ÚNICO camino para quitarla, así que filtrarla dejaría una fila
+ * que el aviso muestra y su dueño no puede sacar (AGENTS.md §7).
+ */
+export interface ListingPhotoThumbnail {
+  readonly photoId: string;
+  readonly thumbKey: string | null;
+}
+
+/**
+ * **Un puerto de lectura al lado, no un método más en `ListingPhotoOrderPort`.**
+ * Aquél contesta una sola pregunta —en qué orden van— y `planPhotoRemoval`
+ * recibe su arreglo tal cual; agregarle las claves de R2 le pondría a
+ * `detachPhotoFromListing`, que sólo necesita el orden, un join contra
+ * `listing_photo_derivative` que nunca pidió. Es la misma razón por la que la
+ * escritura de las fotos se quedó partida en dos puertos y no en uno.
+ */
+export interface ListingPhotoThumbnailPort {
+  /**
+   * En el orden en que se muestran, o sea `position` ascendente: la portada
+   * primero, igual que `listPhotoIdsInOrder`. La posición no viaja como
+   * columna porque el índice del arreglo YA es la posición, y dos fuentes para
+   * el mismo número es como una pantalla termina diciendo «Foto 3» sobre la
+   * segunda.
+   */
+  listPhotoThumbnailsInOrder(listingId: string): Promise<readonly ListingPhotoThumbnail[]>;
+}
+
 export interface ListingPhotoDetachmentPort {
   /**
    * Borra la fila y **renumera las que quedan dentro de la MISMA
