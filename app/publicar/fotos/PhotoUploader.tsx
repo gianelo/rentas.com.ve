@@ -1,8 +1,24 @@
 "use client";
 
-import { Fragment, useId, useState } from "react";
+import { Fragment, useEffect, useId, useState } from "react";
+import {
+  type DraftPhotoAction,
+  movePhotoBy,
+  offersDragReorder,
+  photoActionsFor,
+  planPhotoRemoval,
+  promoteToCover,
+  reorderPhotoTo,
+} from "../../../src/modules/listing-publication/domain/draft-photo-actions";
 import { MAX_PHOTOS_PER_LISTING } from "../../../src/modules/listing-publication/domain/publishable-listing";
 import { SUPPORTED_PHOTO_CONTENT_TYPES } from "../../../src/modules/listing-publication/domain/uploaded-photo";
+import {
+  coverChangedNotice,
+  discardPhotoLabel,
+  PHOTO_ACTION_COPY,
+  PHOTO_REMOVAL_REFUSAL_COPY,
+  photoActionLabel,
+} from "../photo-action-copy";
 import { requestUploadTargets } from "./actions";
 import { computeResize, UPLOAD_CONTENT_TYPE, UPLOAD_QUALITY } from "./compress";
 import styles from "./photo-uploader.module.css";
@@ -154,6 +170,18 @@ export function PhotoUploader({ initial = [] }: { initial?: readonly UploadedPho
     })),
   );
   const [notice, setNotice] = useState("");
+  const [dragId, setDragId] = useState<string | null>(null);
+  /** Arranca en `false`: el primer marcado es el del teléfono, con las cuatro
+      acciones nombradas y sin agarre. El arrastre llega después. */
+  const [pointerIsFine, setPointerIsFine] = useState(false);
+
+  useEffect(() => {
+    // `(pointer: fine)` es "mouse o lápiz", no "pantalla grande": un teléfono
+    // apaisado sigue siendo un pulgar.
+    setPointerIsFine(window.matchMedia("(pointer: fine)").matches);
+  }, []);
+
+  const dragEnabled = offersDragReorder({ pointerIsFine, photoCount: photos.length });
 
   const update = (id: string, patch: Partial<Photo>) =>
     setPhotos((current) => current.map((p) => (p.id === id ? { ...p, ...patch } : p)));
@@ -225,44 +253,74 @@ export function PhotoUploader({ initial = [] }: { initial?: readonly UploadedPho
   }
 
   /**
-   * Mover una foto un lugar.
-   *
-   * **Acciones nombradas y no un agarre**, y eso es del diseño: arrastrar con
-   * el pulgar en un teléfono lento no es confiable. La primera es la portada,
-   * así que "mover arriba" desde la segunda posición ES "hacer portada" — una
-   * sola mecánica en vez de dos que hay que explicar por separado.
+   * El orden nuevo, aplicado a las filas. **Ninguna de estas funciones decide
+   * el orden**: lo decide `draft-photo-actions.ts`, que es puro y sí entra en
+   * el piso de 90% que este archivo no toca.
    */
-  function move(id: string, direction: -1 | 1) {
-    setPhotos((current) => {
-      const from = current.findIndex((photo) => photo.id === id);
-      const to = from + direction;
-      if (from < 0 || to < 0 || to >= current.length) return current;
-
-      const next = [...current];
-      const [moved] = next.splice(from, 1);
-      if (moved) next.splice(to, 0, moved);
-      return next;
+  function applyOrder(current: Photo[], ids: readonly string[]): Photo[] {
+    const byId = new Map(current.map((photo) => [photo.id, photo]));
+    return ids.flatMap((id) => {
+      const photo = byId.get(id);
+      return photo ? [photo] : [];
     });
   }
 
-  function makeCover(id: string) {
-    setPhotos((current) => {
-      const photo = current.find((entry) => entry.id === id);
-      if (!photo) return current;
-      return [photo, ...current.filter((entry) => entry.id !== id)];
-    });
+  function reorder(next: (ids: readonly string[]) => readonly string[]) {
+    setPhotos((current) => applyOrder(current, next(current.map((photo) => photo.id))));
   }
 
-  function remove(id: string) {
+  /**
+   * Quitar del aviso. **El piso lo contesta el dominio** con la misma
+   * constante que `activateListing` revalida al activar; se dice acá porque
+   * enterarse cuatro pasos después es peor. Cuenta sólo las `ready`: una foto
+   * que se rompió al subir nunca entró al aviso.
+   */
+  function removeFromListing(id: string) {
+    const readyIds = photos.filter((photo) => photo.status === "ready").map((photo) => photo.id);
+    const plan = planPhotoRemoval(readyIds, id);
+    if (!plan.ok) {
+      setNotice(PHOTO_REMOVAL_REFUSAL_COPY[plan.refusal]);
+      return;
+    }
+
+    const promoted = plan.coverChangedTo
+      ? photos.find((photo) => photo.id === plan.coverChangedTo)
+      : undefined;
+    setNotice(promoted ? coverChangedNotice(promoted.name) : "");
+    discard(id);
+  }
+
+  /**
+   * Sacar la fila y soltar la miniatura. **El objeto ya subido a R2 se queda
+   * ahí y nunca se adjunta**: su clave sale de los campos ocultos, así que el
+   * borrador no lo referencia y ningún aviso lo muestra. Borrarlo pediría una
+   * acción de servidor con permiso de borrado sobre el bucket — un puerto de
+   * escritura más ancho por un huérfano que la política del bucket recoge —,
+   * y AGENTS.md §3 pide lo contrario: no ensanchar el puerto angosto.
+   */
+  function discard(id: string) {
     setPhotos((current) => {
       const gone = current.find((p) => p.id === id);
       if (gone?.preview) URL.revokeObjectURL(gone.preview);
       return current.filter((p) => p.id !== id);
     });
+  }
+
+  function runPhotoAction(action: DraftPhotoAction, id: string) {
+    if (action === "remove") {
+      removeFromListing(id);
+      return;
+    }
     setNotice("");
+    if (action === "makeCover") {
+      reorder((ids) => promoteToCover(ids, id));
+      return;
+    }
+    reorder((ids) => movePhotoBy(ids, id, action === "moveUp" ? -1 : 1));
   }
 
   const ready = photos.filter((p) => p.status === "ready");
+  const orderIds = photos.map((photo) => photo.id);
 
   const picker = (label: string, className: string | undefined) => (
     <>
@@ -309,6 +367,27 @@ export function PhotoUploader({ initial = [] }: { initial?: readonly UploadedPho
               className={
                 photo.status === "failed" ? `${styles.row} ${styles.rowFailed}` : styles.row
               }
+              // Sólo con puntero fino, y sólo encima de las acciones
+              // nombradas: arrastrar con el pulgar en un teléfono lento no es
+              // confiable, con mouse sí.
+              draggable={dragEnabled}
+              onDragStart={() => setDragId(photo.id)}
+              onDragEnd={() => setDragId(null)}
+              onDragOver={(event) => {
+                // Sin `preventDefault` no hay zona de soltado — y no se llama
+                // cuando no hay arrastre nuestro en curso, así que soltar un
+                // archivo del escritorio sigue haciendo lo que el navegador
+                // hace, en vez de ser tragado por esta lista.
+                if (dragId) event.preventDefault();
+              }}
+              onDrop={(event) => {
+                if (!dragId) return;
+                event.preventDefault();
+                const moved = dragId;
+                reorder((ids) => reorderPhotoTo(ids, moved, index));
+                setDragId(null);
+                setNotice("");
+              }}
             >
               <div
                 className={
@@ -359,54 +438,52 @@ export function PhotoUploader({ initial = [] }: { initial?: readonly UploadedPho
                 )}
               </div>
 
-              {/* Una acción por fila, con nombre: nada que adivinar ni
-                  arrastrar. Los dos textos largos no son decorativos —
-                  "quitar" sin la aclaración hace dudar antes de tocarlo, y
-                  "portada" sola no significa nada. */}
-              {photo.status === "ready" && index > 0 ? (
+              {/* Un renglón por acción, con nombre y con la aclaración A LA
+                  VISTA: los dos textos largos no son decorativos, y un
+                  `title` no aparece nunca en un teléfono. Es un `<details>`
+                  y no un panel propio, así que las cuatro acciones siguen ahí
+                  para el teclado y el lector en los dos anchos — el arrastre
+                  de escritorio se suma a esto, no lo reemplaza. */}
+              {photo.status === "ready" ? (
+                <details className={styles.menu}>
+                  <summary className={styles.menuTrigger} aria-label={`Acciones de ${photo.name}`}>
+                    ⋯
+                  </summary>
+                  <div className={styles.menuSheet}>
+                    {photoActionsFor(orderIds, photo.id).map((action) => (
+                      <button
+                        key={action}
+                        type="button"
+                        className={styles.menuItem}
+                        onClick={() => runPhotoAction(action, photo.id)}
+                        aria-label={photoActionLabel(action, photo.name)}
+                      >
+                        <span className={styles.menuItemLabel}>
+                          {PHOTO_ACTION_COPY[action].label}
+                        </span>
+                        {PHOTO_ACTION_COPY[action].hint ? (
+                          <span className={styles.menuItemHint}>
+                            {PHOTO_ACTION_COPY[action].hint}
+                          </span>
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+                </details>
+              ) : (
                 <button
                   type="button"
-                  className={styles.remove}
-                  onClick={() => makeCover(photo.id)}
-                  title="Se ve en la lista y arriba del aviso"
-                  aria-label={`Hacer portada: ${photo.name}. Se ve en la lista y arriba del aviso`}
+                  className={
+                    photo.status === "failed"
+                      ? `${styles.remove} ${styles.removeFailed}`
+                      : styles.remove
+                  }
+                  onClick={() => discard(photo.id)}
+                  aria-label={discardPhotoLabel(photo.name)}
                 >
-                  ◆
+                  ×
                 </button>
-              ) : null}
-              {photo.status === "ready" && index > 0 ? (
-                <button
-                  type="button"
-                  className={styles.remove}
-                  onClick={() => move(photo.id, -1)}
-                  aria-label={`Mover arriba: ${photo.name}`}
-                >
-                  ↑
-                </button>
-              ) : null}
-              {photo.status === "ready" && index < photos.length - 1 ? (
-                <button
-                  type="button"
-                  className={styles.remove}
-                  onClick={() => move(photo.id, 1)}
-                  aria-label={`Mover abajo: ${photo.name}`}
-                >
-                  ↓
-                </button>
-              ) : null}
-              <button
-                type="button"
-                className={
-                  photo.status === "failed"
-                    ? `${styles.remove} ${styles.removeFailed}`
-                    : styles.remove
-                }
-                onClick={() => remove(photo.id)}
-                aria-label={`Quitar ${photo.name} del aviso. No borra la foto de tu teléfono`}
-                title="No borra la foto de tu teléfono"
-              >
-                ×
-              </button>
+              )}
             </li>
           ))}
 
