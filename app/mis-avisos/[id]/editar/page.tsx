@@ -13,6 +13,10 @@ import {
   MAX_TITLE_CHARACTERS,
   MIN_DESCRIPTION_CHARACTERS,
 } from "@/modules/listing-publication/domain/publishable-listing";
+import {
+  type ListingField,
+  placeListingEditViolations,
+} from "@/modules/listing-publication/domain/violation-field";
 import { DrizzleListingEdit } from "@/modules/listing-publication/infrastructure/drizzle-listing-repository";
 import { db } from "@/shared/db/client";
 import { AppLink } from "../../../../components/atoms/AppLink";
@@ -20,6 +24,7 @@ import { Container } from "../../../../components/layout/Container";
 import type { SearchPillProps } from "../../../../components/molecules/SearchPill";
 import { Nav } from "../../../../components/organisms/Nav";
 import { requireSession } from "../../../_lib/require-session";
+import { FieldError } from "../../../publicar/FieldError";
 import styles from "../../../publicar/publish-steps.module.css";
 import {
   CHANGE_FIELD_LABEL,
@@ -62,10 +67,16 @@ export const dynamic = "force-dynamic";
  * **Sin una línea de JavaScript de cliente**: un `<form method="post">` nativo
  * hacia una Server Action, igual que los nueve pasos de publicar.
  *
- * **Las fotos no se editan acá, y no es un olvido**: son la 18.21 y dependen
- * del menú `⋯` de la 18.15, que hoy no existe ni al publicar. El tope y el
- * piso SÍ rigen esta edición (etapa `"activation"`); lo que falta es agregar y
- * quitar, y media puerta sería peor que ninguna.
+ * **Las fotos no se editan acá, y no es un olvido**: son la 18.21. El menú `⋯`
+ * ya existe al publicar desde la 18.15, así que lo que falta no es la mecánica
+ * sino el camino de escritura —quién adjunta y quién desprende una foto de un
+ * aviso YA publicado—, y media puerta sería peor que ninguna. El tope y el piso
+ * SÍ rigen esta edición (etapa `"activation"`).
+ *
+ * **Dónde se lee cada negativa lo decide el dominio** (tasks.md 18.22): antes
+ * del campo que la produjo y anunciada, como hacen los nueve pasos, con el
+ * MISMO `FieldError`. El bloque de arriba queda sólo para lo que una edición no
+ * manda y para un código inventado en la dirección.
  */
 export default async function EditarAvisoPage({
   params,
@@ -112,6 +123,24 @@ export default async function EditarAvisoPage({
   // se niega y no hay JavaScript donde devolver un valor.
   const motivos = (query.motivos ?? "").split(",").filter((motivo) => motivo !== "");
 
+  // **Dónde va cada negativa lo decide el dominio** (tasks.md 18.22), no esta
+  // pantalla: `placeListingEditViolations` reparte entre los campos que un
+  // pedido de edición manda y las que no tienen ninguno. Acá sólo se dibuja lo
+  // que ya viene decidido.
+  const negativas = placeListingEditViolations(motivos);
+  const mensaje = (field: ListingField): string | undefined => {
+    const codigo = negativas.byField.get(field);
+    return codigo === undefined
+      ? undefined
+      : listingEditViolationMessage(codigo, { title: aviso.title });
+  };
+  const invalido = (field: ListingField) =>
+    negativas.byField.has(field)
+      ? { "aria-invalid": "true" as const, "aria-describedby": `${field}-error` }
+      : {};
+  const claseControl = (field: ListingField) =>
+    negativas.byField.has(field) ? ` ${styles.controlInvalid}` : "";
+
   return (
     <>
       <Nav
@@ -130,10 +159,18 @@ export default async function EditarAvisoPage({
               Los cambios se ven enseguida en tu aviso. Quien ya vio tu contacto no lo pierde.
             </p>
 
-            {motivos.length === 0 ? null : (
+            {/*
+              **Sólo las que no tienen campo en esta pantalla.** Las demás se
+              leen al lado del control que las produjo, como hace publicar. Este
+              bloque queda para lo que una edición no manda —fotos, zona,
+              ciudad, tipo de inmueble, puestos— y para un código inventado en la
+              dirección: tragárselas dejaría un formulario que se niega a guardar
+              sin decir por qué (AGENTS.md §7).
+            */}
+            {negativas.elsewhere.length === 0 ? null : (
               <p className={styles.error} role="alert">
                 No se pudo guardar:{" "}
-                {motivos
+                {negativas.elsewhere
                   .map((motivo) => listingEditViolationMessage(motivo, { title: aviso.title }))
                   .join(" · ")}
               </p>
@@ -145,6 +182,10 @@ export default async function EditarAvisoPage({
               <input type="hidden" name="listingId" value={aviso.id} />
 
               <div>
+                {/* `FieldError` es el MISMO de los nueve pasos, movido a su
+                    archivo en vez de copiado: dos maneras de anunciar un mismo
+                    tipo de error es como un producto se contradice. */}
+                <FieldError id="title-error" message={mensaje("title")} />
                 <label className={styles.label} htmlFor="title">
                   {etiqueta("title")}
                 </label>
@@ -152,13 +193,15 @@ export default async function EditarAvisoPage({
                   id="title"
                   name="title"
                   type="text"
-                  className={styles.control}
+                  className={`${styles.control}${claseControl("title")}`}
                   defaultValue={aviso.title}
                   maxLength={MAX_TITLE_CHARACTERS * 2}
+                  {...invalido("title")}
                 />
               </div>
 
               <div>
+                <FieldError id="description-error" message={mensaje("description")} />
                 <label className={styles.label} htmlFor="description">
                   {etiqueta("description")}
                 </label>
@@ -166,13 +209,15 @@ export default async function EditarAvisoPage({
                   id="description"
                   name="description"
                   rows={8}
-                  className={`${styles.control} ${styles.textarea}`}
+                  className={`${styles.control} ${styles.textarea}${claseControl("description")}`}
                   defaultValue={aviso.description}
+                  {...invalido("description")}
                 />
                 <p className={styles.help}>Mínimo {MIN_DESCRIPTION_CHARACTERS} caracteres.</p>
               </div>
 
               <div>
+                <FieldError id="priceUsd-error" message={mensaje("priceUsd")} />
                 <label className={styles.label} htmlFor="priceUsd">
                   {etiqueta("priceUsd")}
                 </label>
@@ -183,8 +228,9 @@ export default async function EditarAvisoPage({
                   name="priceUsd"
                   type="text"
                   inputMode="numeric"
-                  className={styles.control}
+                  className={`${styles.control}${claseControl("priceUsd")}`}
                   defaultValue={aviso.priceUsd}
+                  {...invalido("priceUsd")}
                 />
               </div>
 
@@ -197,6 +243,7 @@ export default async function EditarAvisoPage({
                   ] as const
                 ).map(([name, value]) => (
                   <div key={name} className={styles.numberRow}>
+                    <FieldError id={`${name}-error`} message={mensaje(name)} />
                     <label className={styles.label} htmlFor={name}>
                       {etiqueta(name)}
                     </label>
@@ -205,14 +252,25 @@ export default async function EditarAvisoPage({
                       name={name}
                       type="text"
                       inputMode="numeric"
-                      className={`${styles.control} ${styles.numberControl}`}
+                      className={`${styles.control} ${styles.numberControl}${claseControl(name)}`}
                       defaultValue={value}
+                      {...invalido(name)}
                     />
                   </div>
                 ))}
               </div>
 
-              <fieldset className={styles.choices}>
+              {/* **El grupo, no un radio.** Tres opciones excluyentes no tienen
+                  un control único al que apuntar, así que se describe el
+                  conjunto y no se marca ninguno como el inválido — marcar el
+                  primero diría que ése es el problema. */}
+              <fieldset
+                className={styles.choices}
+                aria-describedby={
+                  negativas.byField.has("contactMethod") ? "contactMethod-error" : undefined
+                }
+              >
+                <FieldError id="contactMethod-error" message={mensaje("contactMethod")} />
                 <legend className={styles.legend}>{etiqueta("contactMethod")}</legend>
                 {(["whatsapp", "telefono", "email"] as const).map((value) => (
                   <label key={value} className={styles.choice}>
@@ -229,6 +287,7 @@ export default async function EditarAvisoPage({
               </fieldset>
 
               <div>
+                <FieldError id="contactValue-error" message={mensaje("contactValue")} />
                 <label className={styles.label} htmlFor="contactValue">
                   {etiqueta("contactValue")}
                 </label>
@@ -236,8 +295,9 @@ export default async function EditarAvisoPage({
                   id="contactValue"
                   name="contactValue"
                   type="text"
-                  className={styles.control}
+                  className={`${styles.control}${claseControl("contactValue")}`}
                   defaultValue={aviso.contactValue}
+                  {...invalido("contactValue")}
                 />
                 {/* «El que reveló, reveló. Si entra de nuevo que vea el
                     contacto nuevo» (fundador, 2026-08-29). La evidencia del
@@ -256,6 +316,12 @@ export default async function EditarAvisoPage({
                 dueño buscando un control que no existe.
               */}
               <div>
+                {/* **El hueco que la 18.22 nombraba, cerrado.** Sin campo en la
+                    tabla, `publisherType.immutable` era el único código que no
+                    podía colocarse y salía arriba, lejos de lo que explica. No
+                    lleva `aria-invalid`: no hay control que invalidar, que es
+                    justamente lo que la negativa dice. */}
+                <FieldError id="publisherType-error" message={mensaje("publisherType")} />
                 <p className={styles.label}>{etiqueta("publisherType")}</p>
                 <p className={styles.help}>{PUBLISHER_TYPE_LABEL[aviso.publisherType]}</p>
                 <p className={styles.warning}>{PUBLISHER_TYPE_IMMUTABLE_NOTICE}</p>
