@@ -9,6 +9,8 @@ import type { ListingPhotoAttachmentPort } from "./ports/listing-photo-attachmen
 import type {
   ListingPhotoDetachmentPort,
   ListingPhotoOrderPort,
+  ListingPhotoThumbnail,
+  ListingPhotoThumbnailPort,
 } from "./ports/listing-photo-set.port";
 import type { PhotoDerivationPort } from "./ports/photo-derivation.port";
 import type { PhotoHashComputationPort } from "./ports/photo-hash-computation.port";
@@ -177,13 +179,20 @@ export async function attachPhotoToListing(
  *
  * **No comprueba el tope**: un aviso lleno sigue mostrando sus fotos, porque
  * leer no es agregar.
+ *
+ * **Desde la 18.26 vuelve también la clave de la miniatura**, y por eso la
+ * dependencia cambió de `order` a `thumbnails`. No es un dato más: sin ella la
+ * pantalla sólo puede nombrar cada foto por su ordinal, y quien tiene seis
+ * parecidas elige a ciegas y puede quitar la que no era. Componer la URL sigue
+ * siendo de quien dibuja —`photoUrl` recibe la base pública como argumento
+ * justamente para eso—, así que acá vuelve la clave y nunca una dirección.
  */
 export async function loadListingPhotosForEdit(
   request: { readonly listingId: string },
-  dependencies: EditableListingGate & { readonly order: ListingPhotoOrderPort },
-): Promise<readonly string[]> {
+  dependencies: EditableListingGate & { readonly thumbnails: ListingPhotoThumbnailPort },
+): Promise<readonly ListingPhotoThumbnail[]> {
   const listing = await openForPhotos(request.listingId, dependencies, { checkCeiling: false });
-  return dependencies.order.listPhotoIdsInOrder(listing.id);
+  return dependencies.thumbnails.listPhotoThumbnailsInOrder(listing.id);
 }
 
 export interface DetachPhotoFromListingDependencies extends EditableListingGate {
