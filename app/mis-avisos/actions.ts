@@ -12,11 +12,18 @@ import {
   EditListingRejectedError,
   editListing,
 } from "@/modules/listing-publication/application/edit-listing";
+import {
+  attachPhotoToListing,
+  detachPhotoFromListing,
+  ListingPhotoRemovalRefusedError,
+  requestListingPhotoUpload,
+} from "@/modules/listing-publication/application/edit-listing-photos";
 import { requestDraftPhotoUpload } from "@/modules/listing-publication/application/request-draft-photo-upload";
 import type { ListingEdit } from "@/modules/listing-publication/domain/listing-edit";
 import {
   DrizzleListingActivation,
   DrizzleListingEdit,
+  DrizzleListingPhotoSet,
   DrizzleZoneCatalogue,
 } from "@/modules/listing-publication/infrastructure/drizzle-listing-repository";
 import { deriveListingPhoto } from "@/modules/listing-publication/infrastructure/photo-derivatives";
@@ -126,6 +133,102 @@ export async function adjuntarFotoAlBorrador(input: {
   revalidatePath("/mis-avisos");
 
   return { position: result.position };
+}
+
+/**
+ * tasks.md 18.21 — **las mismas dos mitades, sobre un aviso YA publicado.**
+ *
+ * No reusan las de arriba y no es duplicación: la puerta de aquéllas es
+ * `findDraftById`, cuyo `WHERE` lleva `status = 'draft'` adentro. Ensancharlo
+ * le abriría a `activateListing` una fila que ya está activa, así que va un
+ * caso de uso al lado con `findEditableById` de puerta — la misma que ya
+ * refusa un aviso ajeno, un borrador, un vencido y uno oculto como el mismo
+ * `null`. Lo que sí se reusa entero es lo que importa: `processUploadedPhoto`,
+ * el único punto por el que pasan publicar, adjuntar a un borrador y esto.
+ */
+export async function pedirDestinoDeFotoDelAviso(input: {
+  readonly listingId: string;
+  readonly contentType: string;
+  readonly byteLength: number;
+}): Promise<DestinoDeFoto> {
+  const target = await requestListingPhotoUpload(input, {
+    sessionPort: nextAuthSessionPort,
+    listings: new DrizzleListingEdit(db),
+    storage: createR2PhotoStorage(),
+  });
+
+  return { key: target.key, url: target.url, expiresAt: target.expiresAt.toISOString() };
+}
+
+export async function adjuntarFotoAlAviso(input: {
+  readonly listingId: string;
+  readonly key: string;
+  readonly contentType: string;
+}): Promise<{ readonly position: number }> {
+  const transactional = getTransactionalDatabase();
+
+  const result = await attachPhotoToListing(
+    {
+      listingId: input.listingId,
+      incomingKey: input.key,
+      declaredContentType: input.contentType,
+    },
+    {
+      ...photoDependencies(),
+      // La puerta del aviso publicado, en lugar de la del borrador. El resto
+      // de la tubería —almacenamiento, derivadas, hash— es la misma.
+      listings: new DrizzleListingEdit(transactional),
+      photos: new DrizzleListingActivation(transactional),
+    },
+  );
+
+  // La ficha pública y la lista cuentan las fotos del aviso.
+  revalidatePath("/mis-avisos");
+  revalidatePath(`/mis-avisos/${input.listingId}/editar`);
+
+  return { position: result.position };
+}
+
+/**
+ * Quitar una foto. **Un `<form method="post">` de verdad**, así que llega como
+ * `FormData` y funciona con el script apagado — a diferencia de agregar, que
+ * necesita comprimir en el teléfono.
+ *
+ * **La negativa viaja como código, jamás como frase**, igual que las de activar
+ * y guardar: la copia la decide `PHOTO_REMOVAL_REFUSAL_COPY`, y una URL con
+ * castellano adentro sería una segunda tabla que nadie mantiene. Un aviso
+ * ajeno o inexistente no produce ninguna dirección: sube, porque decirle a un
+ * desconocido «ese aviso no es tuyo» ya sería contarle que existe.
+ */
+export async function quitarFotoDelAviso(formData: FormData): Promise<void> {
+  const listingId = String(formData.get("listingId") ?? "");
+  const photoId = String(formData.get("photoId") ?? "");
+  const transactional = getTransactionalDatabase();
+  const photoSet = new DrizzleListingPhotoSet(transactional);
+
+  let respuesta: string;
+  try {
+    const result = await detachPhotoFromListing(
+      { listingId, photoId },
+      {
+        sessionPort: nextAuthSessionPort,
+        listings: new DrizzleListingEdit(transactional),
+        order: photoSet,
+        photos: photoSet,
+      },
+    );
+    // Quien quita la portada cambió la cara del aviso sin pedirlo, así que la
+    // pantalla tiene algo que anunciar; el `null` del dominio no manda nada.
+    respuesta = result.coverChangedTo === null ? "" : "portada=1";
+  } catch (error) {
+    if (!(error instanceof ListingPhotoRemovalRefusedError)) throw error;
+    respuesta = `foto=${encodeURIComponent(error.refusal)}`;
+  }
+
+  revalidatePath("/mis-avisos");
+
+  const destino = `/mis-avisos/${encodeURIComponent(listingId)}/editar`;
+  redirect(respuesta === "" ? destino : `${destino}?${respuesta}`);
 }
 
 /**

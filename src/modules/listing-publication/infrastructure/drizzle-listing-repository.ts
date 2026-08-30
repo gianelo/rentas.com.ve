@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, count, eq } from "drizzle-orm";
+import { and, asc, count, eq, gt, lt, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import {
@@ -15,6 +15,10 @@ import type {
 } from "../application/ports/listing-activation.port";
 import type { EditableListing, ListingEditPort } from "../application/ports/listing-edit.port";
 import type { ListingPhotoAttachmentPort } from "../application/ports/listing-photo-attachment.port";
+import type {
+  ListingPhotoDetachmentPort,
+  ListingPhotoOrderPort,
+} from "../application/ports/listing-photo-set.port";
 import type {
   ListingRepositoryPort,
   NewListing,
@@ -343,6 +347,84 @@ export class DrizzleListingEdit implements ListingEditPort {
       .returning({ id: listings.id });
 
     return updated.length > 0;
+  }
+}
+
+/**
+ * tasks.md 18.21 — el orden de las fotos de un aviso, y quitar una.
+ *
+ * **Una clase al lado de `DrizzleListingActivation`, que es la que adjunta.**
+ * Adjuntar escribe una fila sobre un aviso que ya existe y no necesita saber
+ * nada del resto; quitar tiene que tocar TODAS las que quedan. Plegar las dos
+ * en una sola le pondría al adjuntar una capacidad de borrado que nunca pidió
+ * (AGENTS.md §3).
+ */
+export class DrizzleListingPhotoSet implements ListingPhotoOrderPort, ListingPhotoDetachmentPort {
+  constructor(private readonly db: PublicationDatabase) {}
+
+  /**
+   * `ORDER BY position`, nunca el orden en que la tabla devuelve las filas: la
+   * portada es la de `position` más baja y una consulta sin orden explícito la
+   * elegiría por dónde quedó en el disco.
+   */
+  async listPhotoIdsInOrder(listingId: string): Promise<readonly string[]> {
+    const rows = await this.db
+      .select({ id: listingPhotos.id })
+      .from(listingPhotos)
+      .where(eq(listingPhotos.listingId, listingId))
+      .orderBy(asc(listingPhotos.position));
+
+    return rows.map((row) => row.id);
+  }
+
+  /**
+   * Borrar y renumerar, **en una transacción y en tres sentencias de
+   * conjunto** — nunca leyendo las filas para reescribirlas una por una, que
+   * es la forma con ventana que este repositorio ya evita en el uso único del
+   * token de renovación.
+   *
+   * **Por qué el rodeo por los negativos en vez de un simple
+   * `position = position - 1`.** `listing_photo_position_unique` no es
+   * `DEFERRABLE`, así que Postgres lo comprueba fila por fila DENTRO de la
+   * sentencia: `UPDATE ... SET position = position + 1` sobre `{0,1,2}` falla
+   * con `duplicate key`, medido contra este mismo contenedor. Restar uno
+   * sobrevive sólo si el plan visita las filas de menor a mayor, y ningún
+   * `UPDATE` promete un orden de visita. El rodeo no depende de ninguno:
+   * `k → -k-1` manda cada fila a un rango que ninguna otra ocupa, y
+   * `-k-1 → k-1` la trae de vuelta a un rango que ya quedó vacío. Ninguno de
+   * los dos pasos puede chocar consigo mismo bajo ningún orden.
+   *
+   * Renumerar es también lo que hace verdadero en la base el «quitar la
+   * portada asciende a la siguiente» que `planPhotoRemoval` decide en memoria:
+   * la portada es la de `position` más baja.
+   *
+   * **El objeto de R2 no se toca** (tasks.md 18.21/18.23): sus derivadas viven
+   * bajo el prefijo promovido, junto a las fotos de todos los avisos activos,
+   * así que sólo son distinguibles por la ausencia de esta fila. Borrarlas
+   * pediría permiso de borrado sobre el bucket.
+   */
+  async detachPhoto(listingId: string, photoId: string): Promise<boolean> {
+    return this.db.transaction(async (tx) => {
+      const removed = await tx
+        .delete(listingPhotos)
+        .where(and(eq(listingPhotos.listingId, listingId), eq(listingPhotos.id, photoId)))
+        .returning({ position: listingPhotos.position });
+
+      const gap = removed[0]?.position;
+      if (gap === undefined) return false;
+
+      await tx
+        .update(listingPhotos)
+        .set({ position: sql`-${listingPhotos.position} - 1` })
+        .where(and(eq(listingPhotos.listingId, listingId), gt(listingPhotos.position, gap)));
+
+      await tx
+        .update(listingPhotos)
+        .set({ position: sql`-${listingPhotos.position} - 2` })
+        .where(and(eq(listingPhotos.listingId, listingId), lt(listingPhotos.position, 0)));
+
+      return true;
+    });
   }
 }
 

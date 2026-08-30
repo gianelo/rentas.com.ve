@@ -359,6 +359,22 @@
   color: var(--accent);
 }
 
+/* Un renglón de foto (tasks.md 18.21): el nombre a la izquierda y su acción a
+   la derecha. Deriva de `.choice` —misma altura, mismo borde, mismo radio—
+   pero sin `cursor: pointer`: acá lo que se toca es el botón, no el renglón, y
+   una mano sobre todo el ancho prometería algo que no pasa. */
+.photoRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-block-size: 56px;
+  padding: 0 16px;
+  border: 1px solid var(--strong);
+  border-radius: var(--r);
+  font-size: var(--control-fs);
+}
+
 /* ---------- avisos y errores ---------- */
 
 .error {

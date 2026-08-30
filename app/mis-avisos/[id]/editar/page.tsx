@@ -8,8 +8,11 @@ import {
   EditListingNotFoundError,
   loadListingForEdit,
 } from "@/modules/listing-publication/application/edit-listing";
+import { loadListingPhotosForEdit } from "@/modules/listing-publication/application/edit-listing-photos";
+import { COVER_PHOTO_INDEX } from "@/modules/listing-publication/domain/draft-photo-actions";
 import type { ChangedField } from "@/modules/listing-publication/domain/publication-steps";
 import {
+  MAX_PHOTOS_PER_LISTING,
   MAX_TITLE_CHARACTERS,
   MIN_DESCRIPTION_CHARACTERS,
 } from "@/modules/listing-publication/domain/publishable-listing";
@@ -17,7 +20,10 @@ import {
   type ListingField,
   placeListingEditViolations,
 } from "@/modules/listing-publication/domain/violation-field";
-import { DrizzleListingEdit } from "@/modules/listing-publication/infrastructure/drizzle-listing-repository";
+import {
+  DrizzleListingEdit,
+  DrizzleListingPhotoSet,
+} from "@/modules/listing-publication/infrastructure/drizzle-listing-repository";
 import { db } from "@/shared/db/client";
 import { AppLink } from "../../../../components/atoms/AppLink";
 import { Container } from "../../../../components/layout/Container";
@@ -25,6 +31,12 @@ import type { SearchPillProps } from "../../../../components/molecules/SearchPil
 import { Nav } from "../../../../components/organisms/Nav";
 import { requireSession } from "../../../_lib/require-session";
 import { FieldError } from "../../../publicar/FieldError";
+import {
+  coverChangedNotice,
+  PHOTO_ACTION_COPY,
+  photoActionLabel,
+  photoRemovalRefusalMessage,
+} from "../../../publicar/photo-action-copy";
 import styles from "../../../publicar/publish-steps.module.css";
 import {
   CHANGE_FIELD_LABEL,
@@ -35,7 +47,13 @@ import {
   listingEditViolationMessage,
   PUBLISHER_TYPE_IMMUTABLE_NOTICE,
 } from "../../../publicar/violation-copy";
-import { guardarEdicion } from "../../actions";
+import {
+  adjuntarFotoAlAviso,
+  guardarEdicion,
+  pedirDestinoDeFotoDelAviso,
+  quitarFotoDelAviso,
+} from "../../actions";
+import { SubirFoto } from "../../SubirFoto";
 
 export const metadata: Metadata = {
   title: "Editar aviso — Rentas",
@@ -67,11 +85,12 @@ export const dynamic = "force-dynamic";
  * **Sin una línea de JavaScript de cliente**: un `<form method="post">` nativo
  * hacia una Server Action, igual que los nueve pasos de publicar.
  *
- * **Las fotos no se editan acá, y no es un olvido**: son la 18.21. El menú `⋯`
- * ya existe al publicar desde la 18.15, así que lo que falta no es la mecánica
- * sino el camino de escritura —quién adjunta y quién desprende una foto de un
- * aviso YA publicado—, y media puerta sería peor que ninguna. El tope y el piso
- * SÍ rigen esta edición (etapa `"activation"`).
+ * **Las fotos se agregan y se quitan acá desde la 18.21**, y con su propio
+ * `<form>` cada una: no viajan con «Guardar cambios» porque no son un campo
+ * del pedido — `photoCount` sale de contar filas y nunca de la edición. Quién
+ * puede agregar y quitar lo contesta `edit-listing-photos.ts` con la MISMA
+ * puerta que esta pantalla ya usó para leer el aviso; el piso, el tope y el
+ * ascenso de la portada los contesta el dominio.
  *
  * **Dónde se lee cada negativa lo decide el dominio** (tasks.md 18.22): antes
  * del campo que la produjo y anunciada, como hacen los nueve pasos, con el
@@ -88,7 +107,7 @@ export default async function EditarAvisoPage({
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const session = await requireSession(`/mis-avisos/${id}/editar`);
 
-  const [bulkImportAccount, aviso] = await Promise.all([
+  const [bulkImportAccount, aviso, fotos] = await Promise.all([
     new DrizzleBulkImportAccounts(db).findAccount(session.userId),
     loadListingForEdit(
       { listingId: id },
@@ -98,6 +117,19 @@ export default async function EditarAvisoPage({
       // puerta. Cualquier otro fallo sube: una pantalla que dibujara igual ante
       // un error de base estaría mintiendo (AGENTS.md §7).
       if (error instanceof EditListingNotFoundError) return null;
+      throw error;
+    }),
+    // La MISMA puerta, así que un aviso ajeno tampoco muestra sus fotos y sale
+    // por el mismo `notFound()`.
+    loadListingPhotosForEdit(
+      { listingId: id },
+      {
+        sessionPort: nextAuthSessionPort,
+        listings: new DrizzleListingEdit(db),
+        order: new DrizzleListingPhotoSet(db),
+      },
+    ).catch((error: unknown) => {
+      if (error instanceof EditListingNotFoundError) return [];
       throw error;
     }),
   ]);
@@ -175,6 +207,81 @@ export default async function EditarAvisoPage({
                   .join(" · ")}
               </p>
             )}
+
+            {/*
+              **Las fotos, antes del formulario y fuera de él.** Cada una lleva
+              su propio `<form method="post">`, así que anidarlas adentro del de
+              guardar sería marcado inválido y haría que quitar una enviara la
+              edición entera. Y se guardan al tocarlas: `photoCount` sale de
+              contar filas, nunca de un campo del pedido.
+            */}
+            <section className={styles.choices} aria-labelledby="fotos-titulo">
+              <h2 className={styles.legend} id="fotos-titulo">
+                Fotos
+              </h2>
+              <p className={styles.help}>
+                {fotos.length} de {MAX_PHOTOS_PER_LISTING}. La primera es la portada
+                {PHOTO_ACTION_COPY.makeCover.hint === undefined
+                  ? "."
+                  : `: ${PHOTO_ACTION_COPY.makeCover.hint}.`}{" "}
+                Se guardan al tocarlas, sin esperar a «Guardar cambios».
+              </p>
+
+              {/* La negativa vuelve como código, y la copia la decide la tabla
+                  del paso 8 — no una segunda lista de castellano. */}
+              {query.foto === undefined ? null : (
+                <p className={styles.error} role="alert">
+                  {photoRemovalRefusalMessage(query.foto)}
+                </p>
+              )}
+
+              {/* Quien quita la portada cambió la cara del aviso sin pedirlo,
+                  así que se anuncia con nombre en vez de callarse. */}
+              {query.portada === "1" && fotos.length > 0 ? (
+                <p className={styles.help} role="status">
+                  {coverChangedNotice(nombreDeFoto(COVER_PHOTO_INDEX))}
+                </p>
+              ) : null}
+
+              <ul className={styles.results}>
+                {fotos.map((photoId, index) => (
+                  <li key={photoId} className={styles.photoRow}>
+                    <span>
+                      {nombreDeFoto(index)}
+                      {index === COVER_PHOTO_INDEX ? " (portada)" : ""}
+                    </span>
+                    {/* Un `<form>` de verdad: quitar funciona con el script
+                        apagado, a diferencia de agregar, que comprime en el
+                        teléfono antes de que los bytes salgan. */}
+                    <form action={quitarFotoDelAviso} method="post">
+                      <input type="hidden" name="listingId" value={aviso.id} />
+                      <input type="hidden" name="photoId" value={photoId} />
+                      <button
+                        type="submit"
+                        className={styles.secondary}
+                        aria-label={photoActionLabel("remove", nombreDeFoto(index))}
+                      >
+                        {PHOTO_ACTION_COPY.remove.label}
+                      </button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Visible y no en un `title`: la especificación la marca como no
+                  decorativa, y en un teléfono un `title` no aparece nunca. */}
+              <p className={styles.help}>{PHOTO_ACTION_COPY.remove.hint}</p>
+
+              {/* El MISMO componente que sube una foto a un borrador importado:
+                  cambia la puerta del servidor, no la secuencia. */}
+              <SubirFoto
+                listingId={aviso.id}
+                photoCount={fotos.length}
+                firmar={pedirDestinoDeFotoDelAviso}
+                adjuntar={adjuntarFotoAlAviso}
+                exito="Foto agregada a tu aviso."
+              />
+            </section>
 
             <form action={guardarEdicion} method="post" className={styles.form}>
               {/* La acción vuelve a acotarlo a la sesión: que este campo diga
@@ -352,4 +459,18 @@ export default async function EditarAvisoPage({
 function etiqueta(field: ChangedField): string {
   const label = CHANGE_FIELD_LABEL[field];
   return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
+}
+
+/**
+ * Cómo se llama una foto de un aviso publicado.
+ *
+ * **Su posición es el único nombre que tiene**, y no es una carencia de esta
+ * pantalla: `listing_photo` no guarda ni nombre de archivo ni `alt_text`, a
+ * propósito —«pedirle a quien llena el formulario de pie y con una mano que
+ * describa seis fotografías produce campos vacíos, no accesibilidad»—. Base
+ * uno para quien lee, igual que `photoAltText`: «Foto 0» no es algo que nadie
+ * diga en voz alta.
+ */
+function nombreDeFoto(index: number): string {
+  return `Foto ${index + 1}`;
 }
