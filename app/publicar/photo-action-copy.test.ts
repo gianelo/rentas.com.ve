@@ -9,6 +9,7 @@ import {
   PHOTO_ACTION_COPY,
   PHOTO_REMOVAL_REFUSAL_COPY,
   photoActionLabel,
+  photoRemovalRefusalMessage,
 } from "./photo-action-copy";
 
 describe("los cuatro renglones del menú de una foto", () => {
@@ -73,5 +74,20 @@ describe("lo que se dice al quitar", () => {
 
   it("una foto que nunca subió se descarta, no se «quita del aviso»: nunca estuvo en él", () => {
     expect(discardPhotoLabel("Sala")).toBe("Descartar Sala, que no llegó a subir");
+  });
+});
+
+/**
+ * tasks.md 18.21 — el código vuelve por la URL cuando quitar se niega, así que
+ * una dirección escrita a mano es dato de afuera. Misma forma que
+ * `listingEditViolationMessage`.
+ */
+describe("photoRemovalRefusalMessage", () => {
+  it("traduce una negativa real del dominio", () => {
+    expect(photoRemovalRefusalMessage("lastPhoto")).toBe(PHOTO_REMOVAL_REFUSAL_COPY.lastPhoto);
+  });
+
+  it("un código inventado vuelve como vino, en vez de dibujar «undefined»", () => {
+    expect(photoRemovalRefusalMessage("inventado")).toBe("inventado");
   });
 });

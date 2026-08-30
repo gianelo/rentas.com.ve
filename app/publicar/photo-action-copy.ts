@@ -63,6 +63,20 @@ export const PHOTO_REMOVAL_REFUSAL_COPY: Record<PhotoRemovalRefusal, string> = {
 };
 
 /**
+ * tasks.md 18.21 — la misma frase, cuando el código vuelve por la URL.
+ *
+ * **`string` y no la unión, y el `??` no es un descuido**, igual que
+ * `listingEditViolationMessage`: quitar una foto de un aviso publicado es un
+ * `<form method="post">` sin JavaScript, así que la negativa vuelve como
+ * parámetro y una dirección escrita a mano es dato de afuera. Indexar la tabla
+ * con lo que traiga daría `undefined` dibujado; la garantía de que ninguna
+ * negativa REAL se quede sin copia la sigue dando el `Record` sobre la unión.
+ */
+export function photoRemovalRefusalMessage(refusal: PhotoRemovalRefusal | string): string {
+  return PHOTO_REMOVAL_REFUSAL_COPY[refusal as PhotoRemovalRefusal] ?? refusal;
+}
+
+/**
  * Quien quita la primera foto cambió la cara del aviso sin pedirlo. La región
  * viva lo anuncia con nombre, porque «la portada cambió» sobre una lista de
  * seis miniaturas no dice cuál quedó.

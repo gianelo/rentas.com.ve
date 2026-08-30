@@ -1,6 +1,11 @@
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  coverChangedNotice,
+  PHOTO_ACTION_COPY,
+  PHOTO_REMOVAL_REFUSAL_COPY,
+} from "../../../publicar/photo-action-copy";
 import { PUBLISHER_TYPE_IMMUTABLE_NOTICE } from "../../../publicar/violation-copy";
 
 /**
@@ -19,16 +24,18 @@ import { PUBLISHER_TYPE_IMMUTABLE_NOTICE } from "../../../publicar/violation-cop
  * que se niega a ofrecer.
  */
 
-const { findAccount, requireSession, loadListingForEdit, notFound } = vi.hoisted(() => ({
-  findAccount: vi.fn(),
-  requireSession: vi.fn(),
-  loadListingForEdit: vi.fn(),
-  notFound: vi.fn(() => {
-    // `notFound` de Next funciona tirando; imitarlo es lo que prueba que nada
-    // después de él dibuja.
-    throw new Error("NEXT_NOT_FOUND");
-  }),
-}));
+const { findAccount, requireSession, loadListingForEdit, loadListingPhotosForEdit, notFound } =
+  vi.hoisted(() => ({
+    findAccount: vi.fn(),
+    requireSession: vi.fn(),
+    loadListingForEdit: vi.fn(),
+    loadListingPhotosForEdit: vi.fn(),
+    notFound: vi.fn(() => {
+      // `notFound` de Next funciona tirando; imitarlo es lo que prueba que nada
+      // después de él dibuja.
+      throw new Error("NEXT_NOT_FOUND");
+    }),
+  }));
 
 vi.mock("next/navigation", () => ({ notFound }));
 vi.mock("@/shared/db/client", () => ({ db: {} }));
@@ -43,6 +50,10 @@ vi.mock("@/modules/broker-bulk-import/infrastructure/drizzle-bulk-import-account
 }));
 vi.mock("@/modules/listing-publication/infrastructure/drizzle-listing-repository", () => ({
   DrizzleListingEdit: class {},
+  DrizzleListingPhotoSet: class {},
+}));
+vi.mock("@/modules/listing-publication/application/edit-listing-photos", () => ({
+  loadListingPhotosForEdit,
 }));
 vi.mock("@/modules/listing-publication/application/edit-listing", async (original) => ({
   ...(await original<Record<string, unknown>>()),
@@ -50,7 +61,12 @@ vi.mock("@/modules/listing-publication/application/edit-listing", async (origina
 }));
 // La acción arrastra `next/headers` y la base entera; acá se mira que el
 // formulario salga del servidor, no lo que hace al recibirlo.
-vi.mock("../../actions", () => ({ guardarEdicion: vi.fn() }));
+vi.mock("../../actions", () => ({
+  guardarEdicion: vi.fn(),
+  quitarFotoDelAviso: vi.fn(),
+  pedirDestinoDeFotoDelAviso: vi.fn(),
+  adjuntarFotoAlAviso: vi.fn(),
+}));
 
 import { EditListingNotFoundError } from "@/modules/listing-publication/application/edit-listing";
 import EditarAvisoPage from "./page";
@@ -86,13 +102,19 @@ beforeEach(() => {
   });
   findAccount.mockResolvedValue(null);
   loadListingForEdit.mockResolvedValue(AVISO);
+  loadListingPhotosForEdit.mockReset();
+  loadListingPhotosForEdit.mockResolvedValue(["foto-a", "foto-b", "foto-c"]);
 });
 
 async function dibujar(motivos?: string): Promise<string> {
+  return conParametros(motivos === undefined ? {} : { motivos });
+}
+
+async function conParametros(query: Record<string, string | undefined>): Promise<string> {
   return renderToStaticMarkup(
     await EditarAvisoPage({
       params: Promise.resolve({ id: "aviso-1" }),
-      searchParams: Promise.resolve(motivos === undefined ? {} : { motivos }),
+      searchParams: Promise.resolve(query),
     }),
   );
 }
@@ -307,5 +329,85 @@ describe("/mis-avisos/[id]/editar — la pantalla de corregir un aviso (18.20)",
 
     await expect(dibujar()).rejects.toThrow("la base no contesta");
     expect(notFound).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * tasks.md 18.21 — las fotos de un aviso publicado, en los bytes servidos.
+ *
+ * **Ninguna regla se afirma acá.** Que quitar la última se rechace lo prueba
+ * `draft-photo-actions.test.ts`; que la puerta refuse un aviso ajeno lo prueba
+ * `edit-listing-photos.test.ts`; que renumerar no choque contra el índice
+ * único lo prueba `tests/integration/listing-photo-editing.test.ts`.
+ */
+describe("/mis-avisos/[id]/editar — las fotos (18.21)", () => {
+  it("cada foto trae un formulario real para quitarla, con su id y el del aviso adentro", async () => {
+    const html = await dibujar();
+
+    expect(html).toContain('name="photoId" value="foto-a"');
+    expect(html).toContain('name="photoId" value="foto-b"');
+    expect(html).toContain('name="photoId" value="foto-c"');
+    expect(html).toContain(PHOTO_ACTION_COPY.remove.label);
+
+    // **Ninguna anidada.** Un `<form>` adentro de otro es marcado inválido, y
+    // el navegador lo resuelve mandando la edición entera al tocar «Quitar».
+    // Cada foto cierra su formulario antes de que se abra cualquier otro...
+    for (const foto of ["foto-a", "foto-b", "foto-c"]) {
+      const desde = html.indexOf(`value="${foto}"`);
+      const cierra = html.indexOf("</form>", desde);
+      const abre = html.indexOf("<form", desde);
+      expect(cierra).toBeGreaterThan(-1);
+      expect(cierra).toBeLessThan(abre === -1 ? Number.MAX_SAFE_INTEGER : abre);
+    }
+    // ...y el formulario de guardar empieza después de que todas cerraron.
+    expect(html.indexOf('name="title"')).toBeGreaterThan(
+      html.indexOf("</form>", html.lastIndexOf('value="foto-c"')),
+    );
+  });
+
+  it("nombra la portada, y sólo a la portada", async () => {
+    const html = await dibujar();
+
+    expect(html).toContain("Foto 1 (portada)");
+    expect(html).not.toContain("Foto 2 (portada)");
+    expect(html).toContain("Foto 3");
+  });
+
+  it("dice que quitar no borra la foto del teléfono, que la especificación marca como no decorativa", async () => {
+    expect(await dibujar()).toContain(PHOTO_ACTION_COPY.remove.hint as string);
+  });
+
+  it("cuando quitar se negó, dice por qué y ofrece la salida", async () => {
+    const html = await conParametros({ foto: "lastPhoto" });
+
+    expect(html).toContain(PHOTO_REMOVAL_REFUSAL_COPY.lastPhoto);
+  });
+
+  it("sin negativa de foto no dibuja ninguna, que es el par de la anterior", async () => {
+    const html = await dibujar();
+
+    expect(html).not.toContain(PHOTO_REMOVAL_REFUSAL_COPY.lastPhoto);
+    expect(html).not.toContain(PHOTO_REMOVAL_REFUSAL_COPY.notFound);
+  });
+
+  it("un código de foto inventado no dibuja «undefined» ni rompe la pantalla", async () => {
+    const html = await conParametros({ foto: "inventado" });
+
+    expect(html).toContain("inventado");
+    expect(html).not.toContain("undefined");
+  });
+
+  it("cuando la portada cambió al quitar, lo anuncia con nombre", async () => {
+    const html = await conParametros({ portada: "1" });
+
+    expect(html).toContain(coverChangedNotice("Foto 1"));
+  });
+
+  it("sin cambio de portada no lo anuncia, que es el par de la anterior", async () => {
+    expect(await dibujar()).not.toContain(coverChangedNotice("Foto 1"));
+  });
+
+  it("dice que las fotos no esperan a «Guardar cambios», porque no lo hacen", async () => {
+    expect(await dibujar()).toContain("Guardar cambios»");
   });
 });

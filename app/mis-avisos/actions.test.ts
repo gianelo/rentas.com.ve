@@ -17,6 +17,9 @@ const {
   attachPhotoToDraft,
   editListing,
   requestDraftPhotoUpload,
+  attachPhotoToListing,
+  detachPhotoFromListing,
+  requestListingPhotoUpload,
   redirect,
   revalidatePath,
 } = vi.hoisted(() => ({
@@ -24,6 +27,9 @@ const {
   attachPhotoToDraft: vi.fn(),
   editListing: vi.fn(),
   requestDraftPhotoUpload: vi.fn(),
+  attachPhotoToListing: vi.fn(),
+  detachPhotoFromListing: vi.fn(),
+  requestListingPhotoUpload: vi.fn(),
   redirect: vi.fn((destination: string) => {
     // `redirect` de Next funciona tirando; imitarlo es lo que prueba que
     // nada después de él corre.
@@ -78,22 +84,39 @@ vi.mock("../../src/modules/listing-publication/application/edit-listing", async 
   ...(await original<Record<string, unknown>>()),
   editListing,
 }));
+// Y otra vez: `ListingPhotoRemovalRefusedError` tiene que ser la clase REAL.
+vi.mock(
+  "../../src/modules/listing-publication/application/edit-listing-photos",
+  async (original) => ({
+    ...(await original<Record<string, unknown>>()),
+    attachPhotoToListing,
+    detachPhotoFromListing,
+    requestListingPhotoUpload,
+  }),
+);
 
 import { ActivateListingRejectedError } from "../../src/modules/listing-publication/application/activate-listing";
 import {
   EditListingNotFoundError,
   EditListingRejectedError,
 } from "../../src/modules/listing-publication/application/edit-listing";
+import { ListingPhotoRemovalRefusedError } from "../../src/modules/listing-publication/application/edit-listing-photos";
 import {
   activarBorrador,
+  adjuntarFotoAlAviso,
   adjuntarFotoAlBorrador,
   guardarEdicion,
   pedirDestinoDeFoto,
+  pedirDestinoDeFotoDelAviso,
+  quitarFotoDelAviso,
 } from "./actions";
 
 beforeEach(() => {
   activateListing.mockReset();
   attachPhotoToDraft.mockReset();
+  attachPhotoToListing.mockReset();
+  detachPhotoFromListing.mockReset();
+  requestListingPhotoUpload.mockReset();
   editListing.mockReset();
   requestDraftPhotoUpload.mockReset();
   redirect.mockClear();
@@ -311,6 +334,110 @@ describe("guardarEdicion — la ruta que le faltaba a editListing (18.20)", () =
     await expect(guardarEdicion(edicionDe(CAMPOS))).rejects.toBeInstanceOf(
       EditListingNotFoundError,
     );
+    expect(redirect).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * tasks.md 18.21 — **el cable de las fotos de un aviso publicado.**
+ *
+ * Otra vez el cable y no la regla: el piso, el tope, el ascenso de la portada y
+ * la puerta ya están probados en `edit-listing-photos.test.ts` y en la prueba
+ * de integración. Acá sólo se prueba que una ruta los llame y qué dirección
+ * devuelve.
+ */
+describe("las fotos de un aviso publicado (18.21)", () => {
+  it("adjuntar pasa por el caso de uso del aviso, no por el del borrador", async () => {
+    attachPhotoToListing.mockResolvedValue({ listingId: "aviso-1", position: 2 });
+
+    const result = await adjuntarFotoAlAviso({
+      listingId: "aviso-1",
+      key: "incoming/dueno-1/9c1d4e6f8a2b0c3d5e7f9a1b3c5d7e9f",
+      contentType: "image/webp",
+    });
+
+    expect(result).toEqual({ position: 2 });
+    expect(attachPhotoToListing).toHaveBeenCalledWith(
+      {
+        listingId: "aviso-1",
+        incomingKey: "incoming/dueno-1/9c1d4e6f8a2b0c3d5e7f9a1b3c5d7e9f",
+        declaredContentType: "image/webp",
+      },
+      expect.anything(),
+    );
+    // El de un borrador NO se llama: son dos puertas distintas sobre la misma
+    // tabla, y confundirlas sería ensanchar el `WHERE` de `findDraftById`.
+    expect(attachPhotoToDraft).not.toHaveBeenCalled();
+    expect(revalidatePath).toHaveBeenCalledWith("/mis-avisos/aviso-1/editar");
+  });
+
+  it("firmar pasa por el caso de uso del aviso y devuelve la fecha serializada", async () => {
+    requestListingPhotoUpload.mockResolvedValue({
+      key: "incoming/dueno-1/token",
+      url: "https://r2.example/put",
+      expiresAt: new Date("2026-03-01T00:10:00.000Z"),
+    });
+
+    const destino = await pedirDestinoDeFotoDelAviso({
+      listingId: "aviso-1",
+      contentType: "image/webp",
+      byteLength: 38_000,
+    });
+
+    expect(destino.expiresAt).toBe("2026-03-01T00:10:00.000Z");
+    expect(requestDraftPhotoUpload).not.toHaveBeenCalled();
+  });
+
+  it("quitar una foto vuelve a la pantalla de editar, sin decir nada cuando la portada no se movió", async () => {
+    detachPhotoFromListing.mockResolvedValue({ listingId: "aviso-1", coverChangedTo: null });
+
+    const formData = new FormData();
+    formData.set("listingId", "aviso-1");
+    formData.set("photoId", "foto-c");
+
+    await expect(quitarFotoDelAviso(formData)).rejects.toThrow(
+      "NEXT_REDIRECT:/mis-avisos/aviso-1/editar",
+    );
+    expect(detachPhotoFromListing).toHaveBeenCalledWith(
+      { listingId: "aviso-1", photoId: "foto-c" },
+      expect.anything(),
+    );
+  });
+
+  it("cuando la portada se movió lo dice en la dirección, que es el par de la anterior", async () => {
+    detachPhotoFromListing.mockResolvedValue({ listingId: "aviso-1", coverChangedTo: "foto-b" });
+
+    const formData = new FormData();
+    formData.set("listingId", "aviso-1");
+    formData.set("photoId", "foto-a");
+
+    await expect(quitarFotoDelAviso(formData)).rejects.toThrow(
+      "NEXT_REDIRECT:/mis-avisos/aviso-1/editar?portada=1",
+    );
+  });
+
+  it("una negativa del dominio vuelve como código, jamás como frase", async () => {
+    detachPhotoFromListing.mockRejectedValue(
+      new ListingPhotoRemovalRefusedError("aviso-1", "lastPhoto"),
+    );
+
+    const formData = new FormData();
+    formData.set("listingId", "aviso-1");
+    formData.set("photoId", "foto-a");
+
+    await expect(quitarFotoDelAviso(formData)).rejects.toThrow(
+      "NEXT_REDIRECT:/mis-avisos/aviso-1/editar?foto=lastPhoto",
+    );
+  });
+
+  it("un aviso ajeno o inexistente sube, y no se convierte en una explicación", async () => {
+    detachPhotoFromListing.mockRejectedValue(new Error("cualquier otra cosa"));
+
+    const formData = new FormData();
+    formData.set("listingId", "aviso-1");
+    formData.set("photoId", "foto-a");
+
+    await expect(quitarFotoDelAviso(formData)).rejects.toThrow("cualquier otra cosa");
     expect(redirect).not.toHaveBeenCalled();
   });
 });

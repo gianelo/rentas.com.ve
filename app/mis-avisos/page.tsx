@@ -22,9 +22,9 @@ import { DrizzlePublisherListings } from "../../src/modules/listing-publication/
 import { db } from "../../src/shared/db/client";
 import { requireSession } from "../_lib/require-session";
 import { importRowReasonText } from "../importar/import-copy";
-import { activarBorrador } from "./actions";
-import { FotosDelBorrador } from "./FotosDelBorrador";
+import { activarBorrador, adjuntarFotoAlBorrador, pedirDestinoDeFoto } from "./actions";
 import styles from "./mis-avisos.module.css";
+import { SubirFoto } from "./SubirFoto";
 
 export const metadata: Metadata = {
   title: "Mis avisos — Rentas",
@@ -263,7 +263,13 @@ function FichaDeAviso({
 
         {card.state === "draft" ? (
           <>
-            <FotosDelBorrador listingId={card.id} photoCount={card.photoCount} />
+            <SubirFoto
+              listingId={card.id}
+              photoCount={card.photoCount}
+              firmar={pedirDestinoDeFoto}
+              adjuntar={adjuntarFotoAlBorrador}
+              exito="Foto subida. Ya podés activar el aviso."
+            />
             {/*
               **El disparador que faltaba.** Un `<form>` de verdad: sin
               JavaScript también activa. La pantalla no comprueba si el
