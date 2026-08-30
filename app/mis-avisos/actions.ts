@@ -8,9 +8,15 @@ import {
   activateListing,
 } from "@/modules/listing-publication/application/activate-listing";
 import { attachPhotoToDraft } from "@/modules/listing-publication/application/attach-photo-to-draft";
+import {
+  EditListingRejectedError,
+  editListing,
+} from "@/modules/listing-publication/application/edit-listing";
 import { requestDraftPhotoUpload } from "@/modules/listing-publication/application/request-draft-photo-upload";
+import type { ListingEdit } from "@/modules/listing-publication/domain/listing-edit";
 import {
   DrizzleListingActivation,
+  DrizzleListingEdit,
   DrizzleZoneCatalogue,
 } from "@/modules/listing-publication/infrastructure/drizzle-listing-repository";
 import { deriveListingPhoto } from "@/modules/listing-publication/infrastructure/photo-derivatives";
@@ -18,6 +24,7 @@ import { createR2PhotoStorage } from "@/modules/listing-publication/infrastructu
 import { DrizzlePhotoHash } from "@/modules/listing-trust/infrastructure/drizzle-photo-hash";
 import { db } from "@/shared/db/client";
 import { getTransactionalDatabase } from "@/shared/db/transactional-client";
+import { formCount, formText } from "../publicar/step-values";
 
 /**
  * tasks.md 9.28 — **las dos llamadas que no existían.**
@@ -164,5 +171,82 @@ export async function activarBorrador(formData: FormData): Promise<void> {
     violations === null
       ? "/mis-avisos"
       : `/mis-avisos?fallo=${encodeURIComponent(listingId)}&motivos=${encodeURIComponent(violations.join(","))}`,
+  );
+}
+
+/**
+ * Lo que el formulario de editar posteó, en el vocabulario del dominio.
+ *
+ * **Nada se decide acá.** Los dos lectores vienen de `step-values.ts`, así que
+ * un precio vacío sale `undefined` (no 0) y uno escrito «quinientos» sale
+ * `NaN`, que `validatePublishableListing` ya rechaza como `priceUsd.invalid`.
+ * Lo único que esta capa resuelve es la forma: `FormData` habla en cadenas.
+ *
+ * **`publisherType` se lee aunque la pantalla no lo dibuje**, y esa es la
+ * diferencia entre una garantía y una omisión. Una acción de servidor es un
+ * endpoint HTTP público: descartarlo acá aceptaría en silencio un pedido que
+ * el producto refusa. Se manda como llegó y lo juzga el dominio, que lo mira
+ * dos veces — `publisherType.immutable` si cambia, y `publisherType.invalid`
+ * si además no es ninguno de los dos. El `as` afirma la forma, nunca el
+ * valor, que es el mismo reparto que `readStepAnswers` ya usa para el paso 9.
+ */
+function leerEdicion(formData: FormData): ListingEdit {
+  return {
+    title: formText(formData, "title"),
+    description: formText(formData, "description"),
+    priceUsd: formCount(formData, "priceUsd"),
+    rooms: formCount(formData, "rooms"),
+    bathrooms: formCount(formData, "bathrooms"),
+    areaM2: formCount(formData, "areaM2"),
+    contactMethod: formText(formData, "contactMethod") as ListingEdit["contactMethod"],
+    contactValue: formText(formData, "contactValue"),
+    publisherType: formText(formData, "publisherType") as ListingEdit["publisherType"],
+  };
+}
+
+/**
+ * tasks.md 18.20 — **la ruta que le faltaba a `editListing`.**
+ *
+ * La regla (`planListingEdit`), el caso de uso (`editListing`), el puerto y el
+ * adaptador shipearon enteros y probados sin un solo llamador. Esto es el
+ * llamador, con la misma forma que `activarBorrador`: un `<form>` de verdad,
+ * así que llega como `FormData` y funciona con el script apagado.
+ *
+ * **Ninguna regla vive acá.** Qué campos puede tocar una edición y con qué
+ * reglas se validan lo contesta el dominio; este archivo elige adaptadores y
+ * traduce la respuesta a una dirección.
+ *
+ * **La negativa viaja como código, nunca como frase**, igual que la de activar:
+ * la copia se decide en una tabla (`listingEditViolationMessage`), y una URL
+ * con castellano adentro sería una segunda tabla que nadie mantiene. Un aviso
+ * ajeno o inexistente no produce ninguna dirección: sube, porque decirle a un
+ * desconocido «ese aviso no es tuyo» ya sería contarle que existe.
+ */
+export async function guardarEdicion(formData: FormData): Promise<void> {
+  const listingId = String(formData.get("listingId") ?? "");
+
+  let violations: readonly string[] | null = null;
+  try {
+    await editListing(
+      { listingId, edit: leerEdicion(formData) },
+      {
+        sessionPort: nextAuthSessionPort,
+        zones: new DrizzleZoneCatalogue(db),
+        listings: new DrizzleListingEdit(getTransactionalDatabase()),
+      },
+    );
+  } catch (error) {
+    if (!(error instanceof EditListingRejectedError)) throw error;
+    violations = error.violations;
+  }
+
+  revalidatePath("/mis-avisos");
+
+  // Fuera del `try`: `redirect` funciona tirando, y atraparlo adentro lo
+  // convertiria en «un error inesperado» silenciosamente.
+  redirect(
+    violations === null
+      ? "/mis-avisos"
+      : `/mis-avisos/${encodeURIComponent(listingId)}/editar?motivos=${encodeURIComponent(violations.join(","))}`,
   );
 }

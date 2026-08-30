@@ -6,7 +6,12 @@ import {
   type PublishViolation,
   validatePublishableListing,
 } from "../../src/modules/listing-publication/domain/publishable-listing";
-import { PUBLISH_VIOLATION_COPY, publishViolationMessage } from "./violation-copy";
+import {
+  listingEditViolationMessage,
+  PUBLISH_VIOLATION_COPY,
+  PUBLISHER_TYPE_IMMUTABLE_NOTICE,
+  publishViolationMessage,
+} from "./violation-copy";
 
 /**
  * The Spanish the publisher actually reads, mapped from the domain's stable
@@ -144,5 +149,65 @@ describe("publish violation copy", () => {
     const message = publishViolationMessage("publisherType.required", {});
 
     expect(message.toLowerCase()).toMatch(/dueño|inmobiliaria/);
+  });
+});
+
+/**
+ * tasks.md 18.20 — **la copia de editar es la misma copia, con una frase
+ * más.**
+ *
+ * `ListingEditViolation` es `PublishViolation` más `publisherType.immutable`.
+ * Una segunda tabla de español al lado de ésta sería la que después nadie
+ * mantiene: los veinticinco códigos compartidos se delegan, y el único propio
+ * dice lo que el paso 9 de publicar ya prometió.
+ */
+describe("listingEditViolationMessage — un solo español para publicar y editar (18.20)", () => {
+  it("delega en la tabla de publicar para un código compartido, palabra por palabra", () => {
+    expect(listingEditViolationMessage("priceUsd.invalid", {})).toBe(
+      publishViolationMessage("priceUsd.invalid", {}),
+    );
+  });
+
+  /**
+   * El contador es la parte de la copia de publicar que más fácil se pierde al
+   * copiarla: si esta delegación se rompiera devolviendo una frase propia, el
+   * número desaparecería sin que nada más cambiara.
+   */
+  it("delegar conserva el contador, no sólo la frase", () => {
+    expect(listingEditViolationMessage("description.tooShort", { description: "corta" })).toContain(
+      "Vas 5",
+    );
+  });
+
+  /**
+   * **La misma promesa, no una parecida.** El paso 9 dice «Aparece siempre en
+   * tu aviso y no se puede cambiar después» ANTES de publicar; la negativa al
+   * editar tiene que decir eso mismo, o el producto habla con dos voces sobre
+   * una sola regla.
+   */
+  it("el código propio de editar dice la promesa del paso 9, entera", () => {
+    const message = listingEditViolationMessage("publisherType.immutable", {});
+
+    expect(message).toContain(PUBLISHER_TYPE_IMMUTABLE_NOTICE);
+    expect(PUBLISHER_TYPE_IMMUTABLE_NOTICE).toBe(
+      "Aparece siempre en tu aviso y no se puede cambiar después.",
+    );
+  });
+
+  /**
+   * **Los códigos llegan por la URL**, porque sin JavaScript no hay otro lugar
+   * donde devolverle la negativa a la pantalla. Una dirección escrita a mano
+   * es dato de afuera: `PUBLISH_VIOLATION_COPY[inventado].message(...)` sería
+   * `undefined.message`, o sea un 500 donde correspondía una frase. Vuelve el
+   * código, que es el mismo `?? reason` que `importRowReasonText` ya usa.
+   */
+  it("un código que nadie definió vuelve como código y no tumba la pantalla", () => {
+    expect(listingEditViolationMessage("precio.regalado", {})).toBe("precio.regalado");
+  });
+
+  it("no hay entrada de `publisherType.immutable` en la tabla de publicar", () => {
+    // Los nueve pasos no pueden mostrarlo: `STEP_FOR_VIOLATION` es un `Record`
+    // sobre la unión de publicar, y meterlo ahí obligaría a inventarle un paso.
+    expect(Object.keys(PUBLISH_VIOLATION_COPY)).not.toContain("publisherType.immutable");
   });
 });

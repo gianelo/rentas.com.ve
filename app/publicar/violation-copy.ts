@@ -1,3 +1,4 @@
+import type { ListingEditViolation } from "../../src/modules/listing-publication/domain/listing-edit";
 import {
   MAX_DESCRIPTION_CHARACTERS,
   MAX_PHOTOS_PER_LISTING,
@@ -221,4 +222,46 @@ export function publishViolationMessage(
   context: PublishCopyContext,
 ): string {
   return PUBLISH_VIOLATION_COPY[violation].message(context);
+}
+
+/**
+ * La promesa del paso 9, escrita UNA vez (tasks.md 18.20).
+ *
+ * La lámina de Publicar destaca la segunda mitad en negrita, así que su
+ * marcado no se puede reusar tal cual; las palabras sí, y son las que
+ * importan. La pantalla de editar dice la frase entera donde debería haber
+ * estado el campo, y la negativa del dominio la repite: dos literales de la
+ * misma promesa es como una pantalla termina prometiendo algo que la otra no
+ * cumple.
+ */
+export const PUBLISHER_TYPE_IMMUTABLE_LEAD = "Aparece siempre en tu aviso y ";
+export const PUBLISHER_TYPE_IMMUTABLE_STRESS = "no se puede cambiar después";
+export const PUBLISHER_TYPE_IMMUTABLE_NOTICE = `${PUBLISHER_TYPE_IMMUTABLE_LEAD}${PUBLISHER_TYPE_IMMUTABLE_STRESS}.`;
+
+/**
+ * El español de una edición: la MISMA tabla de arriba para los códigos
+ * compartidos, más el único que es propio de este camino.
+ *
+ * **Delegar y no copiar** es lo que hace que «Vas 24» siga diciendo 24 al
+ * editar. Una segunda tabla al lado de ésta —y al lado de `CHANGE_FIELD_LABEL`,
+ * que ya es la única lista de nombres de campo del repositorio— sería la que
+ * después nadie mantiene.
+ */
+export function listingEditViolationMessage(
+  violation: ListingEditViolation | string,
+  context: PublishCopyContext,
+): string {
+  if (violation === "publisherType.immutable") {
+    return `Quién publica se declara una vez. ${PUBLISHER_TYPE_IMMUTABLE_NOTICE}`;
+  }
+
+  // **`string` y no la unión, y el `??` no es un descuido.** Los códigos vuelven
+  // por la URL porque sin JavaScript no hay otro lugar donde devolverle la
+  // negativa a la pantalla, así que una dirección escrita a mano es dato de
+  // afuera: indexar la tabla con lo que traiga daría `undefined.message`, o sea
+  // un 500 donde correspondía una frase. Vuelve el código —el mismo
+  // `?? reason` de `importRowReasonText`— y la garantía de que ningún código
+  // REAL se quede sin copia la sigue dando el `Record` sobre la unión, que no
+  // compila si el dominio agrega uno.
+  return PUBLISH_VIOLATION_COPY[violation as PublishViolation]?.message(context) ?? violation;
 }

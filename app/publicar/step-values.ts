@@ -185,3 +185,12 @@ export function readStepAnswers(
       });
   }
 }
+
+/**
+ * Los dos lectores de `FormData` de arriba, para el otro camino que postea los
+ * mismos campos: guardar una edición (tasks.md 18.20). **El `undefined` en vez
+ * de 0 es lo que no se puede volver a escribir a mano**: es la diferencia
+ * entre no contestar y contestar cero, y una segunda copia de esa decisión es
+ * la que después se olvida.
+ */
+export { count as formCount, text as formText };

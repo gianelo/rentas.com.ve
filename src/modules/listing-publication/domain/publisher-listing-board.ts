@@ -64,6 +64,13 @@ export interface PublisherListingCard extends PublisherListing {
   readonly state: PublisherListingState;
   /** Sólo cuando el reloj todavía corre; `null` para borradores y vencidos. */
   readonly daysToExpiry: number | null;
+  /**
+   * Si la fila ofrece «Editar» (tasks.md 18.20). **Es una respuesta del
+   * dominio, no un `if` de la fila**: `ListingEditPort` lee y reescribe con
+   * `status = 'active'` en el `WHERE`, así que ofrecerlo sobre un borrador,
+   * un vencido o uno oculto sería dibujar una puerta que la escritura cierra.
+   */
+  readonly editable: boolean;
 }
 
 export interface PublisherListingChip {
@@ -82,6 +89,17 @@ export interface PublisherListingBoard {
   /** Ya filtrados y en el orden de la lámina. */
   readonly cards: readonly PublisherListingCard[];
 }
+
+/**
+ * Los dos estados que una edición puede tocar, y por qué sólo esos dos.
+ *
+ * El puerto lo decide en SQL (`status = 'active'`); acá se dice lo mismo con
+ * el estado dibujado y no con `listing.status`, que es más estricto a
+ * propósito: una fila que el cron todavía no marcó vencida pasaría el `WHERE`
+ * aunque la pantalla ya la muestre como vencida, y ofrecer «Editar» ahí sería
+ * contradecir en la misma fila lo que la fila dice (AGENTS.md §7).
+ */
+const EDITABLE_STATES: readonly PublisherListingState[] = ["active", "expiringSoon"];
 
 /**
  * El orden de 14d, de arriba abajo: lo que no se ve, lo que corre reloj, lo
@@ -152,6 +170,7 @@ export function buildPublisherListingBoard(
         state === "active" || state === "expiringSoon"
           ? wholeDaysBetween(now, listing.expiresAt)
           : null,
+      editable: EDITABLE_STATES.includes(state),
     };
   });
 

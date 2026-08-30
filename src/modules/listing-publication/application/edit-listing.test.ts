@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import type { SessionPort } from "../../identity/application/ports/session.port";
 import { UnauthenticatedError } from "../../identity/application/require-authenticated-session";
-import { EditListingNotFoundError, EditListingRejectedError, editListing } from "./edit-listing";
+import {
+  EditListingNotFoundError,
+  EditListingRejectedError,
+  editListing,
+  loadListingForEdit,
+} from "./edit-listing";
 import type { EditableListing, ListingEditPort } from "./ports/listing-edit.port";
 import type { ZoneCataloguePort } from "./ports/zone-catalogue.port";
 
@@ -182,5 +187,76 @@ describe("editListing — lo que escribe y lo que refusa (18.14)", () => {
 
     expect((error as EditListingRejectedError).violations).toContain("priceUsd.invalid");
     expect(listings.applyEdit).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * tasks.md 18.20 — **la lectura que la pantalla precarga**, con las mismas
+ * puertas que la escritura y contestando lo mismo cuando refusa.
+ *
+ * Vive al lado de `editListing` y no en un archivo propio a propósito: son la
+ * lectura y la escritura de UNA capacidad, comparten `EditListingNotFoundError`
+ * y comparten el puerto. Separarlas invitaría a que la pantalla refusara con
+ * un error distinto del que refusa el guardado, y entonces un aviso ajeno
+ * sería distinguible de uno inexistente en exactamente una de las dos.
+ */
+describe("loadListingForEdit — lo que la pantalla precarga (18.20)", () => {
+  it("sin sesión no toca el puerto", async () => {
+    const listings = portReturning(listing());
+
+    await expect(
+      loadListingForEdit(
+        { listingId: LISTING },
+        { sessionPort: sessionPortReturning(null), listings },
+      ),
+    ).rejects.toBeInstanceOf(UnauthenticatedError);
+
+    expect(listings.findEditableById).not.toHaveBeenCalled();
+  });
+
+  it("devuelve el aviso vigente acotado a quien está en la sesión, y no escribe nada", async () => {
+    const listings = portReturning(listing());
+
+    const found = await loadListingForEdit(
+      { listingId: LISTING },
+      { sessionPort: sessionPortReturning(OWNER), listings },
+    );
+
+    expect(found.title).toBe("Apartamento amoblado en La Castellana");
+    expect(found.priceUsd).toBe(610);
+    expect(found.publisherType).toBe("owner");
+    expect(listings.findEditableById).toHaveBeenCalledWith(LISTING, OWNER);
+    expect(listings.applyEdit).not.toHaveBeenCalled();
+  });
+
+  /**
+   * Las dos afirmaciones son distintas y las dos hacen falta: que los dos
+   * casos tiren `EditListingNotFoundError` no dice nada si el mensaje de uno
+   * nombra al dueño. Se compara el texto exacto de los dos errores, que es lo
+   * único que prueba que un desconocido no puede distinguirlos.
+   */
+  it("un aviso ajeno y uno inexistente dan el MISMO error, con el mismo texto", async () => {
+    const ajeno = await loadListingForEdit(
+      { listingId: LISTING },
+      {
+        sessionPort: sessionPortReturning(OWNER),
+        listings: portReturning(listing({ publisherId: STRANGER })),
+      },
+    ).then(
+      () => null,
+      (thrown: unknown) => thrown as Error,
+    );
+
+    const inexistente = await loadListingForEdit(
+      { listingId: LISTING },
+      { sessionPort: sessionPortReturning(OWNER), listings: portReturning(null) },
+    ).then(
+      () => null,
+      (thrown: unknown) => thrown as Error,
+    );
+
+    expect(ajeno).toBeInstanceOf(EditListingNotFoundError);
+    expect(inexistente).toBeInstanceOf(EditListingNotFoundError);
+    expect(ajeno?.message).toBe(inexistente?.message);
   });
 });
