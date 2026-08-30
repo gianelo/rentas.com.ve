@@ -8,8 +8,13 @@ import {
   MIN_DESCRIPTION_CHARACTERS,
   type PublishViolation,
 } from "../../src/modules/listing-publication/domain/publishable-listing";
+import {
+  LISTING_VIOLATION_FIELD,
+  type ListingField,
+} from "../../src/modules/listing-publication/domain/violation-field";
 import type { PublicationZoneOption } from "../../src/modules/listing-publication/domain/zone-search";
 import { submitStep } from "./actions";
+import { FieldError } from "./FieldError";
 import { PhotoUploader } from "./fotos/PhotoUploader";
 import styles from "./publish-steps.module.css";
 import { FEATURE_LABELS, STEP_COPY } from "./step-copy";
@@ -17,7 +22,6 @@ import {
   PUBLISH_VIOLATION_COPY,
   PUBLISHER_TYPE_IMMUTABLE_LEAD,
   PUBLISHER_TYPE_IMMUTABLE_STRESS,
-  type PublishField,
 } from "./violation-copy";
 
 /**
@@ -65,26 +69,21 @@ export interface PublishStepProps {
 }
 
 function errorsByField(violations: readonly PublishViolation[], draft: PublicationDraft) {
-  const errors = new Map<PublishField, string>();
+  const errors = new Map<ListingField, string>();
   for (const violation of violations) {
-    const copy = PUBLISH_VIOLATION_COPY[violation];
-    if (errors.has(copy.field)) continue;
+    // A qué campo pertenece lo contesta el dominio (tasks.md 18.22); acá sólo
+    // se elige la frase. La pantalla de editar lee la MISMA tabla.
+    const field = LISTING_VIOLATION_FIELD[violation];
+    if (errors.has(field)) continue;
     errors.set(
-      copy.field,
-      copy.message({ description: draft.listing.description, title: draft.listing.title }),
+      field,
+      PUBLISH_VIOLATION_COPY[violation].message({
+        description: draft.listing.description,
+        title: draft.listing.title,
+      }),
     );
   }
   return errors;
-}
-
-/** El mensaje va ANTES del campo que lo produjo y se anuncia, no solo se dibuja. */
-function FieldError({ id, message }: { id: string; message: string | undefined }) {
-  if (!message) return null;
-  return (
-    <p className={styles.error} id={id}>
-      {message}
-    </p>
-  );
 }
 
 function characters(value: string | undefined): number {
@@ -268,7 +267,7 @@ function ZoneSearch({ query }: { query: string | undefined }) {
 }
 
 interface FieldsProps extends PublishStepProps {
-  readonly errors: Map<PublishField, string>;
+  readonly errors: Map<ListingField, string>;
 }
 
 function StepFields(props: FieldsProps) {

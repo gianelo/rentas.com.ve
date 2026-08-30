@@ -110,11 +110,9 @@ describe("publish violation copy", () => {
     }
   });
 
-  it("names the field each code belongs to, so the message lands under it", () => {
-    expect(PUBLISH_VIOLATION_COPY["description.tooShort"].field).toBe("description");
-    expect(PUBLISH_VIOLATION_COPY["zoneId.notInCity"].field).toBe("zoneId");
-    expect(PUBLISH_VIOLATION_COPY["photos.tooMany"].field).toBe("photos");
-  });
+  // «A qué campo pertenece cada código» dejó de vivir en esta tabla con la
+  // 18.22 y lo prueba ahora `violation-field.test.ts`, en el dominio: la
+  // afirmación no se perdió, se mudó bajo el piso del 90 %.
 
   it("counts the description the publisher has written, as the design specifies", () => {
     // SISTEMA.md screen 3, verbatim: "✱ Mínimo 120 caracteres. Vas 24."

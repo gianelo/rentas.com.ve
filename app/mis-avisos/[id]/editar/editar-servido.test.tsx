@@ -172,6 +172,89 @@ describe("/mis-avisos/[id]/editar — la pantalla de corregir un aviso (18.20)",
   });
 
   /**
+   * tasks.md 18.22 — **la negativa al lado del campo que la produjo**, con la
+   * misma anatomía que publicar: el mensaje ANTES del control, con su `id`, y
+   * el control anunciado con `aria-invalid` y `aria-describedby`. La razón está
+   * escrita en `violation-copy.ts`: «un borde rojo es invisible para quien no
+   * distingue colores y para el modo de alto contraste».
+   */
+  it("pone la negativa antes del campo que la produjo y anuncia el control", async () => {
+    const html = await dibujar("priceUsd.invalid");
+
+    expect(html).toContain('id="priceUsd-error"');
+    expect(html).toContain('aria-invalid="true"');
+    expect(html).toContain('aria-describedby="priceUsd-error"');
+    // ANTES, no debajo: el orden en los bytes es el orden en que se lee.
+    expect(html.indexOf("Solo el número, en dólares")).toBeLessThan(html.indexOf('id="priceUsd"'));
+  });
+
+  /**
+   * **El par de la anterior, y hace falta**: una sola afirmación sobre
+   * `aria-invalid="true"` aceptaría una pantalla que lo pone siempre, que es
+   * exactamente lo que un lector de pantalla no puede distinguir de un campo
+   * mal cargado.
+   */
+  it("sin negativas ningún control se anuncia inválido", async () => {
+    const html = await dibujar();
+
+    expect(html).not.toContain("aria-invalid");
+    expect(html).not.toContain("-error");
+  });
+
+  /**
+   * Cada campo, el suyo: una negativa de precio no puede marcar el título. Sin
+   * este par, poner `aria-invalid` en todos los controles pasaría la anterior.
+   */
+  it("marca sólo el campo de la negativa, no todos", async () => {
+    const html = await dibujar("contactValue.invalid");
+
+    expect(html).toContain('aria-describedby="contactValue-error"');
+    expect(html).not.toContain('aria-describedby="title-error"');
+    expect(html).not.toContain('aria-describedby="priceUsd-error"');
+  });
+
+  /**
+   * **El hueco que la 18.22 nombraba.** `publisherType.immutable` no estaba en
+   * el `Record` de publicar, así que era el único código sin campo. Ahora se lee
+   * donde debería haber estado el control — que es donde el paso 9 ya prometió
+   * que no lo habría.
+   */
+  it("la negativa de quién publica se lee donde debería haber estado el campo", async () => {
+    const html = await dibujar("publisherType.immutable");
+
+    expect(html).toContain('id="publisherType-error"');
+    expect(html.indexOf("Quién publica se declara una vez")).toBeLessThan(
+      html.indexOf(PUBLISHER_TYPE_IMMUTABLE_NOTICE),
+    );
+  });
+
+  /**
+   * Una edición no manda fotos, ni zona, ni ciudad: si el validador se queja de
+   * alguna, no hay campo al lado del cual ponerla. **Se dice igual**, en el
+   * bloque, en vez de tragarse — un formulario que se niega a guardar sin decir
+   * por qué es peor que un bloque arriba (AGENTS.md §7).
+   */
+  it("una negativa sobre algo que la edición no manda se sigue diciendo", async () => {
+    const html = await dibujar("photos.required");
+
+    expect(html).toContain("Subí al menos una foto");
+    expect(html).toContain('role="alert"');
+    // Y no inventa un control que esta pantalla no dibuja.
+    expect(html).not.toContain('id="photos-error"');
+  });
+
+  /**
+   * Ninguna se dice dos veces: la que encontró su campo sale ahí y no vuelve a
+   * salir en el bloque, que si no serían dos problemas donde hay uno.
+   */
+  it("la negativa colocada no se repite en el bloque", async () => {
+    const html = await dibujar("priceUsd.invalid,photos.required");
+
+    expect(html.split("Solo el número, en dólares").length - 1).toBe(1);
+    expect(html).toContain("Subí al menos una foto");
+  });
+
+  /**
    * Una dirección escrita a mano es dato de afuera (AGENTS.md §7). Antes de
    * esto, indexar la tabla de copia con lo que trajera la URL habría dado
    * `undefined.message`: un 500 donde correspondía una frase.
