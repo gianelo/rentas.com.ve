@@ -34,13 +34,29 @@ import {
  * como una pantalla termina poniendo el mensaje de `zoneId` debajo de la ciudad.
  */
 
+/**
+ * **Medidas, nunca el texto** (tasks.md 18.25).
+ *
+ * El «Vas 24» del diseño necesita el largo de lo que se acaba de escribir, y
+ * las dos pantallas que lo dicen se niegan por redirección: sin JavaScript, lo
+ * único que vuelve es lo que quepa en una dirección — y una descripción de
+ * 1.200 caracteres no cabe (18.19). Así que lo que llega hasta acá es el
+ * número, medido donde se escribió.
+ *
+ * **Que el texto ya no quepa en esta interfaz es la garantía, no un detalle.**
+ * La pantalla de editar recibía sólo `aviso.title` y el contador decía «Vas 0»
+ * sobre una descripción de 24 caracteres; la corrección obvia —pasarle
+ * `aviso.description`— habría dicho el largo de la que está guardada, que
+ * tampoco es la que se rechazó. Con el campo borrado, ninguna de las dos se
+ * puede escribir por accidente: es la misma forma que el estado de contacto
+ * bloqueado, que no tiene propiedad `value` para no poder filtrarla
+ * (AGENTS.md §7).
+ */
 export interface PublishCopyContext {
-  /** The submitted description, so the counter reports what was written. */
-  readonly description?: string;
-  /** Pre-counted alternative, for callers that already measured. */
+  /** Puntos de codigo de la descripcion enviada, contados donde se envio. */
   readonly descriptionLength?: number;
-  /** El titulo enviado, por el mismo motivo: el paso 6 tambien cuenta. */
-  readonly title?: string;
+  /** Lo mismo para el titulo: el paso 6 tambien cuenta. */
+  readonly titleLength?: number;
 }
 
 export interface ViolationCopy {
@@ -50,19 +66,15 @@ export interface ViolationCopy {
 const REQUIRED = "✱ obligatorio";
 
 /**
- * Code points, matching `validatePublishableListing` exactly. Using
- * `String.length` here would count an emoji twice, so the counter would
- * credit a publisher with more characters than the rule does — and the form
- * would reject a description its own counter called long enough.
+ * El contador, o el silencio.
+ *
+ * **Un numero ausente es preferible a uno inventado.** Sin medida la frase
+ * dice el limite y nada mas: es la misma decision que `import-copy.ts` tomo
+ * cuando la fila no viaja hasta la copia, y la razon es que un contador que
+ * miente manda a alguien a borrar caracteres que ya escribio.
  */
-function countCharacters(context: PublishCopyContext): number {
-  if (context.descriptionLength !== undefined) return context.descriptionLength;
-  return [...(context.description ?? "")].length;
-}
-
-/** Puntos de codigo, igual que el validador y por la misma razon. */
-function countTitleCharacters(context: PublishCopyContext): number {
-  return [...(context.title ?? "")].length;
+function counted(measure: number | undefined): string {
+  return measure === undefined ? "" : ` Vas ${measure}.`;
 }
 
 export const PUBLISH_VIOLATION_COPY: Record<PublishViolation, ViolationCopy> = {
@@ -88,20 +100,20 @@ export const PUBLISH_VIOLATION_COPY: Record<PublishViolation, ViolationCopy> = {
   // contador que lo acompana.
   "title.tooLong": {
     message: (context) =>
-      `Máximo ${MAX_TITLE_CHARACTERS} caracteres. Vas ${countTitleCharacters(context)}.`,
+      `Máximo ${MAX_TITLE_CHARACTERS} caracteres.${counted(context.titleLength)}`,
   },
   "description.required": {
     message: () => `${REQUIRED}. Contá cómo es el inmueble.`,
   },
   "description.tooShort": {
     message: (context) =>
-      `✱ Mínimo ${MIN_DESCRIPTION_CHARACTERS} caracteres. Vas ${countCharacters(context)}.`,
+      `✱ Mínimo ${MIN_DESCRIPTION_CHARACTERS} caracteres.${counted(context.descriptionLength)}`,
   },
   // The publisher is not told to "shorten it" without knowing by how much,
   // for the same reason the minimum reports how far along they are.
   "description.tooLong": {
     message: (context) =>
-      `Máximo ${MAX_DESCRIPTION_CHARACTERS} caracteres. Vas ${countCharacters(context)}.`,
+      `Máximo ${MAX_DESCRIPTION_CHARACTERS} caracteres.${counted(context.descriptionLength)}`,
   },
   "priceUsd.required": {
     message: () => `${REQUIRED}. Poné el alquiler mensual en dólares.`,

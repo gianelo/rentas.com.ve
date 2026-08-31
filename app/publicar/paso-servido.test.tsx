@@ -35,11 +35,15 @@ const BORRADOR = {
   photos: [],
 } as unknown as PublicationDraft;
 
-function dibujar(stepId: PublishStepId, violations: readonly string[]): string {
+function dibujar(
+  stepId: PublishStepId,
+  violations: readonly string[],
+  draft: PublicationDraft = BORRADOR,
+): string {
   return renderToStaticMarkup(
     <PublishStep
       stepId={stepId}
-      draft={BORRADOR}
+      draft={draft}
       violations={violations as never}
       rail={[]}
       progress={30}
@@ -50,6 +54,37 @@ function dibujar(stepId: PublishStepId, violations: readonly string[]): string {
     />,
   );
 }
+
+/**
+ * tasks.md 18.25 — **de dónde sale el «Vas N» que la pantalla dibuja.**
+ *
+ * Publicar NO tiene el defecto de editar, y la razón se prueba acá en vez de
+ * afirmarse: el borrador que el paso dibuja es el que se acaba de guardar, así
+ * que su descripción es la que se escribió y no una de la base. Lo único que
+ * cambió con la 18.25 es que ahora viaja medida.
+ */
+describe("el contador de un paso cuenta lo que el borrador acaba de guardar (18.25)", () => {
+  it("dice los caracteres escritos, en puntos de código", () => {
+    // Diez caracteres astrales: con `String.length` diría 20, y el paso
+    // rechazaría una descripción que su propio contador llamó suficiente.
+    const borrador = {
+      listing: { description: "🏠".repeat(10) },
+      photos: [],
+    } as unknown as PublicationDraft;
+
+    expect(dibujar("descripcion", ["description.tooShort"], borrador)).toContain("Vas 10.");
+  });
+
+  it("sin descripción en el borrador no dibuja un cero que nadie escribió", () => {
+    const html = dibujar("descripcion", ["description.tooShort"], {
+      listing: {},
+      photos: [],
+    } as unknown as PublicationDraft);
+
+    expect(html).toContain("Mínimo 120 caracteres.");
+    expect(html).not.toContain("Vas");
+  });
+});
 
 describe("un paso de publicar sirve la negativa al lado de su campo (18.22)", () => {
   /**

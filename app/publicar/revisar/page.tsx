@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AppLink } from "@/../components/atoms/AppLink";
+import { measureOf } from "@/modules/listing-publication/domain/carried-value";
 import {
   isDraftReadyForReview,
   PUBLISH_STEP_ORDER,
@@ -139,9 +140,12 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
               "Cambiar" de cada bloque es el camino de vuelta al campo. */}
           {draft.violations.map((violation) => (
             <p key={violation} className={styles.error} role="alert">
+              {/* Medidas y no texto (tasks.md 18.25): el contador dibuja un
+                  número, y se cuenta acá, donde el borrador que se acaba de
+                  escribir está a mano. */}
               {PUBLISH_VIOLATION_COPY[violation].message({
-                description: listing.description,
-                title: listing.title,
+                descriptionLength: measureOf(listing.description),
+                titleLength: measureOf(listing.title),
               })}
             </p>
           ))}

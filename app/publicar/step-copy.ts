@@ -1,3 +1,4 @@
+import { OPAQUE_CHANGE_FIELDS } from "../../src/modules/listing-publication/domain/carried-value";
 import type {
   ChangedField,
   DraftChange,
@@ -226,16 +227,6 @@ export const CHANGE_FIELD_LABEL: Record<ChangedField, string> = {
   photos: "las fotos",
   reference: "la referencia",
 };
-
-/** Los campos cuyo valor no se dice en voz alta, solo el hecho de que cambio. */
-const OPAQUE_CHANGE_FIELDS = new Set<ChangedField>([
-  "hasPowerPlant",
-  "hasRegularWater",
-  "isFurnished",
-  "hasSecurity",
-  "hasAppliances",
-  "description",
-]);
 
 function changeValue(field: ChangedField, value: string): string {
   return field === "priceUsd" ? `$${value}` : value;
