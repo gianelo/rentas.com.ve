@@ -6,6 +6,11 @@ import {
   buildFilterPanel,
   type FilterPanelRequest,
 } from "../../src/modules/listing-search/application/build-filter-panel";
+import {
+  MIN_LISTINGS_FOR_PRICE_HISTOGRAM,
+  PRICE_HISTOGRAM_BUCKETS,
+  priceHistogram,
+} from "../../src/modules/listing-search/domain/price-histogram";
 import type { SearchCriteria } from "../../src/modules/listing-search/domain/search-criteria";
 import { withoutFilter } from "../../src/modules/listing-search/domain/search-panel";
 import {
@@ -82,6 +87,27 @@ const D1 = randomUUID();
 /** Todas las zonas que el filtro ofrecería, incluida la que no tiene nada. */
 const ZONAS_OFRECIDAS = [MCBO_CENTRO, MCBO_NORTE, MCBO_VACIA] as const;
 
+/**
+ * **Una tercera ciudad, y existe sólo para el histograma (task 14.12).** Los
+ * cinco de Maracaibo cuestan 200, 300, 400, 500 y 900: con el eje partido en
+ * ocho cada uno cae en un cubo distinto, así que **no hay un solo cubo con dos
+ * adentro** y un cubo de uno no distingue el más barato del más caro que
+ * nombra. Tampoco llegan al piso de doce. Sumarle avisos a Maracaibo movería
+ * cada número de este archivo; una ciudad aparte no toca ninguno.
+ */
+const CIUDAD_HISTOGRAMA = randomUUID();
+const ZONA_H1 = randomUUID();
+const ZONA_H2 = randomUUID();
+const ZONAS_HISTOGRAMA = [ZONA_H1, ZONA_H2] as const;
+
+/**
+ * Doce avisos —justo el piso— repartidos alternadamente en las dos zonas, con
+ * **tres de $400 idénticos**. El eje va de 200 a 900, así que cada cubo mide
+ * 87,5 y quedan así: [200 220], [300 320], [400 400 400], [500 520], [600],
+ * [700], vacío, [900].
+ */
+const PRECIOS_HISTOGRAMA = [200, 220, 300, 320, 400, 400, 400, 500, 520, 600, 700, 900] as const;
+
 interface Fixture {
   readonly id: string;
   readonly zoneId: string;
@@ -142,6 +168,7 @@ beforeAll(async () => {
   for (const [city, name] of [
     [MARACAIBO, "Maracaibo"],
     [DISTRITO, "Distrito Capital"],
+    [CIUDAD_HISTOGRAMA, "Histograma"],
   ] as const) {
     await pool.query(`INSERT INTO "city" (id, name) VALUES ($1,$2)`, [city, `${name} ${city}`]);
   }
@@ -150,6 +177,8 @@ beforeAll(async () => {
     [MCBO_NORTE, MARACAIBO, "Norte"],
     [MCBO_VACIA, MARACAIBO, "Sin avisos"],
     [DC_CENTRO, DISTRITO, "Centro"],
+    [ZONA_H1, CIUDAD_HISTOGRAMA, "Una"],
+    [ZONA_H2, CIUDAD_HISTOGRAMA, "Otra"],
   ] as const) {
     await pool.query(
       `INSERT INTO "zone" (id, city_id, name, kind, source) VALUES ($1,$2,$3,'parroquia','INE')`,
@@ -269,11 +298,30 @@ beforeAll(async () => {
     status: "active",
     isFurnished: true,
   });
+
+  for (const [index, priceUsd] of PRECIOS_HISTOGRAMA.entries()) {
+    await insertListing({
+      id: randomUUID(),
+      zoneId: index % 2 === 0 ? ZONA_H1 : ZONA_H2,
+      cityId: CIUDAD_HISTOGRAMA,
+      priceUsd,
+      rooms: 2,
+      areaM2: 60,
+      // Los tres de $400 son quinta: es la forma de pedir "sólo los precios
+      // idénticos" con un filtro que el histograma SÍ respeta, porque el de
+      // precio lo ignora a propósito.
+      propertyType: priceUsd === 400 ? "quinta" : "apartamento",
+      publisherType: "owner",
+      status: "active",
+    });
+  }
 });
 
 afterAll(async () => {
   await pool.query(`DELETE FROM "user" WHERE id = $1`, [ANA]);
-  await pool.query(`DELETE FROM "city" WHERE id = ANY($1)`, [[MARACAIBO, DISTRITO]]);
+  await pool.query(`DELETE FROM "city" WHERE id = ANY($1)`, [
+    [MARACAIBO, DISTRITO, CIUDAD_HISTOGRAMA],
+  ]);
   await pool.end();
 });
 
@@ -623,10 +671,10 @@ describe("una sola consulta (task 14.11: el costo son los viajes de red)", () =>
     const counted = new DrizzleFacetedSearch(
       drizzle(counting, { schema }) as unknown as FacetedSearchDatabase,
     );
-    // Con las nueve relajaciones, el escalón siguiente de precio y la ciudad
-    // pelada adentro: es la pregunta completa que hace la pantalla, no una
-    // reducida escrita para que el número dé.
-    await counted.countFacets(
+    // Con las nueve relajaciones, el escalón siguiente de precio, la ciudad
+    // pelada y el histograma adentro: es la pregunta completa que hace la
+    // pantalla, no una reducida escrita para que el número dé.
+    const counts = await counted.countFacets(
       {
         cityId: MARACAIBO,
         zoneIds: [MCBO_CENTRO],
@@ -640,6 +688,205 @@ describe("una sola consulta (task 14.11: el costo son los viajes de red)", () =>
     await counting.end();
 
     expect(queries).toBe(1);
+    // Y el viaje único trae también los ocho cubos del precio (task 14.12):
+    // sin esta línea, la afirmación de arriba seguiría en verde el día que el
+    // histograma se fuera a una segunda consulta que este handle no cuenta.
+    expect(counts.byPriceBucket).toHaveLength(PRICE_HISTOGRAM_BUCKETS);
+  });
+});
+
+/**
+ * **La faceta de precio (task 14.12, rebanada B).** El dominio ya sabía dibujar
+ * un histograma; no tenía de dónde sacar la cuenta repartida. Acá se prueba que
+ * sale de la MISMA sentencia, y que ningún número es una constante suelta: cada
+ * suma se compara contra el total que la consulta reporta y contra las filas.
+ */
+describe("el precio se reparte en ocho cubos, en el mismo viaje (task 14.12)", () => {
+  /** Los cinco activos de Maracaibo cuestan 200, 300, 400, 500 y 900. */
+  const TODA_LA_CIUDAD: SearchCriteria = { cityId: MARACAIBO };
+
+  function suma(tally: readonly { readonly count: number }[]): number {
+    return tally.reduce((total, bucket) => total + bucket.count, 0);
+  }
+
+  it("los ocho cubos suman el total de la consulta, y ése es el de la lista", async () => {
+    const [counts, rows] = await Promise.all([
+      facets.countFacets(TODA_LA_CIUDAD, ZONAS_OFRECIDAS),
+      search.search(TODA_LA_CIUDAD),
+    ]);
+
+    expect(counts.byPriceBucket).toHaveLength(PRICE_HISTOGRAM_BUCKETS);
+    expect(suma(counts.byPriceBucket)).toBe(counts.total);
+    expect(suma(counts.byPriceBucket)).toBe(rows.length);
+  });
+
+  /**
+   * **La trampa del `+ 1`.** `width_bucket(precio, 200, 900, 8)` manda el 900
+   * —el máximo, el que fija el borde de arriba— al cubo **nueve**, que no
+   * existe: sin plegarlo, el aviso más caro desaparece justo del histograma
+   * que dice cuál es el más caro y la suma da cuatro sobre cinco filas.
+   */
+  it("el aviso más caro cae en el último cubo y no en un noveno que no existe", async () => {
+    const counts = await facets.countFacets(TODA_LA_CIUDAD, ZONAS_OFRECIDAS);
+
+    const ultimo = counts.byPriceBucket[PRICE_HISTOGRAM_BUCKETS - 1];
+    expect(ultimo).toEqual({ count: 1, lowestUsd: 900, highestUsd: 900 });
+    // Y el eje que el dominio deriva de esos cubos llega hasta el 900.
+    expect(Math.max(...counts.byPriceBucket.flatMap((b) => b.highestUsd ?? []))).toBe(900);
+  });
+
+  it("cada cubo nombra precios reales, y el vacío no nombra ninguno", async () => {
+    const counts = await facets.countFacets(TODA_LA_CIUDAD, ZONAS_OFRECIDAS);
+
+    let anterior = 0;
+    for (const bucket of counts.byPriceBucket) {
+      if (bucket.count === 0) {
+        expect(bucket.lowestUsd).toBeUndefined();
+        expect(bucket.highestUsd).toBeUndefined();
+        continue;
+      }
+      expect(bucket.lowestUsd).toBeGreaterThan(anterior);
+      expect(bucket.highestUsd).toBeGreaterThanOrEqual(bucket.lowestUsd as number);
+      anterior = bucket.highestUsd as number;
+    }
+    // Orden ascendente de verdad: el recorrido de arriba lo exigió cubo a cubo.
+    expect(anterior).toBe(900);
+  });
+
+  /**
+   * **El precio tampoco se filtra a sí mismo, y acá la regla de la casa pesa
+   * más que en las otras seis.** El histograma existe para que alguien ELIJA
+   * un rango: contado contra su propio filtro, las barras de afuera caen a
+   * cero justo cuando se lo mira para moverse.
+   */
+  it("elegir un rango no vacía las barras de afuera: el precio no se cuenta contra sí mismo", async () => {
+    const conRango = await facets.countFacets(
+      { cityId: MARACAIBO, minPriceUsd: 300, maxPriceUsd: 400 },
+      ZONAS_OFRECIDAS,
+    );
+    const sinRango = await facets.countFacets(TODA_LA_CIUDAD, ZONAS_OFRECIDAS);
+
+    expect(conRango.total).toBe(2);
+    expect(suma(conRango.byPriceBucket)).toBe(5);
+    expect(conRango.byPriceBucket).toEqual(sinRango.byPriceBucket);
+  });
+
+  it("pero sí respeta los otros filtros: la zona angosta el histograma", async () => {
+    const [counts, rows] = await Promise.all([
+      facets.countFacets({ cityId: MARACAIBO, zoneIds: [MCBO_NORTE] }, ZONAS_OFRECIDAS),
+      search.search({ cityId: MARACAIBO, zoneIds: [MCBO_NORTE] }),
+    ]);
+
+    // Norte tiene A4 ($400) y A5 ($900), y son los dos extremos del eje.
+    expect(suma(counts.byPriceBucket)).toBe(rows.length);
+    expect(counts.byPriceBucket[0]).toEqual({ count: 1, lowestUsd: 400, highestUsd: 400 });
+    expect(counts.byPriceBucket[PRICE_HISTOGRAM_BUCKETS - 1]).toEqual({
+      count: 1,
+      lowestUsd: 900,
+      highestUsd: 900,
+    });
+  });
+
+  /**
+   * **La consulta reparte igual por debajo del piso, y es una decisión.**
+   * Saltearlo exigiría saber el total ANTES, o sea otro viaje de red para
+   * ahorrarse unas columnas de una sentencia que ya recorre esas filas.
+   * Negarse a dibujar es del dominio: la faceta trae los cinco repartidos.
+   */
+  it("con menos de doce igual reparte, y es el dominio el que se niega a dibujar", async () => {
+    const counts = await facets.countFacets(TODA_LA_CIUDAD, ZONAS_OFRECIDAS);
+
+    expect(counts.total).toBeLessThan(MIN_LISTINGS_FOR_PRICE_HISTOGRAM);
+    expect(suma(counts.byPriceBucket)).toBe(counts.total);
+    expect(priceHistogram(counts.byPriceBucket)).toEqual({ kind: "insufficient", total: 5 });
+  });
+
+  /**
+   * Sin filas no hay mínimo ni máximo, y `width_bucket` con los dos extremos
+   * nulos no rompe: devuelve nulo y ninguna fila cae en ningún cubo. El filtro
+   * es el área y no el precio a propósito — el precio no angosta esta faceta.
+   */
+  it("sin una sola fila los ocho cubos vienen en cero, sin inventar un precio", async () => {
+    const counts = await facets.countFacets(
+      { cityId: MARACAIBO, minAreaM2: 100_000 },
+      ZONAS_OFRECIDAS,
+    );
+
+    expect(counts.total).toBe(0);
+    expect(counts.byPriceBucket).toEqual(
+      Array.from({ length: PRICE_HISTOGRAM_BUCKETS }, () => ({ count: 0 })),
+    );
+  });
+
+  /**
+   * **Varios avisos al mismo precio son `lo === hi`, y ahí `width_bucket`
+   * aborta la consulta entera** con "lower bound cannot equal upper bound" —
+   * no devuelve un número raro, tira error. Sin ensanchar el borde de arriba
+   * esta llamada no respondería nada. Todo cae en el primer cubo, que es lo
+   * honesto: un solo precio no tiene distribución que mostrar.
+   */
+  it("con varios avisos al mismo precio el eje no tiene ancho, y no rompe", async () => {
+    const counts = await facets.countFacets(
+      { cityId: CIUDAD_HISTOGRAMA, propertyType: "quinta" },
+      ZONAS_HISTOGRAMA,
+    );
+
+    expect(counts.total).toBe(3);
+    expect(counts.byPriceBucket[0]).toEqual({ count: 3, lowestUsd: 400, highestUsd: 400 });
+    expect(suma(counts.byPriceBucket)).toBe(3);
+  });
+
+  /**
+   * **Un cubo con varios adentro es lo que Maracaibo no tiene**, y sin él el
+   * `min` y el `max` de un cubo son el mismo número: el de [200 220] es el que
+   * hace que confundirlos se vea. El `toEqual` de los ocho de una vez afirma
+   * además que el `GROUP BY` de zona **no multiplica** el histograma: los doce
+   * están en dos zonas, y un arreglo sumado por grupo daría veinticuatro.
+   */
+  it("un cubo con varios adentro nombra el más barato y el más caro, no uno solo", async () => {
+    const [counts, rows] = await Promise.all([
+      facets.countFacets({ cityId: CIUDAD_HISTOGRAMA }, ZONAS_HISTOGRAMA),
+      search.search({ cityId: CIUDAD_HISTOGRAMA }),
+    ]);
+
+    expect(counts.byPriceBucket).toEqual([
+      { count: 2, lowestUsd: 200, highestUsd: 220 },
+      { count: 2, lowestUsd: 300, highestUsd: 320 },
+      { count: 3, lowestUsd: 400, highestUsd: 400 },
+      { count: 2, lowestUsd: 500, highestUsd: 520 },
+      { count: 1, lowestUsd: 600, highestUsd: 600 },
+      { count: 1, lowestUsd: 700, highestUsd: 700 },
+      { count: 0 },
+      { count: 1, lowestUsd: 900, highestUsd: 900 },
+    ]);
+    expect(suma(counts.byPriceBucket)).toBe(counts.total);
+    expect(counts.total).toBe(rows.length);
+  });
+
+  /** **El único caso en el que el dominio SÍ dibuja**: la A y la B encajando. */
+  it("desde el piso el dominio dibuja, y cada número sale de estas filas", async () => {
+    const counts = await facets.countFacets({ cityId: CIUDAD_HISTOGRAMA }, ZONAS_HISTOGRAMA);
+
+    expect(counts.total).toBe(MIN_LISTINGS_FOR_PRICE_HISTOGRAM);
+    expect(priceHistogram(counts.byPriceBucket)).toMatchObject({
+      kind: "distribution",
+      total: 12,
+      // Los dos rótulos del eje: el más barato y el más caro que se encontró.
+      lowestUsd: 200,
+      highestUsd: 900,
+      // «La mayoría está entre $200 y $400»: siete de doce, la franja contigua
+      // más angosta que pasa de la mitad, rotulada con precios reales.
+      typical: { fromUsd: 200, toUsd: 400, count: 7 },
+    });
+  });
+
+  it("ni el vencido, ni el oculto, ni el de la otra ciudad entran en un cubo", async () => {
+    // Los tres cuestan $300 y caen en el segundo cubo del eje 200–900; si
+    // alguno entrara, ese cubo contaría más de uno y la suma pasaría de cinco.
+    const counts = await facets.countFacets(TODA_LA_CIUDAD, ZONAS_OFRECIDAS);
+
+    expect(counts.byPriceBucket[1]).toEqual({ count: 1, lowestUsd: 300, highestUsd: 300 });
+    expect(suma(counts.byPriceBucket)).toBe(5);
   });
 });
 

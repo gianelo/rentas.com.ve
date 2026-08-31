@@ -123,6 +123,20 @@ export function facetsFor(
     },
     byPropertyType: { apartamento: rows.length, casa: 0, quinta: 0, anexo: 0, habitacion: 0 },
     byPublisherType: { owner: rows.length, broker: 0 },
+    // Un cubo con todo adentro, rotulado con precios reales: es una
+    // repartición válida y ninguna de las dos pantallas que leen este catálogo
+    // dibuja todavía una barra. Repartir de verdad sería meter la regla del
+    // histograma en `app/`, donde no vive.
+    byPriceBucket: [
+      rows.length === 0
+        ? { count: 0 }
+        : {
+            count: rows.length,
+            lowestUsd: Math.min(...rows.map((row) => row.priceUsd)),
+            highestUsd: Math.max(...rows.map((row) => row.priceUsd)),
+          },
+      ...Array.from({ length: 7 }, () => ({ count: 0 })),
+    ],
     withoutFilter: {
       zone: cityTotal,
       price: cityTotal,
