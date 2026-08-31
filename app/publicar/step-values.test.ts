@@ -68,10 +68,11 @@ describe("paso 2 · zona", () => {
 
   it("guarda la referencia recortando los espacios, y vacia no se guarda", () => {
     expect(
-      read("zona", { zoneId: "altamira", reference: "  Frente a la plaza " }).answers.reference,
+      read("zona", { zoneId: "altamira", reference: "  Frente a la plaza " }).answers.listing
+        .reference,
     ).toBe("Frente a la plaza");
     expect(
-      read("zona", { zoneId: "altamira", reference: "   " }).answers.reference,
+      read("zona", { zoneId: "altamira", reference: "   " }).answers.listing.reference,
     ).toBeUndefined();
   });
 });

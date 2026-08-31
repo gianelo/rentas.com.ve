@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { safeResultsOrigin } from "@/modules/listing-discovery/domain/return-to-results";
+import { buildSearchCriteria } from "./search-criteria";
 import {
   buildSearchHref,
   clearAllHref,
@@ -17,6 +18,71 @@ describe("los nombres de la dirección", () => {
     expect(SEARCH_QUERY_NAMES.minRooms).toBe("hab");
     expect(SEARCH_QUERY_NAMES.zone).toBe("zona");
     expect(SEARCH_QUERY_NAMES.page).toBe("pag");
+  });
+
+  /**
+   * **tasks.md 18.7 — «nunca se filtra» es una lista cerrada, y esto es lo que
+   * la cierra.**
+   *
+   * La referencia es el campo que reemplaza a Google Places, y la razón por la
+   * que aquel servicio se rechazó no fue el costo sino que una dirección
+   * formateada no es la taxonomía del producto: cuatro cosas ya construidas
+   * dependen de que la zona sea una lista cerrada — el filtro, los conteos por
+   * zona, la URL `/alquiler/<ciudad>/<zona>/…` y las páginas de zona. Un campo
+   * de texto libre que se filtrara reintroduciría exactamente eso.
+   *
+   * **La afirmación es sobre el conjunto entero, no sobre la referencia.** Una
+   * prueba que dijera «`SEARCH_QUERY_NAMES` no tiene `reference`» sólo cazaría
+   * a quien eligiera ESE nombre; ésta cae con cualquier parámetro nuevo,
+   * incluido uno llamado `cerca`. Y los catorce nombres van escritos por valor
+   * en vez de derivados de la constante: derivarlos afirmaría que la constante
+   * es igual a sí misma.
+   */
+  it("son catorce y ninguno más: un filtro nuevo tiene que pasar por acá", () => {
+    expect(Object.values(SEARCH_QUERY_NAMES).sort()).toEqual(
+      [
+        "zona",
+        "min",
+        "max",
+        "hab",
+        "tipo",
+        "pub",
+        "planta",
+        "agua",
+        "amoblado",
+        "vigilancia",
+        "electro",
+        "pag",
+        "filtros",
+        "busca",
+      ].sort(),
+    );
+  });
+
+  /**
+   * El otro extremo del mismo canal: **el parámetro que nadie declaró no llega
+   * a ser un criterio.** Una seña escrita en la dirección —por curiosidad, por
+   * un enlace armado a mano, o el día que alguien la agregue al formulario sin
+   * agregarla acá— produce la misma búsqueda que no escribirla.
+   */
+  it("una seña colgada de la dirección no cambia la búsqueda", () => {
+    const zonas = [{ id: "zona-altamira", cityId: "dc", slug: "altamira" }];
+    const sinSena = buildSearchCriteria({ city: "dc", zone: "zona-altamira" }, zonas);
+    const conSena = buildSearchCriteria(
+      {
+        city: "dc",
+        zone: "zona-altamira",
+        // Los tres nombres que alguien elegiría, y el crudo del formulario.
+        referencia: "frente al Hospital Coromoto",
+        ref: "frente al Hospital Coromoto",
+        cerca: "frente al Hospital Coromoto",
+        reference: "frente al Hospital Coromoto",
+      } as Parameters<typeof buildSearchCriteria>[0],
+      zonas,
+    );
+
+    expect(conSena).toEqual(sinSena);
+    expect(JSON.stringify(conSena)).not.toContain("Coromoto");
   });
 
   it("nombra también lo que no filtra pero cambia la dirección", () => {

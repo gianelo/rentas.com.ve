@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   MAX_DESCRIPTION_CHARACTERS,
+  MAX_REFERENCE_CHARACTERS,
   MAX_TITLE_CHARACTERS,
   MIN_DESCRIPTION_CHARACTERS,
   type PublishViolation,
@@ -69,6 +70,10 @@ const EVERY_VIOLATION: readonly PublishViolation[] = [
   // Y un septimo para el tope de 90 del titulo, por el mismo motivo que el de
   // la descripcion: un titulo no puede estar vacio y pasarse a la vez.
   ...validatePublishableListing({ title: "t".repeat(MAX_TITLE_CHARACTERS + 1) }, []),
+  // Y un octavo para el tope de la referencia (18.7). Mismo motivo otra vez:
+  // la referencia es opcional, asi que no hay borrador que la omita y se pase
+  // a la vez, y alcanzar el codigo cuesta su propia fixture.
+  ...validatePublishableListing({ reference: "r".repeat(MAX_REFERENCE_CHARACTERS + 1) }, []),
 ];
 
 describe("publish violation copy", () => {
@@ -96,7 +101,8 @@ describe("publish violation copy", () => {
     // los dos del codigo, asi que una regla BORRADA del dominio vaciaria una
     // y haria coincidir la otra. Esta linea es la que nota que falta una.
     // 28, up from 27 cuando el paso 6 trajo el tope de 90 del titulo.
-    expect(reachable).toHaveLength(28);
+    // 29, up from 28 cuando el paso 2 trajo el tope de la referencia (18.7).
+    expect(reachable).toHaveLength(29);
   });
 
   it("gives every code a real sentence, not a placeholder", () => {
@@ -113,6 +119,23 @@ describe("publish violation copy", () => {
   // «A qué campo pertenece cada código» dejó de vivir en esta tabla con la
   // 18.22 y lo prueba ahora `violation-field.test.ts`, en el dominio: la
   // afirmación no se perdió, se mudó bajo el piso del 90 %.
+
+  /**
+   * tasks.md 18.7 — **la referencia dice su tope y no lleva medida.** El paso
+   * 6 dibuja "37 / 90" y por eso `title.tooLong` cuenta; el paso 2 no dibuja
+   * ningun contador, asi que anunciar un numero que la pantalla no muestra le
+   * inventaria un contador a quien lee la negativa.
+   *
+   * El literal se fija por valor, y que la constante valga eso se afirma
+   * aparte: derivar la frase esperada de la misma constante que el sujeto usa
+   * afirmaria que hay una interpolacion, no que el tope sea 120.
+   */
+  it("la negativa de la referencia nombra su tope, y no promete un contador", () => {
+    expect(publishViolationMessage("reference.tooLong", {})).toBe(
+      "Máximo 120 caracteres para la referencia. Es una seña, no una segunda descripción.",
+    );
+    expect(MAX_REFERENCE_CHARACTERS).toBe(120);
+  });
 
   it("counts the description the publisher has written, as the design specifies", () => {
     // SISTEMA.md screen 3, verbatim: "✱ Mínimo 120 caracteres. Vas 24."

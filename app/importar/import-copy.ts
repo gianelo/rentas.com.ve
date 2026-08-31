@@ -101,6 +101,13 @@ const PUBLISH_COPY: Record<PublishViolation, string> = {
   "cityId.unknown": "Esa ciudad no existe.",
   "zoneId.required": `Falta la zona («${headerOf("zone")}»).`,
   "zoneId.notInCity": "Esa zona no pertenece a esa ciudad.",
+  // **Inalcanzable desde acá hoy, y la frase se escribe igual**, por la misma
+  // razón que la 18.13 dejó vivos `cityId.required` y `cityId.unknown`: el
+  // archivo de importación no tiene columna de referencia, así que ninguna
+  // fila puede producir este código — pero el importador llama al MISMO
+  // validador, y el día que la columna exista la frase ya está. Un `Record`
+  // sobre la unión no admite el hueco, y eso es lo que se quiere.
+  "reference.tooLong": "La referencia es más larga que el máximo permitido.",
   "rooms.required": `Faltan las habitaciones («${headerOf("rooms")}»).`,
   "rooms.invalid": "Las habitaciones van en números enteros. Un estudio cuenta como 1.",
   "areaM2.required": `Faltan los metros cuadrados («${headerOf("areaM2")}»).`,

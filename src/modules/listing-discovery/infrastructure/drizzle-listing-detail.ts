@@ -36,6 +36,11 @@ export class DrizzleListingDetail implements ListingDetailPort {
         zoneName: zones.name,
         zoneParentName: parentZones.name,
         zoneCategory: zones.category,
+        // 18.7. Se selecciona aca y en ningun otro `select` del producto: la
+        // busqueda, la consulta facetada y el sitemap no la nombran, y por eso
+        // "nunca se filtra, nunca se indexa" es una propiedad del codigo y no
+        // una promesa de un comentario.
+        reference: listings.reference,
         title: listings.title,
         description: listings.description,
         propertyType: listings.propertyType,

@@ -2,6 +2,7 @@ import type { ListingEditViolation } from "../../src/modules/listing-publication
 import {
   MAX_DESCRIPTION_CHARACTERS,
   MAX_PHOTOS_PER_LISTING,
+  MAX_REFERENCE_CHARACTERS,
   MAX_TITLE_CHARACTERS,
   MIN_DESCRIPTION_CHARACTERS,
   type PublishViolation,
@@ -137,6 +138,18 @@ export const PUBLISH_VIOLATION_COPY: Record<PublishViolation, ViolationCopy> = {
   // would be blaming them for the form's own behaviour.
   "zoneId.notInCity": {
     message: () => "Esa zona no pertenece a la ciudad elegida. Elegí una de la lista.",
+  },
+  // **Sin medida, y es una decision y no un olvido.** El paso 6 dibuja
+  // "37 / 90" mientras se escribe, asi que `title.tooLong` cuenta; el paso 2
+  // no dibuja ningun contador junto a la referencia, y prometer un numero que
+  // la pantalla no muestra es inventarle un contador a quien lee la negativa.
+  //
+  // La segunda oracion existe porque el tope es lo que separa una sena de una
+  // descripcion, y la ficha ya tiene una descripcion. Decir solo "maximo 120"
+  // deja a alguien recortando sin saber que estaba escribiendo de mas.
+  "reference.tooLong": {
+    message: () =>
+      `Máximo ${MAX_REFERENCE_CHARACTERS} caracteres para la referencia. Es una seña, no una segunda descripción.`,
   },
   "rooms.required": {
     message: () => `${REQUIRED}. ¿Cuántas habitaciones tiene?`,

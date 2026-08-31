@@ -89,6 +89,19 @@ describe("dónde va cada negativa de una edición (18.22)", () => {
    * tampoco se descarta: sale entero, igual que ya hace
    * `listingEditViolationMessage` con su `?? violation`.
    */
+  /**
+   * tasks.md 18.7 — **la referencia tiene campo en el aviso y no en editar.**
+   * La tabla del fundador de la 18.14 no la nombra, asi que la pantalla de
+   * editar no la dibuja; la negativa igual tiene que leerse, porque tragarsela
+   * dejaria un formulario que se niega a guardar sin decir por que.
+   */
+  it("la negativa de la referencia no tiene control en editar, y se dice igual", () => {
+    const placed = placeListingEditViolations(["reference.tooLong"]);
+
+    expect(placed.byField.size).toBe(0);
+    expect(placed.elsewhere).toEqual(["reference.tooLong"]);
+  });
+
   it("un código inventado no se coloca en ningún campo, y tampoco se traga", () => {
     const placed = placeListingEditViolations(["precio.regalado"]);
 

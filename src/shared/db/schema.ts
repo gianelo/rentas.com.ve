@@ -414,6 +414,40 @@ export const listings = pgTable(
       .notNull()
       .references(() => cities.id, { onDelete: "restrict" }),
     zoneId: text("zone_id").notNull(),
+    /**
+     * El punto de referencia del paso 2 — «a dos calles de la plaza Altamira»
+     * (tasks.md 18.7, especificación de Publicar §3).
+     *
+     * **Es el campo que reemplaza a Google Places, y la razón por la que la
+     * zona sigue siendo lista cerrada.** Google devuelve una dirección
+     * formateada, no la taxonomía del producto, y cuatro cosas ya construidas
+     * dependen de que la zona sea una lista cerrada: el filtro de búsqueda,
+     * los conteos por zona, la URL `/alquiler/<ciudad>/<zona>/…` y las páginas
+     * de zona. Si la ubicación pasara a ser texto libre, el filtro se vuelve
+     * infinito, los conteos desaparecen y no hay página de zona que indexar.
+     *
+     * **Nunca se filtra y nunca se indexa, y eso es una garantía y no una
+     * nota.** Esta columna tiene exactamente un lector: la consulta de la
+     * ficha (`DrizzleListingDetail`). No está en `SearchCriteria`, ni en
+     * `SEARCH_QUERY_NAMES`, ni en la consulta facetada, ni en el sitemap, ni
+     * en el JSON-LD — emitirla ahí sería indexar por texto libre exactamente
+     * lo que se rechazó a Google Places para evitar.
+     *
+     * **Nulable, y ése es el estado final, no un paso intermedio.** El patrón
+     * de tres pasos de la 14.2 —nulable, rellenar, exigir— es para columnas
+     * que TIENEN que terminar en NOT NULL sobre filas vivas. Ésta no: el campo
+     * es opcional por decisión del fundador, «sin referencia» es un hecho
+     * verdadero de todo aviso publicado hasta hoy, y rellenarla inventaría una
+     * seña que nadie escribió. Por eso la migración que la agrega es un
+     * `ADD COLUMN` nulable y ahí termina.
+     *
+     * **No es `external_reference`, que está más abajo en esta misma tabla.**
+     * Aquélla es la llave de idempotencia de la importación en lote, la genera
+     * un archivo y la protege un índice único; ésta la teclea una persona y no
+     * la lee ningún índice. Dos columnas con «reference» en el nombre es el
+     * riesgo que este párrafo existe para cerrar.
+     */
+    reference: text("reference"),
     title: text("title").notNull(),
     description: text("description").notNull(),
     // Every price in this product is monthly USD (SISTEMA.md screen 3:

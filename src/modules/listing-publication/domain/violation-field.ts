@@ -22,7 +22,7 @@ import type { ListingEdit, ListingEditViolation } from "./listing-edit";
  * garantía que `PUBLISH_VIOLATION_COPY` ya daba para la frase.
  */
 
-/** Los catorce campos que un aviso tiene, tal como los nombran los códigos. */
+/** Los quince campos que un aviso tiene, tal como los nombran los códigos. */
 export type ListingField =
   | "publisherType"
   | "propertyType"
@@ -31,6 +31,14 @@ export type ListingField =
   | "priceUsd"
   | "cityId"
   | "zoneId"
+  /**
+   * La referencia (18.7). **Tiene campo al publicar y no al editar**, y por
+   * eso figura acá y NO en `EDIT_REQUEST_FIELD`: la tabla del fundador de la
+   * 18.14 no la nombra entre lo que una edición puede tocar, así que su
+   * negativa cae en `elsewhere` en vez de colgarse de un control que la
+   * pantalla de editar no dibuja.
+   */
+  | "reference"
   | "rooms"
   | "areaM2"
   | "bathrooms"
@@ -59,6 +67,7 @@ export const LISTING_VIOLATION_FIELD: Record<ListingEditViolation, ListingField>
   "zoneId.required": "zoneId",
   // Del par ciudad/zona, la zona: es el control que hay que volver a elegir.
   "zoneId.notInCity": "zoneId",
+  "reference.tooLong": "reference",
   "rooms.required": "rooms",
   "rooms.invalid": "rooms",
   "areaM2.required": "areaM2",

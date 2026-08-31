@@ -123,4 +123,33 @@ describe("un paso de publicar sirve la negativa al lado de su campo (18.22)", ()
     expect(html).not.toContain("aria-invalid");
     expect(html).not.toContain("-error");
   });
+
+  /**
+   * tasks.md 18.7 — **la misma anatomía para la seña del paso 2.** Es el único
+   * control de ese paso que no es la zona, y su negativa tenía dónde nacer
+   * (`reference.tooLong`) pero ningún lugar donde leerse: sin esto, quien pega
+   * un párrafo entero recibe un botón que no avanza y un campo sin marca.
+   */
+  it("la negativa de la seña se lee antes del campo que la produjo", () => {
+    const html = dibujar("zona", ["reference.tooLong"]);
+
+    expect(html).toContain('id="reference-error"');
+    expect(html).toContain('aria-describedby="reference-error"');
+    expect(html.indexOf("Máximo 120 caracteres para la referencia")).toBeLessThan(
+      html.indexOf('id="reference"'),
+    );
+  });
+
+  /**
+   * **El par, y sin él la anterior aceptaría las dos respuestas.** La zona y la
+   * seña son dos controles del mismo paso: un mensaje de zona colgado del campo
+   * de la seña diría que la seña está mal.
+   */
+  it("la negativa de la zona no marca el campo de la seña", () => {
+    const html = dibujar("zona", ["zoneId.required"]);
+
+    expect(html).toContain('id="zoneId-error"');
+    expect(html).not.toContain('id="reference-error"');
+    expect(html).not.toContain('aria-describedby="reference-error"');
+  });
 });

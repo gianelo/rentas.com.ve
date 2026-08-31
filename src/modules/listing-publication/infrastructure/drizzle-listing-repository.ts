@@ -89,6 +89,12 @@ export class DrizzleListingRepository implements ListingRepositoryPort {
         propertyType: listing.propertyType,
         cityId: listing.cityId,
         zoneId: listing.zoneId,
+        // tasks.md 18.7. `?? null` explicito por el mismo motivo que
+        // `externalReference` doce lineas mas abajo: omitirlo dejaria la
+        // columna en su default —tambien `NULL`— y este sitio dejaria de
+        // decir en voz alta que "sin referencia" es una respuesta y no un
+        // olvido del llamador.
+        reference: listing.reference ?? null,
         title: listing.title,
         description: listing.description,
         priceUsd: listing.priceUsd,

@@ -48,6 +48,21 @@ export interface DraftListing {
   readonly priceUsd?: number;
   readonly cityId?: string;
   readonly zoneId?: string;
+  /**
+   * El punto de referencia del paso 2 — texto libre, opcional, y el campo que
+   * reemplaza a Google Places (tasks.md 18.7).
+   *
+   * **Vive en el borrador y no al lado de el.** Estuvo colgado de
+   * `PublicationDraft` mientras `listing` no tuvo columna, con esa razon
+   * escrita adentro; ahora la tiene, y dejarlo aparte serian dos fuentes para
+   * un valor: la que el formulario escribe y la que se persiste. Aca lo ve el
+   * validador, que es lo unico que hace que su tope sea una regla del producto
+   * y no una linea suelta dentro de una pantalla (AGENTS.md §1).
+   *
+   * **No se confunde con `listing.external_reference`.** Aquella es la llave
+   * de idempotencia de la importacion en lote, y ningun humano la teclea.
+   */
+  readonly reference?: string;
   readonly contactMethod?: ContactMethod;
   readonly contactValue?: string;
   readonly photoCount?: number;
@@ -91,6 +106,7 @@ export type PublishViolation =
   | "cityId.unknown"
   | "zoneId.required"
   | "zoneId.notInCity"
+  | "reference.tooLong"
   | "rooms.required"
   | "rooms.invalid"
   | "areaM2.required"
@@ -140,6 +156,31 @@ export const MAX_DESCRIPTION_CHARACTERS = 1_200;
  * desaparece del aviso: desaparece de la unica pantalla donde se elige.
  */
 export const MAX_TITLE_CHARACTERS = 90;
+
+/**
+ * Ciento veinte, para la referencia del paso 2 (tasks.md 18.7).
+ *
+ * **La especificacion no da un numero, asi que este se elige y se justifica en
+ * vez de inventarse en silencio.** Lo que decide el tamano es que `text` no
+ * tiene techo en Postgres y esta columna se dibuja SIEMPRE que existe: sin un
+ * maximo, un pegado de mil caracteres aterriza debajo de la ubicacion de la
+ * ficha, que es exactamente el defecto que `MAX_DESCRIPTION_CHARACTERS` se
+ * creo para cerrar.
+ *
+ * **Por que 120 y no otro.** 120 es la longitud minima que este producto
+ * acepta como *descripcion*: pasado ese punto, lo escrito dejo de ser una
+ * senia —"a dos calles de la plaza Altamira"— y es una descripcion, y la ficha
+ * ya tiene una. **El numero se escribe entero y NO se deriva de
+ * `MIN_DESCRIPTION_CHARACTERS`**: coinciden hoy por esa razon, no por una
+ * dependencia; si manana el minimo de la descripcion baja a 80, la referencia
+ * no tiene por que encogerse con el.
+ *
+ * **No hay contador en pantalla, y por eso el mensaje no lleva medida.** El
+ * paso 6 dibuja "37 / 90" y por eso `title.tooLong` cuenta; el paso 2 no
+ * dibuja ninguno, y anunciar un numero que la pantalla no muestra seria
+ * inventarle un contador al que lee la negativa.
+ */
+export const MAX_REFERENCE_CHARACTERS = 120;
 
 /**
  * Six. **The number is design.md's, but the enforcement is new here**: D12's
@@ -219,6 +260,23 @@ function isBlank(value: string | undefined): boolean {
  */
 export function characterCount(value: string): number {
   return [...value].length;
+}
+
+/**
+ * La referencia lista para persistir, o `undefined` cuando no hay ninguna
+ * (tasks.md 18.7).
+ *
+ * **Existe para que "en blanco es ninguna" se decida UNA vez.** El validador
+ * ya trata `""` y `"   "` como ausentes a traves de `isBlank`; si el caso de
+ * uso repitiera ese criterio con un `?.trim() || undefined` propio, serian dos
+ * lugares que empiezan de acuerdo y terminan discrepando — y la discrepancia
+ * se vería en la ficha, dibujando una línea vacía debajo de la ubicación.
+ *
+ * Recorta, porque lo que se guarda es lo que se lee: un espacio de mas al
+ * final no es parte de la seña, y la columna la muestra tal cual.
+ */
+export function referenceOrNone(value: string | undefined): string | undefined {
+  return isBlank(value) ? undefined : (value as string).trim();
 }
 
 function isWholePositiveNumber(value: number): boolean {
@@ -336,6 +394,17 @@ export function validatePublishableListing(
     // surfaces as a 500, and this is a form error the publisher can fix.
     // Both layers are wanted: this one explains, that one guarantees.
     violations.push("zoneId.notInCity");
+  }
+
+  // Opcional de verdad: ausente y en blanco son la misma respuesta —"no puso
+  // ninguna"— y ninguna de las dos es una negativa. Lo unico que se comprueba
+  // es el techo, y se cuenta en puntos de codigo por la misma razon que el
+  // titulo y la descripcion: se teclea en un telefono.
+  if (
+    !isBlank(draft.reference) &&
+    characterCount(draft.reference as string) > MAX_REFERENCE_CHARACTERS
+  ) {
+    violations.push("reference.tooLong");
   }
 
   // `rooms` and `area_m2` are NOT NULL in the schema. They were declared on
