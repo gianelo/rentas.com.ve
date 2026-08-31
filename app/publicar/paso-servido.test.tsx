@@ -46,6 +46,8 @@ function dibujar(
       draft={draft}
       violations={violations as never}
       rail={[]}
+      // Sin riel no hay mapa: esta prueba mira el error de campo, no la barra.
+      jumpable={[]}
       progress={30}
       returningToReview={false}
       discardHref={null}

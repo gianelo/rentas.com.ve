@@ -4,6 +4,7 @@ import {
   draftListingOf,
   isStepComplete,
   isStepNavigable,
+  jumpableStepsFrom,
   PUBLISH_STEP_ORDER,
   type PublicationDraft,
   type PublishStepId,
@@ -443,6 +444,9 @@ function stepHarness(
       draft={draft}
       violations={stepViolations(stepId, violations)}
       rail={rail}
+      // El mapa de móvil (18.17), con la misma función del dominio que usa la
+      // página: uno armado a mano acá volvería a medir algo que no se sirve.
+      jumpable={jumpableStepsFrom(stepId, draft, violations)}
       progress={progressPercent(draft, violations)}
       returningToReview={false}
       // El arnés mide el recorrido hacia adelante, que no viene de revisar.
