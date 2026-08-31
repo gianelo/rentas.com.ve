@@ -121,15 +121,33 @@ describe("publish violation copy", () => {
     );
   });
 
-  it("counts characters the way the validator does", () => {
-    // The validator counts code points, not UTF-16 units. A counter using
-    // `.length` would tell someone writing emoji they had written more than
-    // the rule credits them for, and the form would reject a description its
-    // own counter called long enough.
-    const withAstral = "🏠".repeat(10);
+  /**
+   * tasks.md 18.25 — **un contador que miente es peor que ninguno.**
+   *
+   * `PublishCopyContext` ya no puede llevar el texto: lleva su medida o no
+   * lleva nada. La pantalla de editar recibía sólo `aviso.title` y el `Vas N`
+   * salía 0 sobre una descripción de 24 caracteres; pasarle `aviso.description`
+   * habría dicho el largo de la que está en la base. Las dos son un número que
+   * nadie escribió, y la forma que impide las dos es que el número tenga que
+   * llegar medido desde donde se escribió.
+   */
+  it("sin medida no inventa un cero: la frase va sin contador", () => {
+    expect(publishViolationMessage("description.tooShort", {})).toBe("✱ Mínimo 120 caracteres.");
+    expect(publishViolationMessage("description.tooLong", {})).toBe("Máximo 1200 caracteres.");
+    expect(publishViolationMessage("title.tooLong", {})).toBe("Máximo 90 caracteres.");
+  });
 
-    expect(publishViolationMessage("description.tooShort", { description: withAstral })).toContain(
-      "Vas 10.",
+  it("con la medida, la dice — y el título cuenta la suya, no la de la descripción", () => {
+    expect(
+      publishViolationMessage("title.tooLong", { titleLength: 97, descriptionLength: 24 }),
+    ).toBe("Máximo 90 caracteres. Vas 97.");
+  });
+
+  it("una medida de cero se dice, porque llegó medida", () => {
+    // Distinto de la ausencia: acá alguien mandó una descripción vacía y el
+    // contador tiene un número real que reportar.
+    expect(publishViolationMessage("description.tooShort", { descriptionLength: 0 })).toContain(
+      "Vas 0.",
     );
   });
 
@@ -172,7 +190,7 @@ describe("listingEditViolationMessage — un solo español para publicar y edita
    * número desaparecería sin que nada más cambiara.
    */
   it("delegar conserva el contador, no sólo la frase", () => {
-    expect(listingEditViolationMessage("description.tooShort", { description: "corta" })).toContain(
+    expect(listingEditViolationMessage("description.tooShort", { descriptionLength: 5 })).toContain(
       "Vas 5",
     );
   });

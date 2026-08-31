@@ -1,9 +1,11 @@
 import { AppLink } from "@/../components/atoms/AppLink";
+import { measureOf } from "../../src/modules/listing-publication/domain/carried-value";
 import type {
   PublicationDraft,
   PublishStepId,
 } from "../../src/modules/listing-publication/domain/publication-steps";
 import {
+  characterCount,
   MAX_TITLE_CHARACTERS,
   MIN_DESCRIPTION_CHARACTERS,
   type PublishViolation,
@@ -85,9 +87,13 @@ function errorsByField(violations: readonly PublishViolation[], draft: Publicati
     if (errors.has(field)) continue;
     errors.set(
       field,
+      // **Medidas y no texto** (tasks.md 18.25): lo que el contador dibuja es
+      // un número, y es acá —donde el borrador recién guardado está a mano—
+      // donde se cuenta. `undefined` cuando el campo no se contestó, para que
+      // la frase no dibuje un cero que nadie escribió.
       PUBLISH_VIOLATION_COPY[violation].message({
-        description: draft.listing.description,
-        title: draft.listing.title,
+        descriptionLength: measureOf(draft.listing.description),
+        titleLength: measureOf(draft.listing.title),
       }),
     );
   }
@@ -97,7 +103,7 @@ function errorsByField(violations: readonly PublishViolation[], draft: Publicati
 function characters(value: string | undefined): number {
   // Puntos de codigo, igual que el validador: con `String.length` el contador
   // de la pantalla le daria a un emoji el doble de lo que la regla le da.
-  return [...(value ?? "")].length;
+  return characterCount(value ?? "");
 }
 
 export function PublishStep(props: PublishStepProps) {

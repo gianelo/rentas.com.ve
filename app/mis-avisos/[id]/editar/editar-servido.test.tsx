@@ -139,6 +139,58 @@ async function conParametros(query: Record<string, string | undefined>): Promise
   );
 }
 
+/**
+ * tasks.md 18.25 — **el contador cuenta lo que se envió, o no cuenta.**
+ *
+ * «Vas N» salía 0 sobre una descripción de 24 caracteres, porque lo único que
+ * volvía en la dirección eran los códigos. Y la corrección obvia era otro
+ * número que nadie escribió: el largo de la descripción GUARDADA, que no es la
+ * que se rechazó. Lo que vuelve ahora es la medida de lo enviado, que cabe.
+ */
+describe("el contador de una negativa de editar (18.25)", () => {
+  it("dice el largo de la descripción que se acaba de rechazar", async () => {
+    const html = await conParametros({
+      motivos: "description.tooShort",
+      largoDescripcion: "24",
+    });
+
+    expect(html).toContain("✱ Mínimo 120 caracteres. Vas 24.");
+  });
+
+  it("no dice el largo de la que está guardada, que es otra", async () => {
+    expect([...AVISO.description].length).toBe(67);
+
+    const html = await conParametros({
+      motivos: "description.tooShort",
+      largoDescripcion: "24",
+    });
+
+    expect(html).not.toContain("Vas 67");
+  });
+
+  it("sin medida dice el mínimo y se calla el contador, en vez de dibujar un cero", async () => {
+    const html = await dibujar("description.tooShort");
+
+    expect(html).toContain("Mínimo 120 caracteres.");
+    expect(html).not.toContain("Vas");
+  });
+
+  it("una medida inventada en la dirección no dibuja ningún número", async () => {
+    for (const largoDescripcion of ["muchos", "-5", "12.5", "1e3", ""]) {
+      const html = await conParametros({ motivos: "description.tooShort", largoDescripcion });
+
+      expect(html, largoDescripcion).toContain("Mínimo 120 caracteres.");
+      expect(html, largoDescripcion).not.toContain("Vas");
+    }
+  });
+
+  it("y el título cuenta el suyo, con la misma regla", async () => {
+    const html = await conParametros({ motivos: "title.tooLong", largoTitulo: "97" });
+
+    expect(html).toContain("Máximo 90 caracteres. Vas 97.");
+  });
+});
+
 describe("/mis-avisos/[id]/editar — la pantalla de corregir un aviso (18.20)", () => {
   /**
    * Un `<form>` de verdad con `method="post"`, como publicar y como las

@@ -165,6 +165,20 @@ describe("changeNoticeMessage — se dice que cambio", () => {
     );
   });
 
+  /**
+   * tasks.md 18.19 — **y desde que la descripción viaja medida, esto no es
+   * sólo estética.** Lo que llega en `antes` y `ahora` de un campo opaco es su
+   * largo, así que dibujarlo diría «Cambiaste la descripción de 67 a 1200»:
+   * dos números que se leerían como el texto. La lista que decide qué NO se
+   * dice es la misma que decide qué NO viaja, a propósito.
+   */
+  it("tampoco lee la descripción: nombra el campo y calla el número que la mide", () => {
+    const frase = changeNoticeMessage([{ field: "description", before: "67", after: "1200" }]);
+
+    expect(frase).toBe("Cambiaste la descripción. El resto del aviso quedó como estaba.");
+    expect(frase).not.toContain("1200");
+  });
+
   it("los cinco atributos comparten un nombre y se dicen una sola vez", () => {
     // Destildar tres casillas del paso 5 son tres cambios con la misma
     // etiqueta. Repetirla produce "lo que tiene la propiedad, lo que tiene la

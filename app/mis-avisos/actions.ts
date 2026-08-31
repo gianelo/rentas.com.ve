@@ -19,6 +19,7 @@ import {
   requestListingPhotoUpload,
 } from "@/modules/listing-publication/application/edit-listing-photos";
 import { requestDraftPhotoUpload } from "@/modules/listing-publication/application/request-draft-photo-upload";
+import { measureOf } from "@/modules/listing-publication/domain/carried-value";
 import type { ListingEdit } from "@/modules/listing-publication/domain/listing-edit";
 import {
   DrizzleListingActivation,
@@ -327,11 +328,12 @@ function leerEdicion(formData: FormData): ListingEdit {
  */
 export async function guardarEdicion(formData: FormData): Promise<void> {
   const listingId = String(formData.get("listingId") ?? "");
+  const edicion = leerEdicion(formData);
 
   let violations: readonly string[] | null = null;
   try {
     await editListing(
-      { listingId, edit: leerEdicion(formData) },
+      { listingId, edit: edicion },
       {
         sessionPort: nextAuthSessionPort,
         zones: new DrizzleZoneCatalogue(db),
@@ -347,9 +349,37 @@ export async function guardarEdicion(formData: FormData): Promise<void> {
 
   // Fuera del `try`: `redirect` funciona tirando, y atraparlo adentro lo
   // convertiria en «un error inesperado» silenciosamente.
-  redirect(
-    violations === null
-      ? "/mis-avisos"
-      : `/mis-avisos/${encodeURIComponent(listingId)}/editar?motivos=${encodeURIComponent(violations.join(","))}`,
-  );
+  redirect(violations === null ? "/mis-avisos" : refusalPath(listingId, violations, edicion));
+}
+
+/**
+ * tasks.md 18.25 — **la dirección de una negativa, con la medida de lo que se
+ * envió y sin una letra de lo que se escribió.**
+ *
+ * El contador del diseño dice «Vas 24», y esa N tiene que ser la de la
+ * descripción que se acaba de rechazar: la pantalla sólo tenía los códigos, así
+ * que decía «Vas 0», y leer la guardada habría dicho el largo de otra — las dos
+ * son un número que nadie escribió. Volver el texto entero no es una opción y
+ * está medido: son 1.200 caracteres que codificados pasan de 7 KB de dirección
+ * (18.19). Vuelve el número, que es lo único que la frase dibuja.
+ *
+ * **Un campo ausente no manda medida**, y por eso la frase sale sin contador en
+ * vez de con un cero (AGENTS.md §7). Contar acá y no en la pantalla es lo que
+ * hace que la medida sea la de lo enviado: `formText` ya recortó los espacios,
+ * igual que el validador que la rechazó.
+ */
+function refusalPath(
+  listingId: string,
+  violations: readonly string[],
+  edicion: ListingEdit,
+): string {
+  const params = new URLSearchParams({ motivos: violations.join(",") });
+  for (const [name, medida] of [
+    ["largoTitulo", measureOf(edicion.title)],
+    ["largoDescripcion", measureOf(edicion.description)],
+  ] as const) {
+    if (medida !== undefined) params.set(name, String(medida));
+  }
+
+  return `/mis-avisos/${encodeURIComponent(listingId)}/editar?${params.toString()}`;
 }

@@ -319,8 +319,49 @@ describe("guardarEdicion — la ruta que le faltaba a editListing (18.20)", () =
     );
 
     await expect(guardarEdicion(edicionDe(CAMPOS))).rejects.toThrow(
-      "NEXT_REDIRECT:/mis-avisos/aviso-1/editar?motivos=publisherType.immutable%2CpriceUsd.invalid",
+      "NEXT_REDIRECT:/mis-avisos/aviso-1/editar?motivos=publisherType.immutable%2CpriceUsd.invalid&largoTitulo=37&largoDescripcion=67",
     );
+  });
+
+  /**
+   * tasks.md 18.25 — **la negativa vuelve con la medida de lo que se envió.**
+   *
+   * El contador decía «Vas 0» sobre una descripción de 24 caracteres porque lo
+   * único que volvía eran los códigos, y la corrección obvia —leer la
+   * descripción guardada— habría dicho el largo de otra. Vuelve el número, que
+   * es lo único que la frase dibuja, y por eso cabe en una dirección: es la
+   * misma asimetría que la 18.19 midió del otro lado.
+   */
+  it("la negativa lleva la medida de lo que se envió, jamás el texto", async () => {
+    const description = "Corta, muy corta de más.";
+    editListing.mockRejectedValueOnce(new EditListingRejectedError(["description.tooShort"]));
+
+    await expect(guardarEdicion(edicionDe({ ...CAMPOS, description }))).rejects.toThrow(
+      "NEXT_REDIRECT:/mis-avisos/aviso-1/editar?motivos=description.tooShort&largoTitulo=37&largoDescripcion=24",
+    );
+
+    const [destino] = redirect.mock.calls.at(-1) as [string];
+    expect(destino).not.toContain("Corta");
+    expect(destino.length).toBeLessThan(120);
+  });
+
+  it("mide en puntos de código, igual que el validador que la rechazó", async () => {
+    editListing.mockRejectedValueOnce(new EditListingRejectedError(["description.tooShort"]));
+
+    await expect(
+      guardarEdicion(edicionDe({ ...CAMPOS, description: "🏠".repeat(10) })),
+    ).rejects.toThrow("largoDescripcion=10");
+  });
+
+  it("un campo vacío no manda una medida, porque no se envió ninguno", async () => {
+    editListing.mockRejectedValueOnce(new EditListingRejectedError(["description.required"]));
+
+    const [destino] = await guardarEdicion(edicionDe({ ...CAMPOS, description: "" }))
+      .then(() => [""])
+      .catch(() => redirect.mock.calls.at(-1) as [string]);
+
+    expect(destino).toContain("motivos=description.required");
+    expect(destino).not.toContain("largoDescripcion");
   });
 
   /**

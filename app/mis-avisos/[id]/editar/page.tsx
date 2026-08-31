@@ -11,6 +11,7 @@ import {
   loadListingForEdit,
 } from "@/modules/listing-publication/application/edit-listing";
 import { loadListingPhotosForEdit } from "@/modules/listing-publication/application/edit-listing-photos";
+import { readCarriedMeasure } from "@/modules/listing-publication/domain/carried-value";
 import { COVER_PHOTO_INDEX } from "@/modules/listing-publication/domain/draft-photo-actions";
 import type { ChangedField } from "@/modules/listing-publication/domain/publication-steps";
 import {
@@ -48,6 +49,7 @@ import {
 import {
   listingEditViolationMessage,
   PUBLISHER_TYPE_IMMUTABLE_NOTICE,
+  type PublishCopyContext,
 } from "../../../publicar/violation-copy";
 import {
   adjuntarFotoAlAviso,
@@ -177,11 +179,29 @@ export default async function EditarAvisoPage({
   // pedido de edición manda y las que no tienen ninguno. Acá sólo se dibuja lo
   // que ya viene decidido.
   const negativas = placeListingEditViolations(motivos);
+
+  /**
+   * **El contador cuenta lo que se envió, o no cuenta** (tasks.md 18.25).
+   *
+   * Antes esto era `{ title: aviso.title }` y el «Vas N» de la descripción
+   * salía 0, porque lo que se acababa de escribir no volvía. Pasarle
+   * `aviso.description` habría dicho el largo de la GUARDADA, que tampoco es la
+   * que se rechazó: las dos son un número que nadie escribió. Lo que vuelve es
+   * la medida de lo enviado, que es lo único que la frase dibuja y lo único que
+   * cabe en una dirección (18.19).
+   *
+   * **Un parámetro es una afirmación de afuera** (AGENTS.md §7):
+   * `readCarriedMeasure` devuelve nada ante lo ausente y ante lo inventado, y
+   * la frase sale sin contador antes que con un número falso.
+   */
+  const medidas: PublishCopyContext = {
+    titleLength: readCarriedMeasure(query.largoTitulo),
+    descriptionLength: readCarriedMeasure(query.largoDescripcion),
+  };
+
   const mensaje = (field: ListingField): string | undefined => {
     const codigo = negativas.byField.get(field);
-    return codigo === undefined
-      ? undefined
-      : listingEditViolationMessage(codigo, { title: aviso.title });
+    return codigo === undefined ? undefined : listingEditViolationMessage(codigo, medidas);
   };
   const invalido = (field: ListingField) =>
     negativas.byField.has(field)
@@ -220,7 +240,7 @@ export default async function EditarAvisoPage({
               <p className={styles.error} role="alert">
                 No se pudo guardar:{" "}
                 {negativas.elsewhere
-                  .map((motivo) => listingEditViolationMessage(motivo, { title: aviso.title }))
+                  .map((motivo) => listingEditViolationMessage(motivo, medidas))
                   .join(" · ")}
               </p>
             )}
