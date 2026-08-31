@@ -345,6 +345,31 @@ export function primaryActionFor(stepId: PublishStepId, returningToReview: boole
   return stepId === PUBLISH_STEP_ORDER[PUBLISH_STEP_ORDER.length - 1] ? "review" : "continue";
 }
 
+/**
+ * **Si este paso ofrece «Descartar el cambio»** (tasks.md 18.18).
+ *
+ * La lamina de escritorio lo dibuja al lado de "Guardar y volver a revisar", y
+ * solo ahi: **un paso del recorrido hacia adelante no tiene revision a la que
+ * volver**, asi que ofrecerlo prometeria un destino que todavia no existe.
+ *
+ * Con el borrador en cookie no es un `undo` —los valores anteriores viven en la
+ * cookie hasta que alguien guarda—, asi que descartar es irse sin postear.
+ *
+ * **La segunda condicion no sobra, y es la razon por la que esto no es
+ * `returningToReview` a secas.** `volver=revisar` es una afirmacion de la barra
+ * de direcciones, no un hecho: escrita a mano sobre un borrador con un paso sin
+ * contestar, revisar redirige al paso que falta y el enlace aterriza donde no
+ * dijo. Se pregunta por la misma puerta que revisar aplica, no por una copia
+ * suya que pueda discrepar (AGENTS.md §7: la forma preferida es la negativa).
+ */
+export function offersDiscardToReview(
+  returningToReview: boolean,
+  draft: PublicationDraft,
+  violations: readonly PublishViolation[],
+): boolean {
+  return returningToReview && isDraftReadyForReview(draft, violations);
+}
+
 /** Donde se va despues de guardar este paso. `"revisar"` no es un decimo paso. */
 export function nextStepAfter(
   stepId: PublishStepId,

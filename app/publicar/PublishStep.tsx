@@ -17,7 +17,7 @@ import { submitStep } from "./actions";
 import { FieldError } from "./FieldError";
 import { PhotoUploader } from "./fotos/PhotoUploader";
 import styles from "./publish-steps.module.css";
-import { FEATURE_LABELS, STEP_COPY } from "./step-copy";
+import { DISCARD_CHANGE_LABEL, FEATURE_LABELS, STEP_COPY } from "./step-copy";
 import {
   PUBLISH_VIOLATION_COPY,
   PUBLISHER_TYPE_IMMUTABLE_LEAD,
@@ -60,6 +60,14 @@ export interface PublishStepProps {
   readonly rail: readonly RailEntry[];
   readonly progress: number;
   readonly returningToReview: boolean;
+  /**
+   * Adonde lleva «Descartar el cambio», o `null` cuando este paso no lo ofrece.
+   *
+   * **La decision la toma `offersDiscardToReview`, no esta pantalla**: obligar a
+   * que llegue resuelto es lo que impide que un `if` de producto termine
+   * viviendo en un componente sin piso de cobertura (AGENTS.md §1).
+   */
+  readonly discardHref: string | null;
   readonly primaryLabel: string;
   readonly previousStep: PublishStepId | null;
   /** Resultados del buscador del paso 2 y lo que se escribio para buscarlos. */
@@ -160,6 +168,14 @@ export function PublishStep(props: PublishStepProps) {
               {backHref ? (
                 <AppLink className={styles.secondary} href={backHref}>
                   Atrás
+                </AppLink>
+              ) : null}
+              {/* Nivel neutro de la jerarquia de botones, la misma fila que
+                  "Atrás" — y un ENLACE, no un boton: no postea nada, porque
+                  descartar es irse antes de escribir. */}
+              {props.discardHref ? (
+                <AppLink className={styles.secondary} href={props.discardHref}>
+                  {DISCARD_CHANGE_LABEL}
                 </AppLink>
               ) : null}
             </div>

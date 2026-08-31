@@ -44,6 +44,7 @@ function dibujar(stepId: PublishStepId, violations: readonly string[]): string {
       rail={[]}
       progress={30}
       returningToReview={false}
+      discardHref={null}
       primaryLabel="Siguiente"
       previousStep={null}
     />,

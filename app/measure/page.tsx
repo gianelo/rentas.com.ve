@@ -445,6 +445,8 @@ function stepHarness(
       rail={rail}
       progress={progressPercent(draft, violations)}
       returningToReview={false}
+      // El arnés mide el recorrido hacia adelante, que no viene de revisar.
+      discardHref={null}
       primaryLabel={PRIMARY_ACTION_LABEL[primaryActionFor(stepId, false)]}
       previousStep={PUBLISH_STEP_ORDER[PUBLISH_STEP_ORDER.indexOf(stepId) - 1] ?? null}
       zoneQuery={zoneResults ? "altamira" : undefined}

@@ -79,6 +79,15 @@ export const PRIMARY_ACTION_LABEL: Record<PrimaryAction, string> = {
   saveAndReturnToReview: "Guardar y volver a revisar",
 };
 
+/**
+ * La salida que no escribe, al lado de "Guardar y volver a revisar" (18.18).
+ *
+ * **Dice «el cambio» y no «los cambios»** porque nombra lo que se acaba de
+ * tocar en ESTE paso, no el aviso: el resto del borrador queda como estaba, que
+ * es exactamente lo que la frase de vuelta a revisar ya promete.
+ */
+export const DISCARD_CHANGE_LABEL = "Descartar el cambio";
+
 const PROPERTY_TYPE_LABEL: Record<string, string> = {
   apartamento: "Apartamento",
   casa: "Casa",
