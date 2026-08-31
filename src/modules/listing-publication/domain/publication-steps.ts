@@ -89,15 +89,6 @@ export interface PublicationDraft {
    * legitimamente no tiene ninguno.
    */
   readonly featuresDeclared?: boolean;
-  /**
-   * Punto de referencia, texto libre y opcional (paso 2). Es el campo que
-   * reemplaza a Google Places.
-   *
-   * Vive aca y no en `listing` porque **`listing` no tiene columna para el**:
-   * `referencia` no existe en el esquema todavia. Modelarlo desde ya deja el
-   * borrador listo para el dia que la columna llegue, sin tocar el dominio.
-   */
-  readonly reference?: string;
 }
 
 /**
@@ -126,6 +117,8 @@ export const STEP_FOR_VIOLATION: Record<PublishViolation, PublishStepId> = {
   "cityId.unknown": "zona",
   "zoneId.required": "zona",
   "zoneId.notInCity": "zona",
+  // La referencia se teclea debajo de la zona, en el mismo paso 2 (18.7).
+  "reference.tooLong": "zona",
   "priceUsd.required": "precio",
   "priceUsd.invalid": "precio",
   "rooms.required": "tamano",
@@ -254,6 +247,36 @@ export function isStepNavigable(
   return isStepComplete(stepId, draft, violations) || stepId === currentStepId(draft, violations);
 }
 
+/**
+ * **El mapa de movil: a que pasos puede saltar el que esta abierto** (18.17).
+ *
+ * §12 de la especificacion de publicar lo nombra entre lo que falta disenar, y
+ * es la unica de esa lista que quedaba. En 1280 el riel dibuja los nueve pasos
+ * y cada uno hecho es un enlace; en 360 el riel no existe —no hay lugar— y solo
+ * queda la flecha de un paso atras. La diferencia que la hoja de estilos ya
+ * declara es «saber cuanto falta» contra «poder hacer algo al respecto», y esto
+ * es lo segundo puesto en un telefono.
+ *
+ * **No hay una segunda regla de alcance, y esa es la decision.** Que un paso se
+ * pueda abrir lo contesta `isStepNavigable`, la misma puerta que la pagina del
+ * paso vuelve a aplicar al aterrizar. Una copia para el telefono podria
+ * discrepar, y entonces el mapa ofreceria un salto que el destino rechaza — el
+ * mismo defecto que «Descartar el cambio» ya pago una vez (AGENTS.md §7).
+ *
+ * Lo unico que agrega es sacarse a si mismo: saltar a donde ya se esta no es un
+ * salto. Cuando no queda ninguno la lista es vacia, y una lista vacia es una
+ * pantalla que no dibuja el mapa en vez de un desplegable que no hace nada.
+ */
+export function jumpableStepsFrom(
+  stepId: PublishStepId,
+  draft: PublicationDraft,
+  violations: readonly PublishViolation[],
+): readonly PublishStepId[] {
+  return PUBLISH_STEP_ORDER.filter(
+    (candidate) => candidate !== stepId && isStepNavigable(candidate, draft, violations),
+  );
+}
+
 /** Para la barra de 3 px de movil. El riel de escritorio usa el detalle. */
 export function progressPercent(
   draft: PublicationDraft,
@@ -271,7 +294,8 @@ const STEP_LISTING_FIELDS: Record<PublishStepId, readonly (keyof DraftListingVal
   tipo: ["propertyType"],
   // La ciudad la determina la zona: se escribe aca porque se deriva aca, no
   // porque se pregunte (criterio de aceptacion 7).
-  zona: ["cityId", "zoneId"],
+  // La referencia se teclea debajo de la zona, en este mismo paso (18.7).
+  zona: ["cityId", "zoneId", "reference"],
   precio: ["priceUsd"],
   tamano: ["rooms", "bathrooms", "parkingSpots", "areaM2"],
   atributos: ["hasPowerPlant", "hasRegularWater", "isFurnished", "hasSecurity", "hasAppliances"],
@@ -321,8 +345,6 @@ export function applyStepAnswers(
     // Solo el paso 5 declara los atributos. Una vez contestado, sigue
     // contestado: pasar por el paso 6 no lo pone en duda.
     featuresDeclared: stepId === "atributos" ? answers.featuresDeclared : draft.featuresDeclared,
-    // Solo el paso 2 escribe la referencia.
-    reference: stepId === "zona" ? answers.reference : draft.reference,
   };
 }
 
@@ -345,6 +367,31 @@ export function primaryActionFor(stepId: PublishStepId, returningToReview: boole
   return stepId === PUBLISH_STEP_ORDER[PUBLISH_STEP_ORDER.length - 1] ? "review" : "continue";
 }
 
+/**
+ * **Si este paso ofrece «Descartar el cambio»** (tasks.md 18.18).
+ *
+ * La lamina de escritorio lo dibuja al lado de "Guardar y volver a revisar", y
+ * solo ahi: **un paso del recorrido hacia adelante no tiene revision a la que
+ * volver**, asi que ofrecerlo prometeria un destino que todavia no existe.
+ *
+ * Con el borrador en cookie no es un `undo` —los valores anteriores viven en la
+ * cookie hasta que alguien guarda—, asi que descartar es irse sin postear.
+ *
+ * **La segunda condicion no sobra, y es la razon por la que esto no es
+ * `returningToReview` a secas.** `volver=revisar` es una afirmacion de la barra
+ * de direcciones, no un hecho: escrita a mano sobre un borrador con un paso sin
+ * contestar, revisar redirige al paso que falta y el enlace aterriza donde no
+ * dijo. Se pregunta por la misma puerta que revisar aplica, no por una copia
+ * suya que pueda discrepar (AGENTS.md §7: la forma preferida es la negativa).
+ */
+export function offersDiscardToReview(
+  returningToReview: boolean,
+  draft: PublicationDraft,
+  violations: readonly PublishViolation[],
+): boolean {
+  return returningToReview && isDraftReadyForReview(draft, violations);
+}
+
 /** Donde se va despues de guardar este paso. `"revisar"` no es un decimo paso. */
 export function nextStepAfter(
   stepId: PublishStepId,
@@ -357,7 +404,7 @@ export function nextStepAfter(
 }
 
 /** Lo que cambio, en el vocabulario del borrador. La frase la arma la copia. */
-export type ChangedField = keyof DraftListingValues | "photos" | "reference";
+export type ChangedField = keyof DraftListingValues | "photos";
 
 export interface DraftChange {
   readonly field: ChangedField;
@@ -371,7 +418,6 @@ export interface DraftChange {
 const CHANGE_FIELDS: readonly ChangedField[] = [
   ...PUBLISH_STEP_ORDER.flatMap((step) => STEP_LISTING_FIELDS[step]),
   "photos",
-  "reference",
 ];
 
 function asText(value: unknown): string {
@@ -386,37 +432,87 @@ function asText(value: unknown): string {
  * Sin eso nadie sabe si se guardo, y quien no sabe si se guardo vuelve a
  * entrar al paso a comprobarlo — o publica sin comprobarlo, que es peor.
  *
- * Devuelve el PRIMER campo distinto, no todos: la frase que la pantalla dibuja
- * nombra uno, y un paso escribe un solo dato en el caso normal.
+ * **Devuelve TODOS los campos distintos, no el primero.** La segunda oracion
+ * de la frase afirma que el resto del aviso quedo igual, y un paso escribe
+ * hasta cuatro campos de una sola vez: nombrar uno solo convierte esa segunda
+ * oracion en una afirmacion falsa sobre los otros tres. Una frase que miente
+ * sobre lo que se guardo cuesta mas que no decir nada, porque se lee
+ * exactamente igual que la verdad.
+ *
+ * El orden es el de los pasos, que es el orden en que la persona los contesto.
  */
-export function describeDraftChange(
+export function describeDraftChanges(
   before: PublicationDraft,
   after: PublicationDraft,
-): DraftChange | null {
+): readonly DraftChange[] {
+  const changes: DraftChange[] = [];
+
   for (const field of CHANGE_FIELDS) {
     if (field === "photos") {
       // Las fotos se comparan por cantidad: es el dato que la pantalla de
       // revisar muestra ("3 fotos · 449 KB") y el unico que significa algo
       // dicho en voz alta.
       if (before.photos.length !== after.photos.length) {
-        return {
+        changes.push({
           field,
           before: String(before.photos.length),
           after: String(after.photos.length),
-        };
+        });
       }
       continue;
     }
 
-    const previous = field === "reference" ? before.reference : before.listing[field];
-    const current = field === "reference" ? after.reference : after.listing[field];
+    const previous = before.listing[field];
+    const current = after.listing[field];
 
     if (asText(previous) !== asText(current)) {
-      return { field, before: asText(previous), after: asText(current) };
+      changes.push({ field, before: asText(previous), after: asText(current) });
     }
   }
 
-  return null;
+  return changes;
+}
+
+/**
+ * Reconoce cambios que llegan sueltos en una URL, sin creerles nada.
+ *
+ * La pantalla de revisar recibe lo que cambio por la barra de direcciones, y
+ * una barra de direcciones se escribe a mano. **Es la puerta por la que entra
+ * una frase que el producto nunca dijo**: un campo inventado se dibujaria como
+ * "Cambiaste undefined", y un par de valores iguales como "Cambiaste
+ * habitaciones de 2 a 2" — un cambio anunciado que no ocurrio.
+ *
+ * Se cierra en los tres frentes, y en los tres la salida es el silencio y no
+ * una suposicion: un campo que no es del borrador se descarta, un valor igual
+ * al anterior no es un cambio, y tres listas paralelas de distinto largo no
+ * dicen que par va con que campo, asi que no se reparte ninguno.
+ */
+export function parseDraftChanges(
+  fields: readonly string[],
+  befores: readonly string[],
+  afters: readonly string[],
+): readonly DraftChange[] {
+  if (fields.length !== befores.length || fields.length !== afters.length) return [];
+
+  const changes: DraftChange[] = [];
+
+  for (const [index, name] of fields.entries()) {
+    // Buscando en la lista y no casteando: el cast diria que es un campo del
+    // borrador, y esta funcion existe justamente porque no se sabe.
+    const field = CHANGE_FIELDS.find((candidate) => candidate === name);
+    if (field === undefined) continue;
+
+    // El `?? ""` no se alcanza: los tres largos ya se compararon arriba. Esta
+    // por `noUncheckedIndexedAccess`, y se prefiere a una asercion que le
+    // mienta al compilador sobre un arreglo que llego de afuera.
+    const before = befores[index] ?? "";
+    const after = afters[index] ?? "";
+    if (before === after) continue;
+
+    changes.push({ field, before, after });
+  }
+
+  return changes;
 }
 
 /** Reconoce un segmento de URL como paso, sin confiar en lo que llego. */

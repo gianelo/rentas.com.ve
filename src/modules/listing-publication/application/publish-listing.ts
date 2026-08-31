@@ -10,6 +10,7 @@ import type { PerceptualHash } from "../../listing-trust/domain/perceptual-hash"
 import {
   type DraftListing,
   type PublishViolation,
+  referenceOrNone,
   validatePublishableListing,
 } from "../domain/publishable-listing";
 import type { ListingRepositoryPort, NewListingPhoto } from "./ports/listing-repository.port";
@@ -191,6 +192,10 @@ export async function publishListing(
     propertyType: present(request.propertyType, "propertyType"),
     cityId: present(request.cityId, "cityId"),
     zoneId: present(request.zoneId, "zoneId"),
+    // Ni `present` ni `??`: es opcional de verdad, y "en blanco" y "ninguna"
+    // son la misma respuesta. Quien decide eso es el dominio y no esta linea,
+    // porque el validador ya usa el mismo criterio para no rechazarla.
+    reference: referenceOrNone(request.reference),
     title: present(request.title, "title"),
     description: present(request.description, "description"),
     priceUsd: present(request.priceUsd, "priceUsd"),

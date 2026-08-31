@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import {
   isStepComplete,
   isStepNavigable,
+  jumpableStepsFrom,
+  offersDiscardToReview,
   PUBLISH_STEP_ORDER,
   type PublishStepId,
   parseStepId,
@@ -14,6 +16,7 @@ import { searchPublicationZones } from "@/modules/listing-publication/domain/zon
 import { DrizzleZoneVocabulary } from "@/modules/listing-publication/infrastructure/drizzle-zone-vocabulary";
 import { db } from "@/shared/db/client";
 import { requireSession } from "../../../_lib/require-session";
+import { reviewPathFor } from "../../change-notice-url";
 import { PublishStep, type RailEntry } from "../../PublishStep";
 import { readPublicationContext } from "../../publication-context";
 import { PRIMARY_ACTION_LABEL, STEP_COPY, stepSummary } from "../../step-copy";
@@ -79,8 +82,20 @@ export default async function StepPage({ params, searchParams }: StepPageProps) 
       violations={stepViolations(stepId, draft.violations)}
       raw={draft.raw}
       rail={rail}
+      // El mapa de móvil (18.17). A qué pasos se puede saltar lo contesta el
+      // dominio con la MISMA puerta que la línea 52 vuelve a aplicar al
+      // aterrizar: un mapa con su propia regla ofrecería un salto que esta
+      // página rechaza.
+      jumpable={jumpableStepsFrom(stepId, draft, violations)}
       progress={progressPercent(draft, violations)}
       returningToReview={returningToReview}
+      // Si se ofrece lo contesta el dominio; acá sólo se elige a dónde lleva.
+      // `reviewPathFor([])` y no la ruta escrita a mano: descartar vuelve sin
+      // cambios que anunciar, y ésa es la misma función que ya sabe que sin
+      // cambios la dirección no lleva cola.
+      discardHref={
+        offersDiscardToReview(returningToReview, draft, violations) ? reviewPathFor([]) : null
+      }
       primaryLabel={PRIMARY_ACTION_LABEL[primaryActionFor(stepId, returningToReview)]}
       previousStep={previousStepOf(stepId)}
       zoneQuery={q}

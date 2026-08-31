@@ -8,7 +8,7 @@ import {
 } from "@/modules/listing-publication/application/publish-listing";
 import {
   applyStepAnswers,
-  describeDraftChange,
+  describeDraftChanges,
   draftListingOf,
   nextStepAfter,
   parseStepId,
@@ -19,6 +19,7 @@ import { DrizzleZoneCatalogue } from "@/modules/listing-publication/infrastructu
 import { DrizzleZoneVocabulary } from "@/modules/listing-publication/infrastructure/drizzle-zone-vocabulary";
 import { db } from "@/shared/db/client";
 import { requireSession } from "../_lib/require-session";
+import { reviewPathFor } from "./change-notice-url";
 import {
   DRAFT_COOKIE,
   DRAFT_COOKIE_OPTIONS,
@@ -131,15 +132,12 @@ export async function submitStep(formData: FormData): Promise<void> {
   if (next !== "revisar") redirect(`/publicar/paso/${next}`);
 
   // Se dice que cambio, y se dice en la pantalla de revisar, que es adonde
-  // vuelve quien vino de ahi. Los tres valores viajan sueltos en vez de la
-  // frase armada: la prosa vive en `step-copy`, no en una URL.
-  const change = returningToReview ? describeDraftChange(before, after) : null;
+  // vuelve quien vino de ahi. Van TODOS los campos distintos y no el primero:
+  // la frase termina afirmando que el resto del aviso quedo como estaba, y el
+  // paso 4 escribe cuatro campos de una sola vez.
+  const changes = returningToReview ? describeDraftChanges(before, after) : [];
 
-  redirect(
-    change
-      ? `/publicar/revisar?campo=${encodeURIComponent(change.field)}&antes=${encodeURIComponent(change.before)}&ahora=${encodeURIComponent(change.after)}`
-      : "/publicar/revisar",
-  );
+  redirect(reviewPathFor(changes));
 }
 
 /**

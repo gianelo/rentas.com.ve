@@ -1,0 +1,22 @@
+-- `listing.reference` — el punto de referencia del paso 2 (tasks.md 18.7).
+--
+-- Lo generó drizzle-kit; el comentario está escrito a mano porque en el diff
+-- este `ADD COLUMN "reference"` aparece al lado de un `external_reference` que
+-- ya existe, y son dos cosas distintas. **Ésta es texto libre que teclea quien
+-- publica** —«a dos calles de la plaza Altamira»—, se muestra sólo en la ficha
+-- y no la lee ningún índice. `external_reference` es la llave de idempotencia
+-- de la importación en lote, la genera un archivo y la protege el índice único
+-- `listing_publisher_external_reference_unique`.
+--
+-- **Nulable, y ése es el estado final.** El patrón de tres pasos de la 0008
+-- —agregar nulable, rellenar, exigir NOT NULL— existe para columnas que TIENEN
+-- que terminar en NOT NULL sobre filas vivas. Ésta no: el campo es opcional
+-- por decisión del fundador, así que «sin referencia» es un hecho verdadero de
+-- todos los avisos publicados hasta hoy y rellenarla inventaría una seña que
+-- nadie escribió. Una columna nulable nueva sobre una tabla con filas vivas no
+-- reescribe una sola fila: Postgres la agrega en el catálogo y nada más.
+--
+-- No hay ninguna sentencia destructiva acá, así que no lleva —ni necesita— el
+-- marcador `deploy-migrate: allow-destructive`.
+
+ALTER TABLE "listing" ADD COLUMN "reference" text;

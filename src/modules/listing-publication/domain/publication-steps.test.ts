@@ -3,15 +3,18 @@ import {
   applyStepAnswers,
   completedSteps,
   currentStepId,
-  describeDraftChange,
+  describeDraftChanges,
   draftListingOf,
   isDraftReadyForReview,
   isStepComplete,
   isStepNavigable,
+  jumpableStepsFrom,
   nextStepAfter,
+  offersDiscardToReview,
   PUBLISH_STEP_ORDER,
   type PublicationDraft,
   type PublishStepId,
+  parseDraftChanges,
   parseStepId,
   primaryActionFor,
   progressPercent,
@@ -114,6 +117,20 @@ describe("stepViolations", () => {
       "publisherType.required",
       "contactValue.invalid",
     ]);
+  });
+
+  /**
+   * tasks.md 18.7 — la referencia se teclea en el paso 2, debajo de la zona,
+   * asi que su negativa se lee ahi y en ningun otro lado. Un error que apunta
+   * a un campo que la pantalla no dibuja deja a alguien mirando un boton que
+   * no avanza.
+   */
+  it("la negativa de la referencia es del paso 2, y de ninguno de los otros ocho", () => {
+    expect(stepViolations("zona", ["reference.tooLong"])).toEqual(["reference.tooLong"]);
+
+    for (const step of PUBLISH_STEP_ORDER.filter((candidate) => candidate !== "zona")) {
+      expect(stepViolations(step, ["reference.tooLong"])).toEqual([]);
+    }
   });
 
   it("no muestra errores de fotos en un paso que no tiene fotos", () => {
@@ -337,21 +354,24 @@ describe("applyStepAnswers — volver atras no borra lo que sigue", () => {
   it("el paso 2 guarda la referencia junto con ciudad y zona", () => {
     const before = completeDraft();
     const after = applyStepAnswers(before, "zona", {
-      listing: { cityId: "mcbo", zoneId: "la-lago" },
+      listing: { cityId: "mcbo", zoneId: "la-lago", reference: "Al lado de la panaderia" },
       photos: [],
-      reference: "Al lado de la panaderia",
     });
 
     expect(after.listing.cityId).toBe("mcbo");
-    expect(after.reference).toBe("Al lado de la panaderia");
+    expect(after.listing.reference).toBe("Al lado de la panaderia");
     expect(after.listing.priceUsd).toBe(450);
   });
 
   it("un paso ajeno nunca toca la referencia", () => {
-    const before: PublicationDraft = { ...completeDraft(), reference: "Frente a la plaza" };
+    const base = completeDraft();
+    const before: PublicationDraft = {
+      ...base,
+      listing: { ...base.listing, reference: "Frente a la plaza" },
+    };
     const after = applyStepAnswers(before, "precio", { listing: { priceUsd: 500 }, photos: [] });
 
-    expect(after.reference).toBe("Frente a la plaza");
+    expect(after.listing.reference).toBe("Frente a la plaza");
   });
 });
 
@@ -390,7 +410,7 @@ describe("nextStepAfter", () => {
   });
 });
 
-describe("describeDraftChange — se dice que cambio", () => {
+describe("describeDraftChanges — se dice que cambio", () => {
   it("nombra el campo y sus dos valores", () => {
     const before = completeDraft();
     const after = applyStepAnswers(before, "tamano", {
@@ -398,16 +418,46 @@ describe("describeDraftChange — se dice que cambio", () => {
       photos: [],
     });
 
-    expect(describeDraftChange(before, after)).toEqual({
-      field: "rooms",
-      before: "2",
-      after: "3",
-    });
+    expect(describeDraftChanges(before, after)).toEqual([
+      { field: "rooms", before: "2", after: "3" },
+    ]);
   });
 
-  it("devuelve null cuando no cambio nada, para no anunciar un cambio que no hubo", () => {
+  it("nombra TODOS los campos que cambiaron, no solo el primero", () => {
+    // El paso 4 escribe cuatro campos de una sola vez. Devolver solo el
+    // primero deja a la frase afirmando "el resto del aviso quedo como
+    // estaba" mientras dos datos mas acaban de cambiar — una mentira que se
+    // lee exactamente igual que la verdad.
     const before = completeDraft();
-    expect(describeDraftChange(before, before)).toBeNull();
+    const after = applyStepAnswers(before, "tamano", {
+      listing: { rooms: 3, bathrooms: 3, parkingSpots: 1, areaM2: 90 },
+      photos: [],
+    });
+
+    expect(describeDraftChanges(before, after)).toEqual([
+      { field: "rooms", before: "2", after: "3" },
+      { field: "bathrooms", before: "2", after: "3" },
+      { field: "areaM2", before: "78", after: "90" },
+    ]);
+  });
+
+  it("los devuelve en el orden de los pasos, que es el orden en que se leen", () => {
+    const before = completeDraft();
+    const after = applyStepAnswers(before, "quien", {
+      listing: { publisherType: "broker", contactMethod: "email", contactValue: "a@b.com" },
+      photos: [],
+    });
+
+    expect(describeDraftChanges(before, after).map((change) => change.field)).toEqual([
+      "publisherType",
+      "contactMethod",
+      "contactValue",
+    ]);
+  });
+
+  it("no devuelve ninguno cuando no cambio nada, para no anunciar un cambio que no hubo", () => {
+    const before = completeDraft();
+    expect(describeDraftChanges(before, before)).toEqual([]);
   });
 
   it("informa un valor que aparece donde antes no habia nada", () => {
@@ -417,11 +467,9 @@ describe("describeDraftChange — se dice que cambio", () => {
       photos: [],
     });
 
-    expect(describeDraftChange(before, after)).toEqual({
-      field: "propertyType",
-      before: "",
-      after: "quinta",
-    });
+    expect(describeDraftChanges(before, after)).toEqual([
+      { field: "propertyType", before: "", after: "quinta" },
+    ]);
   });
 
   it("informa el cambio de fotos por su cantidad", () => {
@@ -434,11 +482,39 @@ describe("describeDraftChange — se dice que cambio", () => {
       ],
     });
 
-    expect(describeDraftChange(before, after)).toEqual({
-      field: "photos",
-      before: "1",
-      after: "2",
-    });
+    expect(describeDraftChanges(before, after)).toEqual([
+      { field: "photos", before: "1", after: "2" },
+    ]);
+  });
+});
+
+describe("parseDraftChanges — lo que llega en la URL no se cree", () => {
+  it("reconoce los campos del borrador y descarta cualquier otro", () => {
+    expect(
+      parseDraftChanges(["rooms", "inventado", "priceUsd"], ["2", "x", "450"], ["3", "y", "500"]),
+    ).toEqual([
+      { field: "rooms", before: "2", after: "3" },
+      { field: "priceUsd", before: "450", after: "500" },
+    ]);
+  });
+
+  it("no cuenta como cambio un valor identico al anterior", () => {
+    // "Cambiaste habitaciones de 2 a 2" es peor que el silencio: afirma un
+    // cambio que no ocurrio, y quien lo lee ya no sabe que creerle a la
+    // pantalla la proxima vez.
+    expect(parseDraftChanges(["rooms"], ["2"], ["2"])).toEqual([]);
+  });
+
+  it("descarta el lote entero cuando falta un pedazo, en vez de inventarlo", () => {
+    // Tres listas paralelas que no miden lo mismo no dicen que par va con
+    // que campo. Sin la respuesta, el silencio; adivinarla es como se
+    // publica "Cambiaste el precio de 3 a 78".
+    expect(parseDraftChanges(["rooms", "areaM2"], ["2"], ["3", "90"])).toEqual([]);
+    expect(parseDraftChanges(["rooms"], ["2", "78"], ["3"])).toEqual([]);
+  });
+
+  it("sin nada en la URL no hay nada que decir", () => {
+    expect(parseDraftChanges([], [], [])).toEqual([]);
   });
 });
 
@@ -520,5 +596,138 @@ describe("isDraftReadyForReview — la puerta de revisar", () => {
 
     expect(completedSteps(draft, violations)).not.toContain("fotos");
     expect(isDraftReadyForReview(draft, violations)).toBe(false);
+  });
+});
+
+/**
+ * tasks.md 18.18 — **«Descartar el cambio», y por que la regla no es
+ * `returningToReview` a secas.**
+ *
+ * Descartar es un enlace a revisar sin postear: con el borrador en cookie, los
+ * valores anteriores siguen ahi hasta que alguien guarda. Pero revisar tiene
+ * puerta —`isDraftReadyForReview`—, y un enlace hacia una pantalla que redirige
+ * es una salida que no sale. AGENTS.md §7: la forma preferida es la negativa.
+ */
+describe("offersDiscardToReview — la salida que no escribe", () => {
+  it("se ofrece al paso abierto desde revisar, que es donde la lamina lo dibuja", () => {
+    const draft = completeDraft();
+    expect(offersDiscardToReview(true, draft, violationsOf(draft))).toBe(true);
+  });
+
+  /**
+   * **El par que la mutacion pide.** En el recorrido hacia adelante no hay
+   * revisar a donde volver: ofrecerlo prometeria un destino que todavia no
+   * existe, y quien lo tocara perderia el paso en vez de descartarlo.
+   */
+  it("no se ofrece en el recorrido hacia adelante, que no viene de ninguna revision", () => {
+    const draft = completeDraft();
+    expect(offersDiscardToReview(false, draft, violationsOf(draft))).toBe(false);
+  });
+
+  /**
+   * **La direccion la escribe quien quiera.** `volver=revisar` es una afirmacion
+   * de la barra de direcciones, no un hecho: con un paso sin contestar, revisar
+   * redirige al paso que falta. El enlace aterrizaria donde no dijo.
+   */
+  it("no se ofrece cuando revisar todavia redirige, aunque la URL diga que viene de ahi", () => {
+    const complete = completeDraft();
+    const draft: PublicationDraft = {
+      ...complete,
+      listing: { ...complete.listing, priceUsd: undefined },
+    };
+    const violations = violationsOf(draft);
+
+    expect(isDraftReadyForReview(draft, violations)).toBe(false);
+    expect(offersDiscardToReview(true, draft, violations)).toBe(false);
+  });
+});
+
+/**
+ * **El mapa de movil** (tasks.md 18.17, §12 de la especificacion de publicar).
+ *
+ * En 1280 el riel dibuja los nueve pasos y cada uno hecho es un enlace. En 360
+ * el riel no existe —no hay lugar— y lo unico que queda es la flecha de un
+ * paso atras: se sabe cuanto falta y no se puede hacer nada al respecto. Esto
+ * es lo que un telefono ofrece para saltar.
+ *
+ * **No hay una segunda regla de alcance.** Lo que el riel deja enlazar lo
+ * decide `isStepNavigable`; esto pregunta lo mismo y solo se saca a si mismo de
+ * la lista. Una copia que discrepe seria un mapa que ofrece un salto que la
+ * pagina del paso rechaza al aterrizar (AGENTS.md §7).
+ */
+describe("jumpableStepsFrom — el mapa que en movil reemplaza al riel", () => {
+  /** Los cuatro primeros contestados; los cinco ultimos no. */
+  function partwayDraft(): PublicationDraft {
+    const complete = completeDraft();
+    return {
+      listing: {
+        propertyType: complete.listing.propertyType,
+        cityId: complete.listing.cityId,
+        zoneId: complete.listing.zoneId,
+        priceUsd: complete.listing.priceUsd,
+        rooms: complete.listing.rooms,
+        bathrooms: complete.listing.bathrooms,
+        parkingSpots: complete.listing.parkingSpots,
+        areaM2: complete.listing.areaM2,
+      },
+      photos: [],
+    };
+  }
+
+  it("ofrece los pasos ya contestados que quedaron atras, que es el salto que en un telefono no existia", () => {
+    const draft = partwayDraft();
+
+    expect(jumpableStepsFrom("tamano", draft, violationsOf(draft))).toEqual(
+      expect.arrayContaining(["tipo", "zona", "precio"]),
+    );
+  });
+
+  /**
+   * **La otra mitad, y sola ninguna de las dos afirma la pregunta.** Un mapa
+   * que lista los nueve y falla al tocar es peor que uno que lista lo que
+   * funciona: la pagina del paso redirige por `isStepNavigable`, asi que el
+   * enlace aterrizaria en otro lado del que dijo (criterio de aceptacion 10).
+   */
+  it("no ofrece un paso sin contestar, que es el criterio 10 dibujado en el telefono", () => {
+    const draft = partwayDraft();
+    const violations = violationsOf(draft);
+
+    expect(isStepNavigable("quien", draft, violations)).toBe(false);
+    expect(jumpableStepsFrom("tamano", draft, violations)).not.toContain("quien");
+  });
+
+  /** Saltar a donde ya se esta no es un salto: seria un renglon que no lleva. */
+  it("no se ofrece a si mismo, aunque el paso abierto siempre sea navegable", () => {
+    const draft = partwayDraft();
+
+    expect(jumpableStepsFrom("tamano", draft, violationsOf(draft))).not.toContain("tamano");
+  });
+
+  /**
+   * **Fallar cerrado** (AGENTS.md §7). En el paso 1 recien abierto no hay
+   * ningun paso hecho, asi que no hay mapa: dibujar un desplegable vacio es
+   * ofrecer un control que no puede hacer nada.
+   */
+  it("en el paso 1 recien abierto no ofrece nada, y por eso la pantalla no dibuja el mapa", () => {
+    const draft: PublicationDraft = { listing: {}, photos: [] };
+
+    expect(jumpableStepsFrom("tipo", draft, violationsOf(draft))).toEqual([]);
+  });
+
+  /**
+   * **La anti-deriva.** El telefono y el escritorio contestan la misma
+   * pregunta: lo que el mapa ofrece es exactamente lo que el riel enlaza, menos
+   * el paso abierto. Si alguien escribe un segundo `if` para el telefono, esta
+   * es la que se pone roja.
+   */
+  it("ofrece exactamente lo que el riel enlaza, sin una segunda regla al lado", () => {
+    const draft = partwayDraft();
+    const violations = violationsOf(draft);
+
+    const delRiel = PUBLISH_STEP_ORDER.filter(
+      (step) => step !== "tamano" && isStepNavigable(step, draft, violations),
+    );
+
+    expect(jumpableStepsFrom("tamano", draft, violations)).toEqual(delRiel);
   });
 });

@@ -213,3 +213,57 @@ describe("parsePublisherListingFilter — falla cerrado", () => {
     expect(parsePublisherListingFilter("")).toBe("todos");
   });
 });
+
+/**
+ * tasks.md 18.20 — **quién ofrece «Editar», decidido acá y no en la fila.**
+ *
+ * `ListingEditPort` lee y reescribe con `status = 'active'` EN el `WHERE`, así
+ * que un borrador, un vencido y uno oculto no son editables por el camino de
+ * escritura. Dibujar el enlace igual sería ofrecer una puerta que el dominio
+ * cierra; escribir ese `if` en `app/mis-avisos/page.tsx` lo pondría fuera del
+ * piso del 90% (AGENTS.md §1).
+ */
+describe("buildPublisherListingBoard — qué avisos se pueden editar (18.20)", () => {
+  it("un aviso activo y uno que vence pronto ofrecen editar", () => {
+    const board = buildPublisherListingBoard([ACTIVE, EXPIRING], NOW);
+
+    expect(board.cards.map((card) => [card.id, card.editable])).toEqual([
+      ["vence-pronto", true],
+      ["activa", true],
+    ]);
+  });
+
+  /**
+   * Las tres negativas se afirman juntas y por separado del `true` de arriba:
+   * una afirmación que aceptara las dos respuestas no estaría preguntando
+   * nada. Un vencido vuelve por renovar, que es su propio ciclo; un oculto no
+   * puede volver por editar, que es el mismo agujero que el
+   * `WHERE status = 'active'` de `markExpired` cierra.
+   */
+  it("un borrador, uno vencido y uno oculto no ofrecen editar", () => {
+    const board = buildPublisherListingBoard([DRAFT, EXPIRED, HIDDEN], NOW);
+
+    expect(board.cards.map((card) => [card.id, card.editable])).toEqual([
+      ["borrador", false],
+      ["oculta", false],
+      ["vencida", false],
+    ]);
+  });
+
+  /**
+   * La misma fila que la base todavía llama `active` y el reloj ya venció. El
+   * `WHERE` del puerto la dejaría pasar, así que si esta pantalla se guiara
+   * por `status` ofrecería editar un aviso que ella misma acaba de dibujar
+   * como vencido. Se guía por el estado, que es el que mira la fecha
+   * (AGENTS.md §7).
+   */
+  it("una fila que la base todavía llama activa pero cuya fecha pasó no ofrece editar", () => {
+    const board = buildPublisherListingBoard(
+      [listing({ status: "active", photoCount: 2, expiresAt: new Date("2026-08-02T12:00:00Z") })],
+      NOW,
+    );
+
+    expect(board.cards[0]?.state).toBe("expired");
+    expect(board.cards[0]?.editable).toBe(false);
+  });
+});

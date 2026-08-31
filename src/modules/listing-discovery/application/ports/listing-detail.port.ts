@@ -25,6 +25,20 @@ export interface ListingDetail {
   /** La parroquia o el municipio, para desambiguar una zona homónima. */
   readonly zoneParentName: string | null;
   readonly zoneCategory: ZoneCategory | null;
+  /**
+   * El punto de referencia que escribio quien publica (tasks.md 18.7).
+   * `null` cuando no puso ninguna, que es lo normal.
+   *
+   * **Esta consulta es su UNICO lector, y eso es la garantia entera.** La seña
+   * es el campo que reemplaza a Google Places: no esta en `SearchCriteria`, ni
+   * en `SEARCH_QUERY_NAMES`, ni en la consulta facetada, ni en el sitemap, ni
+   * en `StructuredDataListing`. Ponerla en cualquiera de esos la convertiria
+   * en texto libre filtrable o indexable, que es justamente lo que se rechazo
+   * a Google Places para evitar: con la ubicacion como texto libre el filtro
+   * se vuelve infinito, los conteos por zona desaparecen y no hay pagina de
+   * zona que indexar.
+   */
+  readonly reference: string | null;
 
   readonly title: string;
   readonly description: string;

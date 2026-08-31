@@ -45,10 +45,10 @@ const stored: StoredDraft = {
     publisherType: "owner",
     contactMethod: "whatsapp",
     contactValue: "04125550134",
+    reference: "Al lado de la panaderia",
   },
   photos: [{ key: "publisher/a.webp", name: "Sala", bytes: 168_000 }],
   featuresDeclared: true,
-  reference: "Al lado de la panaderia",
   violations: ["description.tooShort"],
   raw: { priceUsd: "quinientos" },
 };
@@ -211,8 +211,12 @@ describe("tamano", () => {
         ...stored.listing,
         title: "á".repeat(MAX_TITLE_CHARACTERS),
         description: "á".repeat(MAX_DESCRIPTION_CHARACTERS),
+        // Mas larga que `MAX_REFERENCE_CHARACTERS` a proposito: la cookie
+        // tiene que sobrevivir a lo que alguien TECLEA, y el validador
+        // rechaza despues. Medir el peor caso con el valor ya recortado
+        // mediria una cookie que el navegador nunca ve.
+        reference: "á".repeat(200),
       },
-      reference: "á".repeat(200),
       photos: Array.from({ length: 6 }, (_, index) => ({
         // Las claves reales llevan el id del publicador y un uuid.
         key: `usr_${"0".repeat(24)}/incoming/${"0".repeat(36)}-${index}.webp`,

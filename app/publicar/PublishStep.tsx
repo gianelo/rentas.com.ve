@@ -1,19 +1,36 @@
 import { AppLink } from "@/../components/atoms/AppLink";
+import { measureOf } from "../../src/modules/listing-publication/domain/carried-value";
 import type {
   PublicationDraft,
   PublishStepId,
 } from "../../src/modules/listing-publication/domain/publication-steps";
 import {
+  characterCount,
+  MAX_REFERENCE_CHARACTERS,
   MAX_TITLE_CHARACTERS,
   MIN_DESCRIPTION_CHARACTERS,
   type PublishViolation,
 } from "../../src/modules/listing-publication/domain/publishable-listing";
+import {
+  LISTING_VIOLATION_FIELD,
+  type ListingField,
+} from "../../src/modules/listing-publication/domain/violation-field";
 import type { PublicationZoneOption } from "../../src/modules/listing-publication/domain/zone-search";
 import { submitStep } from "./actions";
+import { FieldError } from "./FieldError";
 import { PhotoUploader } from "./fotos/PhotoUploader";
 import styles from "./publish-steps.module.css";
-import { FEATURE_LABELS, STEP_COPY } from "./step-copy";
-import { PUBLISH_VIOLATION_COPY, type PublishField } from "./violation-copy";
+import {
+  DISCARD_CHANGE_LABEL,
+  FEATURE_LABELS,
+  STEP_COPY,
+  STEP_MAP_TRIGGER_LABEL,
+} from "./step-copy";
+import {
+  PUBLISH_VIOLATION_COPY,
+  PUBLISHER_TYPE_IMMUTABLE_LEAD,
+  PUBLISHER_TYPE_IMMUTABLE_STRESS,
+} from "./violation-copy";
 
 /**
  * Una pantalla del formulario de nueve pasos.
@@ -49,8 +66,25 @@ export interface PublishStepProps {
   /** Lo tecleado que no sobrevivio al parseo, para mostrarlo con su error. */
   readonly raw?: Readonly<Record<string, string>>;
   readonly rail: readonly RailEntry[];
+  /**
+   * Los pasos a los que ESTE paso puede saltar, para el mapa de movil (18.17).
+   *
+   * **Lo decide `jumpableStepsFrom`, no esta pantalla**, y llega como prop
+   * requerida a proposito: opcional dejaria que un renderer nuevo se olvidara
+   * de pasarla y el mapa desapareceria en silencio, que es exactamente la forma
+   * de defecto que este cambio ya encontro seis veces (AGENTS.md §1).
+   */
+  readonly jumpable: readonly PublishStepId[];
   readonly progress: number;
   readonly returningToReview: boolean;
+  /**
+   * Adonde lleva «Descartar el cambio», o `null` cuando este paso no lo ofrece.
+   *
+   * **La decision la toma `offersDiscardToReview`, no esta pantalla**: obligar a
+   * que llegue resuelto es lo que impide que un `if` de producto termine
+   * viviendo en un componente sin piso de cobertura (AGENTS.md §1).
+   */
+  readonly discardHref: string | null;
   readonly primaryLabel: string;
   readonly previousStep: PublishStepId | null;
   /** Resultados del buscador del paso 2 y lo que se escribio para buscarlos. */
@@ -60,38 +94,41 @@ export interface PublishStepProps {
 }
 
 function errorsByField(violations: readonly PublishViolation[], draft: PublicationDraft) {
-  const errors = new Map<PublishField, string>();
+  const errors = new Map<ListingField, string>();
   for (const violation of violations) {
-    const copy = PUBLISH_VIOLATION_COPY[violation];
-    if (errors.has(copy.field)) continue;
+    // A qué campo pertenece lo contesta el dominio (tasks.md 18.22); acá sólo
+    // se elige la frase. La pantalla de editar lee la MISMA tabla.
+    const field = LISTING_VIOLATION_FIELD[violation];
+    if (errors.has(field)) continue;
     errors.set(
-      copy.field,
-      copy.message({ description: draft.listing.description, title: draft.listing.title }),
+      field,
+      // **Medidas y no texto** (tasks.md 18.25): lo que el contador dibuja es
+      // un número, y es acá —donde el borrador recién guardado está a mano—
+      // donde se cuenta. `undefined` cuando el campo no se contestó, para que
+      // la frase no dibuje un cero que nadie escribió.
+      PUBLISH_VIOLATION_COPY[violation].message({
+        descriptionLength: measureOf(draft.listing.description),
+        titleLength: measureOf(draft.listing.title),
+      }),
     );
   }
   return errors;
 }
 
-/** El mensaje va ANTES del campo que lo produjo y se anuncia, no solo se dibuja. */
-function FieldError({ id, message }: { id: string; message: string | undefined }) {
-  if (!message) return null;
-  return (
-    <p className={styles.error} id={id}>
-      {message}
-    </p>
-  );
-}
-
 function characters(value: string | undefined): number {
   // Puntos de codigo, igual que el validador: con `String.length` el contador
   // de la pantalla le daria a un emoji el doble de lo que la regla le da.
-  return [...(value ?? "")].length;
+  return characterCount(value ?? "");
 }
 
 export function PublishStep(props: PublishStepProps) {
   const { stepId, draft, rail, progress, returningToReview, primaryLabel, previousStep } = props;
   const copy = STEP_COPY[stepId];
   const errors = errorsByField(props.violations, draft);
+
+  // El mapa reusa las mismas entradas del riel: el numero, el ✓ y el valor ya
+  // vienen resueltos, asi que el telefono no arma una segunda anatomia de fila.
+  const mapEntries = rail.filter((entry) => props.jumpable.includes(entry.id));
 
   const backHref = previousStep
     ? `/publicar/paso/${previousStep}${returningToReview ? "?volver=revisar" : ""}`
@@ -111,9 +148,43 @@ export function PublishStep(props: PublishStepProps) {
             <p className={styles.brand}>rentas.</p>
           )}
 
-          <span className={styles.counter}>
-            {copy.number} / {rail.length}
-          </span>
+          {/* **El mapa, que es lo que en 360 reemplaza al riel** (18.17). El
+              contador ya decia cuanto falta; abrirlo es lo que agrega poder
+              hacer algo al respecto, y no cuesta un renglon de alto porque la
+              hoja se dibuja ENCIMA de la pantalla, no dentro del flujo.
+
+              `<details>` y no un panel propio, el mismo mecanismo que el menu
+              ⋯ de las fotos: abre con un toque y con Enter sin una linea de
+              JavaScript, y adentro hay enlaces de verdad. Con el script
+              apagado funciona igual, que es el piso de §2.
+
+              Sin ningun salto posible NO se dibuja: un desplegable vacio es un
+              control que no puede hacer nada (AGENTS.md §7). */}
+          {mapEntries.length > 0 ? (
+            <details className={styles.map}>
+              <summary className={styles.mapTrigger} aria-label={STEP_MAP_TRIGGER_LABEL}>
+                {copy.number} / {rail.length}
+              </summary>
+              <ol className={styles.mapSheet}>
+                {mapEntries.map((entry) => (
+                  <li key={entry.id}>
+                    <AppLink className={styles.mapItem} href={`/publicar/paso/${entry.id}`}>
+                      <span className={styles.mapNumber} aria-hidden="true">
+                        {entry.done ? "✓" : entry.number}
+                      </span>
+                      {/* El valor y no el numero, igual que el riel: «Altamira»
+                          dice a donde se vuelve, «2» no dice nada. */}
+                      <span>{entry.summary ?? entry.label}</span>
+                    </AppLink>
+                  </li>
+                ))}
+              </ol>
+            </details>
+          ) : (
+            <span className={styles.counter}>
+              {copy.number} / {rail.length}
+            </span>
+          )}
 
           {/* Lo unico que dice que el borrador sobrevive. Sin esto nadie sabe
               si puede cerrar la pantalla. */}
@@ -156,6 +227,14 @@ export function PublishStep(props: PublishStepProps) {
               {backHref ? (
                 <AppLink className={styles.secondary} href={backHref}>
                   Atrás
+                </AppLink>
+              ) : null}
+              {/* Nivel neutro de la jerarquia de botones, la misma fila que
+                  "Atrás" — y un ENLACE, no un boton: no postea nada, porque
+                  descartar es irse antes de escribir. */}
+              {props.discardHref ? (
+                <AppLink className={styles.secondary} href={props.discardHref}>
+                  {DISCARD_CHANGE_LABEL}
                 </AppLink>
               ) : null}
             </div>
@@ -263,7 +342,7 @@ function ZoneSearch({ query }: { query: string | undefined }) {
 }
 
 interface FieldsProps extends PublishStepProps {
-  readonly errors: Map<PublishField, string>;
+  readonly errors: Map<ListingField, string>;
 }
 
 function StepFields(props: FieldsProps) {
@@ -361,6 +440,11 @@ function StepFields(props: FieldsProps) {
           </p>
 
           <div>
+            {/* La seña tiene su propia negativa desde la 18.7, y por eso su
+                propio `FieldError`: el de arriba pertenece a la zona, y un
+                mensaje de zona colgado de este campo diría que la seña está
+                mal. Dos controles en un paso son dos anuncios. */}
+            <FieldError id="reference-error" message={errors.get("reference")} />
             <label className={styles.label} htmlFor="reference">
               Referencia
             </label>
@@ -368,9 +452,15 @@ function StepFields(props: FieldsProps) {
               id="reference"
               name="reference"
               type="text"
-              className={styles.control}
-              defaultValue={props.draft.reference ?? ""}
+              className={`${styles.control} ${errors.get("reference") ? styles.controlInvalid : ""}`}
+              defaultValue={listing.reference ?? ""}
               placeholder="Frente a la plaza"
+              // El doble del tope, igual que el título: el navegador frena el
+              // pegado accidental y la regla la sigue diciendo el servidor,
+              // que es el único lado que la importación también atraviesa.
+              maxLength={MAX_REFERENCE_CHARACTERS * 2}
+              aria-invalid={errors.get("reference") ? "true" : undefined}
+              aria-describedby={errors.get("reference") ? "reference-error" : undefined}
             />
             <p className={styles.help}>Opcional. No se publica la dirección.</p>
           </div>
@@ -581,7 +671,8 @@ function StepFields(props: FieldsProps) {
           {/* La advertencia va ANTES, no despues de publicar. Declararlo mal
               es motivo de baja, y nadie puede corregirlo despues. */}
           <p className={styles.warning}>
-            Aparece siempre en tu aviso y <strong>no se puede cambiar después</strong>.
+            {PUBLISHER_TYPE_IMMUTABLE_LEAD}
+            <strong>{PUBLISHER_TYPE_IMMUTABLE_STRESS}</strong>.
           </p>
 
           <fieldset className={styles.choices}>

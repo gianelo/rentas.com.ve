@@ -4,12 +4,21 @@ import { useId, useState } from "react";
 import { MAX_PHOTOS_PER_LISTING } from "../../src/modules/listing-publication/domain/publishable-listing";
 import { SUPPORTED_PHOTO_CONTENT_TYPES } from "../../src/modules/listing-publication/domain/uploaded-photo";
 import { computeResize, UPLOAD_CONTENT_TYPE, UPLOAD_QUALITY } from "../publicar/fotos/compress";
-import { adjuntarFotoAlBorrador, pedirDestinoDeFoto } from "./actions";
+import type { DestinoDeFoto } from "./actions";
 import styles from "./mis-avisos.module.css";
 
 /**
- * tasks.md 9.28 — «Subir fotos» de la lámina 14d, sobre un borrador que ya
+ * tasks.md 9.28 — «Subir fotos» de la lámina 14d, sobre un aviso que ya
  * existe.
+ *
+ * **Un solo mecanismo para los dos sujetos** (tasks.md 18.21). El borrador
+ * importado y el aviso publicado se fotografían igual —comprimir, firmar,
+ * subir, adjuntar— y lo único que cambia es la puerta del servidor:
+ * `findDraftById` de un lado, `findEditableById` del otro. Así que las dos
+ * acciones llegan por props en vez de estar importadas acá: un segundo
+ * componente que repitiera esta secuencia sería la segunda manera de subir
+ * una foto, y dos maneras de hacer una cosa es como un producto empieza a
+ * contradecirse.
  *
  * **Por qué éste puede tener JavaScript.** AGENTS.md §2 exime a `/mis-avisos`
  * y a la importación del piso de la ruta de lectura, y la exención tiene un
@@ -54,12 +63,29 @@ async function comprimir(file: File): Promise<Blob> {
   return blob;
 }
 
-export function FotosDelBorrador({
+export function SubirFoto({
   listingId,
   photoCount,
+  firmar,
+  adjuntar,
+  exito,
 }: {
   readonly listingId: string;
   readonly photoCount: number;
+  /** Paso 1: el permiso de escritura, acotado al sujeto por el servidor. */
+  readonly firmar: (input: {
+    readonly listingId: string;
+    readonly contentType: string;
+    readonly byteLength: number;
+  }) => Promise<DestinoDeFoto>;
+  /** Paso 2: adjuntar. Las dos pasan por `processUploadedPhoto` río abajo. */
+  readonly adjuntar: (input: {
+    readonly listingId: string;
+    readonly key: string;
+    readonly contentType: string;
+  }) => Promise<unknown>;
+  /** Qué se dice cuando llegó: lo que sigue no es lo mismo en los dos sujetos. */
+  readonly exito: string;
 }) {
   const inputId = useId();
   const [estado, setEstado] = useState<Estado>("listo");
@@ -72,7 +98,7 @@ export function FotosDelBorrador({
       const blob = await comprimir(file);
 
       setEstado("subiendo");
-      const destino = await pedirDestinoDeFoto({
+      const destino = await firmar({
         listingId,
         contentType: UPLOAD_CONTENT_TYPE,
         byteLength: blob.size,
@@ -87,16 +113,16 @@ export function FotosDelBorrador({
       });
       if (!respuesta.ok) throw new Error(String(respuesta.status));
 
-      // El único camino: `attachPhotoToDraft` pasa por `processUploadedPhoto`,
+      // El único camino: las dos acciones pasan por `processUploadedPhoto`,
       // que es donde vive el rechazo de foto duplicada entre cuentas (4.7).
-      await adjuntarFotoAlBorrador({
+      await adjuntar({
         listingId,
         key: destino.key,
         contentType: UPLOAD_CONTENT_TYPE,
       });
 
       setEstado("hecho");
-      setMensaje("Foto subida. Ya podés activar el aviso.");
+      setMensaje(exito);
     } catch {
       setEstado("fallo");
       setMensaje("✱ No pudimos subir esta foto. Probá de nuevo.");

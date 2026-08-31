@@ -244,6 +244,43 @@ describe("publishListing", () => {
     expect(dependencies.listings.saved[0]?.bathrooms).toBe(2);
   });
 
+  /**
+   * tasks.md 18.7 — **la referencia llega hasta la fila o no llega a ninguna
+   * parte.** Vivio en el formulario y en la cookie desde la 18.16 sin columna
+   * donde aterrizar, asi que quien la escribia la veia en revisar y despues
+   * desaparecia al publicar. Es la forma de defecto que este cambio ya
+   * encontro seis veces: una pieza construida sin llamador.
+   */
+  it("guarda la referencia que el paso 2 escribio, tal como se tecleo", async () => {
+    const dependencies = deps();
+
+    await publishListing(
+      request({ reference: "Al lado de la panadería, edificio azul" }),
+      dependencies,
+    );
+
+    expect(dependencies.listings.saved[0]?.reference).toBe(
+      "Al lado de la panadería, edificio azul",
+    );
+  });
+
+  /**
+   * **El par de la anterior, y existe porque una sola afirmacion aceptaria las
+   * dos respuestas.** Una referencia vacia y una ausente son la misma cosa
+   * —"no puso ninguna"— y tienen que llegar a la fila como lo mismo: guardar
+   * `""` haria que la ficha dibujara una linea en blanco debajo de la
+   * ubicacion, que es una afirmacion vacia donde corresponde silencio.
+   */
+  it("un borrador sin referencia, o con una en blanco, no guarda una cadena vacia", async () => {
+    const sinNinguna = deps();
+    await publishListing(request(), sinNinguna);
+    expect(sinNinguna.listings.saved[0]?.reference).toBeUndefined();
+
+    const enBlanco = deps();
+    await publishListing(request({ reference: "   " }), enBlanco);
+    expect(enBlanco.listings.saved[0]?.reference).toBeUndefined();
+  });
+
   it("expires the listing 30 days after publication", async () => {
     const dependencies = deps();
 

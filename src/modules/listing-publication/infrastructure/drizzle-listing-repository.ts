@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, count, eq } from "drizzle-orm";
+import { and, asc, count, eq, gt, lt, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import {
@@ -13,13 +13,22 @@ import type {
   DraftForActivation,
   ListingActivationPort,
 } from "../application/ports/listing-activation.port";
+import type { EditableListing, ListingEditPort } from "../application/ports/listing-edit.port";
 import type { ListingPhotoAttachmentPort } from "../application/ports/listing-photo-attachment.port";
+import type {
+  ListingPhotoDetachmentPort,
+  ListingPhotoOrderPort,
+  ListingPhotoThumbnail,
+  ListingPhotoThumbnailPort,
+} from "../application/ports/listing-photo-set.port";
 import type {
   ListingRepositoryPort,
   NewListing,
   NewListingPhoto,
 } from "../application/ports/listing-repository.port";
+import type { DerivativeName } from "../application/ports/photo-derivation.port";
 import type { ZoneCataloguePort } from "../application/ports/zone-catalogue.port";
+import type { ListingEditWrite } from "../domain/listing-edit";
 import type { CuratedZone } from "../domain/publishable-listing";
 
 /**
@@ -80,6 +89,12 @@ export class DrizzleListingRepository implements ListingRepositoryPort {
         propertyType: listing.propertyType,
         cityId: listing.cityId,
         zoneId: listing.zoneId,
+        // tasks.md 18.7. `?? null` explicito por el mismo motivo que
+        // `externalReference` doce lineas mas abajo: omitirlo dejaria la
+        // columna en su default —tambien `NULL`— y este sitio dejaria de
+        // decir en voz alta que "sin referencia" es una respuesta y no un
+        // olvido del llamador.
+        reference: listing.reference ?? null,
         title: listing.title,
         description: listing.description,
         priceUsd: listing.priceUsd,
@@ -252,6 +267,221 @@ export class DrizzleListingActivation implements ListingActivationPort, ListingP
     });
 
     return { photoId };
+  }
+}
+
+/**
+ * tasks.md 18.14 — editar un aviso YA PUBLICADO.
+ *
+ * **Los dos guardas van EN el `WHERE`, en la lectura y en la escritura.** Un
+ * filtro en TypeScript sobre `id = $1` habría dejado la escritura sin
+ * protección: entre leer y actualizar, un aviso puede vencer o quedar oculto
+ * por reportes, y son justo los dos estados que una edición no debe poder
+ * volver a encender.
+ */
+export class DrizzleListingEdit implements ListingEditPort {
+  constructor(private readonly db: PublicationDatabase) {}
+
+  async findEditableById(listingId: string, publisherId: string): Promise<EditableListing | null> {
+    const rows = await this.db
+      .select({
+        id: listings.id,
+        publisherId: listings.publisherId,
+        publisherType: listings.publisherType,
+        propertyType: listings.propertyType,
+        cityId: listings.cityId,
+        zoneId: listings.zoneId,
+        title: listings.title,
+        description: listings.description,
+        priceUsd: listings.priceUsd,
+        rooms: listings.rooms,
+        areaM2: listings.areaM2,
+        bathrooms: listings.bathrooms,
+        parkingSpots: listings.parkingSpots,
+        contactMethod: listings.contactMethod,
+        contactValue: listings.contactValue,
+      })
+      .from(listings)
+      .where(
+        and(
+          eq(listings.id, listingId),
+          eq(listings.publisherId, publisherId),
+          eq(listings.status, "active"),
+        ),
+      )
+      .limit(1);
+
+    const row = rows[0];
+    if (!row) return null;
+
+    // Contadas, nunca declaradas por el pedido: es el mismo numero que el
+    // validador usa para el piso y el tope de fotos.
+    const photoCountRows = await this.db
+      .select({ photoCount: count() })
+      .from(listingPhotos)
+      .where(eq(listingPhotos.listingId, listingId));
+
+    return { ...row, photoCount: photoCountRows[0]?.photoCount ?? 0 };
+  }
+
+  /**
+   * `status` NO esta entre las columnas del `set`, y esa ausencia es la
+   * garantia: editar no puede resucitar nada. Lo que si esta en el `WHERE` es
+   * `status = 'active'`, el mismo compare-and-swap que `activate` y `renew`.
+   */
+  async applyEdit(
+    listingId: string,
+    publisherId: string,
+    write: ListingEditWrite,
+  ): Promise<boolean> {
+    const updated = await this.db
+      .update(listings)
+      .set({
+        title: write.title,
+        description: write.description,
+        priceUsd: write.priceUsd,
+        rooms: write.rooms,
+        bathrooms: write.bathrooms,
+        areaM2: write.areaM2,
+        contactMethod: write.contactMethod,
+        contactValue: write.contactValue,
+      })
+      .where(
+        and(
+          eq(listings.id, listingId),
+          eq(listings.publisherId, publisherId),
+          eq(listings.status, "active"),
+        ),
+      )
+      .returning({ id: listings.id });
+
+    return updated.length > 0;
+  }
+}
+
+/**
+ * El tamaño que un renglón de foto dibuja (tasks.md 18.26). Nombrado y no
+ * escrito adentro de la consulta: `DerivativeName` es la unión que
+ * `photo-derivation.port.ts` declara, así que un tamaño que dejara de
+ * existir rompe acá al compilar en vez de devolver cero filas en producción.
+ */
+const THUMBNAIL_DERIVATIVE: DerivativeName = "thumb";
+
+/**
+ * tasks.md 18.21 — el orden de las fotos de un aviso, y quitar una.
+ *
+ * **Una clase al lado de `DrizzleListingActivation`, que es la que adjunta.**
+ * Adjuntar escribe una fila sobre un aviso que ya existe y no necesita saber
+ * nada del resto; quitar tiene que tocar TODAS las que quedan. Plegar las dos
+ * en una sola le pondría al adjuntar una capacidad de borrado que nunca pidió
+ * (AGENTS.md §3).
+ */
+export class DrizzleListingPhotoSet
+  implements ListingPhotoOrderPort, ListingPhotoThumbnailPort, ListingPhotoDetachmentPort
+{
+  constructor(private readonly db: PublicationDatabase) {}
+
+  /**
+   * `ORDER BY position`, nunca el orden en que la tabla devuelve las filas: la
+   * portada es la de `position` más baja y una consulta sin orden explícito la
+   * elegiría por dónde quedó en el disco.
+   */
+  async listPhotoIdsInOrder(listingId: string): Promise<readonly string[]> {
+    const rows = await this.db
+      .select({ id: listingPhotos.id })
+      .from(listingPhotos)
+      .where(eq(listingPhotos.listingId, listingId))
+      .orderBy(asc(listingPhotos.position));
+
+    return rows.map((row) => row.id);
+  }
+
+  /**
+   * tasks.md 18.26 — la misma lista, con la clave de R2 de cada miniatura.
+   *
+   * **`leftJoin` y no `innerJoin`, y la diferencia no es de estilo.** El
+   * `innerJoin` que la cuadrícula usa puede permitírselo: un aviso sin
+   * derivadas simplemente no se muestra en la lista de resultados. Acá el
+   * renglón es el ÚNICO camino para quitar una foto, así que dejar afuera a la
+   * que no tiene derivadas produciría una fila de `listing_photo` que el aviso
+   * sigue mostrando y su dueño ya no puede sacar — un fallo abierto justo
+   * donde AGENTS.md §7 pide el cerrado. Vuelve con `thumbKey` en `null` y
+   * quien dibuja decide.
+   *
+   * **`name = 'thumb'` va en el `ON`, no en el `WHERE`.** En el `WHERE`
+   * convertiría el `leftJoin` en un `innerJoin` de hecho: la fila sin derivada
+   * trae `name` nulo, y `null = 'thumb'` no es verdadero, así que la foto que
+   * este método existe para conservar sería la primera en desaparecer.
+   *
+   * `ORDER BY position`, como su hermana: la portada es la de `position` más
+   * baja, y una consulta sin orden explícito la elegiría por dónde quedó en el
+   * disco.
+   */
+  async listPhotoThumbnailsInOrder(listingId: string): Promise<readonly ListingPhotoThumbnail[]> {
+    const rows = await this.db
+      .select({ photoId: listingPhotos.id, thumbKey: listingPhotoDerivatives.key })
+      .from(listingPhotos)
+      .leftJoin(
+        listingPhotoDerivatives,
+        and(
+          eq(listingPhotoDerivatives.photoId, listingPhotos.id),
+          eq(listingPhotoDerivatives.name, THUMBNAIL_DERIVATIVE),
+        ),
+      )
+      .where(eq(listingPhotos.listingId, listingId))
+      .orderBy(asc(listingPhotos.position));
+
+    return rows.map((row) => ({ photoId: row.photoId, thumbKey: row.thumbKey }));
+  }
+
+  /**
+   * Borrar y renumerar, **en una transacción y en tres sentencias de
+   * conjunto** — nunca leyendo las filas para reescribirlas una por una, que
+   * es la forma con ventana que este repositorio ya evita en el uso único del
+   * token de renovación.
+   *
+   * **Por qué el rodeo por los negativos en vez de un simple
+   * `position = position - 1`.** `listing_photo_position_unique` no es
+   * `DEFERRABLE`, así que Postgres lo comprueba fila por fila DENTRO de la
+   * sentencia: `UPDATE ... SET position = position + 1` sobre `{0,1,2}` falla
+   * con `duplicate key`, medido contra este mismo contenedor. Restar uno
+   * sobrevive sólo si el plan visita las filas de menor a mayor, y ningún
+   * `UPDATE` promete un orden de visita. El rodeo no depende de ninguno:
+   * `k → -k-1` manda cada fila a un rango que ninguna otra ocupa, y
+   * `-k-1 → k-1` la trae de vuelta a un rango que ya quedó vacío. Ninguno de
+   * los dos pasos puede chocar consigo mismo bajo ningún orden.
+   *
+   * Renumerar es también lo que hace verdadero en la base el «quitar la
+   * portada asciende a la siguiente» que `planPhotoRemoval` decide en memoria:
+   * la portada es la de `position` más baja.
+   *
+   * **El objeto de R2 no se toca** (tasks.md 18.21/18.23): sus derivadas viven
+   * bajo el prefijo promovido, junto a las fotos de todos los avisos activos,
+   * así que sólo son distinguibles por la ausencia de esta fila. Borrarlas
+   * pediría permiso de borrado sobre el bucket.
+   */
+  async detachPhoto(listingId: string, photoId: string): Promise<boolean> {
+    return this.db.transaction(async (tx) => {
+      const removed = await tx
+        .delete(listingPhotos)
+        .where(and(eq(listingPhotos.listingId, listingId), eq(listingPhotos.id, photoId)))
+        .returning({ position: listingPhotos.position });
+
+      const gap = removed[0]?.position;
+      if (gap === undefined) return false;
+
+      await tx
+        .update(listingPhotos)
+        .set({ position: sql`-${listingPhotos.position} - 1` })
+        .where(and(eq(listingPhotos.listingId, listingId), gt(listingPhotos.position, gap)));
+
+      await tx
+        .update(listingPhotos)
+        .set({ position: sql`-${listingPhotos.position} - 2` })
+        .where(and(eq(listingPhotos.listingId, listingId), lt(listingPhotos.position, 0)));
+
+      return true;
+    });
   }
 }
 

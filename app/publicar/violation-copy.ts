@@ -1,6 +1,8 @@
+import type { ListingEditViolation } from "../../src/modules/listing-publication/domain/listing-edit";
 import {
   MAX_DESCRIPTION_CHARACTERS,
   MAX_PHOTOS_PER_LISTING,
+  MAX_REFERENCE_CHARACTERS,
   MAX_TITLE_CHARACTERS,
   MIN_DESCRIPTION_CHARACTERS,
   type PublishViolation,
@@ -25,156 +27,148 @@ import {
  * **The message names the offending value where it has one.** "Mínimo 120
  * caracteres" alone makes someone count; "Vas 24" tells them how far they
  * are. The design writes the second version.
+ *
+ * **A qué campo pertenece cada código ya no vive acá** (tasks.md 18.22). Esta
+ * tabla lleva el español y nada más; el campo lo contesta
+ * `LISTING_VIOLATION_FIELD`, en el dominio y bajo el piso del 90 %, porque
+ * decide dónde se lee el mensaje y no cómo suena. Dos listas del mismo dato es
+ * como una pantalla termina poniendo el mensaje de `zoneId` debajo de la ciudad.
  */
 
-export type PublishField =
-  | "publisherType"
-  | "propertyType"
-  | "title"
-  | "description"
-  | "priceUsd"
-  | "cityId"
-  | "zoneId"
-  | "rooms"
-  | "areaM2"
-  | "bathrooms"
-  | "parkingSpots"
-  | "photos"
-  | "contactMethod"
-  | "contactValue";
-
+/**
+ * **Medidas, nunca el texto** (tasks.md 18.25).
+ *
+ * El «Vas 24» del diseño necesita el largo de lo que se acaba de escribir, y
+ * las dos pantallas que lo dicen se niegan por redirección: sin JavaScript, lo
+ * único que vuelve es lo que quepa en una dirección — y una descripción de
+ * 1.200 caracteres no cabe (18.19). Así que lo que llega hasta acá es el
+ * número, medido donde se escribió.
+ *
+ * **Que el texto ya no quepa en esta interfaz es la garantía, no un detalle.**
+ * La pantalla de editar recibía sólo `aviso.title` y el contador decía «Vas 0»
+ * sobre una descripción de 24 caracteres; la corrección obvia —pasarle
+ * `aviso.description`— habría dicho el largo de la que está guardada, que
+ * tampoco es la que se rechazó. Con el campo borrado, ninguna de las dos se
+ * puede escribir por accidente: es la misma forma que el estado de contacto
+ * bloqueado, que no tiene propiedad `value` para no poder filtrarla
+ * (AGENTS.md §7).
+ */
 export interface PublishCopyContext {
-  /** The submitted description, so the counter reports what was written. */
-  readonly description?: string;
-  /** Pre-counted alternative, for callers that already measured. */
+  /** Puntos de codigo de la descripcion enviada, contados donde se envio. */
   readonly descriptionLength?: number;
-  /** El titulo enviado, por el mismo motivo: el paso 6 tambien cuenta. */
-  readonly title?: string;
+  /** Lo mismo para el titulo: el paso 6 tambien cuenta. */
+  readonly titleLength?: number;
 }
 
 export interface ViolationCopy {
-  readonly field: PublishField;
   readonly message: (context: PublishCopyContext) => string;
 }
 
 const REQUIRED = "✱ obligatorio";
 
 /**
- * Code points, matching `validatePublishableListing` exactly. Using
- * `String.length` here would count an emoji twice, so the counter would
- * credit a publisher with more characters than the rule does — and the form
- * would reject a description its own counter called long enough.
+ * El contador, o el silencio.
+ *
+ * **Un numero ausente es preferible a uno inventado.** Sin medida la frase
+ * dice el limite y nada mas: es la misma decision que `import-copy.ts` tomo
+ * cuando la fila no viaja hasta la copia, y la razon es que un contador que
+ * miente manda a alguien a borrar caracteres que ya escribio.
  */
-function countCharacters(context: PublishCopyContext): number {
-  if (context.descriptionLength !== undefined) return context.descriptionLength;
-  return [...(context.description ?? "")].length;
-}
-
-/** Puntos de codigo, igual que el validador y por la misma razon. */
-function countTitleCharacters(context: PublishCopyContext): number {
-  return [...(context.title ?? "")].length;
+function counted(measure: number | undefined): string {
+  return measure === undefined ? "" : ` Vas ${measure}.`;
 }
 
 export const PUBLISH_VIOLATION_COPY: Record<PublishViolation, ViolationCopy> = {
   // The design's help text says this cannot be changed after publishing, so
   // the error explains the choice rather than nagging about an empty field.
   "publisherType.required": {
-    field: "publisherType",
     message: () => `${REQUIRED}. Elegí si publicás como dueño o como inmobiliaria.`,
   },
   "publisherType.invalid": {
-    field: "publisherType",
     message: () => "Elegí una de las dos opciones: dueño o inmobiliaria.",
   },
   "propertyType.required": {
-    field: "propertyType",
     message: () => "Decinos qué vas a alquilar.",
   },
   "propertyType.invalid": {
-    field: "propertyType",
     message: () => "Elegí una de las cinco opciones de la lista.",
   },
   "title.required": {
-    field: "title",
     message: () => `${REQUIRED}. Escribí un título, como lo dirías vos.`,
   },
   // Se dice cuanto sobra, no "acortalo". El paso 6 ya dibuja "37 / 90"
   // mientras se escribe, asi que el mensaje no puede ser menos preciso que el
   // contador que lo acompana.
   "title.tooLong": {
-    field: "title",
     message: (context) =>
-      `Máximo ${MAX_TITLE_CHARACTERS} caracteres. Vas ${countTitleCharacters(context)}.`,
+      `Máximo ${MAX_TITLE_CHARACTERS} caracteres.${counted(context.titleLength)}`,
   },
   "description.required": {
-    field: "description",
     message: () => `${REQUIRED}. Contá cómo es el inmueble.`,
   },
   "description.tooShort": {
-    field: "description",
     message: (context) =>
-      `✱ Mínimo ${MIN_DESCRIPTION_CHARACTERS} caracteres. Vas ${countCharacters(context)}.`,
+      `✱ Mínimo ${MIN_DESCRIPTION_CHARACTERS} caracteres.${counted(context.descriptionLength)}`,
   },
   // The publisher is not told to "shorten it" without knowing by how much,
   // for the same reason the minimum reports how far along they are.
   "description.tooLong": {
-    field: "description",
     message: (context) =>
-      `Máximo ${MAX_DESCRIPTION_CHARACTERS} caracteres. Vas ${countCharacters(context)}.`,
+      `Máximo ${MAX_DESCRIPTION_CHARACTERS} caracteres.${counted(context.descriptionLength)}`,
   },
   "priceUsd.required": {
-    field: "priceUsd",
     message: () => `${REQUIRED}. Poné el alquiler mensual en dólares.`,
   },
   // "solo el número": no currency selector exists, so the error must not
   // suggest one is missing.
   "priceUsd.invalid": {
-    field: "priceUsd",
     message: () => "Solo el número, en dólares y sin centavos. Por ejemplo: 520.",
   },
   "cityId.required": {
-    field: "cityId",
     message: () => `${REQUIRED}. Elegí la ciudad.`,
   },
   "cityId.unknown": {
-    field: "cityId",
     message: () => "Por ahora publicamos en Distrito Capital y Maracaibo.",
   },
   "zoneId.required": {
-    field: "zoneId",
     message: () => `${REQUIRED}. Elegí la zona.`,
   },
   // The publisher did nothing wrong here — a stale city/zone pair is what the
   // browser posts when the city changes without the zone. Blaming them for it
   // would be blaming them for the form's own behaviour.
   "zoneId.notInCity": {
-    field: "zoneId",
     message: () => "Esa zona no pertenece a la ciudad elegida. Elegí una de la lista.",
   },
+  // **Sin medida, y es una decision y no un olvido.** El paso 6 dibuja
+  // "37 / 90" mientras se escribe, asi que `title.tooLong` cuenta; el paso 2
+  // no dibuja ningun contador junto a la referencia, y prometer un numero que
+  // la pantalla no muestra es inventarle un contador a quien lee la negativa.
+  //
+  // La segunda oracion existe porque el tope es lo que separa una sena de una
+  // descripcion, y la ficha ya tiene una descripcion. Decir solo "maximo 120"
+  // deja a alguien recortando sin saber que estaba escribiendo de mas.
+  "reference.tooLong": {
+    message: () =>
+      `Máximo ${MAX_REFERENCE_CHARACTERS} caracteres para la referencia. Es una seña, no una segunda descripción.`,
+  },
   "rooms.required": {
-    field: "rooms",
     message: () => `${REQUIRED}. ¿Cuántas habitaciones tiene?`,
   },
   // A studio is one room, not zero — the validator refuses zero, so the copy
   // has to say what to put instead rather than leaving someone stuck.
   "rooms.invalid": {
-    field: "rooms",
     message: () => "Un número entero de habitaciones. Un estudio cuenta como 1.",
   },
   "areaM2.required": {
-    field: "areaM2",
     message: () => `${REQUIRED}. ¿Cuántos metros cuadrados tiene?`,
   },
   "areaM2.invalid": {
-    field: "areaM2",
     message: () => "Los metros cuadrados, en números enteros. Por ejemplo: 78.",
   },
   "bathrooms.required": {
-    field: "bathrooms",
     message: () => `${REQUIRED}. ¿Cuántos baños tiene?`,
   },
   "bathrooms.invalid": {
-    field: "bathrooms",
     message: () => "Un número entero de baños. Contá el de servicio si lo tiene.",
   },
   // No `parkingSpots.required` exists, and that is deliberate: the field is
@@ -182,36 +176,29 @@ export const PUBLISH_VIOLATION_COPY: Record<PublishViolation, ViolationCopy> = {
   // something that is not a whole number -- so it says what shape to use and
   // names zero as a real answer rather than a way to skip the question.
   "parkingSpots.invalid": {
-    field: "parkingSpots",
     message: () => "Un número entero. Si no tiene, poné 0.",
   },
   // The reveal button's whole purpose. A listing without a contact is a dead
   // end wearing a button.
   "contactMethod.required": {
-    field: "contactMethod",
     message: () => `${REQUIRED}. ¿Por dónde querés que te escriban?`,
   },
   "contactMethod.invalid": {
-    field: "contactMethod",
     message: () => "Elegí WhatsApp, teléfono o correo.",
   },
   "contactValue.required": {
-    field: "contactValue",
     message: () => `${REQUIRED}. Poné el dato por el que te contactan.`,
   },
   // Shape, not verification: nothing here proves the line rings. It catches
   // the typo while the publisher is still on the form, which is the only
   // moment it is cheap to fix.
   "contactValue.invalid": {
-    field: "contactValue",
     message: () => "Revisá el dato: un correo lleva @, y un teléfono solo números.",
   },
   "photos.required": {
-    field: "photos",
     message: () => `${REQUIRED}. Subí al menos una foto en el paso 2.`,
   },
   "photos.tooMany": {
-    field: "photos",
     message: () => `Hasta ${MAX_PHOTOS_PER_LISTING} fotos por aviso. Elegí las mejores.`,
   },
 };
@@ -221,4 +208,46 @@ export function publishViolationMessage(
   context: PublishCopyContext,
 ): string {
   return PUBLISH_VIOLATION_COPY[violation].message(context);
+}
+
+/**
+ * La promesa del paso 9, escrita UNA vez (tasks.md 18.20).
+ *
+ * La lámina de Publicar destaca la segunda mitad en negrita, así que su
+ * marcado no se puede reusar tal cual; las palabras sí, y son las que
+ * importan. La pantalla de editar dice la frase entera donde debería haber
+ * estado el campo, y la negativa del dominio la repite: dos literales de la
+ * misma promesa es como una pantalla termina prometiendo algo que la otra no
+ * cumple.
+ */
+export const PUBLISHER_TYPE_IMMUTABLE_LEAD = "Aparece siempre en tu aviso y ";
+export const PUBLISHER_TYPE_IMMUTABLE_STRESS = "no se puede cambiar después";
+export const PUBLISHER_TYPE_IMMUTABLE_NOTICE = `${PUBLISHER_TYPE_IMMUTABLE_LEAD}${PUBLISHER_TYPE_IMMUTABLE_STRESS}.`;
+
+/**
+ * El español de una edición: la MISMA tabla de arriba para los códigos
+ * compartidos, más el único que es propio de este camino.
+ *
+ * **Delegar y no copiar** es lo que hace que «Vas 24» siga diciendo 24 al
+ * editar. Una segunda tabla al lado de ésta —y al lado de `CHANGE_FIELD_LABEL`,
+ * que ya es la única lista de nombres de campo del repositorio— sería la que
+ * después nadie mantiene.
+ */
+export function listingEditViolationMessage(
+  violation: ListingEditViolation | string,
+  context: PublishCopyContext,
+): string {
+  if (violation === "publisherType.immutable") {
+    return `Quién publica se declara una vez. ${PUBLISHER_TYPE_IMMUTABLE_NOTICE}`;
+  }
+
+  // **`string` y no la unión, y el `??` no es un descuido.** Los códigos vuelven
+  // por la URL porque sin JavaScript no hay otro lugar donde devolverle la
+  // negativa a la pantalla, así que una dirección escrita a mano es dato de
+  // afuera: indexar la tabla con lo que traiga daría `undefined.message`, o sea
+  // un 500 donde correspondía una frase. Vuelve el código —el mismo
+  // `?? reason` de `importRowReasonText`— y la garantía de que ningún código
+  // REAL se quede sin copia la sigue dando el `Record` sobre la unión, que no
+  // compila si el dominio agrega uno.
+  return PUBLISH_VIOLATION_COPY[violation as PublishViolation]?.message(context) ?? violation;
 }

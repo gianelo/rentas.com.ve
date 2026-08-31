@@ -1,12 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
   MAX_DESCRIPTION_CHARACTERS,
+  MAX_REFERENCE_CHARACTERS,
   MAX_TITLE_CHARACTERS,
   MIN_DESCRIPTION_CHARACTERS,
   type PublishViolation,
   validatePublishableListing,
 } from "../../src/modules/listing-publication/domain/publishable-listing";
-import { PUBLISH_VIOLATION_COPY, publishViolationMessage } from "./violation-copy";
+import {
+  listingEditViolationMessage,
+  PUBLISH_VIOLATION_COPY,
+  PUBLISHER_TYPE_IMMUTABLE_NOTICE,
+  publishViolationMessage,
+} from "./violation-copy";
 
 /**
  * The Spanish the publisher actually reads, mapped from the domain's stable
@@ -64,6 +70,10 @@ const EVERY_VIOLATION: readonly PublishViolation[] = [
   // Y un septimo para el tope de 90 del titulo, por el mismo motivo que el de
   // la descripcion: un titulo no puede estar vacio y pasarse a la vez.
   ...validatePublishableListing({ title: "t".repeat(MAX_TITLE_CHARACTERS + 1) }, []),
+  // Y un octavo para el tope de la referencia (18.7). Mismo motivo otra vez:
+  // la referencia es opcional, asi que no hay borrador que la omita y se pase
+  // a la vez, y alcanzar el codigo cuesta su propia fixture.
+  ...validatePublishableListing({ reference: "r".repeat(MAX_REFERENCE_CHARACTERS + 1) }, []),
 ];
 
 describe("publish violation copy", () => {
@@ -91,7 +101,8 @@ describe("publish violation copy", () => {
     // los dos del codigo, asi que una regla BORRADA del dominio vaciaria una
     // y haria coincidir la otra. Esta linea es la que nota que falta una.
     // 28, up from 27 cuando el paso 6 trajo el tope de 90 del titulo.
-    expect(reachable).toHaveLength(28);
+    // 29, up from 28 cuando el paso 2 trajo el tope de la referencia (18.7).
+    expect(reachable).toHaveLength(29);
   });
 
   it("gives every code a real sentence, not a placeholder", () => {
@@ -105,10 +116,25 @@ describe("publish violation copy", () => {
     }
   });
 
-  it("names the field each code belongs to, so the message lands under it", () => {
-    expect(PUBLISH_VIOLATION_COPY["description.tooShort"].field).toBe("description");
-    expect(PUBLISH_VIOLATION_COPY["zoneId.notInCity"].field).toBe("zoneId");
-    expect(PUBLISH_VIOLATION_COPY["photos.tooMany"].field).toBe("photos");
+  // «A qué campo pertenece cada código» dejó de vivir en esta tabla con la
+  // 18.22 y lo prueba ahora `violation-field.test.ts`, en el dominio: la
+  // afirmación no se perdió, se mudó bajo el piso del 90 %.
+
+  /**
+   * tasks.md 18.7 — **la referencia dice su tope y no lleva medida.** El paso
+   * 6 dibuja "37 / 90" y por eso `title.tooLong` cuenta; el paso 2 no dibuja
+   * ningun contador, asi que anunciar un numero que la pantalla no muestra le
+   * inventaria un contador a quien lee la negativa.
+   *
+   * El literal se fija por valor, y que la constante valga eso se afirma
+   * aparte: derivar la frase esperada de la misma constante que el sujeto usa
+   * afirmaria que hay una interpolacion, no que el tope sea 120.
+   */
+  it("la negativa de la referencia nombra su tope, y no promete un contador", () => {
+    expect(publishViolationMessage("reference.tooLong", {})).toBe(
+      "Máximo 120 caracteres para la referencia. Es una seña, no una segunda descripción.",
+    );
+    expect(MAX_REFERENCE_CHARACTERS).toBe(120);
   });
 
   it("counts the description the publisher has written, as the design specifies", () => {
@@ -118,15 +144,33 @@ describe("publish violation copy", () => {
     );
   });
 
-  it("counts characters the way the validator does", () => {
-    // The validator counts code points, not UTF-16 units. A counter using
-    // `.length` would tell someone writing emoji they had written more than
-    // the rule credits them for, and the form would reject a description its
-    // own counter called long enough.
-    const withAstral = "🏠".repeat(10);
+  /**
+   * tasks.md 18.25 — **un contador que miente es peor que ninguno.**
+   *
+   * `PublishCopyContext` ya no puede llevar el texto: lleva su medida o no
+   * lleva nada. La pantalla de editar recibía sólo `aviso.title` y el `Vas N`
+   * salía 0 sobre una descripción de 24 caracteres; pasarle `aviso.description`
+   * habría dicho el largo de la que está en la base. Las dos son un número que
+   * nadie escribió, y la forma que impide las dos es que el número tenga que
+   * llegar medido desde donde se escribió.
+   */
+  it("sin medida no inventa un cero: la frase va sin contador", () => {
+    expect(publishViolationMessage("description.tooShort", {})).toBe("✱ Mínimo 120 caracteres.");
+    expect(publishViolationMessage("description.tooLong", {})).toBe("Máximo 1200 caracteres.");
+    expect(publishViolationMessage("title.tooLong", {})).toBe("Máximo 90 caracteres.");
+  });
 
-    expect(publishViolationMessage("description.tooShort", { description: withAstral })).toContain(
-      "Vas 10.",
+  it("con la medida, la dice — y el título cuenta la suya, no la de la descripción", () => {
+    expect(
+      publishViolationMessage("title.tooLong", { titleLength: 97, descriptionLength: 24 }),
+    ).toBe("Máximo 90 caracteres. Vas 97.");
+  });
+
+  it("una medida de cero se dice, porque llegó medida", () => {
+    // Distinto de la ausencia: acá alguien mandó una descripción vacía y el
+    // contador tiene un número real que reportar.
+    expect(publishViolationMessage("description.tooShort", { descriptionLength: 0 })).toContain(
+      "Vas 0.",
     );
   });
 
@@ -144,5 +188,65 @@ describe("publish violation copy", () => {
     const message = publishViolationMessage("publisherType.required", {});
 
     expect(message.toLowerCase()).toMatch(/dueño|inmobiliaria/);
+  });
+});
+
+/**
+ * tasks.md 18.20 — **la copia de editar es la misma copia, con una frase
+ * más.**
+ *
+ * `ListingEditViolation` es `PublishViolation` más `publisherType.immutable`.
+ * Una segunda tabla de español al lado de ésta sería la que después nadie
+ * mantiene: los veinticinco códigos compartidos se delegan, y el único propio
+ * dice lo que el paso 9 de publicar ya prometió.
+ */
+describe("listingEditViolationMessage — un solo español para publicar y editar (18.20)", () => {
+  it("delega en la tabla de publicar para un código compartido, palabra por palabra", () => {
+    expect(listingEditViolationMessage("priceUsd.invalid", {})).toBe(
+      publishViolationMessage("priceUsd.invalid", {}),
+    );
+  });
+
+  /**
+   * El contador es la parte de la copia de publicar que más fácil se pierde al
+   * copiarla: si esta delegación se rompiera devolviendo una frase propia, el
+   * número desaparecería sin que nada más cambiara.
+   */
+  it("delegar conserva el contador, no sólo la frase", () => {
+    expect(listingEditViolationMessage("description.tooShort", { descriptionLength: 5 })).toContain(
+      "Vas 5",
+    );
+  });
+
+  /**
+   * **La misma promesa, no una parecida.** El paso 9 dice «Aparece siempre en
+   * tu aviso y no se puede cambiar después» ANTES de publicar; la negativa al
+   * editar tiene que decir eso mismo, o el producto habla con dos voces sobre
+   * una sola regla.
+   */
+  it("el código propio de editar dice la promesa del paso 9, entera", () => {
+    const message = listingEditViolationMessage("publisherType.immutable", {});
+
+    expect(message).toContain(PUBLISHER_TYPE_IMMUTABLE_NOTICE);
+    expect(PUBLISHER_TYPE_IMMUTABLE_NOTICE).toBe(
+      "Aparece siempre en tu aviso y no se puede cambiar después.",
+    );
+  });
+
+  /**
+   * **Los códigos llegan por la URL**, porque sin JavaScript no hay otro lugar
+   * donde devolverle la negativa a la pantalla. Una dirección escrita a mano
+   * es dato de afuera: `PUBLISH_VIOLATION_COPY[inventado].message(...)` sería
+   * `undefined.message`, o sea un 500 donde correspondía una frase. Vuelve el
+   * código, que es el mismo `?? reason` que `importRowReasonText` ya usa.
+   */
+  it("un código que nadie definió vuelve como código y no tumba la pantalla", () => {
+    expect(listingEditViolationMessage("precio.regalado", {})).toBe("precio.regalado");
+  });
+
+  it("no hay entrada de `publisherType.immutable` en la tabla de publicar", () => {
+    // Los nueve pasos no pueden mostrarlo: `STEP_FOR_VIOLATION` es un `Record`
+    // sobre la unión de publicar, y meterlo ahí obligaría a inventarle un paso.
+    expect(Object.keys(PUBLISH_VIOLATION_COPY)).not.toContain("publisherType.immutable");
   });
 });

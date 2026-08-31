@@ -372,6 +372,15 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
                     {PROPERTY_LABEL[detail.propertyType]} · {detail.zoneName}
                     {detail.zoneParentName ? ` · ${detail.zoneParentName}` : ""} · {detail.cityName}
                   </p>
+                  {/* La seña del paso 2 (18.7). Va pegada a la ubicación
+                    porque es lo que la completa —«a dos calles de la plaza
+                    Altamira»— y NO en el documento estructurado: emitirla ahí
+                    la entregaría a un buscador como un dato de ubicación al
+                    lado de la zona, que es indexar por texto libre justo lo
+                    que se rechazó a Google Places para evitar.
+                    Sin seña no hay párrafo: uno vacío se lee como un dato que
+                    falta y no como uno que no existe. */}
+                  {detail.reference ? <p className={styles.reference}>{detail.reference}</p> : null}
                 </div>
 
                 <div className={styles.contact}>
