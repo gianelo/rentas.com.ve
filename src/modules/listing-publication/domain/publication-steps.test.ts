@@ -8,6 +8,7 @@ import {
   isDraftReadyForReview,
   isStepComplete,
   isStepNavigable,
+  jumpableStepsFrom,
   nextStepAfter,
   offersDiscardToReview,
   PUBLISH_STEP_ORDER,
@@ -621,5 +622,95 @@ describe("offersDiscardToReview — la salida que no escribe", () => {
 
     expect(isDraftReadyForReview(draft, violations)).toBe(false);
     expect(offersDiscardToReview(true, draft, violations)).toBe(false);
+  });
+});
+
+/**
+ * **El mapa de movil** (tasks.md 18.17, §12 de la especificacion de publicar).
+ *
+ * En 1280 el riel dibuja los nueve pasos y cada uno hecho es un enlace. En 360
+ * el riel no existe —no hay lugar— y lo unico que queda es la flecha de un
+ * paso atras: se sabe cuanto falta y no se puede hacer nada al respecto. Esto
+ * es lo que un telefono ofrece para saltar.
+ *
+ * **No hay una segunda regla de alcance.** Lo que el riel deja enlazar lo
+ * decide `isStepNavigable`; esto pregunta lo mismo y solo se saca a si mismo de
+ * la lista. Una copia que discrepe seria un mapa que ofrece un salto que la
+ * pagina del paso rechaza al aterrizar (AGENTS.md §7).
+ */
+describe("jumpableStepsFrom — el mapa que en movil reemplaza al riel", () => {
+  /** Los cuatro primeros contestados; los cinco ultimos no. */
+  function partwayDraft(): PublicationDraft {
+    const complete = completeDraft();
+    return {
+      listing: {
+        propertyType: complete.listing.propertyType,
+        cityId: complete.listing.cityId,
+        zoneId: complete.listing.zoneId,
+        priceUsd: complete.listing.priceUsd,
+        rooms: complete.listing.rooms,
+        bathrooms: complete.listing.bathrooms,
+        parkingSpots: complete.listing.parkingSpots,
+        areaM2: complete.listing.areaM2,
+      },
+      photos: [],
+    };
+  }
+
+  it("ofrece los pasos ya contestados que quedaron atras, que es el salto que en un telefono no existia", () => {
+    const draft = partwayDraft();
+
+    expect(jumpableStepsFrom("tamano", draft, violationsOf(draft))).toEqual(
+      expect.arrayContaining(["tipo", "zona", "precio"]),
+    );
+  });
+
+  /**
+   * **La otra mitad, y sola ninguna de las dos afirma la pregunta.** Un mapa
+   * que lista los nueve y falla al tocar es peor que uno que lista lo que
+   * funciona: la pagina del paso redirige por `isStepNavigable`, asi que el
+   * enlace aterrizaria en otro lado del que dijo (criterio de aceptacion 10).
+   */
+  it("no ofrece un paso sin contestar, que es el criterio 10 dibujado en el telefono", () => {
+    const draft = partwayDraft();
+    const violations = violationsOf(draft);
+
+    expect(isStepNavigable("quien", draft, violations)).toBe(false);
+    expect(jumpableStepsFrom("tamano", draft, violations)).not.toContain("quien");
+  });
+
+  /** Saltar a donde ya se esta no es un salto: seria un renglon que no lleva. */
+  it("no se ofrece a si mismo, aunque el paso abierto siempre sea navegable", () => {
+    const draft = partwayDraft();
+
+    expect(jumpableStepsFrom("tamano", draft, violationsOf(draft))).not.toContain("tamano");
+  });
+
+  /**
+   * **Fallar cerrado** (AGENTS.md §7). En el paso 1 recien abierto no hay
+   * ningun paso hecho, asi que no hay mapa: dibujar un desplegable vacio es
+   * ofrecer un control que no puede hacer nada.
+   */
+  it("en el paso 1 recien abierto no ofrece nada, y por eso la pantalla no dibuja el mapa", () => {
+    const draft: PublicationDraft = { listing: {}, photos: [] };
+
+    expect(jumpableStepsFrom("tipo", draft, violationsOf(draft))).toEqual([]);
+  });
+
+  /**
+   * **La anti-deriva.** El telefono y el escritorio contestan la misma
+   * pregunta: lo que el mapa ofrece es exactamente lo que el riel enlaza, menos
+   * el paso abierto. Si alguien escribe un segundo `if` para el telefono, esta
+   * es la que se pone roja.
+   */
+  it("ofrece exactamente lo que el riel enlaza, sin una segunda regla al lado", () => {
+    const draft = partwayDraft();
+    const violations = violationsOf(draft);
+
+    const delRiel = PUBLISH_STEP_ORDER.filter(
+      (step) => step !== "tamano" && isStepNavigable(step, draft, violations),
+    );
+
+    expect(jumpableStepsFrom("tamano", draft, violations)).toEqual(delRiel);
   });
 });

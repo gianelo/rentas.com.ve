@@ -254,6 +254,36 @@ export function isStepNavigable(
   return isStepComplete(stepId, draft, violations) || stepId === currentStepId(draft, violations);
 }
 
+/**
+ * **El mapa de movil: a que pasos puede saltar el que esta abierto** (18.17).
+ *
+ * §12 de la especificacion de publicar lo nombra entre lo que falta disenar, y
+ * es la unica de esa lista que quedaba. En 1280 el riel dibuja los nueve pasos
+ * y cada uno hecho es un enlace; en 360 el riel no existe —no hay lugar— y solo
+ * queda la flecha de un paso atras. La diferencia que la hoja de estilos ya
+ * declara es «saber cuanto falta» contra «poder hacer algo al respecto», y esto
+ * es lo segundo puesto en un telefono.
+ *
+ * **No hay una segunda regla de alcance, y esa es la decision.** Que un paso se
+ * pueda abrir lo contesta `isStepNavigable`, la misma puerta que la pagina del
+ * paso vuelve a aplicar al aterrizar. Una copia para el telefono podria
+ * discrepar, y entonces el mapa ofreceria un salto que el destino rechaza — el
+ * mismo defecto que «Descartar el cambio» ya pago una vez (AGENTS.md §7).
+ *
+ * Lo unico que agrega es sacarse a si mismo: saltar a donde ya se esta no es un
+ * salto. Cuando no queda ninguno la lista es vacia, y una lista vacia es una
+ * pantalla que no dibuja el mapa en vez de un desplegable que no hace nada.
+ */
+export function jumpableStepsFrom(
+  stepId: PublishStepId,
+  draft: PublicationDraft,
+  violations: readonly PublishViolation[],
+): readonly PublishStepId[] {
+  return PUBLISH_STEP_ORDER.filter(
+    (candidate) => candidate !== stepId && isStepNavigable(candidate, draft, violations),
+  );
+}
+
 /** Para la barra de 3 px de movil. El riel de escritorio usa el detalle. */
 export function progressPercent(
   draft: PublicationDraft,

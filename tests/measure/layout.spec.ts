@@ -193,6 +193,67 @@ test.describe("paso 4 — los cuatro números (3.9)", () => {
     }
   });
 
+  /**
+   * **El mapa de móvil** (18.17). §12 lo nombra entre lo que falta diseñar y
+   * ninguna lámina lo dibuja, así que lo que se mide es exactamente lo que la
+   * derivación prometió: 44 px de objetivo, la hoja adentro de los 360, y
+   * **cero renglones de alto** — nueve pasos apilados en el flujo serían una
+   * segunda lista para desplazar, y el punto es saltar, no recorrer.
+   */
+  test("18.17: a 360 el mapa abre encima y no le cuesta un solo píxel de alto a la columna", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 900 });
+    await page.goto("/measure");
+
+    const step = page.getByTestId("publish-step-tamano");
+    const trigger = step.getByLabel("Ver los pasos a los que podés volver");
+
+    // **Medido contra el propio paso y no contra la ventana**: abrir el mapa
+    // desplaza la página, y una caja de Playwright es relativa a la ventana.
+    const desplazamiento = async () => {
+      const marco = await step.boundingBox();
+      const columna = await step.locator("main").boundingBox();
+      if (!marco || !columna) throw new Error("mapa/columna no dibujaron una caja medible");
+      return columna.y - marco.y;
+    };
+
+    const antes = await desplazamiento();
+    const disparador = await trigger.boundingBox();
+    if (!disparador) throw new Error("el disparador del mapa no dibujó una caja medible");
+
+    await trigger.click();
+
+    const hoja = await step.locator("details ol").boundingBox();
+    const saltos = await step.locator("details ol li a").count();
+    const despues = await desplazamiento();
+    if (!hoja) throw new Error("la hoja del mapa no dibujó una caja medible");
+
+    console.log(
+      `[18.17] disparador ${disparador.width}x${disparador.height} · hoja x=${hoja.x} ancho=${hoja.width} ` +
+        `· ${saltos} saltos · columna dentro del paso ${antes} -> ${despues}`,
+    );
+
+    // Un teléfono, y `--target-min` es 44 por decisión del fundador (16.24).
+    expect(disparador.height).toBeGreaterThanOrEqual(44);
+    expect(disparador.width).toBeGreaterThanOrEqual(44);
+
+    // Los cuatro a los que el borrador del arnés puede volver. El paso 9 no
+    // está: la regla la contesta `jumpableStepsFrom`, esto sólo la mide.
+    expect(saltos).toBe(4);
+
+    // La hoja no se sale de costado: una que desborda es una que no se puede
+    // tocar entera, y es lo que pasa si se ancla al disparador en vez de a la
+    // barra.
+    expect(hoja.x).toBeGreaterThanOrEqual(0);
+    expect(hoja.x + hoja.width).toBeLessThanOrEqual(360);
+
+    // **Lo que costó en alto: nada.** Se dibuja ENCIMA, así que abrirlo no
+    // empuja la columna ni un píxel. Es la diferencia entre un mapa y una
+    // segunda lista.
+    expect(despues).toBe(antes);
+  });
+
   test("3.9: el botón principal también es un objetivo de 44px a 360px", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 900 });
     await page.goto("/measure");

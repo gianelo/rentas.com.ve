@@ -19,7 +19,12 @@ import { submitStep } from "./actions";
 import { FieldError } from "./FieldError";
 import { PhotoUploader } from "./fotos/PhotoUploader";
 import styles from "./publish-steps.module.css";
-import { DISCARD_CHANGE_LABEL, FEATURE_LABELS, STEP_COPY } from "./step-copy";
+import {
+  DISCARD_CHANGE_LABEL,
+  FEATURE_LABELS,
+  STEP_COPY,
+  STEP_MAP_TRIGGER_LABEL,
+} from "./step-copy";
 import {
   PUBLISH_VIOLATION_COPY,
   PUBLISHER_TYPE_IMMUTABLE_LEAD,
@@ -60,6 +65,15 @@ export interface PublishStepProps {
   /** Lo tecleado que no sobrevivio al parseo, para mostrarlo con su error. */
   readonly raw?: Readonly<Record<string, string>>;
   readonly rail: readonly RailEntry[];
+  /**
+   * Los pasos a los que ESTE paso puede saltar, para el mapa de movil (18.17).
+   *
+   * **Lo decide `jumpableStepsFrom`, no esta pantalla**, y llega como prop
+   * requerida a proposito: opcional dejaria que un renderer nuevo se olvidara
+   * de pasarla y el mapa desapareceria en silencio, que es exactamente la forma
+   * de defecto que este cambio ya encontro seis veces (AGENTS.md §1).
+   */
+  readonly jumpable: readonly PublishStepId[];
   readonly progress: number;
   readonly returningToReview: boolean;
   /**
@@ -111,6 +125,10 @@ export function PublishStep(props: PublishStepProps) {
   const copy = STEP_COPY[stepId];
   const errors = errorsByField(props.violations, draft);
 
+  // El mapa reusa las mismas entradas del riel: el numero, el ✓ y el valor ya
+  // vienen resueltos, asi que el telefono no arma una segunda anatomia de fila.
+  const mapEntries = rail.filter((entry) => props.jumpable.includes(entry.id));
+
   const backHref = previousStep
     ? `/publicar/paso/${previousStep}${returningToReview ? "?volver=revisar" : ""}`
     : null;
@@ -129,9 +147,43 @@ export function PublishStep(props: PublishStepProps) {
             <p className={styles.brand}>rentas.</p>
           )}
 
-          <span className={styles.counter}>
-            {copy.number} / {rail.length}
-          </span>
+          {/* **El mapa, que es lo que en 360 reemplaza al riel** (18.17). El
+              contador ya decia cuanto falta; abrirlo es lo que agrega poder
+              hacer algo al respecto, y no cuesta un renglon de alto porque la
+              hoja se dibuja ENCIMA de la pantalla, no dentro del flujo.
+
+              `<details>` y no un panel propio, el mismo mecanismo que el menu
+              ⋯ de las fotos: abre con un toque y con Enter sin una linea de
+              JavaScript, y adentro hay enlaces de verdad. Con el script
+              apagado funciona igual, que es el piso de §2.
+
+              Sin ningun salto posible NO se dibuja: un desplegable vacio es un
+              control que no puede hacer nada (AGENTS.md §7). */}
+          {mapEntries.length > 0 ? (
+            <details className={styles.map}>
+              <summary className={styles.mapTrigger} aria-label={STEP_MAP_TRIGGER_LABEL}>
+                {copy.number} / {rail.length}
+              </summary>
+              <ol className={styles.mapSheet}>
+                {mapEntries.map((entry) => (
+                  <li key={entry.id}>
+                    <AppLink className={styles.mapItem} href={`/publicar/paso/${entry.id}`}>
+                      <span className={styles.mapNumber} aria-hidden="true">
+                        {entry.done ? "✓" : entry.number}
+                      </span>
+                      {/* El valor y no el numero, igual que el riel: «Altamira»
+                          dice a donde se vuelve, «2» no dice nada. */}
+                      <span>{entry.summary ?? entry.label}</span>
+                    </AppLink>
+                  </li>
+                ))}
+              </ol>
+            </details>
+          ) : (
+            <span className={styles.counter}>
+              {copy.number} / {rail.length}
+            </span>
+          )}
 
           {/* Lo unico que dice que el borrador sobrevive. Sin esto nadie sabe
               si puede cerrar la pantalla. */}

@@ -107,6 +107,84 @@
   font-size: var(--control-fs);
 }
 
+/* ---------- el mapa de móvil (18.17) ----------
+
+   §12 de la especificación lo nombra entre lo que falta diseñar y ninguna
+   lámina lo dibuja, así que se DERIVA del sistema (AGENTS.md §2): es el mismo
+   `<details>` + hoja del menú ⋯ de las fotos, con la anatomía de fila del riel
+   —✓ o número, y el VALOR del paso— y el `--target-min` de 44 px.
+
+   **El disparador es el contador que ya estaba**, así que el mapa no cuesta un
+   solo píxel de alto: nueve pasos apilados en el flujo serían una segunda
+   lista para desplazar, y el punto es saltar. La hoja se dibuja ENCIMA, contra
+   `.bar`, que ya es `sticky` y por lo tanto su bloque contenedor.
+
+   No existe de 768 para arriba: ahí está el riel entero, que dice más. Es la
+   misma frase que ya rige la barra de 3 px — el riel reemplaza, no acompaña. */
+
+.map {
+  margin-inline-start: auto;
+}
+
+.mapTrigger {
+  composes: counter;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--target-min);
+  min-block-size: var(--target-min);
+  cursor: pointer;
+  /* El triángulo por defecto de `<summary>` no es un glifo del sistema. */
+  list-style: none;
+}
+
+.mapTrigger::-webkit-details-marker {
+  display: none;
+}
+
+/* Contra `.bar` y no contra `.map`: anclada al disparador se saldría de
+   costado en 360, y una hoja que desborda es una que no se puede tocar
+   entera. Así ocupa el ancho de la barra, con el mismo aire de 16. */
+.mapSheet {
+  position: absolute;
+  z-index: 2;
+  inset-inline: 16px;
+  inset-block-start: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-raised);
+  overflow: hidden;
+}
+
+.mapItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-block-size: var(--target-min);
+  padding: 0 12px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: var(--ficha-body-fs);
+}
+
+.mapNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 22px;
+  block-size: 22px;
+  border-radius: var(--rs);
+  background: var(--tint);
+  color: var(--accent);
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  flex: none;
+}
+
 /* La barra de progreso de móvil: 3px, y desaparece en escritorio, donde el
    riel dice lo mismo con más detalle. */
 .progress {
@@ -561,8 +639,12 @@
     padding: 0 24px;
   }
 
-  /* El riel reemplaza la barra, no la acompaña. */
-  .progress {
+  /* El riel reemplaza la barra, no la acompaña — y por la misma razón se lleva
+     al contador y a su mapa: los nueve pasos con su ✓ y su valor dicen todo lo
+     que «4 / 9» decía, y más. */
+  .progress,
+  .counter,
+  .map {
     display: none;
   }
 

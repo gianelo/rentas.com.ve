@@ -89,6 +89,21 @@ export const PRIMARY_ACTION_LABEL: Record<PrimaryAction, string> = {
  */
 export const DISCARD_CHANGE_LABEL = "Descartar el cambio";
 
+/**
+ * **El nombre del mapa de movil** (18.17).
+ *
+ * En 360 el contador «4 / 9» dice cuanto falta y nada mas; abrirlo es lo que lo
+ * convierte en el equivalente del riel. Por eso el nombre accesible no es
+ * «Pasos» sino lo que el control HACE: en un telefono, donde el riel no cabe,
+ * es la unica forma de saltar a un paso que no sea recorrer la flecha hacia
+ * atras.
+ *
+ * **No dice «los pasos hechos»** porque el paso actual tambien se puede abrir y
+ * no esta hecho: la lista la arma `jumpableStepsFrom`, y una etiqueta que
+ * prometa menos de lo que la lista trae es una etiqueta que miente.
+ */
+export const STEP_MAP_TRIGGER_LABEL = "Ver los pasos a los que podés volver";
+
 const PROPERTY_TYPE_LABEL: Record<string, string> = {
   apartamento: "Apartamento",
   casa: "Casa",

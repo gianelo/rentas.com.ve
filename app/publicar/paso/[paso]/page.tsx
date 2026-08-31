@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import {
   isStepComplete,
   isStepNavigable,
+  jumpableStepsFrom,
   offersDiscardToReview,
   PUBLISH_STEP_ORDER,
   type PublishStepId,
@@ -81,6 +82,11 @@ export default async function StepPage({ params, searchParams }: StepPageProps) 
       violations={stepViolations(stepId, draft.violations)}
       raw={draft.raw}
       rail={rail}
+      // El mapa de móvil (18.17). A qué pasos se puede saltar lo contesta el
+      // dominio con la MISMA puerta que la línea 52 vuelve a aplicar al
+      // aterrizar: un mapa con su propia regla ofrecería un salto que esta
+      // página rechaza.
+      jumpable={jumpableStepsFrom(stepId, draft, violations)}
       progress={progressPercent(draft, violations)}
       returningToReview={returningToReview}
       // Si se ofrece lo contesta el dominio; acá sólo se elige a dónde lleva.
