@@ -102,6 +102,10 @@ const TEXT_KEYS = [
   "publisherType",
   "contactMethod",
   "contactValue",
+  // 18.7. Con la columna en la base dejo de colgar del borrador y paso a ser
+  // un campo del aviso como los demas, asi que viaja por la misma lista
+  // blanca en vez de por una linea propia.
+  "reference",
 ] as const;
 
 const NUMBER_KEYS = ["priceUsd", "rooms", "bathrooms", "parkingSpots", "areaM2"] as const;
@@ -204,7 +208,6 @@ export function parseStoredDraft(
     photos: readPhotos(candidate.photos),
     violations,
     ...(candidate.featuresDeclared === true ? { featuresDeclared: true } : {}),
-    ...(typeof candidate.reference === "string" ? { reference: candidate.reference } : {}),
   };
 
   const raw = readRaw(candidate.raw);
@@ -224,7 +227,6 @@ export function serialiseStoredDraft(draft: StoredDraft): {
       photos: draft.photos,
       violations: draft.violations,
       ...(draft.featuresDeclared === true ? { featuresDeclared: true } : {}),
-      ...(draft.reference !== undefined ? { reference: draft.reference } : {}),
       ...(draft.raw !== undefined ? { raw: draft.raw } : {}),
     }),
     text: encode(description ?? ""),

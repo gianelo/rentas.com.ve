@@ -120,12 +120,14 @@ export function readStepAnswers(
       // compuesta de `listing` un par que la base rechaza — un 500 donde
       // corresponde un error de formulario.
       const selection = resolveZoneCity(text(formData, "zoneId"), vocabulary);
-      const reference = text(formData, "reference");
 
-      return draft(
-        { zoneId: selection?.zoneId, cityId: selection?.cityId },
-        reference === undefined ? {} : { reference },
-      );
+      return draft({
+        zoneId: selection?.zoneId,
+        cityId: selection?.cityId,
+        // `text` ya recorta y devuelve `undefined` para lo vacio: una
+        // referencia en blanco es no haber puesto ninguna (18.7).
+        reference: text(formData, "reference"),
+      });
     }
 
     case "precio":

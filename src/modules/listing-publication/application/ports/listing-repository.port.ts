@@ -80,6 +80,19 @@ export interface NewListing {
   readonly expiresAt: Date;
   readonly photos: readonly NewListingPhoto[];
   /**
+   * El punto de referencia del paso 2 (tasks.md 18.7). **Opcional acá, y es
+   * el unico opcional junto a `externalReference` que este tipo admite**: la
+   * regla de arriba —"ningun campo opcional"— existe para las columnas NOT
+   * NULL cuyo olvido tiene que fallar ruidosamente. Esta es nulable en la
+   * base porque la ausencia de una seña es un hecho verdadero de la mayoria
+   * de los avisos, no un dato que falta.
+   *
+   * **No se confunde con `externalReference`, que esta cinco lineas abajo.**
+   * Aquella es la llave de idempotencia de la importacion en lote y no la
+   * teclea ningun humano; esta es texto libre que escribe quien publica.
+   */
+  readonly reference?: string;
+  /**
    * broker-bulk-import spec, "Idempotent Import by External Reference"
    * (tasks.md 9.1/9.17). `undefined` for the single-listing flow — never set
    * by `publishListing` — and the value the unique

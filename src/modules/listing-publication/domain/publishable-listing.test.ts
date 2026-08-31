@@ -4,7 +4,9 @@ import {
   type DraftListing,
   MAX_DESCRIPTION_CHARACTERS,
   MAX_PHOTOS_PER_LISTING,
+  MAX_REFERENCE_CHARACTERS,
   MAX_TITLE_CHARACTERS,
+  MIN_DESCRIPTION_CHARACTERS,
   validatePublishableListing,
 } from "./publishable-listing";
 
@@ -327,6 +329,58 @@ describe("validatePublishableListing", () => {
       const noventaEmoji = "\u{1F3E0}".repeat(MAX_TITLE_CHARACTERS);
 
       expect(validatePublishableListing(draft({ title: noventaEmoji }), ZONES)).toEqual([]);
+    });
+
+    /**
+     * tasks.md 18.7 — la referencia, que es el campo que reemplaza a Google
+     * Places: texto libre, opcional, y que solo se dibuja en la ficha.
+     *
+     * **Los numeros van escritos y no derivados de la constante.** Una prueba
+     * que dice `"a".repeat(MAX_REFERENCE_CHARACTERS)` acepta cualquier valor
+     * que la constante tome manana: afirma que el validador usa la constante,
+     * no que el tope sea 120. El tope se fija aca por valor, y la constante se
+     * afirma aparte, abajo.
+     */
+    it("acepta un aviso sin referencia: es opcional, y su ausencia no es una negativa", () => {
+      expect(validatePublishableListing(draft(), ZONES)).toEqual([]);
+      expect(validatePublishableListing(draft({ reference: undefined }), ZONES)).toEqual([]);
+    });
+
+    it("acepta una referencia de 120 caracteres y rechaza la de 121", () => {
+      expect(validatePublishableListing(draft({ reference: "a".repeat(120) }), ZONES)).toEqual([]);
+      expect(validatePublishableListing(draft({ reference: "a".repeat(121) }), ZONES)).toContain(
+        "reference.tooLong",
+      );
+    });
+
+    it("cuenta la referencia en puntos de codigo, igual que el titulo y la descripcion", () => {
+      // 120 emoji son 120 caracteres para quien escribe y 240 unidades UTF-16
+      // para `String.length`. La referencia se teclea en un telefono, que es
+      // donde un emoji entra sin que nadie lo busque.
+      expect(
+        validatePublishableListing(draft({ reference: "\u{1F3E0}".repeat(120) }), ZONES),
+      ).toEqual([]);
+      expect(
+        validatePublishableListing(draft({ reference: "\u{1F3E0}".repeat(121) }), ZONES),
+      ).toContain("reference.tooLong");
+    });
+
+    it("una referencia en blanco no es una referencia, y no se rechaza", () => {
+      // El paso 2 manda el campo vacio cuando nadie lo lleno. Rechazar eso
+      // seria convertir un campo opcional en obligatorio por la puerta de
+      // atras; y `"   "` es lo mismo que vacio, igual que en `isBlank`.
+      expect(validatePublishableListing(draft({ reference: "" }), ZONES)).toEqual([]);
+      expect(validatePublishableListing(draft({ reference: "   " }), ZONES)).toEqual([]);
+    });
+
+    it("el tope de la referencia es 120, y no se deriva del minimo de la descripcion", () => {
+      // La afirmacion sobre la constante va separada de las pruebas de
+      // comportamiento a proposito (AGENTS.md §1: una prueba que deriva su
+      // valor esperado del mismo numero que el sujeto usa no afirma nada).
+      expect(MAX_REFERENCE_CHARACTERS).toBe(120);
+      // Coinciden hoy y no estan atados: si el minimo de la descripcion baja,
+      // la referencia no tiene por que encogerse con el.
+      expect(MIN_DESCRIPTION_CHARACTERS).toBe(120);
     });
 
     it("rejects a description shorter than the 120 characters the form promises", () => {

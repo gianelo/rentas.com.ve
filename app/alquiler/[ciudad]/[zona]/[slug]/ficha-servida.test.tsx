@@ -220,6 +220,67 @@ function zonaConAvisos() {
   );
 }
 
+/** Extrae el JSON-LD servido, que es el unico canal de indexacion de la ficha. */
+function jsonLd(html: string): string {
+  const match = /<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/.exec(html);
+  if (!match?.[1]) throw new Error("la ficha no emitio JSON-LD");
+  return match[1];
+}
+
+/**
+ * tasks.md 18.7 — **la referencia se muestra y no se indexa, y las dos mitades
+ * se afirman sobre los MISMOS bytes.**
+ *
+ * La seña es el campo que reemplaza a Google Places, y la razon por la que se
+ * rechazo aquel servicio es que una direccion formateada no es la taxonomia
+ * del producto: el filtro, los conteos, la URL y las paginas de zona dependen
+ * de que la zona sea una lista cerrada. Emitir la seña en el JSON-LD la
+ * entregaria a un buscador como un dato de ubicacion al lado de la zona — que
+ * es una forma de indexarla, aunque no exista un filtro.
+ */
+describe("la referencia se lee en la ficha y no se indexa (18.7)", () => {
+  const SENA = "A dos calles de la plaza Altamira, edificio azul";
+
+  it("dibuja la seña debajo de la ubicacion", async () => {
+    findForDetail.mockResolvedValue(
+      detail({ status: "active", expiresAt: VIGENTE(), reference: SENA }),
+    );
+
+    const html = await servedBody();
+
+    expect(html).toContain(SENA);
+  });
+
+  it("no la emite en el JSON-LD, que es el canal que un buscador cita sin abrir la pagina", async () => {
+    findForDetail.mockResolvedValue(
+      detail({ status: "active", expiresAt: VIGENTE(), reference: SENA }),
+    );
+
+    const html = await servedBody();
+
+    // La misma respuesta lleva la seña en el cuerpo y no la lleva en el
+    // documento estructurado. Afirmar solo lo segundo pasaria tambien si la
+    // ficha hubiera dejado de dibujarla.
+    expect(html).toContain(SENA);
+    expect(jsonLd(html)).not.toContain("plaza Altamira");
+    // Y la zona, que SI es taxonomia, sigue estando donde corresponde.
+    expect(jsonLd(html)).toContain(TIERRA_NEGRA.name);
+  });
+
+  it("un aviso sin seña no dibuja una linea vacia debajo de la ubicacion", async () => {
+    findForDetail.mockResolvedValue(
+      detail({ status: "active", expiresAt: VIGENTE(), reference: null }),
+    );
+
+    const html = await servedBody();
+
+    expect(html).not.toContain(SENA);
+    // El parrafo de la seña no existe cuando no hay seña: un `<p>` vacio bajo
+    // la ubicacion se lee como un dato que falta y no como uno que no hay.
+    expect(html).not.toMatch(/<p class="[^"]*reference[^"]*"><\/p>/);
+  });
+});
+
 describe("la ficha vencida se sirve en vez de responder 404 (11.8)", () => {
   it("responde con la pantalla del aviso y dice que venció", async () => {
     zonaConAvisos();

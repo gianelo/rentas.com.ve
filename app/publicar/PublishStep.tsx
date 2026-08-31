@@ -6,6 +6,7 @@ import type {
 } from "../../src/modules/listing-publication/domain/publication-steps";
 import {
   characterCount,
+  MAX_REFERENCE_CHARACTERS,
   MAX_TITLE_CHARACTERS,
   MIN_DESCRIPTION_CHARACTERS,
   type PublishViolation,
@@ -439,6 +440,11 @@ function StepFields(props: FieldsProps) {
           </p>
 
           <div>
+            {/* La seña tiene su propia negativa desde la 18.7, y por eso su
+                propio `FieldError`: el de arriba pertenece a la zona, y un
+                mensaje de zona colgado de este campo diría que la seña está
+                mal. Dos controles en un paso son dos anuncios. */}
+            <FieldError id="reference-error" message={errors.get("reference")} />
             <label className={styles.label} htmlFor="reference">
               Referencia
             </label>
@@ -446,9 +452,15 @@ function StepFields(props: FieldsProps) {
               id="reference"
               name="reference"
               type="text"
-              className={styles.control}
-              defaultValue={props.draft.reference ?? ""}
+              className={`${styles.control} ${errors.get("reference") ? styles.controlInvalid : ""}`}
+              defaultValue={listing.reference ?? ""}
               placeholder="Frente a la plaza"
+              // El doble del tope, igual que el título: el navegador frena el
+              // pegado accidental y la regla la sigue diciendo el servidor,
+              // que es el único lado que la importación también atraviesa.
+              maxLength={MAX_REFERENCE_CHARACTERS * 2}
+              aria-invalid={errors.get("reference") ? "true" : undefined}
+              aria-describedby={errors.get("reference") ? "reference-error" : undefined}
             />
             <p className={styles.help}>Opcional. No se publica la dirección.</p>
           </div>

@@ -89,15 +89,6 @@ export interface PublicationDraft {
    * legitimamente no tiene ninguno.
    */
   readonly featuresDeclared?: boolean;
-  /**
-   * Punto de referencia, texto libre y opcional (paso 2). Es el campo que
-   * reemplaza a Google Places.
-   *
-   * Vive aca y no en `listing` porque **`listing` no tiene columna para el**:
-   * `referencia` no existe en el esquema todavia. Modelarlo desde ya deja el
-   * borrador listo para el dia que la columna llegue, sin tocar el dominio.
-   */
-  readonly reference?: string;
 }
 
 /**
@@ -126,6 +117,8 @@ export const STEP_FOR_VIOLATION: Record<PublishViolation, PublishStepId> = {
   "cityId.unknown": "zona",
   "zoneId.required": "zona",
   "zoneId.notInCity": "zona",
+  // La referencia se teclea debajo de la zona, en el mismo paso 2 (18.7).
+  "reference.tooLong": "zona",
   "priceUsd.required": "precio",
   "priceUsd.invalid": "precio",
   "rooms.required": "tamano",
@@ -301,7 +294,8 @@ const STEP_LISTING_FIELDS: Record<PublishStepId, readonly (keyof DraftListingVal
   tipo: ["propertyType"],
   // La ciudad la determina la zona: se escribe aca porque se deriva aca, no
   // porque se pregunte (criterio de aceptacion 7).
-  zona: ["cityId", "zoneId"],
+  // La referencia se teclea debajo de la zona, en este mismo paso (18.7).
+  zona: ["cityId", "zoneId", "reference"],
   precio: ["priceUsd"],
   tamano: ["rooms", "bathrooms", "parkingSpots", "areaM2"],
   atributos: ["hasPowerPlant", "hasRegularWater", "isFurnished", "hasSecurity", "hasAppliances"],
@@ -351,8 +345,6 @@ export function applyStepAnswers(
     // Solo el paso 5 declara los atributos. Una vez contestado, sigue
     // contestado: pasar por el paso 6 no lo pone en duda.
     featuresDeclared: stepId === "atributos" ? answers.featuresDeclared : draft.featuresDeclared,
-    // Solo el paso 2 escribe la referencia.
-    reference: stepId === "zona" ? answers.reference : draft.reference,
   };
 }
 
@@ -412,7 +404,7 @@ export function nextStepAfter(
 }
 
 /** Lo que cambio, en el vocabulario del borrador. La frase la arma la copia. */
-export type ChangedField = keyof DraftListingValues | "photos" | "reference";
+export type ChangedField = keyof DraftListingValues | "photos";
 
 export interface DraftChange {
   readonly field: ChangedField;
@@ -426,7 +418,6 @@ export interface DraftChange {
 const CHANGE_FIELDS: readonly ChangedField[] = [
   ...PUBLISH_STEP_ORDER.flatMap((step) => STEP_LISTING_FIELDS[step]),
   "photos",
-  "reference",
 ];
 
 function asText(value: unknown): string {
@@ -471,8 +462,8 @@ export function describeDraftChanges(
       continue;
     }
 
-    const previous = field === "reference" ? before.reference : before.listing[field];
-    const current = field === "reference" ? after.reference : after.listing[field];
+    const previous = before.listing[field];
+    const current = after.listing[field];
 
     if (asText(previous) !== asText(current)) {
       changes.push({ field, before: asText(previous), after: asText(current) });

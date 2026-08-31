@@ -84,6 +84,15 @@
   color: var(--soft);
 }
 
+/* La seña del paso 2 (18.7). Misma familia y mismo color que la ubicación de
+   arriba, porque la completa; sin token nuevo y sin un solo valor literal. */
+.reference {
+  margin: 4px 0 0;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  color: var(--soft);
+}
+
 .description {
   margin: 0;
 }

@@ -119,6 +119,20 @@ describe("stepViolations", () => {
     ]);
   });
 
+  /**
+   * tasks.md 18.7 — la referencia se teclea en el paso 2, debajo de la zona,
+   * asi que su negativa se lee ahi y en ningun otro lado. Un error que apunta
+   * a un campo que la pantalla no dibuja deja a alguien mirando un boton que
+   * no avanza.
+   */
+  it("la negativa de la referencia es del paso 2, y de ninguno de los otros ocho", () => {
+    expect(stepViolations("zona", ["reference.tooLong"])).toEqual(["reference.tooLong"]);
+
+    for (const step of PUBLISH_STEP_ORDER.filter((candidate) => candidate !== "zona")) {
+      expect(stepViolations(step, ["reference.tooLong"])).toEqual([]);
+    }
+  });
+
   it("no muestra errores de fotos en un paso que no tiene fotos", () => {
     // Un error que apunta a un campo que no existe en la pantalla es un
     // callejon sin salida (seccion 6 de la especificacion).
@@ -340,21 +354,24 @@ describe("applyStepAnswers — volver atras no borra lo que sigue", () => {
   it("el paso 2 guarda la referencia junto con ciudad y zona", () => {
     const before = completeDraft();
     const after = applyStepAnswers(before, "zona", {
-      listing: { cityId: "mcbo", zoneId: "la-lago" },
+      listing: { cityId: "mcbo", zoneId: "la-lago", reference: "Al lado de la panaderia" },
       photos: [],
-      reference: "Al lado de la panaderia",
     });
 
     expect(after.listing.cityId).toBe("mcbo");
-    expect(after.reference).toBe("Al lado de la panaderia");
+    expect(after.listing.reference).toBe("Al lado de la panaderia");
     expect(after.listing.priceUsd).toBe(450);
   });
 
   it("un paso ajeno nunca toca la referencia", () => {
-    const before: PublicationDraft = { ...completeDraft(), reference: "Frente a la plaza" };
+    const base = completeDraft();
+    const before: PublicationDraft = {
+      ...base,
+      listing: { ...base.listing, reference: "Frente a la plaza" },
+    };
     const after = applyStepAnswers(before, "precio", { listing: { priceUsd: 500 }, photos: [] });
 
-    expect(after.reference).toBe("Frente a la plaza");
+    expect(after.listing.reference).toBe("Frente a la plaza");
   });
 });
 
