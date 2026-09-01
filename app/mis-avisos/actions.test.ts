@@ -101,6 +101,7 @@ import {
   EditListingRejectedError,
 } from "../../src/modules/listing-publication/application/edit-listing";
 import { ListingPhotoRemovalRefusedError } from "../../src/modules/listing-publication/application/edit-listing-photos";
+import type { ListingEdit } from "../../src/modules/listing-publication/domain/listing-edit";
 import {
   activarBorrador,
   adjuntarFotoAlAviso,
@@ -249,12 +250,15 @@ const CAMPOS = {
   rooms: "3",
   bathrooms: "2",
   areaM2: "128",
+  parkingSpots: "1",
+  propertyType: "apartamento",
+  reference: "Frente a la panadería",
   contactMethod: "whatsapp",
   contactValue: "04121234567",
 };
 
 describe("guardarEdicion — la ruta que le faltaba a editListing (18.20)", () => {
-  it("llama a editListing con el id del formulario y los ocho campos editables, y vuelve a la lista", async () => {
+  it("llama a editListing con el id del formulario y los once campos editables, y vuelve a la lista", async () => {
     editListing.mockResolvedValueOnce({ listingId: "aviso-1" });
 
     await expect(guardarEdicion(edicionDe(CAMPOS))).rejects.toThrow("NEXT_REDIRECT:/mis-avisos");
@@ -269,6 +273,9 @@ describe("guardarEdicion — la ruta que le faltaba a editListing (18.20)", () =
         rooms: 3,
         bathrooms: 2,
         areaM2: 128,
+        parkingSpots: 1,
+        propertyType: "apartamento",
+        reference: "Frente a la panadería",
         contactMethod: "whatsapp",
         contactValue: "04121234567",
         publisherType: undefined,
@@ -311,6 +318,43 @@ describe("guardarEdicion — la ruta que le faltaba a editListing (18.20)", () =
     const [pedido] = editListing.mock.calls[0] as [{ edit: Record<string, unknown> }];
     const edit = pedido.edit;
     expect(edit.publisherType).toBe("broker");
+  });
+
+  /**
+   * tasks.md 18.27 — **la referencia es el único campo con dos ausencias.** El
+   * dominio decide qué hacer con cada una; lo que se prueba acá es que la acción
+   * no las aplasta en una sola antes de llegar: `formText` devuelve `undefined`
+   * para lo vacío, y mandarlo así haría que `?? current` diera la seña de ayer
+   * por buena y que borrarla fuera imposible desde la pantalla.
+   */
+  it("la referencia en blanco viaja como cadena vacía, y ausente del POST viaja como ausente", async () => {
+    editListing.mockResolvedValueOnce({ listingId: "aviso-1" });
+    await expect(guardarEdicion(edicionDe({ ...CAMPOS, reference: "  " }))).rejects.toThrow(
+      "NEXT_REDIRECT:/mis-avisos",
+    );
+    const [primero] = editListing.mock.calls[0] as [{ edit: ListingEdit }];
+    expect(primero.edit.reference).toBe("");
+
+    editListing.mockResolvedValueOnce({ listingId: "aviso-1" });
+    const { reference: _sin, ...sinReferencia } = CAMPOS;
+    await expect(guardarEdicion(edicionDe(sinReferencia))).rejects.toThrow(
+      "NEXT_REDIRECT:/mis-avisos",
+    );
+    const [segundo] = editListing.mock.calls[1] as [{ edit: ListingEdit }];
+    expect(segundo.edit.reference).toBeUndefined();
+  });
+
+  /** Cero puestos es una respuesta, y llega como cero y no como ausente: es el
+   *  único campo numérico del aviso donde el vacío significa algo. */
+  it("dejar los puestos en blanco viaja como cero, no como «no contestó»", async () => {
+    editListing.mockResolvedValueOnce({ listingId: "aviso-1" });
+
+    await expect(guardarEdicion(edicionDe({ ...CAMPOS, parkingSpots: "" }))).rejects.toThrow(
+      "NEXT_REDIRECT:/mis-avisos",
+    );
+
+    const [pedido] = editListing.mock.calls[0] as [{ edit: ListingEdit }];
+    expect(pedido.edit.parkingSpots).toBe(0);
   });
 
   it("una negativa del dominio vuelve a la pantalla de editar con los códigos, no con la frase", async () => {

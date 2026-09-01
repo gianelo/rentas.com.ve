@@ -2,6 +2,7 @@ import { and, eq, gt, lte, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import { publishDrafts } from "../../../shared/db/schema";
+import type { ExpiredDraftSignalPort } from "../application/ports/expired-draft-signal.port";
 import type {
   ExpiredDraftPhotos,
   ExpiredPublicationDraftsPort,
@@ -23,7 +24,9 @@ type StoredAnswers = Omit<StoredPublicationDraft, "photos">;
  * le pasa cada fila a `normaliseStoredDraft` antes de devolverla. La forma la
  * decide el dominio, no el adaptador que la trae.
  */
-export class DrizzlePublicationDraftStore implements PublicationDraftStorePort {
+export class DrizzlePublicationDraftStore
+  implements PublicationDraftStorePort, ExpiredDraftSignalPort
+{
   constructor(private readonly db: PublicationDraftDatabase) {}
 
   async load(publisherId: string, now: Date): Promise<StoredPublicationDraft | null> {
@@ -56,6 +59,29 @@ export class DrizzlePublicationDraftStore implements PublicationDraftStorePort {
         target: publishDrafts.publisherId,
         set: { answers, photos, expiresAt },
       });
+  }
+
+  /**
+   * tasks.md 18.34 — **el vencimiento de la fila, sin juzgarlo.**
+   *
+   * Vive en esta clase y no en `DrizzleExpiredPublicationDrafts` por el criterio
+   * que separó a las dos: aquélla existe para ser la ÚNICA consulta sin
+   * `publisher_id` en el `WHERE`, y ésta lo lleva. Y no rompe el invariante de
+   * `load` —«un borrador vencido nunca llega a existir en memoria»— porque no
+   * devuelve un borrador: devuelve una fecha.
+   *
+   * **Sin `expires_at` en el `WHERE`, a propósito.** Filtrar acá escribiría por
+   * tercera vez en SQL el borde que `hasDraftExpired` ya razona entero, y las
+   * tres tendrían que quedar de acuerdo para siempre.
+   */
+  async findExpiry(publisherId: string): Promise<Date | null> {
+    const rows = await this.db
+      .select({ expiresAt: publishDrafts.expiresAt })
+      .from(publishDrafts)
+      .where(eq(publishDrafts.publisherId, publisherId))
+      .limit(1);
+
+    return rows[0]?.expiresAt ?? null;
   }
 
   /** `DELETE` de cero filas no es un error: descartar es repetible sin preguntar. */

@@ -44,6 +44,7 @@ import styles from "../../../publicar/publish-steps.module.css";
 import {
   CHANGE_FIELD_LABEL,
   CONTACT_METHOD_LABEL,
+  PROPERTY_TYPE_LABEL,
   PUBLISHER_TYPE_LABEL,
 } from "../../../publicar/step-copy";
 import {
@@ -432,6 +433,9 @@ export default async function EditarAvisoPage({
                   [
                     ["rooms", aviso.rooms],
                     ["bathrooms", aviso.bathrooms],
+                    // Cero es una respuesta y no un hueco, igual que en el paso
+                    // 4: se dibuja el cero en vez de dejar el campo vacío.
+                    ["parkingSpots", aviso.parkingSpots],
                     ["areaM2", aviso.areaM2],
                   ] as const
                 ).map(([name, value]) => (
@@ -451,6 +455,54 @@ export default async function EditarAvisoPage({
                     />
                   </div>
                 ))}
+              </div>
+
+              {/*
+                **El tipo de inmueble y la referencia, desde la 18.27.** «Se
+                puede corregir cualquier dato menos el de la zona» (fundador,
+                2026-09-01). Los dos estaban cerrados porque la tabla campo por
+                campo del 2026-08-29 no los nombraba, no porque cambiarlos
+                rompiera nada: ninguno de los dos está en la URL del aviso.
+              */}
+              <fieldset
+                className={styles.choices}
+                aria-describedby={
+                  negativas.byField.has("propertyType") ? "propertyType-error" : undefined
+                }
+              >
+                <FieldError id="propertyType-error" message={mensaje("propertyType")} />
+                <legend className={styles.legend}>{etiqueta("propertyType")}</legend>
+                {Object.entries(PROPERTY_TYPE_LABEL).map(([value, label]) => (
+                  <label key={value} className={styles.choice}>
+                    <input
+                      className={styles.choiceInput}
+                      type="radio"
+                      name="propertyType"
+                      value={value}
+                      defaultChecked={aviso.propertyType === value}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </fieldset>
+
+              <div>
+                <FieldError id="reference-error" message={mensaje("reference")} />
+                <label className={styles.label} htmlFor="reference">
+                  {etiqueta("reference")}
+                </label>
+                <input
+                  id="reference"
+                  name="reference"
+                  type="text"
+                  className={`${styles.control}${claseControl("reference")}`}
+                  defaultValue={aviso.reference ?? ""}
+                  {...invalido("reference")}
+                />
+                {/* Y se dice que se puede vaciar: es el único campo del aviso
+                    donde borrar el contenido es una corrección válida, y sin la
+                    frase nadie sabría que dejarlo en blanco la saca. */}
+                <p className={styles.help}>Opcional. Dejala en blanco para sacarla.</p>
               </div>
 
               {/* **El grupo, no un radio.** Tres opciones excluyentes no tienen

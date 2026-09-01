@@ -79,7 +79,7 @@ describe("planListingEdit — quién publica no se puede cambiar después (18.14
     expect(writeOf(plan).priceUsd).toBe(700);
   });
 
-  it("lo que la edición escribe son ocho campos y ninguno más: ni quién publica, ni la zona, ni el tipo", () => {
+  it("lo que la edición escribe son once campos y ninguno más: ni quién publica, ni la zona, ni la ciudad", () => {
     const plan = planListingEdit(published(), ZONES, { title: "Otro título del aviso" });
 
     expect(Object.keys(writeOf(plan)).sort()).toEqual([
@@ -88,7 +88,10 @@ describe("planListingEdit — quién publica no se puede cambiar después (18.14
       "contactMethod",
       "contactValue",
       "description",
+      "parkingSpots",
       "priceUsd",
+      "propertyType",
+      "reference",
       "rooms",
       "title",
     ]);
@@ -108,6 +111,9 @@ describe("planListingEdit — lo que la oferta sí puede tocar (18.14)", () => {
       areaM2: current.areaM2,
       contactMethod: current.contactMethod,
       contactValue: current.contactValue,
+      propertyType: current.propertyType,
+      parkingSpots: current.parkingSpots,
+      reference: current.reference,
     });
   });
 
@@ -130,6 +136,88 @@ describe("planListingEdit — lo que la oferta sí puede tocar (18.14)", () => {
     );
 
     expect([write.rooms, write.bathrooms, write.areaM2]).toEqual([4, 3, 150]);
+  });
+});
+
+/**
+ * tasks.md 18.27 — **la regla general del fundador, dicha el 2026-09-01:** «Se
+ * puede corregir cualquier dato menos el de la zona, y eso porque va con la URL
+ * del SEO y eso no puede cambiar.»
+ *
+ * Es más ancha que la tabla campo por campo del 2026-08-29 y la reemplaza. Lo que
+ * abre acá son los tres campos del aviso que estaban cerrados sin una razón de
+ * integridad: la referencia, el tipo de inmueble y los puestos.
+ */
+describe("planListingEdit — los tres campos que la regla del fundador abre (18.27)", () => {
+  it("la referencia, el tipo de inmueble y los puestos se corrigen", () => {
+    const write = writeOf(
+      planListingEdit(published(), ZONES, {
+        reference: "A dos calles de la plaza Altamira",
+        propertyType: "anexo",
+        parkingSpots: 2,
+      }),
+    );
+
+    expect(write.reference).toBe("A dos calles de la plaza Altamira");
+    expect(write.propertyType).toBe("anexo");
+    expect(write.parkingSpots).toBe(2);
+  });
+
+  /**
+   * **El único campo opcional de la edición, y por eso el único con dos
+   * ausencias distintas.** Mandarlo en blanco es «no tengo ninguna» y tiene que
+   * borrar la que había; no mandarlo es «no lo contesté» y deja la de ayer. Sin
+   * esto, una seña equivocada se corrige pero no se saca.
+   */
+  it("la referencia en blanco borra la que había, y no mandarla la deja como estaba", () => {
+    const con = published({ reference: "Frente a la panadería" });
+
+    expect(writeOf(planListingEdit(con, ZONES, { reference: "   " })).reference).toBeUndefined();
+    expect(writeOf(planListingEdit(con, ZONES, {})).reference).toBe("Frente a la panadería");
+  });
+
+  /** Cero puestos es un HECHO, no un campo sin contestar: un anexo sin puesto es
+   *  un aviso normal, y `?? current` lo tiene que dejar pasar. */
+  it("bajar los puestos a cero se guarda como cero, no como «no contestó»", () => {
+    expect(writeOf(planListingEdit(published(), ZONES, { parkingSpots: 0 })).parkingSpots).toBe(0);
+  });
+
+  it("los tres se validan con las MISMAS reglas con las que se publican", () => {
+    expect(
+      rejectionOf(planListingEdit(published(), ZONES, { reference: "a".repeat(121) })),
+    ).toContain("reference.tooLong");
+    expect(
+      rejectionOf(planListingEdit(published(), ZONES, { propertyType: "galpón" as never })),
+    ).toContain("propertyType.invalid");
+    expect(rejectionOf(planListingEdit(published(), ZONES, { parkingSpots: -1 }))).toContain(
+      "parkingSpots.invalid",
+    );
+  });
+
+  /**
+   * **La zona y la ciudad siguen cerradas, y ésta es la prueba que se rompe si
+   * alguien las abre.** Van en la URL —`/alquiler/<ciudad>/<zona>/<slug>-<id>`— y
+   * la ciudad la determina la zona. El título también va en esa URL y sí es
+   * editable: el último segmento termina en el id y `listingIdFromSlug` resuelve
+   * por id, así que la dirección vieja sigue encontrando el aviso. La zona no
+   * tiene ese rescate — es su propio segmento y no lleva ningún id adentro.
+   *
+   * Un pedido con zona ajena entra por un `as never` a propósito: el tipo ya la
+   * prohíbe, y esto prueba que **una acción de servidor —que es un endpoint HTTP
+   * público— tampoco la aplica** aunque alguien la mande igual.
+   */
+  it("una zona o una ciudad mandadas igual no llegan al aviso ni lo rechazan", () => {
+    const write = writeOf(
+      planListingEdit(published(), ZONES, {
+        zoneId: "zone-de-otra-ciudad",
+        cityId: "city-inventada",
+      } as never),
+    );
+
+    // Si `writeFor` las copiara, el validador vería una zona que no está en el
+    // catálogo de esta ciudad y esto sería un rechazo, no una escritura.
+    expect(write).not.toHaveProperty("zoneId");
+    expect(write).not.toHaveProperty("cityId");
   });
 });
 

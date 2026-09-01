@@ -1,6 +1,7 @@
-import { draftExpiresAt } from "../domain/draft-expiry";
+import { draftExpiresAt, hasDraftExpired } from "../domain/draft-expiry";
 import type { StoredPublicationDraft } from "../domain/publication-steps";
 import { normaliseStoredDraft } from "../domain/stored-draft";
+import type { ExpiredDraftSignalPort } from "./ports/expired-draft-signal.port";
 import type { PublicationDraftStorePort } from "./ports/publication-draft-store.port";
 
 /**
@@ -33,6 +34,55 @@ export async function readPublicationDraft(
   const row = await store.load(publisherId, now);
 
   return row === null ? null : normaliseStoredDraft(row);
+}
+
+export interface ExpiredDraftSignalDependencies {
+  readonly expiry: ExpiredDraftSignalPort;
+}
+
+export interface PublicationDraftReading {
+  readonly draft: StoredPublicationDraft | null;
+  /** Hubo un borrador y se venció. Nunca «no hay fila»: son cosas distintas. */
+  readonly expired: boolean;
+}
+
+/**
+ * tasks.md 18.34 — **el borrador, y cuando no hay, si es que se venció.**
+ *
+ * Hasta acá vencido y nunca empezado eran el mismo observable: `load` filtra en
+ * el `WHERE` y quien volvía a las 25 horas caía en el paso 1 con el formulario en
+ * blanco y sin una frase que lo explicara — el mismo modo de falla que la cookie
+ * de treinta minutos tenía, sólo que 48 veces más raro.
+ *
+ * **Las dos salidas que la 18.34 nombraba, y por qué gana ésta.** La otra era
+ * sacar el `expires_at > $ahora` del `WHERE` y dejar que el dominio decidiera
+ * sobre la fila devuelta: más barato en líneas, pero deshace una garantía
+ * embarcada —que un borrador vencido no llegue a existir en memoria— justo
+ * cuando el barrido de la 18.32 borra de R2 las fotos de esa fila. Devolver un
+ * borrador cuyas claves otra transacción está borrando es la única forma de
+ * llegar a revisar un aviso al que le faltan imágenes (AGENTS.md §7). Acá el
+ * filtro se queda y se agrega una lectura al lado.
+ *
+ * **La segunda consulta sólo ocurre cuando no hay borrador**, que es el caso
+ * raro: quien está a mitad de publicar no paga nada. Y la condición vive acá, en
+ * el módulo, y no en la pantalla: escrita en `app/` sería una regla de producto
+ * fuera del piso del 90 % (AGENTS.md §1).
+ */
+export async function readPublicationDraftOrExpiry(
+  publisherId: string,
+  now: Date,
+  dependencies: PublicationDraftDependencies & ExpiredDraftSignalDependencies,
+): Promise<PublicationDraftReading> {
+  const draft = await readPublicationDraft(publisherId, now, dependencies);
+  if (draft !== null) return { draft, expired: false };
+
+  const expiresAt = await dependencies.expiry.findExpiry(publisherId);
+
+  // **El primer llamador de `hasDraftExpired`**, que embarcó en el #186 con sus
+  // pruebas y sin nadie que la usara. El puerto trae la fecha; el borde
+  // —cerrado hacia el vencimiento— lo sigue razonando el dominio, en un solo
+  // lugar. Sin fila no hay nada que se haya vencido: es alguien que nunca empezó.
+  return { draft: null, expired: expiresAt !== null && hasDraftExpired(expiresAt, now) };
 }
 
 /**

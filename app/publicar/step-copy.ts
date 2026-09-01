@@ -104,7 +104,12 @@ export const DISCARD_CHANGE_LABEL = "Descartar el cambio";
  */
 export const STEP_MAP_TRIGGER_LABEL = "Ver los pasos a los que podés volver";
 
-const PROPERTY_TYPE_LABEL: Record<string, string> = {
+/**
+ * Reusado por la pantalla de editar desde la 18.27, que ahora ofrece el tipo:
+ * dos listas de castellano para los mismos cinco valores es como una pantalla
+ * termina diciendo «Habitación» donde la otra dice «Cuarto».
+ */
+export const PROPERTY_TYPE_LABEL: Record<string, string> = {
   apartamento: "Apartamento",
   casa: "Casa",
   quinta: "Quinta",
@@ -242,6 +247,22 @@ export const CHANGE_FIELD_LABEL: Record<ChangedField, string> = {
   photos: "las fotos",
   reference: "la referencia",
 };
+
+/**
+ * tasks.md 18.34 — lo que lee quien vuelve pasadas las 24 horas.
+ *
+ * **La decisión de decirlo no está acá**: `readPublicationDraftOrExpiry` contesta
+ * si esta cuenta tenía un borrador que se venció, y sólo entonces la pantalla
+ * dibuja esta frase. Acá vive el castellano, la misma partición que
+ * `PUBLISH_VIOLATION_COPY` y `PHOTO_ACTION_COPY` ya tienen con sus dominios.
+ *
+ * **Dice el plazo y dice las fotos.** Sin el plazo, «venció» no le enseña a nadie
+ * cómo evitarlo la próxima vez; y callar las fotos dejaría a quien subió seis
+ * creyendo que las va a reencontrar en el paso 8 (el barrido de la 18.32 las
+ * borra de R2 junto con la fila).
+ */
+export const DRAFT_EXPIRED_NOTICE =
+  "Tu borrador anterior venció. Se guarda 24 horas desde la última vez que lo tocaste, así que hay que empezar de nuevo — las fotos que habías subido tampoco quedaron.";
 
 function changeValue(field: ChangedField, value: string): string {
   return field === "priceUsd" ? `$${value}` : value;

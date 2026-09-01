@@ -1,4 +1,7 @@
-import type { PublicationDraftDependencies } from "@/modules/listing-publication/application/publication-draft-session";
+import type {
+  ExpiredDraftSignalDependencies,
+  PublicationDraftDependencies,
+} from "@/modules/listing-publication/application/publication-draft-session";
 import { DrizzlePublicationDraftStore } from "@/modules/listing-publication/infrastructure/drizzle-publication-draft-store";
 import { db } from "@/shared/db/client";
 import type { StoredPublicationDraft } from "../../src/modules/listing-publication/domain/publication-steps";
@@ -29,6 +32,13 @@ export function emptyDraft(): StoredDraft {
   return { listing: {}, photos: [], violations: [] };
 }
 
-export function publicationDraftDependencies(): PublicationDraftDependencies {
-  return { store: new DrizzlePublicationDraftStore(db) };
+/**
+ * **Un solo adaptador contesta los dos puertos** (18.34): son la misma tabla y la
+ * misma llave, y dos instancias serían dos conexiones para responder «no hay
+ * borrador, y esto es lo que había».
+ */
+export function publicationDraftDependencies(): PublicationDraftDependencies &
+  ExpiredDraftSignalDependencies {
+  const store = new DrizzlePublicationDraftStore(db);
+  return { store, expiry: store };
 }

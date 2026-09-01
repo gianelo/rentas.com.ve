@@ -448,6 +448,8 @@ function stepHarness(
       // página: uno armado a mano acá volvería a medir algo que no se sirve.
       jumpable={jumpableStepsFrom(stepId, draft, violations)}
       progress={progressPercent(draft, violations)}
+      // El arnés arma el borrador, así que nunca hay uno vencido que explicar.
+      draftExpired={false}
       returningToReview={false}
       // El arnés mide el recorrido hacia adelante, que no viene de revisar.
       discardHref={null}

@@ -306,6 +306,20 @@ function leerEdicion(formData: FormData): ListingEdit {
     rooms: formCount(formData, "rooms"),
     bathrooms: formCount(formData, "bathrooms"),
     areaM2: formCount(formData, "areaM2"),
+    // El unico campo numerico del aviso donde el vacio ES una respuesta, igual
+    // que en el paso 4: un anexo sin puesto es un aviso normal, y nadie deberia
+    // tener que escribir un cero para corregirlo.
+    parkingSpots: formCount(formData, "parkingSpots") ?? 0,
+    propertyType: formText(formData, "propertyType") as ListingEdit["propertyType"],
+    /**
+     * **En blanco es «ninguna», y no «no la mandes»** (18.27). Es el unico campo
+     * opcional del aviso, asi que las dos ausencias significan cosas distintas y
+     * el dominio las distingue: `""` borra la seña, `undefined` deja la de ayer.
+     * `formText` colapsa las dos en `undefined`, que dejaria la referencia
+     * imposible de sacar desde la pantalla — asi que acá se conserva la
+     * diferencia que el formulario mandó, sin decidir nada sobre ella.
+     */
+    reference: formData.has("reference") ? (formText(formData, "reference") ?? "") : undefined,
     contactMethod: formText(formData, "contactMethod") as ListingEdit["contactMethod"],
     contactValue: formText(formData, "contactValue"),
     publisherType: formText(formData, "publisherType") as ListingEdit["publisherType"],

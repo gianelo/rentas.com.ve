@@ -20,19 +20,22 @@ import type { StoredPublicationDraft } from "@/modules/listing-publication/domai
  * pantalla que nadie sirve.
  */
 
-const { redirect, notFound, load, save, discard, jar, publishListing } = vi.hoisted(() => ({
-  redirect: vi.fn((to: string) => {
-    throw new Error(`NEXT_REDIRECT:${to}`);
+const { redirect, notFound, load, findExpiry, save, discard, jar, publishListing } = vi.hoisted(
+  () => ({
+    redirect: vi.fn((to: string) => {
+      throw new Error(`NEXT_REDIRECT:${to}`);
+    }),
+    notFound: vi.fn(() => {
+      throw new Error("NEXT_NOT_FOUND");
+    }),
+    load: vi.fn(),
+    findExpiry: vi.fn(),
+    save: vi.fn(async () => undefined),
+    discard: vi.fn(async () => undefined),
+    jar: { get: vi.fn(), set: vi.fn(), delete: vi.fn() },
+    publishListing: vi.fn(async () => ({ listingId: "avs_1" })),
   }),
-  notFound: vi.fn(() => {
-    throw new Error("NEXT_NOT_FOUND");
-  }),
-  load: vi.fn(),
-  save: vi.fn(async () => undefined),
-  discard: vi.fn(async () => undefined),
-  jar: { get: vi.fn(), set: vi.fn(), delete: vi.fn() },
-  publishListing: vi.fn(async () => ({ listingId: "avs_1" })),
-}));
+);
 
 vi.mock("next/navigation", () => ({ redirect, notFound }));
 vi.mock("next/headers", () => ({ cookies: async () => jar }));
@@ -40,6 +43,7 @@ vi.mock("@/shared/db/client", () => ({ db: {} }));
 vi.mock("@/modules/listing-publication/infrastructure/drizzle-publication-draft-store", () => ({
   DrizzlePublicationDraftStore: class {
     load = load;
+    findExpiry = findExpiry;
     save = save;
     discard = discard;
   },
@@ -68,6 +72,7 @@ vi.mock("../_lib/require-session", () => ({
 
 import { publishFromReview, submitStep } from "./actions";
 import StepPage from "./paso/[paso]/page";
+import { DRAFT_EXPIRED_NOTICE } from "./step-copy";
 
 const MARIA = "usr_maria";
 
@@ -112,6 +117,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   jar.get.mockReturnValue(undefined);
   load.mockResolvedValue(null);
+  findExpiry.mockResolvedValue(null);
   save.mockResolvedValue(undefined);
   discard.mockResolvedValue(undefined);
 });
@@ -177,5 +183,59 @@ describe("escribir el borrador no deja una cookie detrás", () => {
 
     expect(discard).toHaveBeenCalledWith(MARIA);
     expectSinCookies();
+  });
+});
+
+/**
+ * tasks.md 18.34 — **vencido y nunca empezado dejan de verse igual.**
+ *
+ * Se sirve la RUTA, no el componente: el aviso sale de `readPublicationContext`,
+ * que es quien pregunta —y sólo cuando no hay borrador—, así que escribirle la
+ * prop a mano al componente mediría una pantalla que nadie sirve.
+ *
+ * **Ninguna regla se afirma acá.** Cuándo cuenta como vencido lo prueba
+ * `draft-expiry.test.ts`; que la segunda consulta sólo ocurra sin borrador lo
+ * prueba `publication-draft-session.test.ts`. Acá se prueba que la frase llega a
+ * los bytes, y que no llega cuando no corresponde.
+ */
+describe("el borrador que venció se explica, en vez de dejar el paso 1 en blanco (18.34)", () => {
+  async function servirPrimerPaso(): Promise<string> {
+    const page = await StepPage({
+      params: Promise.resolve({ paso: "tipo" }),
+      searchParams: Promise.resolve({}),
+    });
+    return renderToStaticMarkup(page);
+  }
+
+  it("con una fila vencida, el paso 1 dice por qué está vacío", async () => {
+    findExpiry.mockResolvedValue(new Date(Date.now() - 60_000));
+
+    const html = await servirPrimerPaso();
+
+    expect(html).toContain(DRAFT_EXPIRED_NOTICE);
+    // El par del positivo: la pantalla sigue siendo el paso 1 servible, no un
+    // cartel que reemplazó al formulario.
+    expect(html).toContain('name="propertyType"');
+  });
+
+  /** El par, y hace falta: una frase que saliera siempre pasaría la anterior y
+   *  le diría «se te venció» a quien nunca empezó. */
+  it("sin ninguna fila no dice que se venció nada", async () => {
+    findExpiry.mockResolvedValue(null);
+
+    const html = await servirPrimerPaso();
+
+    expect(html).not.toContain(DRAFT_EXPIRED_NOTICE);
+    expect(html).toContain('name="propertyType"');
+  });
+
+  it("con el borrador vivo no se pregunta el vencimiento ni se dice nada", async () => {
+    load.mockResolvedValue(completo("El de la tabla"));
+
+    const html = await servirPasoTitulo();
+
+    expect(html).not.toContain(DRAFT_EXPIRED_NOTICE);
+    // **Coste cero en el camino normal**, que es lo que hace barata esta salida.
+    expect(findExpiry).not.toHaveBeenCalled();
   });
 });

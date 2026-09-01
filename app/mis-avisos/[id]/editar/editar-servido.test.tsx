@@ -86,6 +86,7 @@ const AVISO = {
   areaM2: 128,
   bathrooms: 2,
   parkingSpots: 1,
+  reference: "Frente a la panadería",
   contactMethod: "whatsapp" as const,
   contactValue: "04121234567",
   photoCount: 3,
@@ -245,6 +246,50 @@ describe("/mis-avisos/[id]/editar — la pantalla de corregir un aviso (18.20)",
     expect(html).toContain("Quién publica");
     expect(html).toContain("Dueño");
     expect(html).toContain(PUBLISHER_TYPE_IMMUTABLE_NOTICE);
+  });
+
+  /**
+   * tasks.md 18.27 — **los tres campos que la regla general del fundador abre**
+   * («se puede corregir cualquier dato menos el de la zona», 2026-09-01).
+   * Ninguna regla se afirma acá: que el dominio los escriba lo prueba
+   * `listing-edit.test.ts`; acá se prueba que la pantalla los ofrece cargados.
+   */
+  it("ofrece corregir la referencia, el tipo de inmueble y los puestos, con lo que el aviso tiene", async () => {
+    const html = await dibujar();
+
+    expect(html).toContain('name="reference"');
+    expect(html).toContain('value="Frente a la panadería"');
+    expect(html).toContain('name="parkingSpots"');
+    expect(html).toContain('name="propertyType"');
+    // Cargado con el valor del aviso, no en blanco: un radio sin marcar haría
+    // que guardar cualquier otro campo cambiara el tipo sin que nadie lo pidiera.
+    expect(html).toMatch(/name="propertyType" checked="" value="apartamento"/);
+    expect(html).not.toMatch(/name="propertyType" checked="" value="casa"/);
+  });
+
+  /**
+   * **La zona y la ciudad siguen sin control, y esa ausencia es la mitad de la
+   * garantía.** La otra la tiene el dominio, que no las lleva en `ListingEdit`.
+   * El par positivo va pegado a propósito: un `not.toContain` sobre una pantalla
+   * que dejó de dibujar el formulario pasa solo.
+   */
+  it("no ofrece cambiar la zona ni la ciudad, que van en la URL del aviso", async () => {
+    const html = await dibujar();
+
+    expect(html).not.toContain('name="zoneId"');
+    expect(html).not.toContain('name="cityId"');
+    expect(html).toContain('name="propertyType"');
+    expect(html).toContain("Guardar cambios");
+  });
+
+  /** La negativa de la referencia dejó de caer en el bloque de arriba el día que
+   *  tuvo control: se lee al lado del campo, como todas las que sí lo tienen. */
+  it("la negativa de la referencia se lee al lado de su campo y no en el bloque", async () => {
+    const html = await dibujar("reference.tooLong");
+
+    expect(html).toContain('id="reference-error"');
+    expect(html).toContain('aria-describedby="reference-error"');
+    expect(html).not.toContain('role="alert"');
   });
 
   /**
