@@ -91,6 +91,12 @@ export async function readPublicationDraftOrExpiry(
  *
  * El plazo lo pone `draftExpiresAt` y no esta función: la ventana de 24 horas es
  * del dominio, y escrita acá volvería a ser un número que alguien copia.
+ *
+ * **Y las fotos van con él** (tasks.md 18.36). El plazo no es sólo del reloj: el
+ * borrador nombra objetos `incoming/` que el bucket borra a los siete días de la
+ * SUBIDA, una cuenta que ningún guardado corre. Pasar las fotos es lo que impide
+ * que la fila prometa un aviso que ya no se puede publicar; cuál de las dos
+ * fechas gana lo sigue decidiendo el dominio.
  */
 export async function savePublicationDraft(
   publisherId: string,
@@ -98,7 +104,7 @@ export async function savePublicationDraft(
   now: Date,
   { store }: PublicationDraftDependencies,
 ): Promise<void> {
-  await store.save(publisherId, draft, draftExpiresAt(now));
+  await store.save(publisherId, draft, draftExpiresAt(now, draft.photos));
 }
 
 /** Publicar y abandonar terminan igual: sin fila. Dejar algo acá haría que el

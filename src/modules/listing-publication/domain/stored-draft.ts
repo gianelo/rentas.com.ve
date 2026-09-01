@@ -63,11 +63,15 @@ function readPhotos(value: unknown): DraftPhoto[] {
   const photos: DraftPhoto[] = [];
   for (const entry of value) {
     if (typeof entry !== "object" || entry === null) continue;
-    const { key, name, bytes } = entry as Record<string, unknown>;
+    const { key, name, bytes, uploadedAt } = entry as Record<string, unknown>;
     // Media foto no es una foto: sin clave no hay nada que descargar, y sin
     // nombre ni tamaño la pantalla de revisar dibujaría una fila vacía.
     if (typeof key !== "string" || typeof name !== "string" || typeof bytes !== "number") continue;
-    photos.push({ key, name, bytes });
+    // tasks.md 18.36 — el sello de subida sí es opcional, y por eso su ausencia
+    // no descarta la foto: lo pone `stampUploadInstants` en el guardado
+    // siguiente. Lo que no es texto se descarta como cualquier otro campo con
+    // la forma de ayer, y `draftExpiresAt` lo trata como «no se sabe».
+    photos.push({ key, name, bytes, ...(typeof uploadedAt === "string" ? { uploadedAt } : {}) });
     // El tope del dominio, aplicado también acá. Cada foto cuesta una descarga
     // y un decodificado de `sharp` dentro de una función con memoria fija.
     if (photos.length === MAX_PHOTOS_PER_LISTING) break;

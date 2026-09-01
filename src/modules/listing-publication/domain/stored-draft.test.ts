@@ -106,6 +106,27 @@ describe("normaliseStoredDraft", () => {
     );
   });
 
+  /**
+   * tasks.md 18.36 — **el sello sobrevive a la columna, o el tope no sirve.** Si
+   * `normaliseStoredDraft` lo descartara al volver de `jsonb`,
+   * `stampUploadInstants` lo repondría con el instante de HOY y el borrador
+   * volvería a prometer siete días sobre una foto que el bucket ya está borrando.
+   */
+  it("el sello de subida vuelve de la columna, y uno que no sea texto se descarta", () => {
+    expect(
+      normaliseStoredDraft({
+        listing: {},
+        photos: [
+          { key: "a", name: "A", bytes: 10, uploadedAt: "2026-09-02T09:00:00.000Z" },
+          { key: "b", name: "B", bytes: 10, uploadedAt: 1_756_800_000_000 },
+        ],
+      })?.photos,
+    ).toEqual([
+      { key: "a", name: "A", bytes: 10, uploadedAt: "2026-09-02T09:00:00.000Z" },
+      { key: "b", name: "B", bytes: 10 },
+    ]);
+  });
+
   it("una lista de violaciones ausente o mal formada vuelve vacía", () => {
     expect(normaliseStoredDraft({ listing: {}, photos: [] })?.violations).toEqual([]);
     expect(
