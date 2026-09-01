@@ -16,6 +16,7 @@ import {
   type ListingField,
 } from "../../src/modules/listing-publication/domain/violation-field";
 import type { PublicationZoneOption } from "../../src/modules/listing-publication/domain/zone-search";
+import type { PriceStepHistogramView } from "../../src/modules/listing-search/domain/price-histogram-step";
 import { submitStep } from "./actions";
 import { FieldError } from "./FieldError";
 import { PhotoUploader } from "./fotos/PhotoUploader";
@@ -91,6 +92,12 @@ export interface PublishStepProps {
   readonly zoneQuery?: string;
   readonly zoneResults?: readonly PublicationZoneOption[];
   readonly zoneName?: string;
+  /**
+   * El mercado de la zona en el paso 3 (18.9). Ausente cuando la pagina no
+   * consulto — que es lo unico que puede pasar, porque sin zona `page.tsx` no
+   * pregunta: la frase habla de un lugar o no se dice.
+   */
+  readonly priceHistogram?: PriceStepHistogramView;
 }
 
 function errorsByField(violations: readonly PublishViolation[], draft: PublicationDraft) {
@@ -341,6 +348,48 @@ function ZoneSearch({ query }: { query: string | undefined }) {
   );
 }
 
+/**
+ * **El mercado de la zona debajo del campo de precio** (18.9, lamina «3 ·
+ * precio»). No decide nada: que barra marca la franja, como se llama el lugar,
+ * que dice la frase y que se lee por debajo del piso de doce vienen resueltos
+ * de `price-histogram-step.ts`. El alto de cada barra es el unico valor inline,
+ * porque es dato medido y no un tamano del sistema.
+ */
+function PriceStepMarket({ view }: { readonly view: PriceStepHistogramView }) {
+  if (view.kind === "insufficient") {
+    return (
+      <figure className={styles.market}>
+        <p className={styles.marketLine}>{view.notice}</p>
+      </figure>
+    );
+  }
+
+  return (
+    <figure className={styles.market}>
+      <figcaption className={styles.marketHeading}>{view.heading}</figcaption>
+      {/* Una fila de barras es una imagen de datos: se anuncia como UNA imagen
+          con el dibujo dicho en palabras, en vez de ocho cajas vacias que un
+          lector de pantalla recorreria sin poder decir nada de ellas. */}
+      <div className={styles.marketBars} role="img" aria-label={view.caption}>
+        {view.bars.map((bar, index) => (
+          <span
+            // biome-ignore lint/suspicious/noArrayIndexKey: la identidad de un cubo ES su lugar en el eje
+            key={index}
+            className={styles.marketBar}
+            data-band={bar.band}
+            style={{ blockSize: `${bar.heightPercent}%` }}
+          />
+        ))}
+      </div>
+      <div className={styles.marketAxis} aria-hidden="true">
+        <span>{view.fromLabel}</span>
+        <span>{view.toLabel}</span>
+      </div>
+      <p className={styles.marketLine}>{view.summary}</p>
+    </figure>
+  );
+}
+
 interface FieldsProps extends PublishStepProps {
   readonly errors: Map<ListingField, string>;
 }
@@ -492,6 +541,7 @@ function StepFields(props: FieldsProps) {
               aria-describedby={errors.get("priceUsd") ? "priceUsd-error" : undefined}
             />
           </div>
+          {props.priceHistogram ? <PriceStepMarket view={props.priceHistogram} /> : null}
         </div>
       );
 
