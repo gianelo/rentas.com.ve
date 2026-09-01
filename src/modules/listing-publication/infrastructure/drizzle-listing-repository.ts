@@ -302,6 +302,13 @@ export class DrizzleListingEdit implements ListingEditPort {
         parkingSpots: listings.parkingSpots,
         contactMethod: listings.contactMethod,
         contactValue: listings.contactValue,
+        // Los cinco de la F6 (18.37): la pantalla dibuja las casillas con
+        // esto, y `?? current` saca de aca lo que un pedido no mande.
+        hasPowerPlant: listings.hasPowerPlant,
+        hasRegularWater: listings.hasRegularWater,
+        isFurnished: listings.isFurnished,
+        hasSecurity: listings.hasSecurity,
+        hasAppliances: listings.hasAppliances,
       })
       .from(listings)
       .where(
@@ -362,6 +369,14 @@ export class DrizzleListingEdit implements ListingEditPort {
         reference: write.reference ?? null,
         contactMethod: write.contactMethod,
         contactValue: write.contactValue,
+        // Los cinco SIEMPRE se escriben, incluso los `false` (18.37): el plan
+        // ya resolvio cuales vienen del pedido, y omitir los `false` dejaria un
+        // atributo imposible de sacar.
+        hasPowerPlant: write.hasPowerPlant,
+        hasRegularWater: write.hasRegularWater,
+        isFurnished: write.isFurnished,
+        hasSecurity: write.hasSecurity,
+        hasAppliances: write.hasAppliances,
       })
       .where(
         and(

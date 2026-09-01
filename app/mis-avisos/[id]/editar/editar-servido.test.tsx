@@ -7,6 +7,7 @@ import {
   PHOTO_ACTION_COPY,
   PHOTO_REMOVAL_REFUSAL_COPY,
 } from "../../../publicar/photo-action-copy";
+import { FEATURES_DECLARED_FIELD } from "../../../publicar/step-values";
 import { PUBLISHER_TYPE_IMMUTABLE_NOTICE } from "../../../publicar/violation-copy";
 
 /**
@@ -87,6 +88,11 @@ const AVISO = {
   bathrooms: 2,
   parkingSpots: 1,
   reference: "Frente a la panadería",
+  hasPowerPlant: false,
+  hasRegularWater: false,
+  isFurnished: false,
+  hasSecurity: false,
+  hasAppliances: false,
   contactMethod: "whatsapp" as const,
   contactValue: "04121234567",
   photoCount: 3,
@@ -192,6 +198,31 @@ describe("el contador de una negativa de editar (18.25)", () => {
   });
 });
 
+/** Sólo el `<fieldset>` de los atributos, acotado por su leyenda y no por una
+ *  clase: los nombres de clase son hashes del CSS, y la pantalla dibuja otros
+ *  dos `<fieldset>` con la misma. */
+function atributos(html: string): string {
+  const legend = html.indexOf("Lo que tiene la propiedad");
+  expect(legend).toBeGreaterThan(-1);
+  return html.slice(html.lastIndexOf("<fieldset", legend), html.indexOf("</fieldset>", legend));
+}
+
+/** El formulario que guarda, acotado por su botón. **`lastIndexOf` y no
+ *  `indexOf`**: la ayuda de las fotos cita «Guardar cambios» para decir que
+ *  ellas NO esperan a ese botón, así que la primera aparición está afuera. */
+function guardado(html: string): string {
+  const boton = html.lastIndexOf("Guardar cambios");
+  expect(boton).toBeGreaterThan(-1);
+  return html.slice(html.lastIndexOf("<form", boton), boton);
+}
+
+/** Devuelve la etiqueta del control, y falla si no está dibujado. */
+function control(alcance: string, name: string): string {
+  const match = new RegExp(`<input[^>]*name="${name}"[^>]*/>`).exec(alcance);
+  if (!match) throw new Error(`no se dibuja el control name="${name}"`);
+  return match[0];
+}
+
 describe("/mis-avisos/[id]/editar — la pantalla de corregir un aviso (18.20)", () => {
   /**
    * Un `<form>` de verdad con `method="post"`, como publicar y como las
@@ -265,6 +296,66 @@ describe("/mis-avisos/[id]/editar — la pantalla de corregir un aviso (18.20)",
     // que guardar cualquier otro campo cambiara el tipo sin que nadie lo pidiera.
     expect(html).toMatch(/name="propertyType" checked="" value="apartamento"/);
     expect(html).not.toMatch(/name="propertyType" checked="" value="casa"/);
+  });
+
+  /**
+   * tasks.md 18.37 — los cinco nombres y las cinco etiquetas **a mano y
+   * apareados**, igual que en el paso 5: derivarlos de `FEATURE_LABELS` sería
+   * preguntarle a la misma constante que el sujeto usa. Y se cuenta que son
+   * cinco, porque uno perdido es un dato que deja de poder corregirse sin que
+   * nada avise.
+   */
+  it("ofrece las cinco casillas de la F6, cada nombre con su etiqueta", async () => {
+    const campos = atributos(await dibujar());
+
+    expect(campos).toMatch(/name="hasPowerPlant"[^>]*\/><span>Planta eléctrica<\/span>/);
+    expect(campos).toMatch(/name="hasRegularWater"[^>]*\/><span>Agua regular<\/span>/);
+    expect(campos).toMatch(/name="isFurnished"[^>]*\/><span>Amoblado<\/span>/);
+    expect(campos).toMatch(/name="hasSecurity"[^>]*\/><span>Vigilancia 24 h<\/span>/);
+    expect(campos).toMatch(/name="hasAppliances"[^>]*\/><span>Línea blanca<\/span>/);
+
+    expect(campos.match(/type="checkbox"/g)).toHaveLength(5);
+  });
+
+  /** **Lo declarado vuelve marcado, y lo demás vuelve DIBUJADO y sin marcar.**
+   *  Las tres sin marcar se piden por `control`, que falla si la casilla no
+   *  está: un `not.toContain("checked")` sobre un control borrado pasa solo. */
+  it("las casillas vuelven con lo que el aviso declaró, no en blanco", async () => {
+    loadListingForEdit.mockResolvedValue({
+      ...AVISO,
+      hasPowerPlant: true,
+      hasSecurity: true,
+      hasRegularWater: false,
+      isFurnished: false,
+      hasAppliances: false,
+    });
+
+    const campos = atributos(await dibujar());
+
+    expect(control(campos, "hasPowerPlant")).toContain('checked=""');
+    expect(control(campos, "hasSecurity")).toContain('checked=""');
+    expect(control(campos, "hasRegularWater")).not.toContain("checked");
+    expect(control(campos, "isFurnished")).not.toContain("checked");
+    expect(control(campos, "hasAppliances")).not.toContain("checked");
+  });
+
+  /**
+   * **La marca, que es la tarea entera.** Sin un campo que SIEMPRE viaje, el
+   * servidor no puede distinguir «las destildé todas» de «este pedido no traía
+   * atributos», y guardar el precio borraría cinco declaraciones. Va DENTRO del
+   * formulario de guardar, así que destildar las cinco y apretar «Guardar
+   * cambios» ya es «no tiene ninguna» con el script apagado — sin el POST
+   * aparte que el paso 5 sí necesita.
+   */
+  it("manda la marca de que el pedido declara los cinco, dentro del formulario que guarda", async () => {
+    const html = await dibujar();
+
+    expect(guardado(html)).toContain(
+      `<input type="hidden" name="${FEATURES_DECLARED_FIELD}" value="1"/>`,
+    );
+    // El par: la marca sin las casillas declararía cinco `false` en cada
+    // guardado, que es el borrado que esto existe para impedir.
+    expect(atributos(html).match(/type="checkbox"/g)).toHaveLength(5);
   });
 
   /**

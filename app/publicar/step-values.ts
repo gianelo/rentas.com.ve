@@ -59,6 +59,21 @@ function checked(formData: FormData, key: string): boolean {
   return formData.get(key) !== null;
 }
 
+/**
+ * El campo oculto con el que la pantalla de editar dice «este pedido declara
+ * los cinco atributos» (tasks.md 18.37).
+ *
+ * **Existe porque una casilla sin marcar no viaja.** Al publicar, mandar el
+ * paso 5 ya es la respuesta y por eso `readStepAnswers` escribe
+ * `featuresDeclared: true` sin preguntarle nada al formulario; al editar los
+ * nueve pasos son uno solo, así que hace falta un campo que SIEMPRE viaje para
+ * separar «destildé las cinco» de «este POST no traía atributos». Nombrado acá
+ * y no escrito dos veces: el `<form>` que lo manda y el lector que lo busca
+ * viven en archivos distintos, y dos literales es como uno de los dos se
+ * renombra solo.
+ */
+export const FEATURES_DECLARED_FIELD = "featuresDeclared";
+
 function rawOf(formData: FormData, keys: readonly string[]): RawValues {
   const raw: RawValues = {};
   for (const key of keys) {
@@ -195,4 +210,4 @@ export function readStepAnswers(
  * entre no contestar y contestar cero, y una segunda copia de esa decisión es
  * la que después se olvida.
  */
-export { count as formCount, text as formText };
+export { checked as formChecked, count as formCount, text as formText };

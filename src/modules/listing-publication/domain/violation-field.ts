@@ -106,6 +106,17 @@ const EDIT_REQUEST_FIELD: Record<keyof ListingEdit, true> = {
   contactMethod: true,
   contactValue: true,
   publisherType: true,
+  /**
+   * **Los cinco de la F6 (18.37) no tienen código de violación**: un booleano no
+   * puede ser inválido. Están acá porque el `Record` los exige, que es la
+   * garantía: el día que alguno gane una regla que pueda rechazar, este archivo
+   * no compila hasta que se diga dónde se lee su negativa.
+   */
+  hasPowerPlant: true,
+  hasRegularWater: true,
+  isFurnished: true,
+  hasSecurity: true,
+  hasAppliances: true,
 };
 
 export interface PlacedEditViolations {

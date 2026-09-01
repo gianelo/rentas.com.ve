@@ -44,9 +44,11 @@ import styles from "../../../publicar/publish-steps.module.css";
 import {
   CHANGE_FIELD_LABEL,
   CONTACT_METHOD_LABEL,
+  FEATURE_LABELS,
   PROPERTY_TYPE_LABEL,
   PUBLISHER_TYPE_LABEL,
 } from "../../../publicar/step-copy";
+import { FEATURES_DECLARED_FIELD } from "../../../publicar/step-values";
 import {
   listingEditViolationMessage,
   PUBLISHER_TYPE_IMMUTABLE_NOTICE,
@@ -504,6 +506,39 @@ export default async function EditarAvisoPage({
                     frase nadie sabría que dejarlo en blanco la saca. */}
                 <p className={styles.help}>Opcional. Dejala en blanco para sacarla.</p>
               </div>
+
+              {/*
+                **Los cinco atributos de la F6, desde la 18.37**: eran los
+                únicos campos del aviso que se filtran y no se podían corregir.
+
+                **El campo oculto es lo que hace que esto funcione sin
+                JavaScript**, y su porqué vive en `FEATURES_DECLARED_FIELD`. Va
+                DENTRO de este formulario, así que destildar las cinco y guardar
+                ya es «no tiene ninguna» — el POST aparte del paso 5 no hace
+                falta acá, donde los nueve pasos son uno solo.
+              */}
+              <fieldset className={styles.choices}>
+                <legend className={styles.legend}>{etiqueta("hasPowerPlant")}</legend>
+                <input type="hidden" name={FEATURES_DECLARED_FIELD} value="1" />
+                {FEATURE_LABELS.map(([field, label]) => (
+                  <label key={field} className={styles.choice}>
+                    <input
+                      className={styles.choiceInput}
+                      type="checkbox"
+                      name={field}
+                      defaultChecked={aviso[field]}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+                {/* **Se dice lo que una casilla marcada afirma, y nada sobre la
+                    que no.** `false` es «no lo declaró» y jamás «no lo tiene»
+                    (`search-criteria.ts`): destildar saca el aviso de esa
+                    búsqueda, no lo mete en la contraria. */}
+                <p className={styles.help}>
+                  Marcá lo que tiene. Quien busca puede filtrar por cada uno.
+                </p>
+              </fieldset>
 
               {/* **El grupo, no un radio.** Tres opciones excluyentes no tienen
                   un control único al que apuntar, así que se describe el

@@ -40,6 +40,11 @@ import {
  * **El contacto**: «el que reveló, reveló. Si entra de nuevo que vea el contacto
  * nuevo». **Las fotos**: sí, y el tope que rige al publicar rige al editar.
  *
+ * **Los cinco atributos de la F6 entran con la misma regla** (18.37), y son los
+ * que más falta hacían: se filtran, así que un aviso que declaró «sin planta
+ * eléctrica» antes de que el edificio la tuviera desaparece de la búsqueda de
+ * quien la pide.
+ *
  * **Un solo juego de reglas, no dos.** Todo lo que no es la inmutabilidad de
  * `publisherType` lo contesta `validatePublishableListing` en etapa
  * `"activation"` — el mismo validador que corre al publicar, al activar un
@@ -71,8 +76,23 @@ import {
  */
 export type ListingEditViolation = PublishViolation | "publisherType.immutable";
 
+/**
+ * Los cinco atributos de la F6 (18.37), escritos UNA vez: el aviso, el pedido y
+ * la escritura los nombran los tres, y tres listas sueltas es como una termina
+ * con cuatro. **Booleanos y no opcionales**: las columnas son
+ * `NOT NULL DEFAULT false`, así que la fila siempre tiene los cinco — y `false`
+ * es «no lo declaró», nunca «no lo tiene» (`search-criteria.ts`).
+ */
+export interface ListingFeatures {
+  readonly hasPowerPlant: boolean;
+  readonly hasRegularWater: boolean;
+  readonly isFurnished: boolean;
+  readonly hasSecurity: boolean;
+  readonly hasAppliances: boolean;
+}
+
 /** El aviso publicado tal como está hoy: hechos, ninguno interpretado. */
-export interface EditableListingSnapshot {
+export interface EditableListingSnapshot extends ListingFeatures {
   readonly publisherType: PublisherType;
   readonly propertyType: PropertyType;
   /** La seña del paso 2, cuando el aviso tiene una. La columna es nulable. */
@@ -100,8 +120,14 @@ export interface EditableListingSnapshot {
  * es la diferencia entre una garantía y una omisión. Un formulario que no
  * dibuja el campo no prueba nada sobre lo que pasa cuando alguien manda el
  * campo igual — y una acción de servidor es un endpoint HTTP público.
+ *
+ * **Los cinco atributos son opcionales igual que todo lo demás** (18.37): un
+ * `undefined` sigue siendo «no lo contesté» también para un booleano, que es lo
+ * que hace que corregir el precio no se lleve por delante cinco declaraciones.
+ * Separarlos de «destildé las cinco», que en un `<form>` es el mismo POST, lo
+ * resuelve `FEATURES_DECLARED_FIELD`, y acá llegan ya separados.
  */
-export interface ListingEdit {
+export interface ListingEdit extends Partial<ListingFeatures> {
   readonly title?: string;
   readonly description?: string;
   readonly priceUsd?: number;
@@ -122,8 +148,8 @@ export interface ListingEdit {
   readonly publisherType?: PublisherType;
 }
 
-/** Los once campos que una edición escribe, y ninguno más. */
-export interface ListingEditWrite {
+/** Los dieciséis campos que una edición escribe, y ninguno más. */
+export interface ListingEditWrite extends ListingFeatures {
   readonly title: string;
   readonly description: string;
   readonly priceUsd: number;
@@ -145,8 +171,8 @@ export type ListingEditPlan =
 /**
  * `?? current` campo por campo, y no `{ ...current, ...edit }`: el spread
  * copiaría cualquier cosa que el pedido traiga, incluido `publisherType` y la
- * zona. Los once nombres escritos a mano son lo que hace que agregar un campo
- * editable sea una decisión y no un descuido.
+ * zona. Los dieciséis nombres escritos a mano son lo que hace que agregar un
+ * campo editable sea una decisión y no un descuido.
  */
 function writeFor(current: EditableListingSnapshot, edit: ListingEdit): ListingEditWrite {
   return {
@@ -166,6 +192,14 @@ function writeFor(current: EditableListingSnapshot, edit: ListingEdit): ListingE
     reference: referenceOrNone(edit.reference ?? current.reference),
     contactMethod: edit.contactMethod ?? current.contactMethod,
     contactValue: edit.contactValue ?? current.contactValue,
+    // `??` y no `||`, y acá pesa más que en ningún otro campo: con `||` un
+    // atributo declarado en `false` volvería al `true` de ayer, o sea que se
+    // podría corregir hacia arriba y nunca hacia abajo.
+    hasPowerPlant: edit.hasPowerPlant ?? current.hasPowerPlant,
+    hasRegularWater: edit.hasRegularWater ?? current.hasRegularWater,
+    isFurnished: edit.isFurnished ?? current.isFurnished,
+    hasSecurity: edit.hasSecurity ?? current.hasSecurity,
+    hasAppliances: edit.hasAppliances ?? current.hasAppliances,
   };
 }
 
