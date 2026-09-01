@@ -215,14 +215,19 @@ export function publishViolationMessage(
  *
  * La lámina de Publicar destaca la segunda mitad en negrita, así que su
  * marcado no se puede reusar tal cual; las palabras sí, y son las que
- * importan. La pantalla de editar dice la frase entera donde debería haber
- * estado el campo, y la negativa del dominio la repite: dos literales de la
- * misma promesa es como una pantalla termina prometiendo algo que la otra no
- * cumple.
+ * importan. La pantalla de editar dice la frase entera al lado del campo, y la
+ * negativa del dominio la repite: dos literales de la misma promesa es como una
+ * pantalla termina prometiendo algo que la otra no cumple.
+ *
+ * **Dejó de decir «no se puede cambiar después» con la 18.38**, porque dejó de
+ * ser cierto: el fundador abrió dueño → inmobiliaria y mantuvo cerrada la
+ * vuelta. La frase tiene que decir CUÁL de las dos direcciones está cerrada, y
+ * decirlo antes de guardar — una negativa que llega después ya no evita nada.
  */
-export const PUBLISHER_TYPE_IMMUTABLE_LEAD = "Aparece siempre en tu aviso y ";
-export const PUBLISHER_TYPE_IMMUTABLE_STRESS = "no se puede cambiar después";
-export const PUBLISHER_TYPE_IMMUTABLE_NOTICE = `${PUBLISHER_TYPE_IMMUTABLE_LEAD}${PUBLISHER_TYPE_IMMUTABLE_STRESS}.`;
+export const PUBLISHER_TYPE_ONE_WAY_LEAD =
+  "Aparece siempre en tu aviso. Después podés corregirlo de dueño a inmobiliaria, ";
+export const PUBLISHER_TYPE_ONE_WAY_STRESS = "nunca al revés";
+export const PUBLISHER_TYPE_ONE_WAY_NOTICE = `${PUBLISHER_TYPE_ONE_WAY_LEAD}${PUBLISHER_TYPE_ONE_WAY_STRESS}.`;
 
 /**
  * El español de una edición: la MISMA tabla de arriba para los códigos
@@ -237,8 +242,11 @@ export function listingEditViolationMessage(
   violation: ListingEditViolation | string,
   context: PublishCopyContext,
 ): string {
+  // **La negativa nombra la dirección cerrada**, que es la única que queda
+  // (18.38): una inmobiliaria no vuelve a dueño. Decir «se declara una vez»
+  // sería mentir sobre la mitad de la regla que el fundador abrió.
   if (violation === "publisherType.immutable") {
-    return `Quién publica se declara una vez. ${PUBLISHER_TYPE_IMMUTABLE_NOTICE}`;
+    return `Una inmobiliaria no puede volver a declararse dueño. ${PUBLISHER_TYPE_ONE_WAY_NOTICE}`;
   }
 
   // **`string` y no la unión, y el `??` no es un descuido.** Los códigos vuelven

@@ -328,12 +328,28 @@ describe("editar un aviso publicado — contra Postgres de verdad (18.14)", () =
     expect(after?.publisher_type).toBe("broker");
   });
 
-  it("mandar un publisher_type distinto se refusa y la fila no se toca", async () => {
+  /** tasks.md 18.38 — **las dos direcciones, en la columna de verdad.** Una sola
+   *  de las dos pasa con la guarda entera borrada. */
+  it("de dueño a inmobiliaria se guarda en la fila", async () => {
     const owner = await insertUser();
     const listingId = await insertListing(owner, { publisherType: "owner" });
 
-    const error = await editListing(
+    await editListing(
       { listingId, edit: { publisherType: "broker", priceUsd: 900 } },
+      { sessionPort: sessionFor(owner), zones, listings },
+    );
+
+    const after = await readListing(listingId);
+    expect(after?.publisher_type).toBe("broker");
+    expect(after?.price_usd).toBe(900);
+  });
+
+  it("volver de inmobiliaria a dueño se refusa y la fila no se toca", async () => {
+    const owner = await insertUser();
+    const listingId = await insertListing(owner, { publisherType: "broker" });
+
+    const error = await editListing(
+      { listingId, edit: { publisherType: "owner", priceUsd: 900 } },
       { sessionPort: sessionFor(owner), zones, listings },
     ).catch((thrown: unknown) => thrown);
 
@@ -341,7 +357,7 @@ describe("editar un aviso publicado — contra Postgres de verdad (18.14)", () =
     expect((error as EditListingRejectedError).violations).toContain("publisherType.immutable");
 
     const after = await readListing(listingId);
-    expect(after?.publisher_type).toBe("owner");
+    expect(after?.publisher_type).toBe("broker");
     expect(after?.price_usd).toBe(610);
   });
 
@@ -407,6 +423,7 @@ describe("editar un aviso publicado — contra Postgres de verdad (18.14)", () =
       reference: undefined,
       contactMethod: "whatsapp" as const,
       contactValue: "04121234567",
+      publisherType: "owner" as const,
       hasPowerPlant: false,
       hasRegularWater: false,
       isFurnished: false,

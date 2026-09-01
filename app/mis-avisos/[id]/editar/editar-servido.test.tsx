@@ -8,7 +8,7 @@ import {
   PHOTO_REMOVAL_REFUSAL_COPY,
 } from "../../../publicar/photo-action-copy";
 import { FEATURES_DECLARED_FIELD } from "../../../publicar/step-values";
-import { PUBLISHER_TYPE_IMMUTABLE_NOTICE } from "../../../publicar/violation-copy";
+import { PUBLISHER_TYPE_ONE_WAY_NOTICE } from "../../../publicar/violation-copy";
 
 /**
  * tasks.md 18.20 — **la pantalla que le faltaba a `editListing`**, en los
@@ -255,28 +255,48 @@ describe("/mis-avisos/[id]/editar — la pantalla de corregir un aviso (18.20)",
   });
 
   /**
-   * **La ausencia del control y la negativa del dominio son dos garantías, no
-   * una.** El dominio ya refusa `publisherType.immutable`; esto prueba la otra
-   * mitad, que la pantalla ni siquiera lo ofrece.
+   * tasks.md 18.38 — **el control existe para un dueño y sólo para un dueño.**
+   * Hacia dónde puede moverse lo contesta `editablePublisherTypes`, no esta
+   * pantalla; acá se prueba que lo dibuja cargado con lo que el aviso declaró —
+   * un radio sin marcar haría que guardar cualquier otro campo cambiara quién
+   * publica sin que nadie lo pidiera.
    */
-  it("no dibuja ningún control de tipo de publicador", async () => {
+  it("un dueño puede corregirse a inmobiliaria, y el control vuelve con su valor", async () => {
     const html = await dibujar();
 
-    expect(html).not.toContain('name="publisherType"');
+    expect(html).toMatch(/name="publisherType" checked="" value="owner"/);
+    expect(html).toContain('name="publisherType" value="broker"');
+    expect(html).toContain("Inmobiliaria");
   });
 
   /**
-   * «Aparece siempre en tu aviso y no se puede cambiar después» es lo que el
-   * paso 9 promete ANTES de publicar. La pantalla de editar lo dice donde
-   * debería haber estado el campo: callarlo dejaría a un dueño buscando un
-   * control que nunca va a encontrar.
+   * **La mitad que hace que la anterior pregunte algo, y la que el fundador
+   * decidió**: para una inmobiliaria no hay a dónde ir, y ofrecerle un control
+   * prometería algo que la guarda va a negar. El par positivo va pegado a
+   * propósito — un `not.toContain` sobre una pantalla que dejó de dibujar el
+   * formulario pasa solo.
    */
-  it("dice quién publica y repite la promesa del paso 9 donde debería haber estado el campo", async () => {
+  it("una inmobiliaria no ve ningún control, y su valor se sigue diciendo", async () => {
+    loadListingForEdit.mockResolvedValue({ ...AVISO, publisherType: "broker" as const });
+
+    const html = await dibujar();
+
+    expect(html).not.toContain('name="publisherType"');
+    expect(html).toContain("Inmobiliaria");
+    expect(html).toContain("Guardar cambios");
+  });
+
+  /**
+   * **La advertencia va ANTES de guardar, no después en una negativa.** El
+   * cambio no es reversible dentro de la misma sesión de edición: una vez
+   * guardado `broker`, la guarda cierra la vuelta. Decirlo recién en el
+   * rechazo llegaría cuando ya no evita nada.
+   */
+  it("dice quién publica y advierte que el sentido es uno solo, antes del botón", async () => {
     const html = await dibujar();
 
     expect(html).toContain("Quién publica");
-    expect(html).toContain("Dueño");
-    expect(html).toContain(PUBLISHER_TYPE_IMMUTABLE_NOTICE);
+    expect(guardado(html)).toContain(PUBLISHER_TYPE_ONE_WAY_NOTICE);
   });
 
   /**
@@ -397,7 +417,7 @@ describe("/mis-avisos/[id]/editar — la pantalla de corregir un aviso (18.20)",
   it("traduce los códigos que vuelven en la URL al castellano de publicar", async () => {
     const html = await dibujar("publisherType.immutable,priceUsd.invalid");
 
-    expect(html).toContain(PUBLISHER_TYPE_IMMUTABLE_NOTICE);
+    expect(html).toContain(PUBLISHER_TYPE_ONE_WAY_NOTICE);
     expect(html).toContain("Solo el número, en dólares y sin centavos");
   });
 
@@ -445,16 +465,15 @@ describe("/mis-avisos/[id]/editar — la pantalla de corregir un aviso (18.20)",
 
   /**
    * **El hueco que la 18.22 nombraba.** `publisherType.immutable` no estaba en
-   * el `Record` de publicar, así que era el único código sin campo. Ahora se lee
-   * donde debería haber estado el control — que es donde el paso 9 ya prometió
-   * que no lo habría.
+   * el `Record` de publicar, así que era el único código sin campo. Desde la
+   * 18.38 hay control de verdad para un dueño, y el mensaje se lee antes de él.
    */
-  it("la negativa de quién publica se lee donde debería haber estado el campo", async () => {
+  it("la negativa de quién publica se lee antes del control", async () => {
     const html = await dibujar("publisherType.immutable");
 
     expect(html).toContain('id="publisherType-error"');
-    expect(html.indexOf("Quién publica se declara una vez")).toBeLessThan(
-      html.indexOf(PUBLISHER_TYPE_IMMUTABLE_NOTICE),
+    expect(html.indexOf("Una inmobiliaria no puede volver a declararse dueño")).toBeLessThan(
+      html.indexOf('name="publisherType"'),
     );
   });
 

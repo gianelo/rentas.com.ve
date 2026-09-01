@@ -13,6 +13,7 @@ import {
 import { loadListingPhotosForEdit } from "@/modules/listing-publication/application/edit-listing-photos";
 import { readCarriedMeasure } from "@/modules/listing-publication/domain/carried-value";
 import { COVER_PHOTO_INDEX } from "@/modules/listing-publication/domain/draft-photo-actions";
+import { editablePublisherTypes } from "@/modules/listing-publication/domain/listing-edit";
 import type { ChangedField } from "@/modules/listing-publication/domain/publication-steps";
 import {
   MAX_PHOTOS_PER_LISTING,
@@ -51,7 +52,7 @@ import {
 import { FEATURES_DECLARED_FIELD } from "../../../publicar/step-values";
 import {
   listingEditViolationMessage,
-  PUBLISHER_TYPE_IMMUTABLE_NOTICE,
+  PUBLISHER_TYPE_ONE_WAY_NOTICE,
   type PublishCopyContext,
 } from "../../../publicar/violation-copy";
 import {
@@ -212,6 +213,9 @@ export default async function EditarAvisoPage({
       : {};
   const claseControl = (field: ListingField) =>
     negativas.byField.has(field) ? ` ${styles.controlInvalid}` : "";
+
+  // Vacía para una inmobiliaria, que no tiene a dónde ir (18.38).
+  const publisherTypes = editablePublisherTypes(aviso.publisherType);
 
   return (
     <>
@@ -587,25 +591,47 @@ export default async function EditarAvisoPage({
               </div>
 
               {/*
-                **Quién publica: el valor sí, el control no.** El dominio refusa
-                el CAMBIO con `publisherType.immutable`; esto es la otra mitad, y
-                hacen falta las dos — una acción de servidor es un endpoint HTTP
-                público, así que no dibujar el campo no prueba nada sobre lo que
-                pasa cuando alguien lo manda igual. Y se dice en vez de callarse:
-                el paso 9 prometió esta misma frase, y callarla acá dejaría a un
-                dueño buscando un control que no existe.
+                **Quién publica, en un solo sentido** (tasks.md 18.38): dueño →
+                inmobiliaria sí, la vuelta no. **A quién se le ofrece el control
+                lo contesta el dominio** con `editablePublisherTypes`, no un
+                `if` de esta pantalla — para una inmobiliaria la lista viene
+                vacía porque no hay a dónde ir, y ofrecerle un control
+                prometería algo que la guarda va a negar.
+
+                **Y no dibujar el control nunca fue la garantía.** Una acción de
+                servidor es un endpoint HTTP público, así que la mitad que de
+                verdad cierra la dirección es la del dominio; ésta sólo evita
+                prometer lo imposible.
               */}
-              <div>
-                {/* **El hueco que la 18.22 nombraba, cerrado.** Sin campo en la
-                    tabla, `publisherType.immutable` era el único código que no
-                    podía colocarse y salía arriba, lejos de lo que explica. No
-                    lleva `aria-invalid`: no hay control que invalidar, que es
-                    justamente lo que la negativa dice. */}
+              <fieldset
+                className={styles.choices}
+                aria-describedby={
+                  negativas.byField.has("publisherType") ? "publisherType-error" : undefined
+                }
+              >
                 <FieldError id="publisherType-error" message={mensaje("publisherType")} />
-                <p className={styles.label}>{etiqueta("publisherType")}</p>
-                <p className={styles.help}>{PUBLISHER_TYPE_LABEL[aviso.publisherType]}</p>
-                <p className={styles.warning}>{PUBLISHER_TYPE_IMMUTABLE_NOTICE}</p>
-              </div>
+                <legend className={styles.legend}>{etiqueta("publisherType")}</legend>
+                {publisherTypes.length === 0 ? (
+                  <p className={styles.help}>{PUBLISHER_TYPE_LABEL[aviso.publisherType]}</p>
+                ) : (
+                  publisherTypes.map((value) => (
+                    <label key={value} className={styles.choice}>
+                      <input
+                        className={styles.choiceInput}
+                        type="radio"
+                        name="publisherType"
+                        value={value}
+                        defaultChecked={aviso.publisherType === value}
+                      />
+                      <span>{PUBLISHER_TYPE_LABEL[value]}</span>
+                    </label>
+                  ))
+                )}
+                {/* **Antes de guardar, no después en una negativa.** Una vez
+                    guardado `broker` la guarda cierra la vuelta, así que decirlo
+                    recién en el rechazo llegaría cuando ya no evita nada. */}
+                <p className={styles.warning}>{PUBLISHER_TYPE_ONE_WAY_NOTICE}</p>
+              </fieldset>
 
               <div className={styles.actions}>
                 <button type="submit" className={styles.primary}>

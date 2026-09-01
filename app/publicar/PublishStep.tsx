@@ -30,8 +30,8 @@ import {
 } from "./step-copy";
 import {
   PUBLISH_VIOLATION_COPY,
-  PUBLISHER_TYPE_IMMUTABLE_LEAD,
-  PUBLISHER_TYPE_IMMUTABLE_STRESS,
+  PUBLISHER_TYPE_ONE_WAY_LEAD,
+  PUBLISHER_TYPE_ONE_WAY_STRESS,
 } from "./violation-copy";
 
 /**
@@ -738,11 +738,11 @@ function StepFields(props: FieldsProps) {
             ))}
           </fieldset>
 
-          {/* La advertencia va ANTES, no despues de publicar. Declararlo mal
-              es motivo de baja, y nadie puede corregirlo despues. */}
+          {/* La advertencia va ANTES, no despues de publicar: declararlo mal es
+              motivo de baja, y desde la 18.38 solo se corrige en un sentido. */}
           <p className={styles.warning}>
-            {PUBLISHER_TYPE_IMMUTABLE_LEAD}
-            <strong>{PUBLISHER_TYPE_IMMUTABLE_STRESS}</strong>.
+            {PUBLISHER_TYPE_ONE_WAY_LEAD}
+            <strong>{PUBLISHER_TYPE_ONE_WAY_STRESS}</strong>.
           </p>
 
           <fieldset className={styles.choices}>
