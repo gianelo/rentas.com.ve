@@ -1,3 +1,4 @@
+import type { PriceHistogramView } from "@/modules/listing-search/domain/price-histogram-panel";
 import type {
   AttributeChoice,
   HiddenField,
@@ -211,10 +212,51 @@ function PriceStep({ model }: { readonly model: SearchPanelModel }) {
           />
         </label>
       </div>
+      <PriceHistogram histogram={model.price.histogram} />
       <button className={styles.searchAction} type="submit">
         Usar este precio
       </button>
     </form>
+  );
+}
+
+/**
+ * **El dibujo del precio, o la negativa a dibujarlo** (F5, lámina 7b).
+ *
+ * No decide nada: qué barra queda dentro del rango, cómo se llama el lugar de
+ * la frase y qué se dice por debajo de doce avisos vienen resueltos de
+ * `price-histogram-panel.ts`. Acá sólo se escribe el marcado — el alto es el
+ * único valor inline, porque es dato medido y no un tamaño del sistema.
+ */
+function PriceHistogram({ histogram }: { readonly histogram: PriceHistogramView }) {
+  if (histogram.kind === "insufficient") {
+    return <p className={styles.histogramNotice}>{histogram.notice}</p>;
+  }
+
+  return (
+    <div className={styles.histogram}>
+      {/* Una fila de barras es una imagen de datos: se anuncia como una sola
+          imagen con el dibujo dicho en palabras, en vez de ocho cajas vacías
+          que un lector de pantalla recorrería sin poder decir nada de ellas. */}
+      <div className={styles.bars} role="img" aria-label={histogram.caption}>
+        {histogram.bars.map((bar, index) => (
+          <span
+            // biome-ignore lint/suspicious/noArrayIndexKey: la identidad de un cubo ES su lugar en el eje
+            key={index}
+            className={styles.bar}
+            data-placement={bar.placement}
+            style={{ blockSize: `${bar.heightPercent}%` }}
+          />
+        ))}
+      </div>
+      <div className={styles.axis} aria-hidden="true">
+        <span>{histogram.fromLabel}</span>
+        <span>{histogram.toLabel}</span>
+      </div>
+      {histogram.summary === null ? null : (
+        <p className={styles.histogramSummary}>{histogram.summary}</p>
+      )}
+    </div>
   );
 }
 
