@@ -4,6 +4,7 @@ import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { StoredPublicationDraft } from "../../src/modules/listing-publication/domain/publication-steps";
 import {
+  DrizzleExpiredPublicationDrafts,
   DrizzlePublicationDraftStore,
   type PublicationDraftDatabase,
 } from "../../src/modules/listing-publication/infrastructure/drizzle-publication-draft-store";
@@ -21,9 +22,9 @@ if (!url) {
 }
 
 const pool = new Pool({ connectionString: url });
-const store = new DrizzlePublicationDraftStore(
-  drizzle(pool, { schema }) as unknown as PublicationDraftDatabase,
-);
+const handle = drizzle(pool, { schema }) as unknown as PublicationDraftDatabase;
+const store = new DrizzlePublicationDraftStore(handle);
+const expired = new DrizzleExpiredPublicationDrafts(handle);
 
 const MARIA = randomUUID();
 const AGENCIA = randomUUID();
@@ -144,5 +145,51 @@ describe("publish_draft contra Postgres real", () => {
     expect(await countDraftRows(MARIA)).toBe(1);
     // Publicar de verdad y abandonar terminan en el mismo estado: sin fila.
     await expect(store.discard(SE_FUE)).resolves.toBeUndefined();
+  });
+});
+
+/**
+ * tasks.md 18.32 — la consulta que la 18.29 corrió en verde y dejó para acá.
+ * **Lo que está bajo prueba es Postgres**: que `jsonb_path_query_array` saque las
+ * claves de un `jsonb` real, y que el borde del vencimiento sea el complemento
+ * EXACTO del que usa `load` — dos consultas distintas que tienen que partir el
+ * instante en el mismo lugar, o un borrador se ve dos veces o ninguna.
+ */
+describe("la lectura del barrido contra Postgres real", () => {
+  const COCINA = { key: "photos/se-fue/cocina/thumb.webp", name: "cocina.jpg", bytes: 90_000 };
+  const SALA = { key: "photos/se-fue/sala/thumb.webp", name: "sala.jpg", bytes: 80_000 };
+
+  it("devuelve las claves de los vencidos y NADA más, y el vivo no aparece", async () => {
+    const ahora = await databaseNow();
+    await store.save(MARIA, draftOf(), new Date(ahora.getTime() + UN_DIA));
+    await store.save(SE_FUE, draftOf({ photos: [COCINA, SALA] }), ahora);
+
+    const vencidos = await expired.listExpired(ahora);
+    const mios = vencidos.filter(
+      ({ publisherId }) => publisherId === MARIA || publisherId === SE_FUE,
+    );
+
+    // `toEqual` sobre el objeto entero: si la consulta empezara a traer `answers`
+    // —la descripción de 1.200 caracteres de cada borrador abandonado— esto falla.
+    expect(mios).toEqual([{ publisherId: SE_FUE, photoKeys: [COCINA.key, SALA.key] }]);
+    // El borde, por los dos lados y en el instante exacto: el barrido lo ve y
+    // quien vuelve ya no, así que nadie retoma un borrador cuyas claves se están
+    // borrando. Y el vivo sigue vivo — sin este par, un `WHERE` que se lleva todo
+    // pasaría la primera mitad.
+    expect(await store.load(SE_FUE, ahora)).toBeNull();
+    expect(await store.load(MARIA, ahora)).not.toBeNull();
+  });
+
+  it("un vencido que nunca llegó al paso 8 vuelve con la lista vacía, no ausente", async () => {
+    const ahora = await databaseNow();
+    await store.save(AGENCIA, draftOf({ photos: [] }), ahora);
+
+    const fila = (await expired.listExpired(ahora)).find(
+      ({ publisherId }) => publisherId === AGENCIA,
+    );
+
+    // Vacío y no `null`: `sweepExpiredDrafts` le borra la fila igual, y un
+    // `undefined` acá lo haría saltear el borrador para siempre.
+    expect(fila).toEqual({ publisherId: AGENCIA, photoKeys: [] });
   });
 });

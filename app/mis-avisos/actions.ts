@@ -215,7 +215,11 @@ export async function quitarFotoDelAviso(formData: FormData): Promise<void> {
         sessionPort: nextAuthSessionPort,
         listings: new DrizzleListingEdit(transactional),
         order: photoSet,
+        // 18.32 — las derivadas se leen antes del borrado y se quitan de R2
+        // después; el orden y el porqué viven en `detachPhotoFromListing`.
+        derivatives: photoSet,
         photos: photoSet,
+        storage: createR2PhotoStorage(),
       },
     );
     // Quien quita la portada cambió la cara del aviso sin pedirlo, así que la

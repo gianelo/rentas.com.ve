@@ -16,6 +16,7 @@ import type {
 import type { EditableListing, ListingEditPort } from "../application/ports/listing-edit.port";
 import type { ListingPhotoAttachmentPort } from "../application/ports/listing-photo-attachment.port";
 import type {
+  ListingPhotoDerivativeKeysPort,
   ListingPhotoDetachmentPort,
   ListingPhotoOrderPort,
   ListingPhotoThumbnail,
@@ -377,7 +378,11 @@ const THUMBNAIL_DERIVATIVE: DerivativeName = "thumb";
  * (AGENTS.md §3).
  */
 export class DrizzleListingPhotoSet
-  implements ListingPhotoOrderPort, ListingPhotoThumbnailPort, ListingPhotoDetachmentPort
+  implements
+    ListingPhotoOrderPort,
+    ListingPhotoThumbnailPort,
+    ListingPhotoDerivativeKeysPort,
+    ListingPhotoDetachmentPort
 {
   constructor(private readonly db: PublicationDatabase) {}
 
@@ -435,6 +440,29 @@ export class DrizzleListingPhotoSet
   }
 
   /**
+   * tasks.md 18.32 — las claves de R2 de UNA foto, para poder quitarlas al
+   * desprenderla.
+   *
+   * **`innerJoin` acá y `leftJoin` en la de arriba, y la asimetría es la
+   * decisión.** Aquélla dibuja un renglón y una foto sin derivadas tiene que
+   * seguir apareciendo para poder quitarse; ésta produce la lista de lo que se
+   * va a BORRAR, y una fila con la clave en `null` sería un `DELETE` contra un
+   * objeto que no existe.
+   *
+   * **`listing_id` en el `WHERE` aunque `photo_id` sea único**, el idioma de
+   * `detachPhoto`: la clave de la foto de un aviso ajeno no se lee ni por error.
+   */
+  async listDerivativeKeys(listingId: string, photoId: string): Promise<readonly string[]> {
+    const rows = await this.db
+      .select({ key: listingPhotoDerivatives.key })
+      .from(listingPhotoDerivatives)
+      .innerJoin(listingPhotos, eq(listingPhotos.id, listingPhotoDerivatives.photoId))
+      .where(and(eq(listingPhotos.listingId, listingId), eq(listingPhotos.id, photoId)));
+
+    return rows.map((row) => row.key);
+  }
+
+  /**
    * Borrar y renumerar, **en una transacción y en tres sentencias de
    * conjunto** — nunca leyendo las filas para reescribirlas una por una, que
    * es la forma con ventana que este repositorio ya evita en el uso único del
@@ -455,10 +483,10 @@ export class DrizzleListingPhotoSet
    * portada asciende a la siguiente» que `planPhotoRemoval` decide en memoria:
    * la portada es la de `position` más baja.
    *
-   * **El objeto de R2 no se toca** (tasks.md 18.21/18.23): sus derivadas viven
-   * bajo el prefijo promovido, junto a las fotos de todos los avisos activos,
-   * así que sólo son distinguibles por la ausencia de esta fila. Borrarlas
-   * pediría permiso de borrado sobre el bucket.
+   * **El objeto de R2 no se toca ACÁ, y desde la 18.32 sí lo toca el caso de
+   * uso**: `detachPhotoFromListing` lee las claves con `listDerivativeKeys`
+   * antes de llamar a este método y las borra después. Este adaptador sigue sin
+   * conocer R2, que es lo que lo deja probable contra Postgres solo.
    */
   async detachPhoto(listingId: string, photoId: string): Promise<boolean> {
     return this.db.transaction(async (tx) => {

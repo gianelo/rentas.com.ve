@@ -1,0 +1,11 @@
+-- El índice sobre `publish_draft.expires_at` (tasks.md 18.32), que la 18.29
+-- dejó fuera a propósito porque nada consultaba esa columna. Ahora la consulta
+-- `sweepExpiredDrafts`, así que el índice llega con su llamador.
+--
+-- **Aditiva y sola**: un `CREATE INDEX` sobre una columna que ya existe. Ni un
+-- `DROP`, `TRUNCATE`, `DELETE`, `ALTER … TYPE` ni un `NOT NULL` sobre columna
+-- existente, así que no lleva —ni necesita— el marcador `deploy-migrate:
+-- allow-destructive`. Sin `CONCURRENTLY` porque `drizzle-kit migrate` corre en
+-- transacción y la tabla es de a lo sumo una fila por cuenta con publicación a
+-- medias: el bloqueo dura milisegundos.
+CREATE INDEX "publish_draft_expires_at_idx" ON "publish_draft" USING btree ("expires_at");

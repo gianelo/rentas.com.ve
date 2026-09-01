@@ -1020,12 +1020,22 @@ export const bulkImportBatches = pgTable(
  * DELETE cascade`**, como `verified_contact` — con un cabo suelto anotado: borrar la
  * cuenta se lleva las únicas claves que nombraban sus fotos de R2.
  */
-export const publishDrafts = pgTable("publish_draft", {
-  publisherId: text("publisher_id")
-    .primaryKey()
-    .references(() => users.id, { onDelete: "cascade" }),
-  /** `StoredPublicationDraft` sin las fotos; `photos` va aparte porque el barrido lo lee solo. */
-  answers: jsonb("answers").notNull(),
-  photos: jsonb("photos").notNull(),
-  expiresAt: timestamp("expires_at", { mode: "date", withTimezone: true }).notNull(),
-});
+export const publishDrafts = pgTable(
+  "publish_draft",
+  {
+    publisherId: text("publisher_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** `StoredPublicationDraft` sin las fotos; `photos` va aparte porque el barrido lo lee solo. */
+    answers: jsonb("answers").notNull(),
+    photos: jsonb("photos").notNull(),
+    expiresAt: timestamp("expires_at", { mode: "date", withTimezone: true }).notNull(),
+  },
+  (draft) => [
+    // tasks.md 18.32 — **el índice llega con su llamador**, que es lo que la
+    // 18.29 dejó dicho al no ponerlo. `sweepExpiredDrafts` pregunta
+    // `expires_at <= $ahora` sobre la tabla entera una vez por día; sin él eso
+    // es un recorrido completo que crece con cada publicación abandonada.
+    index("publish_draft_expires_at_idx").on(draft.expiresAt),
+  ],
+);

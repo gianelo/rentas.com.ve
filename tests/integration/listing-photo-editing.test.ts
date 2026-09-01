@@ -213,12 +213,23 @@ async function insertDerivatives(photoId: string): Promise<void> {
   }
 }
 
-function detachDependencies(userId: string) {
+/**
+ * `removed` junta lo que el caso de uso le manda a R2 (18.32). Es un arreglo y no
+ * un espía porque lo que se afirma es CUÁLES claves —las cinco reales que la fila
+ * nombraba— y no cuántas veces se llamó.
+ */
+function detachDependencies(userId: string, removed: string[] = []) {
   return {
     sessionPort: sessionFor(userId),
     listings,
     order: photoSet,
+    derivatives: photoSet,
     photos: photoSet,
+    storage: {
+      async remove(key: string): Promise<void> {
+        removed.push(key);
+      },
+    },
   };
 }
 
@@ -286,6 +297,27 @@ describe("attachPhotoToListing — contra Postgres de verdad", () => {
 });
 
 describe("detachPhotoFromListing — contra Postgres de verdad", () => {
+  it("las cinco claves llegan a R2, leídas ANTES de que el cascade se las lleve", async () => {
+    const owner = await insertUser();
+    const { listingId, photoIds } = await insertActiveListing(owner, 3);
+    const quitada = photoIds[1] as string;
+    for (const photoId of photoIds) await insertDerivatives(photoId);
+    const removed: string[] = [];
+
+    await detachPhotoFromListing(
+      { listingId, photoId: quitada },
+      detachDependencies(owner, removed),
+    );
+
+    // Las cinco de ESA foto y ninguna de las otras dos, que el aviso sigue mostrando.
+    expect([...removed].sort()).toEqual(
+      ["card", "detail", "full", "strip", "thumb"].map((n) => `promoted/${quitada}/${n}.webp`),
+    );
+    // Y por qué había que leerlas antes: `ON DELETE cascade` ya se las llevó, así
+    // que la misma consulta hecha ahora no nombra ni una.
+    expect(await photoSet.listDerivativeKeys(listingId, quitada)).toEqual([]);
+  });
+
   it("quitar la del medio renumera, así que el siguiente adjuntar NO choca contra listing_photo_position_unique", async () => {
     const owner = await insertUser();
     const { listingId, photoIds } = await insertActiveListing(owner, 3);
