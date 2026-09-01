@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   type EditableListingSnapshot,
+  editablePublisherTypes,
   type ListingEditPlan,
   type ListingEditViolation,
   type ListingEditWrite,
@@ -58,13 +59,42 @@ function writeOf(plan: ListingEditPlan): ListingEditWrite {
   return plan.write;
 }
 
-describe("planListingEdit — quién publica no se puede cambiar después (18.14)", () => {
-  it("rechaza un tipo de publicador distinto del que el aviso ya declaró, y no escribe nada", () => {
+/**
+ * tasks.md 18.38 — **quién publica se corrige en UNA sola dirección**, decisión
+ * del fundador del 2026-09-01.
+ *
+ * La asimetría es a propósito y su razón vive en `listing-edit.ts`: corregir
+ * hacia la honestidad no cuesta nada, y la dirección contraria es exactamente
+ * cómo alguien aprende que mentir sale barato. **Las dos mitades hacen falta**:
+ * una sola pasa con la guarda entera borrada.
+ */
+describe("planListingEdit — quién publica, en una sola dirección (18.38)", () => {
+  it("de dueño a inmobiliaria se aplica, y se escribe", () => {
     const plan = planListingEdit(published({ publisherType: "owner" }), ZONES, {
       publisherType: "broker",
     });
 
+    expect(writeOf(plan).publisherType).toBe("broker");
+  });
+
+  it("de inmobiliaria a dueño se refusa, y no escribe nada", () => {
+    const plan = planListingEdit(published({ publisherType: "broker" }), ZONES, {
+      publisherType: "owner",
+      priceUsd: 700,
+    });
+
     expect(rejectionOf(plan)).toContain("publisherType.immutable");
+  });
+
+  /**
+   * **Hacia dónde puede moverse lo contesta el dominio, no la pantalla.** Un
+   * `<fieldset>` que se dibujara según un `if` de la pantalla sería una regla
+   * fuera del piso del 90 % (AGENTS.md §1) — y la lista vacía es lo que hace
+   * que a una inmobiliaria no se le ofrezca un control que la guarda va a negar.
+   */
+  it("un dueño tiene a dónde ir; una inmobiliaria, a ningún lado", () => {
+    expect(editablePublisherTypes("owner")).toEqual(["owner", "broker"]);
+    expect(editablePublisherTypes("broker")).toEqual([]);
   });
 
   it("repetir el MISMO tipo de publicador no es un cambio, y no se rechaza", () => {
@@ -79,7 +109,7 @@ describe("planListingEdit — quién publica no se puede cambiar después (18.14
     expect(writeOf(plan).priceUsd).toBe(700);
   });
 
-  it("lo que la edición escribe son once campos y ninguno más: ni quién publica, ni la zona, ni la ciudad", () => {
+  it("lo que la edición escribe son doce campos y ninguno más: ni la zona, ni la ciudad", () => {
     const plan = planListingEdit(published(), ZONES, { title: "Otro título del aviso" });
 
     expect(Object.keys(writeOf(plan)).sort()).toEqual([
@@ -91,6 +121,7 @@ describe("planListingEdit — quién publica no se puede cambiar después (18.14
       "parkingSpots",
       "priceUsd",
       "propertyType",
+      "publisherType",
       "reference",
       "rooms",
       "title",
@@ -114,6 +145,7 @@ describe("planListingEdit — lo que la oferta sí puede tocar (18.14)", () => {
       propertyType: current.propertyType,
       parkingSpots: current.parkingSpots,
       reference: current.reference,
+      publisherType: current.publisherType,
     });
   });
 

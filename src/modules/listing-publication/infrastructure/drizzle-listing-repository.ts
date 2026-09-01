@@ -335,8 +335,10 @@ export class DrizzleListingEdit implements ListingEditPort {
 
   /**
    * `status` NO esta entre las columnas del `set`, y esa ausencia es la
-   * garantia: editar no puede resucitar nada. **`city_id` y `zone_id` tampoco
-   * estan**, y esa ausencia es la otra: son los segmentos de la URL que la regla
+   * garantia: editar no puede resucitar nada. **`publisher_type` SI esta desde
+   * la 18.38**, y no ensancha nada: el plan solo lo deja pasar de `owner` a
+   * `broker`, asi que la fila no puede volver a decir dueno. **`city_id` y
+   * `zone_id` tampoco estan**, y esa ausencia es la otra: son los segmentos de la URL que la regla
    * del fundador cierra (18.27), y `ListingEditWrite` ni siquiera los lleva. Lo que si esta en el `WHERE` es
    * `status = 'active'`, el mismo compare-and-swap que `activate` y `renew`.
    */
@@ -362,6 +364,9 @@ export class DrizzleListingEdit implements ListingEditPort {
         reference: write.reference ?? null,
         contactMethod: write.contactMethod,
         contactValue: write.contactValue,
+        // 18.38: solo puede venir cambiado hacia `broker`; la unica direccion
+        // cerrada la refuso `planListingEdit` antes de llegar aca.
+        publisherType: write.publisherType,
       })
       .where(
         and(

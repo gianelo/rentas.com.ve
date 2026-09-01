@@ -303,12 +303,13 @@ describe("guardarEdicion — la ruta que le faltaba a editListing (18.20)", () =
   });
 
   /**
-   * **La pantalla no dibuja el campo, y aun así el POST lo lleva al dominio.**
-   * Una acción de servidor es un endpoint HTTP público: descartar el campo acá
-   * aceptaría en silencio un pedido que el producto refusa, y la garantía
-   * pasaría a depender de que ningún formulario lo dibuje nunca.
+   * **El POST lo lleva al dominio y esta capa no lo juzga** — ni siquiera desde
+   * la 18.38, que abre una de las dos direcciones. Una acción de servidor es un
+   * endpoint HTTP público: decidir acá cuál sentido pasa pondría la mitad de la
+   * regla fuera del piso del 90 % (AGENTS.md §1), y un aviso de inmobiliaria
+   * podría volver a dueño por un POST que esta pantalla no dibuja.
    */
-  it("un tipo de publicador que llegue en el POST viaja al dominio para que lo refuse", async () => {
+  it("un tipo de publicador que llegue en el POST viaja al dominio, que es quien decide", async () => {
     editListing.mockResolvedValueOnce({ listingId: "aviso-1" });
 
     await expect(guardarEdicion(edicionDe({ ...CAMPOS, publisherType: "broker" }))).rejects.toThrow(

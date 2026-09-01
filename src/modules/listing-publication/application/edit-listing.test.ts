@@ -140,7 +140,7 @@ describe("editListing — la puerta, y el aviso ajeno que se contesta como inexi
 });
 
 describe("editListing — lo que escribe y lo que refusa (18.14)", () => {
-  it("escribe los once campos editables con el catálogo de zonas de SU ciudad", async () => {
+  it("escribe los doce campos editables con el catálogo de zonas de SU ciudad", async () => {
     const listings = portReturning(listing());
 
     const result = await editListing(
@@ -166,14 +166,16 @@ describe("editListing — lo que escribe y lo que refusa (18.14)", () => {
       reference: undefined,
       contactMethod: "email",
       contactValue: "d@example.com",
+      // 18.38: el pedido no lo trajo, así que se escribe el vigente.
+      publisherType: "owner",
     });
   });
 
-  it("cambiar el tipo de publicador se refusa nombrando la violación, y no escribe nada", async () => {
-    const listings = portReturning(listing({ publisherType: "owner" }));
+  it("volver de inmobiliaria a dueño se refusa nombrando la violación, y no escribe nada", async () => {
+    const listings = portReturning(listing({ publisherType: "broker" }));
 
     const error = await editListing(
-      { listingId: LISTING, edit: { publisherType: "broker", priceUsd: 700 } },
+      { listingId: LISTING, edit: { publisherType: "owner", priceUsd: 700 } },
       { sessionPort: sessionPortReturning(OWNER), zones, listings },
     ).catch((thrown: unknown) => thrown);
 

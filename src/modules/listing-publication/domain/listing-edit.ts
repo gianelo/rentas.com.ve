@@ -27,7 +27,7 @@ import {
  * |---|---|---|
  * | la zona | **NO** | es un segmento de `/alquiler/<ciudad>/<zona>/<slug>-<id>` |
  * | la ciudad | **NO** | la determina la zona, así que viaja con ella |
- * | tipo de publicador | **NO** | cambiarlo invalidaría hacia atrás el filtro «solo de dueños» |
+ * | tipo de publicador | **en un solo sentido** | dueño → inmobiliaria sí; inmobiliaria → dueño no |
  * | todo lo demás | sí | «corregir un dato mal cargado no es publicar otro aviso» |
  *
  * **Por qué el título sí, si también va en esa URL.** Porque el último segmento
@@ -60,6 +60,28 @@ import {
  * activación (AGENTS.md §7, fallar cerrado) en vez de escribir sobre una fila
  * que ya no puede publicarse.
  */
+
+/**
+ * **Hacia dónde puede moverse `publisherType`** (tasks.md 18.38, decisión del
+ * fundador del 2026-09-01): dueño → inmobiliaria **sí**, inmobiliaria → dueño
+ * **no**.
+ *
+ * **La asimetría es la decisión, y su razón queda acá para que nadie tenga que
+ * volver a derivarla.** Corregir hacia la honestidad no cuesta nada: quien se
+ * declaró dueño y en realidad es corredor arregla su aviso. La dirección
+ * contraria es exactamente el camino por el que alguien APRENDE que mentir sale
+ * barato — declararse inmobiliaria, quedar fuera del filtro de quien busca
+ * trato directo, y volver a dueño cuando no llegan mensajes. Mentir en el paso
+ * 9 ya era posible; lo que la irreversibilidad impedía era aprenderlo.
+ *
+ * **Devuelve la lista y no un booleano** porque la pantalla la necesita para
+ * decidir si dibuja el control: para una inmobiliaria no hay a dónde ir, y
+ * ofrecerle un control prometería algo que la guarda va a negar. El valor
+ * vigente va primero — repetirlo nunca fue un cambio.
+ */
+export function editablePublisherTypes(current: PublisherType): readonly PublisherType[] {
+  return current === "owner" ? ["owner", "broker"] : [];
+}
 
 /**
  * `PublishViolation` extendida para ESTE camino, con la misma forma que
@@ -122,7 +144,7 @@ export interface ListingEdit {
   readonly publisherType?: PublisherType;
 }
 
-/** Los once campos que una edición escribe, y ninguno más. */
+/** Los doce campos que una edición escribe, y ninguno más. */
 export interface ListingEditWrite {
   readonly title: string;
   readonly description: string;
@@ -136,6 +158,8 @@ export interface ListingEditWrite {
   readonly reference: string | undefined;
   readonly contactMethod: ContactMethod;
   readonly contactValue: string;
+  /** Sólo puede haber cambiado hacia `broker`; el plan ya lo refusó si no. */
+  readonly publisherType: PublisherType;
 }
 
 export type ListingEditPlan =
@@ -145,7 +169,7 @@ export type ListingEditPlan =
 /**
  * `?? current` campo por campo, y no `{ ...current, ...edit }`: el spread
  * copiaría cualquier cosa que el pedido traiga, incluido `publisherType` y la
- * zona. Los once nombres escritos a mano son lo que hace que agregar un campo
+ * zona. Los doce nombres escritos a mano son lo que hace que agregar un campo
  * editable sea una decisión y no un descuido.
  */
 function writeFor(current: EditableListingSnapshot, edit: ListingEdit): ListingEditWrite {
@@ -166,6 +190,10 @@ function writeFor(current: EditableListingSnapshot, edit: ListingEdit): ListingE
     reference: referenceOrNone(edit.reference ?? current.reference),
     contactMethod: edit.contactMethod ?? current.contactMethod,
     contactValue: edit.contactValue ?? current.contactValue,
+    // Se compone igual que los demás, y la guarda de abajo es lo único que lo
+    // acota: cuando el cambio no está permitido no hay `write` que aplicar,
+    // porque el plan entero vuelve rechazado.
+    publisherType: edit.publisherType ?? current.publisherType,
   };
 }
 
@@ -176,21 +204,25 @@ export function planListingEdit(
 ): ListingEditPlan {
   const violations: ListingEditViolation[] = [];
 
-  // Se prohíbe CAMBIARLO, no nombrarlo: repetir el valor vigente no invalida
-  // hacia atrás ningún filtro, y refusar un no-cambio convertiría cualquier
-  // formulario que devuelva lo que recibió en un error sin causa.
-  if (edit.publisherType !== undefined && edit.publisherType !== current.publisherType) {
+  // **Se prohíbe UNA dirección, no nombrarlo y no cambiarlo** (18.38). Repetir
+  // el valor vigente no invalida hacia atrás ningún filtro, y refusar un
+  // no-cambio convertiría cualquier formulario que devuelva lo que recibió en
+  // un error sin causa — por eso la guarda compara en vez de mirar si vino.
+  if (
+    edit.publisherType !== undefined &&
+    edit.publisherType !== current.publisherType &&
+    !editablePublisherTypes(current.publisherType).includes(edit.publisherType)
+  ) {
     violations.push("publisherType.immutable");
   }
 
   const write = writeFor(current, edit);
 
   // El aviso completo como lo ve el validador de publicar: lo editable ya
-  // resuelto, lo demás tal como la fila lo tiene. `publisherType`, la ciudad y
-  // la zona salen de `current` SIEMPRE, nunca del pedido — y no figuran en
-  // `write`, así que el spread no puede pisarlos aunque alguien los mande.
+  // resuelto, lo demás tal como la fila lo tiene. La ciudad y la zona salen de
+  // `current` SIEMPRE, nunca del pedido — y no figuran en `write`, así que el
+  // spread no puede pisarlas aunque alguien las mande.
   const merged: DraftListing = {
-    publisherType: current.publisherType,
     cityId: current.cityId,
     zoneId: current.zoneId,
     photoCount: current.photoCount,
