@@ -51,10 +51,10 @@ function list(value: string | string[] | undefined): readonly string[] {
  * allá diga "Guardar y volver a revisar" y que guardar traiga de vuelta acá.
  */
 export default async function ReviewPage({ searchParams }: ReviewPageProps) {
-  await requireSession("/publicar/revisar");
+  const session = await requireSession("/publicar/revisar");
 
   const { campo, antes, ahora } = await searchParams;
-  const { draft, violations, currentStep, zoneName } = await readPublicationContext();
+  const { draft, violations, currentStep, zoneName } = await readPublicationContext(session.userId);
 
   // La regla la contesta el dominio: acá no se decide quién puede ver esta
   // pantalla, sólo qué se hace con la respuesta. Escrita a ojo tenía dos casos

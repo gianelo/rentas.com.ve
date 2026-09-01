@@ -41,12 +41,12 @@ export default async function StepPage({ params, searchParams }: StepPageProps) 
   // pantalla a medio dibujar.
   if (!stepId) notFound();
 
-  await requireSession(`/publicar/paso/${stepId}`);
+  const session = await requireSession(`/publicar/paso/${stepId}`);
 
   const { volver, q } = await searchParams;
   const returningToReview = volver === "revisar";
 
-  const { draft, violations, currentStep, zoneName } = await readPublicationContext();
+  const { draft, violations, currentStep, zoneName } = await readPublicationContext(session.userId);
 
   // **Criterio de aceptacion 10, aplicado en el servidor.** Que el riel no
   // dibuje el enlace es una cortesia; esto es la garantia. Escribir

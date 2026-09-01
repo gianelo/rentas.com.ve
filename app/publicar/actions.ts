@@ -1,7 +1,11 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import {
+  discardPublicationDraft,
+  readPublicationDraft,
+  savePublicationDraft,
+} from "@/modules/listing-publication/application/publication-draft-session";
 import {
   PublishRejectedError,
   publishListing,
@@ -20,16 +24,9 @@ import { DrizzleZoneVocabulary } from "@/modules/listing-publication/infrastruct
 import { db } from "@/shared/db/client";
 import { requireSession } from "../_lib/require-session";
 import { reviewPathFor } from "./change-notice-url";
-import {
-  DRAFT_COOKIE,
-  DRAFT_COOKIE_OPTIONS,
-  DRAFT_TEXT_COOKIE,
-  emptyDraft,
-  parseStoredDraft,
-  type StoredDraft,
-  serialiseStoredDraft,
-} from "./draft";
+import { emptyDraft } from "./draft";
 import { publishListingDependencies } from "./fotos/publication";
+import { publicationDraftDependencies } from "./legacy-draft-cookies";
 import { readStepAnswers } from "./step-values";
 
 /**
@@ -40,10 +37,12 @@ import { readStepAnswers } from "./step-values";
  * es lo que estas pantallas exigen: un POST nativo, un redirect, un
  * re-renderizado.
  *
- * **El resultado viaja en la cookie del borrador y no en la URL.** El redirect
- * es lo que hace que el boton de atras y un refresh se comporten, y una
- * descripcion de 1.200 caracteres no tiene nada que hacer en una cadena de
- * consulta.
+ * **El resultado viaja en el borrador guardado y no en la URL.** El redirect es
+ * lo que hace que el boton de atras y un refresh se comporten, y una descripcion
+ * de 1.200 caracteres no tiene nada que hacer en una cadena de consulta. Desde la
+ * 18.30 ese borrador es una fila de `publish_draft` con la sesion como llave, y
+ * ninguna de las dos funciones de aca vuelve a tocar una cookie: quien decide
+ * que fuente gana y cuando se muere la vieja es `publication-draft-session`.
  *
  * Ninguna regla vive aca. Este archivo ordena llamadas: leer, aplicar,
  * validar, guardar, redirigir. Cual es el paso siguiente, que esta completo,
@@ -52,22 +51,6 @@ import { readStepAnswers } from "./step-values";
 
 function stepPath(step: string, returningToReview: boolean): string {
   return returningToReview ? `/publicar/paso/${step}?volver=revisar` : `/publicar/paso/${step}`;
-}
-
-async function readDraft(): Promise<StoredDraft> {
-  const store = await cookies();
-  return (
-    parseStoredDraft(store.get(DRAFT_COOKIE)?.value, store.get(DRAFT_TEXT_COOKIE)?.value) ??
-    emptyDraft()
-  );
-}
-
-async function writeDraft(draft: StoredDraft): Promise<void> {
-  const store = await cookies();
-  const { draft: value, text } = serialiseStoredDraft(draft);
-
-  store.set(DRAFT_COOKIE, value, DRAFT_COOKIE_OPTIONS);
-  store.set(DRAFT_TEXT_COOKIE, text, DRAFT_COOKIE_OPTIONS);
 }
 
 /**
@@ -88,7 +71,12 @@ async function writeDraft(draft: StoredDraft): Promise<void> {
  *    paso siguiente lee.
  */
 export async function submitStep(formData: FormData): Promise<void> {
-  await requireSession("/publicar");
+  // **De aca sale el llavero del borrador.** Donde antes se leia una cookie
+  // ahora hace falta saber DE QUIEN es la fila, y la unica fuente de eso es la
+  // sesion que esta linea ya pedia y descartaba.
+  const session = await requireSession("/publicar");
+  const now = new Date();
+  const draftStore = publicationDraftDependencies();
 
   const stepId = parseStepId(formData.get("step") as string | undefined);
   // Un paso inventado no se dibuja a medias: se vuelve al principio, que es
@@ -97,7 +85,7 @@ export async function submitStep(formData: FormData): Promise<void> {
 
   const returningToReview = formData.get("volver") === "revisar";
 
-  const before = await readDraft();
+  const before = (await readPublicationDraft(session.userId, now, draftStore)) ?? emptyDraft();
 
   // El vocabulario solo hace falta para el paso 2, y solo acotado a lo que el
   // formulario devolvio. Los otros ocho no consultan nada.
@@ -116,13 +104,18 @@ export async function submitStep(formData: FormData): Promise<void> {
   const violations = validatePublishableListing(draftListingOf(after), curatedZones);
   const own = stepViolations(stepId, violations);
 
-  await writeDraft({
-    ...after,
-    violations: own,
-    // Lo tecleado vuelve SOLO cuando hay algo que explicar. En la rama buena
-    // seria peso muerto en una cookie que ya va justa.
-    ...(own.length > 0 ? { raw } : {}),
-  });
+  await savePublicationDraft(
+    session.userId,
+    {
+      ...after,
+      violations: own,
+      // Lo tecleado vuelve SOLO cuando hay algo que explicar. En la rama buena
+      // seria peso muerto en una fila que se reescribe en cada paso.
+      ...(own.length > 0 ? { raw } : {}),
+    },
+    now,
+    draftStore,
+  );
 
   // `redirect` lanza por diseno, asi que nada debajo de una llamada corre.
   if (own.length > 0) redirect(stepPath(stepId, returningToReview));
@@ -154,15 +147,13 @@ export async function submitStep(formData: FormData): Promise<void> {
  * que el importador no tiene.
  */
 export async function publishFromReview(): Promise<void> {
-  await requireSession("/publicar/revisar");
+  const session = await requireSession("/publicar/revisar");
+  const now = new Date();
+  const draftStore = publicationDraftDependencies();
 
-  const store = await cookies();
-  const draft = parseStoredDraft(
-    store.get(DRAFT_COOKIE)?.value,
-    store.get(DRAFT_TEXT_COOKIE)?.value,
-  );
-  // Sin borrador la cookie vencio o la URL se escribio a mano. El principio
-  // del flujo es donde eso se recupera.
+  const draft = await readPublicationDraft(session.userId, now, draftStore);
+  // Sin borrador vencieron las 24 horas o la URL se escribio a mano. El
+  // principio del flujo es donde eso se recupera.
   if (!draft) redirect("/publicar");
 
   const { photoCount: _derivado, ...values } = draftListingOf(draft);
@@ -191,13 +182,19 @@ export async function publishFromReview(): Promise<void> {
     // error de formulario.
     if (!(error instanceof PublishRejectedError)) throw error;
 
-    await writeDraft({ ...draft, violations: error.violations });
+    await savePublicationDraft(
+      session.userId,
+      { ...draft, violations: error.violations },
+      now,
+      draftStore,
+    );
     redirect("/publicar/revisar");
   }
 
-  // Se borra solo despues de que la escritura salio bien. Borrarla antes
-  // perderia lo que alguien escribio por una falla en la que no tuvo parte.
-  store.delete(DRAFT_COOKIE);
-  store.delete(DRAFT_TEXT_COOKIE);
+  // Se descarta solo despues de que la escritura salio bien. Descartarlo antes
+  // perderia lo que alguien escribio por una falla en la que no tuvo parte. Se
+  // va la fila Y las dos cookies del puente: dejar una viva haria que el aviso
+  // recien publicado volviera como borrador en la pantalla siguiente.
+  await discardPublicationDraft(session.userId, draftStore);
   redirect(`/publicar/listo?id=${encodeURIComponent(listingId)}`);
 }
