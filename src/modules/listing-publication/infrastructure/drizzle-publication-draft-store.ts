@@ -1,7 +1,11 @@
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, lte, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import { publishDrafts } from "../../../shared/db/schema";
+import type {
+  ExpiredDraftPhotos,
+  ExpiredPublicationDraftsPort,
+} from "../application/ports/expired-publication-drafts.port";
 import type { PublicationDraftStorePort } from "../application/ports/publication-draft-store.port";
 import type { DraftPhoto, StoredPublicationDraft } from "../domain/publication-steps";
 
@@ -57,5 +61,41 @@ export class DrizzlePublicationDraftStore implements PublicationDraftStorePort {
   /** `DELETE` de cero filas no es un error: descartar es repetible sin preguntar. */
   async discard(publisherId: string): Promise<void> {
     await this.db.delete(publishDrafts).where(eq(publishDrafts.publisherId, publisherId));
+  }
+}
+
+/**
+ * tasks.md 18.32 — **la única consulta de esta tabla sin `publisher_id` en el
+ * `WHERE`**, y por eso vive en una clase aparte y no como un cuarto método de
+ * `DrizzlePublicationDraftStore`: aquélla tiene por invariante que ningún método
+ * suyo lee la fila de otra cuenta, y ésta pregunta justamente lo contrario.
+ */
+export class DrizzleExpiredPublicationDrafts implements ExpiredPublicationDraftsPort {
+  constructor(private readonly db: PublicationDraftDatabase) {}
+
+  /**
+   * **`jsonb_path_query_array` y no la columna entera.** Trae sólo las claves,
+   * así que `answers` —con la descripción de 1.200 caracteres de cada borrador
+   * abandonado— nunca cruza la red. Es la consulta que la 18.29 corrió en verde
+   * y dejó anotada para acá.
+   *
+   * **`<=` y no `<`**: vencido es el complemento exacto del `expires_at > $ahora`
+   * con el que `load` filtra, así que en el instante justo la fila la ve el
+   * barrido y no quien vuelve. Es el mismo borde que `hasDraftExpired`.
+   */
+  async listExpired(now: Date): Promise<readonly ExpiredDraftPhotos[]> {
+    const rows = await this.db
+      .select({
+        publisherId: publishDrafts.publisherId,
+        photoKeys: sql<
+          string[] | null
+        >`jsonb_path_query_array(${publishDrafts.photos}, '$[*].key')`,
+      })
+      .from(publishDrafts)
+      .where(lte(publishDrafts.expiresAt, now));
+
+    // Una fila guardada antes de que `photos` fuera un arreglo de objetos con
+    // `key` devuelve `[]`, nunca `null`: el barrido borra su fila igual.
+    return rows.map((row) => ({ publisherId: row.publisherId, photoKeys: row.photoKeys ?? [] }));
   }
 }

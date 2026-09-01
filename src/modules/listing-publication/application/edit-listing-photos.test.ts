@@ -18,7 +18,6 @@ import {
 import type { EditableListing, ListingEditPort } from "./ports/listing-edit.port";
 import type { ListingPhotoAttachmentPort } from "./ports/listing-photo-attachment.port";
 import type {
-  ListingPhotoDetachmentPort,
   ListingPhotoOrderPort,
   ListingPhotoThumbnail,
   ListingPhotoThumbnailPort,
@@ -125,8 +124,52 @@ function thumbnailPort(photos: readonly ListingPhotoThumbnail[]): ListingPhotoTh
   return { listPhotoThumbnailsInOrder: vi.fn(async () => photos) };
 }
 
-function detachmentPort(detached = true): ListingPhotoDetachmentPort {
-  return { detachPhoto: vi.fn(async () => detached) };
+/**
+ * Las cinco dependencias de desprender en un solo armado, **con un registro de
+ * llamadas**: lo que la 18.32 agrega no es un borrado más sino un ORDEN, y una
+ * prueba que sólo mire «se llamó a `remove`» no distingue leer las claves antes
+ * de borrar la fila de leerlas después, que es cuando ya no existen.
+ */
+function detachDeps(
+  options: {
+    readonly listing?: EditableListing | null;
+    readonly ids?: readonly string[];
+    readonly detached?: boolean;
+    readonly keys?: readonly string[];
+    readonly rejectRemove?: boolean;
+    readonly user?: string;
+  } = {},
+) {
+  const calls: string[] = [];
+  const listing =
+    options.listing === undefined ? editableListing({ photoCount: 3 }) : options.listing;
+
+  return {
+    calls,
+    dependencies: {
+      sessionPort: sessionFor(options.user ?? OWNER),
+      listings: listingsThatFind(listing),
+      order: orderPort(options.ids ?? ["a", "b", "c"]),
+      derivatives: {
+        listDerivativeKeys: vi.fn(async () => {
+          calls.push("listDerivativeKeys");
+          return options.keys ?? [];
+        }),
+      },
+      photos: {
+        detachPhoto: vi.fn(async () => {
+          calls.push("detachPhoto");
+          return options.detached ?? true;
+        }),
+      },
+      storage: {
+        remove: vi.fn(async (key: string) => {
+          calls.push(`remove:${key}`);
+          if (options.rejectRemove) throw new Error("R2 cortó la conexión");
+        }),
+      },
+    },
+  };
 }
 
 describe("requestListingPhotoUpload", () => {
@@ -415,102 +458,105 @@ describe("loadListingPhotosForEdit", () => {
 });
 
 describe("detachPhotoFromListing", () => {
-  it("un aviso ajeno o inexistente no desprende nada, y ni siquiera lee sus fotos", async () => {
-    const order = orderPort(["a", "b"]);
-    const photos = detachmentPort();
+  it("un aviso ajeno o inexistente no desprende nada, ni lee sus fotos, ni toca R2", async () => {
+    const { dependencies } = detachDeps({ listing: null, user: "stranger" });
 
     await expect(
-      detachPhotoFromListing(
-        { listingId: "listing-1", photoId: "a" },
-        {
-          sessionPort: sessionFor("stranger"),
-          listings: listingsThatFind(null),
-          order,
-          photos,
-        },
-      ),
+      detachPhotoFromListing({ listingId: "listing-1", photoId: "a" }, dependencies),
     ).rejects.toBeInstanceOf(EditListingNotFoundError);
 
-    expect(order.listPhotoIdsInOrder).not.toHaveBeenCalled();
-    expect(photos.detachPhoto).not.toHaveBeenCalled();
+    expect(dependencies.order.listPhotoIdsInOrder).not.toHaveBeenCalled();
+    expect(dependencies.derivatives.listDerivativeKeys).not.toHaveBeenCalled();
+    expect(dependencies.photos.detachPhoto).not.toHaveBeenCalled();
+    expect(dependencies.storage.remove).not.toHaveBeenCalled();
   });
 
-  it("quitar la única foto se rechaza y no borra la fila", async () => {
-    const photos = detachmentPort();
+  it("quitar la única foto se rechaza, y no borra la fila ni sus derivadas", async () => {
+    const { dependencies } = detachDeps({
+      listing: editableListing({ photoCount: 1 }),
+      ids: ["a"],
+      keys: ["promoted/a/thumb"],
+    });
 
     await expect(
-      detachPhotoFromListing(
-        { listingId: "listing-1", photoId: "a" },
-        {
-          sessionPort: sessionFor(OWNER),
-          listings: listingsThatFind(editableListing({ photoCount: 1 })),
-          order: orderPort(["a"]),
-          photos,
-        },
-      ),
+      detachPhotoFromListing({ listingId: "listing-1", photoId: "a" }, dependencies),
     ).rejects.toMatchObject({ name: "ListingPhotoRemovalRefusedError", refusal: "lastPhoto" });
 
-    expect(photos.detachPhoto).not.toHaveBeenCalled();
+    expect(dependencies.photos.detachPhoto).not.toHaveBeenCalled();
+    expect(dependencies.storage.remove).not.toHaveBeenCalled();
   });
 
   it("una foto que no está en este aviso se rechaza como notFound, no como la última", async () => {
-    const photos = detachmentPort();
+    const { dependencies } = detachDeps();
 
     await expect(
-      detachPhotoFromListing(
-        { listingId: "listing-1", photoId: "de-otro-aviso" },
-        {
-          sessionPort: sessionFor(OWNER),
-          listings: listingsThatFind(editableListing()),
-          order: orderPort(["a", "b"]),
-          photos,
-        },
-      ),
+      detachPhotoFromListing({ listingId: "listing-1", photoId: "de-otro-aviso" }, dependencies),
     ).rejects.toMatchObject({ name: "ListingPhotoRemovalRefusedError", refusal: "notFound" });
 
-    expect(photos.detachPhoto).not.toHaveBeenCalled();
+    expect(dependencies.photos.detachPhoto).not.toHaveBeenCalled();
   });
 
   it("quitar la portada dice con nombre cuál quedó de portada", async () => {
-    const result = await detachPhotoFromListing(
-      { listingId: "listing-1", photoId: "a" },
-      {
-        sessionPort: sessionFor(OWNER),
-        listings: listingsThatFind(editableListing({ photoCount: 3 })),
-        order: orderPort(["a", "b", "c"]),
-        photos: detachmentPort(),
-      },
-    );
+    const { dependencies } = detachDeps();
 
-    expect(result).toEqual({ listingId: "listing-1", coverChangedTo: "b" });
+    expect(await detachPhotoFromListing({ listingId: "listing-1", photoId: "a" }, dependencies)) //
+      .toEqual({ listingId: "listing-1", coverChangedTo: "b" });
   });
 
   it("quitar una que no es la portada no anuncia ningún cambio de portada", async () => {
-    const result = await detachPhotoFromListing(
-      { listingId: "listing-1", photoId: "c" },
-      {
-        sessionPort: sessionFor(OWNER),
-        listings: listingsThatFind(editableListing({ photoCount: 3 })),
-        order: orderPort(["a", "b", "c"]),
-        photos: detachmentPort(),
-      },
-    );
+    const { dependencies } = detachDeps();
 
-    expect(result).toEqual({ listingId: "listing-1", coverChangedTo: null });
+    expect(await detachPhotoFromListing({ listingId: "listing-1", photoId: "c" }, dependencies)) //
+      .toEqual({ listingId: "listing-1", coverChangedTo: null });
   });
 
   it("si la fila dejó de estar entre la lectura y el borrado, se contesta como inexistente", async () => {
+    const { dependencies } = detachDeps({ detached: false, keys: ["promoted/c/thumb"] });
+
     await expect(
-      detachPhotoFromListing(
-        { listingId: "listing-1", photoId: "b" },
-        {
-          sessionPort: sessionFor(OWNER),
-          listings: listingsThatFind(editableListing({ photoCount: 2 })),
-          order: orderPort(["a", "b"]),
-          photos: detachmentPort(false),
-        },
-      ),
+      detachPhotoFromListing({ listingId: "listing-1", photoId: "c" }, dependencies),
     ).rejects.toBeInstanceOf(EditListingNotFoundError);
+
+    // Ya la borró otra transacción, así que sus derivadas son de aquélla: quitarlas
+    // acá borraría objetos que la otra podría estar decidiendo conservar.
+    expect(dependencies.storage.remove).not.toHaveBeenCalled();
+  });
+
+  it("lee las claves de las derivadas ANTES de borrar la fila, y las quita de R2 DESPUÉS", async () => {
+    const claves = ["promoted/c/thumb", "promoted/c/card", "promoted/c/full"];
+    const { calls, dependencies } = detachDeps({ keys: claves });
+
+    await detachPhotoFromListing({ listingId: "listing-1", photoId: "c" }, dependencies);
+
+    // El orden literal. `listing_photo_derivative` cuelga de `listing_photo` con
+    // `ON DELETE cascade`: leído después del borrado, esto devuelve cero claves y
+    // los cinco objetos quedan pagados para siempre.
+    expect(calls).toEqual([
+      "listDerivativeKeys",
+      "detachPhoto",
+      ...claves.map((k) => `remove:${k}`),
+    ]);
+    expect(dependencies.derivatives.listDerivativeKeys).toHaveBeenCalledWith("listing-1", "c");
+  });
+
+  it("si R2 rechaza, la llamada grita — y la fila ya se fue, que es el orden elegido", async () => {
+    const { calls, dependencies } = detachDeps({ keys: ["promoted/c/thumb"], rejectRemove: true });
+
+    await expect(
+      detachPhotoFromListing({ listingId: "listing-1", photoId: "c" }, dependencies),
+    ).rejects.toThrow("R2 cortó la conexión");
+
+    // La fila YA no está cuando R2 falla: se eligió el huérfano —una cuenta que
+    // nadie ve— antes que un aviso vivo apuntando a cinco 404 irrecuperables.
+    expect(calls).toEqual(["listDerivativeKeys", "detachPhoto", "remove:promoted/c/thumb"]);
+  });
+
+  it("una foto sin derivadas pierde la fila igual y no le pide nada a R2", async () => {
+    const { calls, dependencies } = detachDeps({ keys: [] });
+
+    await detachPhotoFromListing({ listingId: "listing-1", photoId: "c" }, dependencies);
+
+    expect(calls).toEqual(["listDerivativeKeys", "detachPhoto"]);
   });
 
   it("ListingPhotoRemovalRefusedError lleva la negativa del dominio, no una frase", () => {
