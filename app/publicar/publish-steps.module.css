@@ -789,3 +789,70 @@
     font-size: var(--ficha-body-fs-desktop);
   }
 }
+
+/* ---------- el mercado de la zona, debajo del precio (18.9) ---------- */
+
+/* Un `<figure>` y no un `<div>`: es una figura con su rótulo, y el rótulo
+   nombra la zona de la que hablan las ocho barras y la frase de abajo. */
+.market {
+  margin: 20px 0 0;
+  padding: 15px;
+  border-radius: var(--r);
+  background: var(--bg);
+}
+
+.marketHeading {
+  font-family: var(--meta);
+  font-size: var(--badge-fs);
+  font-weight: var(--badge-fw);
+  letter-spacing: var(--badge-ls);
+  text-transform: uppercase;
+  color: var(--soft);
+}
+
+.marketBars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  block-size: 44px;
+  margin-block-start: 11px;
+}
+
+/* **Marcada es la franja de la mayoría, y con el mismo acento la lista dice
+   otra cosa**: allá significa «tu rango cubre esto», acá «acá se concentra la
+   oferta». El color no carga ese significado en ninguna de las dos — la frase
+   de abajo y el `aria-label` de la fila lo nombran, el acento sólo lo señala.
+
+   **`--line` y no `--tint`, a propósito**: en el panel el par tinte + borde
+   significa EXCLUIDO, y acá nada lo está — las ocho barras son precios de
+   vecinos reales, así que las no marcadas quedan en el token neutro que las dos
+   láminas de Publicar dibujan. El borde SÍ es desviación de la lámina y se
+   documenta (AGENTS.md §2): el relleno solo es «invisible para quien no
+   distingue colores y para el modo de alto contraste» (violation-copy.ts). */
+.marketBar {
+  flex: 1;
+  min-inline-size: 0;
+  border-radius: var(--r) var(--r) 0 0;
+  background: var(--accent);
+}
+
+.marketBar[data-band="rest"] {
+  background: var(--line);
+  border: 1px solid var(--strong);
+}
+
+.marketAxis {
+  display: flex;
+  justify-content: space-between;
+  margin-block-start: 8px;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  color: var(--soft);
+}
+
+.marketLine {
+  margin: 11px 0 0;
+  font-size: var(--ficha-body-fs);
+  line-height: var(--ficha-body-lh);
+  color: var(--soft);
+}

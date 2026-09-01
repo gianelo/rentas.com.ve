@@ -14,6 +14,8 @@ import {
 } from "@/modules/listing-publication/domain/publication-steps";
 import { searchPublicationZones } from "@/modules/listing-publication/domain/zone-search";
 import { DrizzleZoneVocabulary } from "@/modules/listing-publication/infrastructure/drizzle-zone-vocabulary";
+import { buildPriceStepHistogramView } from "@/modules/listing-search/domain/price-histogram-step";
+import { DrizzleZonePriceTally } from "@/modules/listing-search/infrastructure/drizzle-zone-price-tally";
 import { db } from "@/shared/db/client";
 import { requireSession } from "../../../_lib/require-session";
 import { reviewPathFor } from "../../change-notice-url";
@@ -73,6 +75,27 @@ export default async function StepPage({ params, searchParams }: StepPageProps) 
       ? searchPublicationZones(q, await new DrizzleZoneVocabulary(db).lookup(q))
       : undefined;
 
+  // **El paso 3 es el segundo que consulta, y por la misma razón que el 2: sólo
+  // cuando hay de qué hablar.** El puerto es angosto —los ocho cubos de la zona
+  // y nada más— aunque abajo lo resuelva el MISMO motor de facetas que F5
+  // (18.9). La zona la garantiza `isStepNavigable`, que ya devolvió al paso 2
+  // en la línea 54 si faltaba; la guarda de acá es la que impide consultar sin
+  // «acá» aunque esa garantía se rompa mañana (AGENTS.md §7).
+  const { cityId, zoneId } = draft.listing;
+  const priceHistogram =
+    stepId === "precio" && cityId && zoneId && zoneName
+      ? buildPriceStepHistogramView(
+          await new DrizzleZonePriceTally(db).tallyForZone(cityId, zoneId),
+          {
+            zoneName,
+            priceUsd: draft.listing.priceUsd,
+            // Lo que el CAMPO está mostrando. Con basura tecleada el precio
+            // guardado es el anterior, y la frase no lo juzga.
+            retypedPrice: draft.raw?.priceUsd,
+          },
+        )
+      : undefined;
+
   return (
     <PublishStep
       stepId={stepId}
@@ -101,6 +124,7 @@ export default async function StepPage({ params, searchParams }: StepPageProps) 
       zoneQuery={q}
       zoneResults={zoneResults}
       zoneName={zoneName}
+      priceHistogram={priceHistogram}
     />
   );
 }
