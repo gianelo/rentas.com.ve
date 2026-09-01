@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { DRAFT_LIFETIME_MS } from "../domain/draft-expiry";
 import type { StoredPublicationDraft } from "../domain/publication-steps";
-import type { LegacyPublicationDraftPort } from "./ports/legacy-publication-draft.port";
 import type { PublicationDraftStorePort } from "./ports/publication-draft-store.port";
 import {
   discardPublicationDraft,
@@ -11,15 +10,11 @@ import {
 } from "./publication-draft-session";
 
 /**
- * El borrador de publicar, leído y escrito **por un solo lado** (tasks.md 18.30).
+ * El borrador de publicar, con la tabla como **única** fuente (tasks.md 18.30/18.33).
  *
- * La rebanada anterior dejó la tabla y su puerto sin llamador. Ésta los cablea, y
- * el día que shipea hay dos fuentes vivas del mismo borrador: la fila, y las dos
- * cookies que quien está a mitad de publicar todavía trae. **Un puente de dos
- * fuentes es el defecto**, no la solución, así que la regla de acá es lo único
- * que lo hace uno: la tabla gana siempre, y la cookie se muere en cuanto la tabla
- * se escribe. Escrito en el caso de uso y no en `app/` porque decide QUÉ pasa —
- * `app/` sólo sabe cómo se borra una cookie.
+ * Las tres puertas viven acá y no en `app/` porque deciden QUÉ pasa: qué se acepta
+ * de una fila que escribió el formulario de ayer, y cuánto vive lo que se guarda.
+ * `app/` sólo sabe qué adaptador contesta el puerto.
  */
 
 const MARIA = "usr_maria";
@@ -30,18 +25,9 @@ const enTabla: StoredPublicationDraft = {
   photos: [{ key: "usr_maria/a.webp", name: "Sala", bytes: 10 }],
   violations: [],
 };
-const enCookie: StoredPublicationDraft = {
-  listing: { title: "El de la cookie" },
-  photos: [],
-  violations: [],
-};
 
-function dependencias(
-  load: StoredPublicationDraft | null,
-  legacy: StoredPublicationDraft | null = null,
-): PublicationDraftDependencies & {
+function dependencias(load: StoredPublicationDraft | null): PublicationDraftDependencies & {
   readonly store: { [K in keyof PublicationDraftStorePort]: ReturnType<typeof vi.fn> };
-  readonly legacy: { [K in keyof LegacyPublicationDraftPort]: ReturnType<typeof vi.fn> };
 } {
   return {
     store: {
@@ -49,40 +35,21 @@ function dependencias(
       save: vi.fn(async () => undefined),
       discard: vi.fn(async () => undefined),
     },
-    legacy: { read: vi.fn(async () => legacy), clear: vi.fn(async () => undefined) },
   } as never;
 }
 
 describe("leer el borrador", () => {
-  it("la tabla gana sobre la cookie, y la cookie ni se consulta", async () => {
-    // **El orden es la trampa entera.** Al revés —cookie primero— una cookie
-    // vieja del mismo navegador pisaría en silencio lo que la persona acaba de
-    // guardar, y las dos pantallas darían verde por separado.
-    const deps = dependencias(enTabla, enCookie);
+  it("la fila de la cuenta es el borrador, filtrada por el instante que se le da", async () => {
+    const deps = dependencias(enTabla);
 
     expect(await readPublicationDraft(MARIA, AHORA, deps)).toEqual(enTabla);
-    expect(deps.legacy.read).not.toHaveBeenCalled();
+    // El `now` viaja hasta el `WHERE`: es lo que hace que un borrador vencido no
+    // llegue a existir en memoria, en vez de un `if` posterior que alguien olvide.
     expect(deps.store.load).toHaveBeenCalledWith(MARIA, AHORA);
   });
 
-  it("sin fila, la cookie de la entrega anterior es el borrador", async () => {
-    // El puente: quien estaba en el paso 6 el día del despliegue.
-    const deps = dependencias(null, enCookie);
-
-    expect(await readPublicationDraft(MARIA, AHORA, deps)).toEqual(enCookie);
-  });
-
-  it("sin fila y sin cookie no hay borrador", async () => {
+  it("sin fila no hay borrador", async () => {
     expect(await readPublicationDraft(MARIA, AHORA, dependencias(null))).toBeNull();
-  });
-
-  it("leer nunca borra la cookie, ni siquiera cuando la tabla contestó", async () => {
-    // No es prolijidad: leer pasa por un componente de servidor, y ahí Next no
-    // deja tocar cookies. Un `clear()` acá sería un 500 en el paso 1.
-    const deps = dependencias(enTabla, enCookie);
-    await readPublicationDraft(MARIA, AHORA, deps);
-
-    expect(deps.legacy.clear).not.toHaveBeenCalled();
   });
 
   it("una fila con la forma de ayer se limpia campo por campo, y el resto sobrevive", async () => {
@@ -108,7 +75,7 @@ describe("leer el borrador", () => {
 });
 
 describe("escribir el borrador", () => {
-  it("guarda con las 24 horas del dominio y borra las dos cookies", async () => {
+  it("guarda con las 24 horas del dominio, y no con un plazo escrito acá", async () => {
     const deps = dependencias(null);
 
     await savePublicationDraft(MARIA, enTabla, AHORA, deps);
@@ -118,42 +85,15 @@ describe("escribir el borrador", () => {
       enTabla,
       new Date(AHORA.getTime() + DRAFT_LIFETIME_MS),
     );
-    // **La aserción que sostiene toda la rebanada.** Sin esto la cookie queda
-    // como una segunda fuente del mismo borrador, y el día que discrepen gana
-    // la que nadie mira.
-    expect(deps.legacy.clear).toHaveBeenCalledTimes(1);
   });
 
-  it("si la tabla no aceptó la escritura, la cookie NO se borra", async () => {
-    // El orden es lo que protege el borrador: borrar antes de que la fila
-    // exista deja a quien publica sin ninguna de las dos fuentes por una falla
-    // en la que no tuvo parte.
-    const deps = dependencias(null);
-    deps.store.save.mockRejectedValueOnce(new Error("la base dijo que no"));
-
-    await expect(savePublicationDraft(MARIA, enTabla, AHORA, deps)).rejects.toThrow(
-      "la base dijo que no",
-    );
-    expect(deps.legacy.clear).not.toHaveBeenCalled();
-  });
-
-  it("descartar borra la fila y también las dos cookies", async () => {
-    // Publicar de verdad y abandonar terminan igual, y sin esto publicar dejaría
-    // la cookie viva: el siguiente `load` la subiría de nuevo y el aviso ya
-    // publicado volvería como borrador.
+  it("descartar deja la cuenta sin fila", async () => {
+    // Publicar de verdad y abandonar terminan igual: sin fila. Si quedara algo,
+    // el aviso recién publicado volvería como borrador en la pantalla siguiente.
     const deps = dependencias(enTabla);
 
     await discardPublicationDraft(MARIA, deps);
 
     expect(deps.store.discard).toHaveBeenCalledWith(MARIA);
-    expect(deps.legacy.clear).toHaveBeenCalledTimes(1);
-  });
-
-  it("si la fila no se pudo borrar, la cookie tampoco", async () => {
-    const deps = dependencias(enTabla);
-    deps.store.discard.mockRejectedValueOnce(new Error("la base dijo que no"));
-
-    await expect(discardPublicationDraft(MARIA, deps)).rejects.toThrow("la base dijo que no");
-    expect(deps.legacy.clear).not.toHaveBeenCalled();
   });
 });

@@ -15,9 +15,9 @@ type StoredAnswers = Omit<StoredPublicationDraft, "photos">;
 /**
  * tasks.md 18.29 — una fila por cuenta y ninguna decisión adentro. **Ningún método
  * sin `publisher_id` en el `WHERE`**, el idioma que `DrizzlePublisherListings` usa.
- * **La fila no se valida campo por campo**, a diferencia de `parseStoredDraft`:
- * aquélla desconfía porque una cookie viaja por el navegador, y ésta la escribió el
- * servidor con la sesión comprobada.
+ * **La fila no se valida acá**, y no porque nadie la valide: `readPublicationDraft`
+ * le pasa cada fila a `normaliseStoredDraft` antes de devolverla. La forma la
+ * decide el dominio, no el adaptador que la trae.
  */
 export class DrizzlePublicationDraftStore implements PublicationDraftStorePort {
   constructor(private readonly db: PublicationDraftDatabase) {}

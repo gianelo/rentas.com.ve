@@ -4,7 +4,7 @@ import { readPublicationDraft } from "@/modules/listing-publication/application/
 import { MAX_PHOTO_BYTES } from "@/modules/listing-publication/domain/uploaded-photo";
 import { createR2PhotoStorage } from "@/modules/listing-publication/infrastructure/r2-photo-storage";
 import { requireSession } from "../../_lib/require-session";
-import { publicationDraftDependencies } from "../legacy-draft-cookies";
+import { publicationDraftDependencies } from "../draft";
 import { type RequestedUpload, validateUploadRequest } from "./upload-request";
 
 /**

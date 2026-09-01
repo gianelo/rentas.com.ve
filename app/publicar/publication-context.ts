@@ -13,8 +13,7 @@ import { resolveZoneCity } from "@/modules/listing-publication/domain/zone-searc
 import { DrizzleZoneCatalogue } from "@/modules/listing-publication/infrastructure/drizzle-listing-repository";
 import { DrizzleZoneVocabulary } from "@/modules/listing-publication/infrastructure/drizzle-zone-vocabulary";
 import { db } from "@/shared/db/client";
-import { emptyDraft, type StoredDraft } from "./draft";
-import { publicationDraftDependencies } from "./legacy-draft-cookies";
+import { emptyDraft, publicationDraftDependencies, type StoredDraft } from "./draft";
 
 /**
  * Lo que toda pantalla del flujo necesita antes de dibujar nada: el borrador,

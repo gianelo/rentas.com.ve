@@ -2,16 +2,15 @@ import type { DraftPhoto, StoredPublicationDraft } from "./publication-steps";
 import { MAX_PHOTOS_PER_LISTING, type PublishViolation } from "./publishable-listing";
 
 /**
- * Qué se acepta como borrador guardado, **y por qué es UNA sola regla**.
+ * Qué se acepta como borrador guardado, **y por qué sigue haciendo falta**.
  *
  * Vivía dentro de `app/publicar/draft.ts` mientras la cookie era el único lugar
- * donde un borrador se guardaba. Con `publish_draft` (18.29) hay una segunda
- * puerta, y la tentación era no validarla: la fila la escribió el servidor con
- * la sesión ya comprobada, así que nadie la manipuló. **Eso contesta la pregunta
- * equivocada.** Una fila no viene de un atacante; viene del formulario de ayer,
- * y vuelve con la forma de ayer — un campo renombrado, un número que se volvió
- * texto, una foto sin nombre. Dos validadores para el mismo borrador es la forma
- * de defecto que este cambio ya encontró ocho veces, así que hay uno.
+ * donde un borrador se guardaba. Con `publish_draft` (18.29) la tentación era no
+ * validar la fila: la escribió el servidor con la sesión ya comprobada, así que
+ * nadie la manipuló. **Eso contesta la pregunta equivocada.** Una fila no viene
+ * de un atacante; viene del formulario de ayer, y vuelve con la forma de ayer —
+ * un campo renombrado, un número que se volvió texto, una foto sin nombre. El
+ * tipo del puerto promete una forma que una columna `jsonb` no garantiza.
  *
  * **Falla cerrado por campo, no por borrador** (AGENTS.md §7): lo que no encaja
  * se descarta y lo demás sobrevive. Perder los nueve pasos porque el 4 cambió de
