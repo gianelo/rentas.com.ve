@@ -10,6 +10,7 @@ import {
   PublishRejectedError,
   publishListing,
 } from "@/modules/listing-publication/application/publish-listing";
+import { stampUploadInstants } from "@/modules/listing-publication/domain/draft-expiry";
 import {
   applyStepAnswers,
   describeDraftChanges,
@@ -94,7 +95,12 @@ export async function submitStep(formData: FormData): Promise<void> {
       : { cities: [], zones: [], aliases: [] };
 
   const { answers, raw } = readStepAnswers(stepId, formData, vocabulary);
-  const after = applyStepAnswers(before, stepId, answers);
+  // El sellado va PEGADO al merge y no en `savePublicationDraft`, que no ve el
+  // borrador anterior: el paso 8 manda las fotos en campos ocultos y
+  // `applyStepAnswers` reemplaza el arreglo entero con ellos, asi que sin esta
+  // linea cada guardado reestrenaria el sello y el tope de la 18.36 no serviria.
+  // La regla vive entera en el dominio; aca solo se ordena la llamada.
+  const after = stampUploadInstants(before, applyStepAnswers(before, stepId, answers), now);
 
   const curatedZones = after.listing.cityId
     ? await new DrizzleZoneCatalogue(db).listZonesForCity(after.listing.cityId)

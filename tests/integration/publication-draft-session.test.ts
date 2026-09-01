@@ -45,7 +45,17 @@ const deps: PublicationDraftDependencies & ExpiredDraftSignalDependencies = {
 
 const borrador: StoredPublicationDraft = {
   listing: { propertyType: "apartamento", priceUsd: 450, title: "Apartamento en Altamira" },
-  photos: [{ key: `${MARIA}/uploads/uno.webp`, name: "cocina.webp", bytes: 120_000 }],
+  // tasks.md 18.36 — el sello de subida viaja en el `jsonb` y tiene que volver
+  // igual: la primera prueba compara el borrador ENTERO, así que una columna que
+  // lo perdiera pone rojo acá y no dentro de un doble que la prueba misma escribe.
+  photos: [
+    {
+      key: `${MARIA}/uploads/uno.webp`,
+      name: "cocina.webp",
+      bytes: 120_000,
+      uploadedAt: new Date().toISOString(),
+    },
+  ],
   violations: [],
 };
 
@@ -119,6 +129,29 @@ describe("el borrador de publicar, del caso de uso a Postgres", () => {
     expect(await readPublicationDraftOrExpiry(MARIA, despues, deps)).toEqual({
       draft: null,
       expired: false,
+    });
+  });
+
+  /**
+   * tasks.md 18.36 — **el tope contra la base de verdad.** Lo que se afirma acá y
+   * no en el doble es que el `timestamptz` recortado vuelve como un `Date` que el
+   * `WHERE` de `load` compara: con un doble, la fecha la escribe la prueba.
+   */
+  it("un borrador cuya foto el bucket ya se llevó vuelve vencido, aunque se acabe de guardar", async () => {
+    const ahora = new Date();
+    const haceOchoDias = new Date(ahora.getTime() - 8 * 24 * 60 * 60 * 1000).toISOString();
+
+    await savePublicationDraft(
+      MARIA,
+      { ...borrador, photos: [{ ...borrador.photos[0], uploadedAt: haceOchoDias } as never] },
+      ahora,
+      deps,
+    );
+
+    // Guardado recién y ya vencido: el séptimo día de esa foto pasó ayer.
+    expect(await readPublicationDraftOrExpiry(MARIA, ahora, deps)).toEqual({
+      draft: null,
+      expired: true,
     });
   });
 

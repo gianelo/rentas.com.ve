@@ -176,6 +176,37 @@ describe("escribir el borrador no deja una cookie detrás", () => {
     expectSinCookies();
   });
 
+  /**
+   * tasks.md 18.36 — **el sello llega hasta la fila y el vencimiento lo respeta.**
+   * Ninguna regla se afirma acá: cuál de las dos fechas gana lo prueba
+   * `draft-expiry.test.ts`. Lo que se prueba es el llamador, que es la forma de
+   * defecto que este cambio ya encontró seis veces.
+   */
+  it("guardar un paso conserva el sello de la foto vieja y le pone uno a la nueva", async () => {
+    const haceSeisDias = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString();
+    load.mockResolvedValue({
+      ...completo("El de la tabla"),
+      photos: [
+        { key: `${MARIA}/a.webp`, name: "Sala", bytes: 10, uploadedAt: haceSeisDias },
+        { key: `${MARIA}/b.webp`, name: "Patio", bytes: 10 },
+      ],
+    });
+
+    await expect(submitStep(formDelTitulo())).rejects.toThrow(/NEXT_REDIRECT/);
+
+    const [, guardado, vence] = save.mock.calls[0] as unknown as [
+      string,
+      StoredPublicationDraft,
+      Date,
+    ];
+    // El viejo se conserva; el que no tenía estrena el de este guardado.
+    expect(guardado.photos[0]?.uploadedAt).toBe(haceSeisDias);
+    expect(guardado.photos[1]?.uploadedAt).toEqual(expect.any(String));
+    // Y el vencimiento no promete más allá del séptimo día de la foto vieja,
+    // que es antes que las veinticuatro horas que este guardado querría correr.
+    expect(vence).toEqual(new Date(Date.parse(haceSeisDias) + 7 * 24 * 60 * 60 * 1000));
+  });
+
   it("publicar descarta la fila y tampoco toca ninguna cookie", async () => {
     load.mockResolvedValue(completo("El de la tabla"));
 
