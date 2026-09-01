@@ -1,3 +1,5 @@
+import type { PriceBucketTally } from "./price-histogram";
+import { buildPriceHistogramView, type PriceHistogramView } from "./price-histogram-panel";
 import type { RoomStep } from "./room-steps";
 import {
   countActiveFilters,
@@ -69,6 +71,14 @@ export interface PanelCounts {
    * da nombre a la mitad del conteo en vivo que faltaba (14.34), la de quitar.
    */
   readonly withoutFilter: Readonly<Record<RelaxableFilter, number>>;
+  /**
+   * Los ocho cubos de precio, en orden ascendente (14.12). Vienen de la MISMA
+   * consulta que el resto de las facetas y **no se cuentan contra el filtro de
+   * precio**: el histograma existe para elegir un rango, y medido contra el
+   * rango ya elegido las barras de afuera caen a cero justo cuando se lo mira
+   * para moverse.
+   */
+  readonly byPriceBucket: readonly PriceBucketTally[];
   /** La ciudad sin un solo filtro del panel: el número de «Limpiar todo». */
   readonly cityTotal: number;
 }
@@ -294,6 +304,8 @@ export interface PriceForm {
   readonly maxName: string;
   readonly min: string;
   readonly max: string;
+  /** El dibujo, o la negativa a dibujarlo, ya resuelto (F5). */
+  readonly histogram: PriceHistogramView;
 }
 
 /**
@@ -411,6 +423,11 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
       maxName: SEARCH_QUERY_NAMES.maxPrice,
       min: criteria.minPriceUsd === undefined ? "" : String(criteria.minPriceUsd),
       max: criteria.maxPriceUsd === undefined ? "" : String(criteria.maxPriceUsd),
+      // `selection` ya trae la ciudad, las zonas elegidas y los dos extremos:
+      // es el mismo vocabulario que leen `searchHeadline` y `describeFilter`,
+      // así que la frase del histograma no puede nombrar un lugar distinto del
+      // que encabeza el panel.
+      histogram: buildPriceHistogramView(counts.byPriceBucket, selection),
     },
     rooms: resolveRoomOptions(counts.byMinRooms, criteria.minRooms).map((option) => ({
       ...option,

@@ -85,6 +85,50 @@ async function servedBody(query: Record<string, string> = {}): Promise<string> {
   );
 }
 
+/**
+ * **El histograma viaja en el cuerpo servido** (14.12 rebanada C). Es una
+ * decoración encima de un formulario `GET`: si necesitara un script para
+ * aparecer, el panel de precio llegaría mudo justo donde el bundle no llega,
+ * que es el navegador de WhatsApp (D13).
+ */
+describe("el histograma de precio se sirve desde el servidor", () => {
+  it("las ocho barras y la frase salen en la respuesta, sin un solo script", async () => {
+    // Doce avisos repartidos: por debajo del piso el dominio se niega, así que
+    // una fixture más chica probaría la negativa y no el dibujo.
+    countFacets.mockImplementation((criteria: SearchCriteria, offered: readonly string[]) => ({
+      ...facetsFor(criteria, offered),
+      byPriceBucket: [
+        { count: 1, lowestUsd: 200, highestUsd: 240 },
+        { count: 2, lowestUsd: 300, highestUsd: 380 },
+        { count: 4, lowestUsd: 400, highestUsd: 495 },
+        { count: 2, lowestUsd: 505, highestUsd: 590 },
+        { count: 1, lowestUsd: 610, highestUsd: 690 },
+        { count: 1, lowestUsd: 720, highestUsd: 780 },
+        { count: 0 },
+        { count: 1, lowestUsd: 1000, highestUsd: 1000 },
+      ],
+    }));
+
+    const html = await servedBody({ filtros: "precio", min: "300", max: "700" });
+
+    expect(html.split("data-placement=").length - 1).toBe(8);
+    expect(html).toContain("la mayoría está entre");
+    // Los dos rótulos del eje son avisos reales, no una escala fija.
+    expect(html).toContain(">$200<");
+    expect(html).toContain(">$1000<");
+    // Y sigue sin costar un byte de cliente. Se afirma sobre el trozo del
+    // histograma y no sobre la página entera: la pastilla trae los dos únicos
+    // SVG en línea que el sistema permite, así que un `not.toMatch` global
+    // estaría midiendo la pastilla y no el dibujo.
+    // Los dos extremos del recorte se afirman antes de recortar: con uno
+    // ausente `indexOf` devuelve -1 y el trozo sale vacío, que pasaría solo.
+    expect(html).toContain('role="img"');
+    const dibujo = html.slice(html.indexOf('role="img"'), html.indexOf("la mayoría"));
+    expect(dibujo).not.toMatch(/<script|onclick|<canvas|<svg|<img/i);
+    expect(dibujo).toContain("<span");
+  });
+});
+
 describe("la búsqueda sin JavaScript", () => {
   /** 11.3 */
   it("trae los resultados en el cuerpo de la respuesta", async () => {
