@@ -8,7 +8,7 @@ import {
   PHOTO_REMOVAL_REFUSAL_COPY,
 } from "../../../publicar/photo-action-copy";
 import { FEATURES_DECLARED_FIELD } from "../../../publicar/step-values";
-import { PUBLISHER_TYPE_IMMUTABLE_NOTICE } from "../../../publicar/violation-copy";
+import { PUBLISHER_TYPE_ONE_WAY_NOTICE } from "../../../publicar/violation-copy";
 
 /**
  * tasks.md 18.20 — **la pantalla que le faltaba a `editListing`**, en los
