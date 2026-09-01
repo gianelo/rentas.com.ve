@@ -4,6 +4,7 @@ import {
   foreignKey,
   index,
   integer,
+  jsonb,
   pgTable,
   primaryKey,
   text,
@@ -991,3 +992,40 @@ export const bulkImportBatches = pgTable(
   },
   (batch) => [index("bulk_import_batch_publisher_idx").on(batch.publisherId, batch.uploadedAt)],
 );
+
+/**
+ * publish_draft (tasks.md 18.29). Los nueve pasos a medio contestar, del lado del
+ * servidor, con la sesión como llave.
+ *
+ * **Existe porque el borrador vivía en dos cookies de treinta minutos**, y una cookie
+ * es lo que un trabajo programado no puede ver. El costo se mide en objetos: una
+ * publicación abandonada deja hasta seis fotos ya promovidas a cinco derivadas WebP
+ * **que nada puede volver a nombrar**, porque el único registro de esas claves se
+ * murió en el navegador de quien se fue.
+ *
+ * **La primaria es `publisher_id` sola, y ahí está la decisión.** «Empezar una
+ * publicación nueva descarta la anterior» (fundador, 2026-09-01) lo garantiza
+ * Postgres y no un `if` que un llamador posterior puede olvidar. Mismo criterio que
+ * la clave natural de `verified_contact`.
+ *
+ * **Dos `jsonb`, pero tampoco uno solo.** Una columna por campo sería una migración
+ * por campo; lo que NO puede quedar enterrado es lo que el barrido de las 24 horas
+ * lee, así que `expires_at` es columna de verdad y `photos` es su propio `jsonb`:
+ * «cuáles vencieron y qué claves borro» se contesta sin traer `answers`, donde vive
+ * la descripción de 1.200 caracteres.
+ *
+ * **`expires_at` es un instante absoluto y no `updated_at + 24h`**; la ventana vive
+ * en `domain/draft-expiry.ts`, y no hay `updated_at` porque sería esa resta. **Sin
+ * índice**: nada lo consulta todavía y lo agrega el barrido con su llamador. **`ON
+ * DELETE cascade`**, como `verified_contact` — con un cabo suelto anotado: borrar la
+ * cuenta se lleva las únicas claves que nombraban sus fotos de R2.
+ */
+export const publishDrafts = pgTable("publish_draft", {
+  publisherId: text("publisher_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  /** `StoredPublicationDraft` sin las fotos; `photos` va aparte porque el barrido lo lee solo. */
+  answers: jsonb("answers").notNull(),
+  photos: jsonb("photos").notNull(),
+  expiresAt: timestamp("expires_at", { mode: "date", withTimezone: true }).notNull(),
+});

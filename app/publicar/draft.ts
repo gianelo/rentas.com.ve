@@ -1,6 +1,6 @@
 import type {
   DraftPhoto,
-  PublicationDraft,
+  StoredPublicationDraft,
 } from "../../src/modules/listing-publication/domain/publication-steps";
 import {
   MAX_PHOTOS_PER_LISTING,
@@ -18,15 +18,14 @@ import {
  * empieza de cero o no empieza. Treinta es el minimo que la seccion 5 de la
  * especificacion acepta cuando el borrador no vive del lado del servidor.
  *
- * ## 2. Por que no vive del lado del servidor, que es lo que la spec recomienda
+ * ## 2. Por que todavia no vive del lado del servidor
  *
- * Guardar por paso con la sesion como llave necesita una tabla
- * `publish_draft`, y una tabla necesita una migracion — `src/shared/db/schema.ts`
- * y `drizzle/` no se tocan en esta entrega. La recomendacion queda anotada
- * como dependencia; lo que se entrega es el minimo que la propia
- * especificacion define, con el tope de 1.200 caracteres tratado como lo que
- * pasa a ser en cuanto el borrador entra en una cookie: **una restriccion
- * tecnica, no una preferencia de producto.**
+ * La dependencia que este parrafo dejaba anotada YA EXISTE: `publish_draft`, su
+ * migracion y `PublicationDraftStorePort` (18.29). Lo que falta es cambiar este
+ * flujo de la cookie a la tabla, que es la rebanada siguiente (18.30) y se hizo
+ * aparte a proposito. **Y con la tabla, el tope de 1.200 caracteres deja de ser
+ * una restriccion tecnica y vuelve a ser una pregunta de producto** (18.31): no
+ * se cambio, porque cambiarlo es del fundador y no de quien mudo el borrador.
  *
  * ## 3. Dos cookies, y la division no es prolijidad
  *
@@ -77,11 +76,9 @@ export const MAX_RAW_LENGTH = 40;
 /** Solo campos numericos: son los unicos cuyo texto crudo se pierde al parsear. */
 const RAW_KEYS = ["priceUsd", "rooms", "bathrooms", "parkingSpots", "areaM2"] as const;
 
-export interface StoredDraft extends PublicationDraft {
-  /** Del ultimo intento. Vacia mientras se avanza sin errores. */
-  readonly violations: readonly PublishViolation[];
-  readonly raw?: Readonly<Record<string, string>>;
-}
+/** El mismo tipo. La forma se mudo al dominio (18.29) para que el puerto de la
+ *  tabla no dependa de `app/`. */
+export type StoredDraft = StoredPublicationDraft;
 
 export function emptyDraft(): StoredDraft {
   return { listing: {}, photos: [], violations: [] };
