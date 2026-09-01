@@ -285,6 +285,58 @@ describe("guardarEdicion — la ruta que le faltaba a editListing (18.20)", () =
   });
 
   /**
+   * tasks.md 18.37 — **la marca que distingue «destildé las cinco» de «este
+   * POST no traía atributos».** Esta capa sólo la traduce: con la marca, los
+   * cinco booleanos; sin ella, los cinco ausentes. Lo que la ausencia significa
+   * lo contesta `writeFor` con su `?? current`.
+   */
+  it("con la marca, las cinco casillas viajan como booleanos y las que no se marcaron viajan en false", async () => {
+    editListing.mockResolvedValueOnce({ listingId: "aviso-1" });
+
+    await expect(
+      guardarEdicion(
+        edicionDe({
+          ...CAMPOS,
+          featuresDeclared: "1",
+          hasPowerPlant: "on",
+          hasSecurity: "on",
+        }),
+      ),
+    ).rejects.toThrow("NEXT_REDIRECT:/mis-avisos");
+
+    const [pedido] = editListing.mock.calls[0] as [{ edit: Record<string, unknown> }];
+
+    expect(pedido.edit.hasPowerPlant).toBe(true);
+    expect(pedido.edit.hasSecurity).toBe(true);
+    // Las tres destildadas. `false` y no `undefined`: es la declaración que
+    // borra la de ayer, sin la cual un atributo se pone pero no se saca.
+    expect(pedido.edit.hasRegularWater).toBe(false);
+    expect(pedido.edit.isFurnished).toBe(false);
+    expect(pedido.edit.hasAppliances).toBe(false);
+  });
+
+  /** **La mitad sin la cual la anterior no prueba nada.** Una acción de servidor
+   *  es un endpoint HTTP público: un pedido escrito a mano que sólo trae el
+   *  precio no puede llevarse por delante cinco declaraciones. */
+  it("sin la marca los cinco viajan ausentes, jamás en false", async () => {
+    editListing.mockResolvedValueOnce({ listingId: "aviso-1" });
+
+    await expect(guardarEdicion(edicionDe(CAMPOS))).rejects.toThrow("NEXT_REDIRECT:/mis-avisos");
+
+    const [pedido] = editListing.mock.calls[0] as [{ edit: Record<string, unknown> }];
+
+    for (const campo of [
+      "hasPowerPlant",
+      "hasRegularWater",
+      "isFurnished",
+      "hasSecurity",
+      "hasAppliances",
+    ]) {
+      expect(pedido.edit[campo], campo).toBeUndefined();
+    }
+  });
+
+  /**
    * `Number("")` es 0, y ese cero silencioso es la diferencia entre no tocar
    * el precio y publicar un alquiler gratis. Los lectores se reusan de
    * `step-values.ts` justamente para no volver a escribir esta decisión.

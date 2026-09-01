@@ -38,6 +38,11 @@ function listing(overrides: Partial<EditableListing> = {}): EditableListing {
     publisherId: OWNER,
     publisherType: "owner",
     propertyType: "apartamento",
+    hasPowerPlant: false,
+    hasRegularWater: false,
+    isFurnished: false,
+    hasSecurity: false,
+    hasAppliances: false,
     cityId: CITY,
     zoneId: ZONE,
     title: "Apartamento amoblado en La Castellana",
@@ -140,7 +145,7 @@ describe("editListing — la puerta, y el aviso ajeno que se contesta como inexi
 });
 
 describe("editListing — lo que escribe y lo que refusa (18.14)", () => {
-  it("escribe los once campos editables con el catálogo de zonas de SU ciudad", async () => {
+  it("escribe los dieciséis campos editables con el catálogo de zonas de SU ciudad", async () => {
     const listings = portReturning(listing());
 
     const result = await editListing(
@@ -166,6 +171,13 @@ describe("editListing — lo que escribe y lo que refusa (18.14)", () => {
       reference: undefined,
       contactMethod: "email",
       contactValue: "d@example.com",
+      // Los cinco de la F6 (18.37), tal como el aviso los tenía: el pedido no
+      // los trajo, así que `?? current` los deja donde estaban.
+      hasPowerPlant: false,
+      hasRegularWater: false,
+      isFurnished: false,
+      hasSecurity: false,
+      hasAppliances: false,
     });
   });
 
