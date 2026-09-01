@@ -92,6 +92,19 @@ export interface PublicationDraft {
 }
 
 /**
+ * El borrador **tal como se guarda**: lo contestado mas el eco del ultimo intento
+ * fallido. Vivia en `app/publicar/draft.ts` mientras el unico lugar donde se
+ * guardaba era una cookie; con una tabla detras lo lee tambien un puerto de la
+ * aplicacion, y un tipo que la infraestructura importe desde `app/` seria la
+ * dependencia al reves (AGENTS.md §3). `draft.ts` lo sigue exportando igual.
+ */
+export interface StoredPublicationDraft extends PublicationDraft {
+  /** Del ultimo intento. Vacia mientras se avanza sin errores. */
+  readonly violations: readonly PublishViolation[];
+  readonly raw?: Readonly<Record<string, string>>;
+}
+
+/**
  * El borrador visto como lo ve el validador.
  *
  * `photoCount` sale de contar, nunca de un campo: es la misma razon por la que
