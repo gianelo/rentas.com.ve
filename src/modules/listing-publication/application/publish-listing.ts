@@ -13,7 +13,11 @@ import {
   referenceOrNone,
   validatePublishableListing,
 } from "../domain/publishable-listing";
-import type { ListingRepositoryPort, NewListingPhoto } from "./ports/listing-repository.port";
+import type {
+  ListingRepositoryPort,
+  NewListing,
+  NewListingPhoto,
+} from "./ports/listing-repository.port";
 import type { PhotoDerivationPort } from "./ports/photo-derivation.port";
 import type { PhotoHashComputationPort } from "./ports/photo-hash-computation.port";
 import type { PhotoStoragePort } from "./ports/photo-storage.port";
@@ -108,6 +112,30 @@ export function present<T>(value: T | undefined, field: string): T {
   return value;
 }
 
+/**
+ * tasks.md 18.35 — **las derivadas que esta publicación alcanzó a promover antes
+ * de que otra foto la frenara.** Se borran acá o no las borra nadie: viven bajo
+ * `photos/`, donde también viven las de todos los avisos activos, así que ninguna
+ * regla de ciclo de vida del bucket las distingue y lo único que las delata es la
+ * ausencia de su fila en `listing_photo`.
+ *
+ * **Se intenta y no se exige**, la disciplina de `discardQuietly`: el motivo por
+ * el que la publicación falló es lo que quien publica necesita leer. Y en fila,
+ * no en paralelo: una clave que R2 rechaza no deja sin intentar a las otras.
+ */
+async function discardPromotedDerivatives(
+  storage: PhotoStoragePort,
+  keys: readonly string[],
+): Promise<void> {
+  for (const key of keys) {
+    try {
+      await storage.remove(key);
+    } catch {
+      // Ya está dicho arriba: la negativa que importa es la de la publicación.
+    }
+  }
+}
+
 export async function publishListing(
   request: PublishListingRequest,
   dependencies: PublishListingDependencies,
@@ -152,6 +180,10 @@ export async function publishListing(
   );
 
   const photos: NewListingPhoto[] = [];
+  // tasks.md 18.35 — las claves que esta publicación ya escribió bajo `photos/`,
+  // juntadas MIENTRAS se recorre porque después de la falla no hay de dónde
+  // sacarlas: la fila que las nombraría es la que no llegó a escribirse.
+  const promoted: string[] = [];
   // Parallel to `photos` — the perceptual hash `processUploadedPhoto` (D4,
   // task 4.7) computed for that SAME index. Kept out of `NewListingPhoto`
   // on purpose: that type is exactly what `ListingRepositoryPort.save`
@@ -171,13 +203,20 @@ export async function publishListing(
     // an owner republishing their own expired listing's photos is exempt
     // because this is the id `processUploadedPhoto` excludes, never a
     // hard-coded or request-supplied one.
-    const processed = await processUploadedPhoto(
-      { publisherId: session.userId, ...submitted },
-      { storage, derive, computeHash, photoHashes },
-    );
+    let processed: Awaited<ReturnType<typeof processUploadedPhoto>>;
+    try {
+      processed = await processUploadedPhoto(
+        { publisherId: session.userId, ...submitted },
+        { storage, derive, computeHash, photoHashes },
+      );
+    } catch (error) {
+      await discardPromotedDerivatives(storage, promoted);
+      throw error;
+    }
 
     photos.push({ position, derivatives: processed.derivatives });
     hashes.push(processed.hash);
+    promoted.push(...processed.derivatives.map((derivative) => derivative.key));
   }
 
   const publishedAt = now();
@@ -186,7 +225,7 @@ export async function publishListing(
   // submission order: `listing_photo_hash.photo_id` is a primary key
   // referencing `listing_photo.id`, so a hash cannot be recorded before
   // its photo row exists, and this is the first moment it does.
-  const { id, photoIds } = await listings.save({
+  const listing: NewListing = {
     publisherId: session.userId,
     publisherType: present(request.publisherType, "publisherType"),
     propertyType: present(request.propertyType, "propertyType"),
@@ -223,7 +262,23 @@ export async function publishListing(
     publishedAt,
     expiresAt: new Date(publishedAt.getTime() + LISTING_ACTIVE_DAYS * 86_400_000),
     photos,
-  });
+  };
+
+  let saved: Awaited<ReturnType<ListingRepositoryPort["save"]>>;
+  try {
+    saved = await listings.save(listing);
+  } catch (error) {
+    // La escritura es una transacción: si rechazó, no hay fila, y estas claves no
+    // las nombra nadie.
+    await discardPromotedDerivatives(storage, promoted);
+    throw error;
+  }
+
+  // **Y desde acá no se limpia más, falle lo que falle.** Con la fila escrita, las
+  // derivadas son las que la ficha dibuja y D12 ya tiró el original: borrarlas
+  // dejaría un aviso apuntando a fotos irrecuperables. Un hash sin registrar
+  // cuesta una comprobación de duplicados (AGENTS.md §7).
+  const { id, photoIds } = saved;
 
   // Recorded now, and only now — never before `save` above resolved. A
   // hash written for a photo whose listing was then rejected for an

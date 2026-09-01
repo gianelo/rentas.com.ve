@@ -115,21 +115,34 @@ function makeDerive() {
   return { derive, peak: () => peak };
 }
 
-function makeStorage(): PhotoStoragePort & { readonly reads: string[] } {
+/** Cada operación contra R2, en orden y con su clave: el registro literal es lo
+ *  que distingue borrar una derivada promovida de borrar el original (18.35). */
+function makeStorage(
+  failReadOf: readonly string[] = [],
+  failRemoveOf: readonly string[] = [],
+): PhotoStoragePort & { readonly reads: string[]; readonly calls: string[] } {
   const reads: string[] = [];
+  const calls: string[] = [];
   return {
     reads,
+    calls,
     async createUploadTarget(): Promise<UploadTarget> {
       throw new Error("not used by this use case");
     },
     async read(key: string) {
       reads.push(key);
+      calls.push(`read:${key}`);
+      if (failReadOf.includes(key)) throw new Error(`R2 no encuentra ${key}`);
       return PNG;
     },
     async put(key: string, bytes: Uint8Array): Promise<StoredObject> {
+      calls.push(`put:${key}`);
       return { key, byteLength: bytes.byteLength };
     },
-    async remove() {},
+    async remove(key: string) {
+      calls.push(`remove:${key}`);
+      if (failRemoveOf.includes(key)) throw new Error(`R2 rechazó borrar ${key}`);
+    },
   };
 }
 
@@ -413,6 +426,106 @@ describe("publishListing", () => {
 
     await expect(publishListing(request(), dependencies)).rejects.toThrow();
     expect(dependencies.listings.saved).toEqual([]);
+  });
+
+  /**
+   * tasks.md 18.35 — la que falla en la cuarta deja las derivadas de las tres
+   * primeras bajo `photos/` sin fila que las nombre, que es la única fuente de
+   * huérfanos del prefijo promovido que ninguna regla del bucket alcanza. **El
+   * orden se afirma con el arreglo literal**, la técnica de
+   * `sweep-expired-drafts.test.ts`: «se llamó a `remove`» no distingue las
+   * promovidas del original de la foto que falló, que es lo único que ya hacía.
+   */
+  describe("una publicación que falla a mitad no deja derivadas sueltas (18.35)", () => {
+    function promotedKeys(index: number): string[] {
+      const token = photoKey(index).split("/")[2];
+      return ["thumb", "card", "strip", "detail", "full"].map(
+        (name) => `photos/${PUBLISHER}/${token}/${name}.webp`,
+      );
+    }
+
+    it("borra las derivadas ya promovidas DESPUÉS de la falla, y no escribe ninguna fila", async () => {
+      const dependencies = deps({ storage: makeStorage([photoKey(1)]) });
+
+      await expect(
+        publishListing(request({ photos: submittedPhotos(2) }), dependencies),
+      ).rejects.toThrow();
+
+      expect(dependencies.storage.calls).toEqual([
+        `read:${photoKey(0)}`,
+        ...promotedKeys(0).map((key) => `put:${key}`),
+        // El original de la primera ya no está: D12 lo tira en cuanto las cinco existen.
+        `remove:${photoKey(0)}`,
+        `read:${photoKey(1)}`,
+        ...promotedKeys(0).map((key) => `remove:${key}`),
+      ]);
+      expect(dependencies.listings.saved).toEqual([]);
+    });
+
+    it("y también cuando la que rechaza es la escritura de la fila, no una foto", async () => {
+      const listings: ListingRepositoryPort = {
+        async save() {
+          throw new Error("la base rechazó el aviso");
+        },
+      };
+      const dependencies = deps({ storage: makeStorage(), listings });
+
+      await expect(publishListing(request(), dependencies)).rejects.toThrow("la base rechazó");
+
+      expect(dependencies.storage.calls.slice(-5)).toEqual(
+        promotedKeys(0).map((key) => `remove:${key}`),
+      );
+    });
+
+    /**
+     * **Los dos pares positivos.** Sin ellos, una limpieza que borrara SIEMPRE
+     * pasaría las dos de arriba, y borraría las fotos del aviso recién publicado.
+     * El segundo marca dónde se detiene: con la fila escrita, D12 ya tiró el
+     * original, así que borrar dejaría un aviso apuntando a fotos irrecuperables.
+     */
+    it("la publicación que sale bien no borra ninguna derivada", async () => {
+      const dependencies = deps({ storage: makeStorage() });
+
+      await publishListing(request({ photos: submittedPhotos(2) }), dependencies);
+
+      expect(dependencies.storage.calls.filter((call) => call.startsWith("remove:"))).toEqual([
+        `remove:${photoKey(0)}`,
+        `remove:${photoKey(1)}`,
+      ]);
+    });
+
+    it("una vez que el aviso existe, nada borra sus derivadas", async () => {
+      const photoHashes: PhotoHashPort = {
+        async findMatchesFromOtherPublishers() {
+          return [];
+        },
+        async record() {
+          throw new Error("la base cortó al registrar el hash");
+        },
+      };
+      const dependencies = deps({ storage: makeStorage(), photoHashes });
+
+      await expect(publishListing(request(), dependencies)).rejects.toThrow("la base cortó");
+
+      expect(dependencies.storage.calls.filter((call) => call.startsWith("remove:"))).toEqual([
+        `remove:${photoKey(0)}`,
+      ]);
+    });
+
+    /** Misma disciplina que `discardQuietly`: el motivo por el que la publicación
+     *  falló es lo que quien publica necesita leer. */
+    it("si R2 rechaza un borrado de limpieza, se propaga el motivo original y se intentan las demás", async () => {
+      const primera = promotedKeys(0);
+      const dependencies = deps({
+        storage: makeStorage([photoKey(1)], [primera[0] as string]),
+      });
+
+      await expect(
+        publishListing(request({ photos: submittedPhotos(2) }), dependencies),
+      ).rejects.toThrow(`R2 no encuentra ${photoKey(1)}`);
+
+      expect(dependencies.storage.calls.slice(-5)).toEqual(primera.map((key) => `remove:${key}`));
+    });
   });
 
   it("does not consult the zone catalogue when no city was chosen", async () => {
