@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { readPublicationDraft } from "@/modules/listing-publication/application/publication-draft-session";
 import {
   currentStepId,
   draftListingOf,
@@ -13,13 +13,8 @@ import { resolveZoneCity } from "@/modules/listing-publication/domain/zone-searc
 import { DrizzleZoneCatalogue } from "@/modules/listing-publication/infrastructure/drizzle-listing-repository";
 import { DrizzleZoneVocabulary } from "@/modules/listing-publication/infrastructure/drizzle-zone-vocabulary";
 import { db } from "@/shared/db/client";
-import {
-  DRAFT_COOKIE,
-  DRAFT_TEXT_COOKIE,
-  emptyDraft,
-  parseStoredDraft,
-  type StoredDraft,
-} from "./draft";
+import { emptyDraft, type StoredDraft } from "./draft";
+import { publicationDraftDependencies } from "./legacy-draft-cookies";
 
 /**
  * Lo que toda pantalla del flujo necesita antes de dibujar nada: el borrador,
@@ -28,8 +23,14 @@ import {
  * Vive en un archivo aparte porque lo comparten cuatro rutas y porque **las
  * paginas no deben repetir esta secuencia**: quien la copie mal en una de
  * ellas va a validar contra otras zonas curadas y va a dar por hecho un paso
- * que no lo esta. Aca no se decide nada — se leen cookies, se consulta y se
+ * que no lo esta. Aca no se decide nada — se lee el borrador, se consulta y se
  * llama al dominio.
+ *
+ * **`publisherId` es un parametro y no algo que este archivo averigue** (18.30).
+ * Las cuatro rutas ya piden `requireSession` antes de llamar aca, asi que pedirla
+ * de nuevo seria una segunda respuesta a la misma pregunta; y exigirla en la
+ * firma es lo que hace imposible dibujar el flujo sin saber de quien es el
+ * borrador — que es justo lo que la cookie permitia.
  *
  * Las lecturas van por `db` (`neon-http`), no por el cliente transaccional:
  * este es el camino de lectura del que habla el argumento de latencia de D2, y
@@ -44,10 +45,9 @@ export interface PublicationContext {
   readonly zoneName?: string;
 }
 
-export async function readPublicationContext(): Promise<PublicationContext> {
-  const store = await cookies();
+export async function readPublicationContext(publisherId: string): Promise<PublicationContext> {
   const draft =
-    parseStoredDraft(store.get(DRAFT_COOKIE)?.value, store.get(DRAFT_TEXT_COOKIE)?.value) ??
+    (await readPublicationDraft(publisherId, new Date(), publicationDraftDependencies())) ??
     emptyDraft();
 
   const violations = await validateDraft(draft);

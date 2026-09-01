@@ -1,122 +1,39 @@
-import type {
-  DraftPhoto,
-  StoredPublicationDraft,
-} from "../../src/modules/listing-publication/domain/publication-steps";
-import {
-  MAX_PHOTOS_PER_LISTING,
-  type PublishViolation,
-} from "../../src/modules/listing-publication/domain/publishable-listing";
+import type { StoredPublicationDraft } from "../../src/modules/listing-publication/domain/publication-steps";
+import { normaliseStoredDraft } from "../../src/modules/listing-publication/domain/stored-draft";
 
 /**
- * El borrador de los nueve pasos, y las tres decisiones que lo definen.
+ * Las dos cookies del borrador, **ya sin nadie que las escriba** (tasks.md 18.30).
  *
- * ## 1. Treinta minutos, no diez
+ * El borrador vive en `publish_draft`, con la sesión como llave y veinticuatro
+ * horas de vida. Lo que queda acá es el PUENTE de una sola entrega: quien estaba
+ * en el paso 6 el día del despliegue tiene su borrador entero en estas dos
+ * cookies y la tabla vacía, y un corte seco le vaciaría el formulario. Así que
+ * todavía se leen —una vez, cuando la tabla no tiene fila— y se borran en cuanto
+ * la tabla se escribe.
  *
- * El borrador de cookie de diez minutos alcanzaba para dos pantallas. Para
- * nueve no: elegir fotos de la galeria en un telefono lento se come varios
- * minutos, y quien vuelve a una pantalla y encuentra el formulario vacio
- * empieza de cero o no empieza. Treinta es el minimo que la seccion 5 de la
- * especificacion acepta cuando el borrador no vive del lado del servidor.
+ * **Nada las vuelve a escribir.** No hay `serialiseStoredDraft`, no hay
+ * `DRAFT_TTL_SECONDS` y no hay opciones de cookie: los treinta minutos dejaron de
+ * gobernar el día en que `DRAFT_LIFETIME_MS` tomó su lugar, y una constante de
+ * vencimiento sin nadie que la aplique es una regla que miente. Sacar el puente
+ * entero es la 18.33.
  *
- * ## 2. Por que todavia no vive del lado del servidor
- *
- * La dependencia que este parrafo dejaba anotada YA EXISTE: `publish_draft`, su
- * migracion y `PublicationDraftStorePort` (18.29). Lo que falta es cambiar este
- * flujo de la cookie a la tabla, que es la rebanada siguiente (18.30) y se hizo
- * aparte a proposito. **Y con la tabla, el tope de 1.200 caracteres deja de ser
- * una restriccion tecnica y vuelve a ser una pregunta de producto** (18.31): no
- * se cambio, porque cambiarlo es del fundador y no de quien mudo el borrador.
- *
- * ## 3. Dos cookies, y la division no es prolijidad
- *
- * La descripcion sola, a 1.200 caracteres acentuados, son 2.400 bytes en
- * UTF-8 y ~3.200 caracteres en base64url. Todo lo demas — nueve pasos, seis
- * claves de foto con el id del publicador adentro, la referencia — no entra
- * al lado de eso en los ~4 KB que un navegador acepta por cookie, contando
- * nombre y atributos. El modo de falla seria el peor posible: un pedido que
- * llega sin su cookie, en produccion, a un tamano que nadie puede reproducir
- * a pedido, y un formulario que se vacia solo. El test mide el peor caso real
- * en vez de confiar en este parrafo.
- *
- * ## Por que no va firmada, dicho para que nadie lo "arregle" despues
- *
- * Todo lo que hay aca es de quien publica, y puede cambiarlo tecleando de
- * nuevo. Manipularla no compra nada. El unico campo que jamas puede venir del
- * cliente — el id del publicador — no esta y nunca va a estar: sale de la
- * sesion, y eso es lo que hace que la verificacion de propiedad de las fotos
- * signifique algo. `httpOnly` y `sameSite=lax` se llevan igual, porque un
- * borrador sigue siendo lo que alguien escribio sin terminar.
+ * **`path` es parte del borrado y no un detalle.** Se escribieron bajo
+ * `/publicar`, y un `delete(nombre)` sin decirlo pone una cookie vencida en `/`
+ * y deja la de `/publicar` viva — o sea, exactamente la segunda fuente que este
+ * puente existe para no dejar.
  */
 
 export const DRAFT_COOKIE = "rentas_publish_draft";
-/** La descripcion, aparte. Ver la decision 3 arriba. */
+/** La descripción, aparte: sola ya rozaba el techo de ~4 KB de una cookie. */
 export const DRAFT_TEXT_COOKIE = "rentas_publish_texto";
+export const DRAFT_COOKIE_PATH = "/publicar";
 
-export const DRAFT_TTL_SECONDS = 30 * 60;
-
-export const DRAFT_COOKIE_OPTIONS = {
-  httpOnly: true,
-  sameSite: "lax",
-  path: "/publicar",
-  maxAge: DRAFT_TTL_SECONDS,
-  secure: process.env.NODE_ENV === "production",
-} as const;
-
-/**
- * Lo tecleado que vuelve para mostrarse al lado de su error.
- *
- * Un precio escrito "quinientos" no sobrevive al parseo, y el redirect que
- * sigue a un paso invalido se lleva el `FormData`. Sin esto, el mensaje
- * "Solo el numero" aparece sobre un campo vacio y quien lo lee no sabe que
- * escribio mal. Cuarenta caracteres alcanzan para cualquiera de estos campos
- * y cierran el canal para meter kilobytes en la cookie.
- */
-export const MAX_RAW_LENGTH = 40;
-
-/** Solo campos numericos: son los unicos cuyo texto crudo se pierde al parsear. */
-const RAW_KEYS = ["priceUsd", "rooms", "bathrooms", "parkingSpots", "areaM2"] as const;
-
-/** El mismo tipo. La forma se mudo al dominio (18.29) para que el puerto de la
+/** El mismo tipo. La forma se mudó al dominio (18.29) para que el puerto de la
  *  tabla no dependa de `app/`. */
 export type StoredDraft = StoredPublicationDraft;
 
 export function emptyDraft(): StoredDraft {
   return { listing: {}, photos: [], violations: [] };
-}
-
-/**
- * Lista blanca por campo Y por tipo.
- *
- * El tipo importa tanto como el nombre: un precio que llegara como `"450"`
- * pasaria el validador convertido en `NaN` — o peor, se colaria hasta una
- * columna `integer`. Se descarta antes de que exista la oportunidad.
- */
-const TEXT_KEYS = [
-  "propertyType",
-  "cityId",
-  "zoneId",
-  "title",
-  "publisherType",
-  "contactMethod",
-  "contactValue",
-  // 18.7. Con la columna en la base dejo de colgar del borrador y paso a ser
-  // un campo del aviso como los demas, asi que viaja por la misma lista
-  // blanca en vez de por una linea propia.
-  "reference",
-] as const;
-
-const NUMBER_KEYS = ["priceUsd", "rooms", "bathrooms", "parkingSpots", "areaM2"] as const;
-
-const BOOLEAN_KEYS = [
-  "hasPowerPlant",
-  "hasRegularWater",
-  "isFurnished",
-  "hasSecurity",
-  "hasAppliances",
-] as const;
-
-function encode(value: unknown): string {
-  return Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
 }
 
 function decode(raw: string | undefined): unknown {
@@ -125,107 +42,32 @@ function decode(raw: string | undefined): unknown {
     return JSON.parse(Buffer.from(raw, "base64url").toString("utf8"));
   } catch {
     // Una cookie truncada o editada a mano no es un error que valga la pena
-    // mostrar: quien publica recibe un formulario vacio, que se recupera.
+    // mostrar: quien publica recibe un formulario vacío, que se recupera.
     return undefined;
   }
 }
 
-function readPhotos(value: unknown): DraftPhoto[] {
-  if (!Array.isArray(value)) return [];
-
-  const photos: DraftPhoto[] = [];
-  for (const entry of value) {
-    if (typeof entry !== "object" || entry === null) continue;
-    const { key, name, bytes } = entry as Record<string, unknown>;
-    // Media foto no es una foto: sin clave no hay nada que descargar, y sin
-    // nombre ni tamano la pantalla de revisar dibujaria una fila vacia.
-    if (typeof key !== "string" || typeof name !== "string" || typeof bytes !== "number") continue;
-    photos.push({ key, name, bytes });
-    // El tope del dominio, aplicado tambien aca. Cada foto cuesta una
-    // descarga y un decodificado de `sharp` dentro de una funcion con memoria
-    // fija: una lista sin techo es un pedido que decide cuanto computo gasta.
-    if (photos.length === MAX_PHOTOS_PER_LISTING) break;
-  }
-  return photos;
-}
-
-function readRaw(value: unknown): Record<string, string> | undefined {
-  if (typeof value !== "object" || value === null) return undefined;
-
-  const source = value as Record<string, unknown>;
-  const raw: Record<string, string> = {};
-  for (const key of RAW_KEYS) {
-    const entry = source[key];
-    if (typeof entry === "string") raw[key] = entry.slice(0, MAX_RAW_LENGTH);
-  }
-  return Object.keys(raw).length > 0 ? raw : undefined;
-}
-
 /**
- * Devuelve `null` para cualquier cosa que no sea un borrador escrito por esta
- * aplicacion. Los campos desconocidos se descartan en vez de arrastrarse.
+ * Decodifica las dos cookies y **le pasa la decisión al dominio**: qué campos se
+ * aceptan es la misma regla que valida una fila de `publish_draft`, y tenerla
+ * escrita dos veces es la forma exacta del defecto que esta rebanada evita.
  */
 export function parseStoredDraft(
   rawDraft: string | undefined,
   rawText: string | undefined,
 ): StoredDraft | null {
-  const parsed = decode(rawDraft);
-  if (typeof parsed !== "object" || parsed === null) return null;
-
-  const candidate = parsed as Record<string, unknown>;
-  const source = (
-    typeof candidate.listing === "object" && candidate.listing !== null ? candidate.listing : {}
-  ) as Record<string, unknown>;
-
-  const listing: Record<string, unknown> = {};
-  for (const key of TEXT_KEYS) {
-    if (typeof source[key] === "string") listing[key] = source[key];
-  }
-  for (const key of NUMBER_KEYS) {
-    if (typeof source[key] === "number") listing[key] = source[key];
-  }
-  for (const key of BOOLEAN_KEYS) {
-    if (typeof source[key] === "boolean") listing[key] = source[key];
+  const body = decode(rawDraft);
+  // Sólo se pega la descripción si hay dónde pegarla. Qué se acepta y qué se
+  // rechaza lo sigue decidiendo el dominio, también en esta rama.
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    return normaliseStoredDraft(body);
   }
 
-  // La descripcion viene de la otra cookie y ninguna otra cosa viene con ella,
-  // asi que se acepta solo si decodifica a texto.
-  // Vacia se descarta en vez de guardarse: `""` y "todavia no la escribio"
-  // son lo mismo para el validador, y arrastrar la cadena vacia haria que un
-  // borrador recien empezado no volviera igual que como salio.
-  const description = decode(rawText);
-  if (typeof description === "string" && description !== "") listing.description = description;
+  const { listing, ...rest } = body as { listing?: unknown };
+  const source = typeof listing === "object" && listing !== null ? listing : {};
 
-  const violations = Array.isArray(candidate.violations)
-    ? candidate.violations.filter((entry): entry is PublishViolation => typeof entry === "string")
-    : [];
-
-  const draft: StoredDraft = {
-    listing: listing as StoredDraft["listing"],
-    photos: readPhotos(candidate.photos),
-    violations,
-    ...(candidate.featuresDeclared === true ? { featuresDeclared: true } : {}),
-  };
-
-  const raw = readRaw(candidate.raw);
-  return raw ? { ...draft, raw } : draft;
-}
-
-/** Dos valores: el borrador y la descripcion. Ver la decision 3 arriba. */
-export function serialiseStoredDraft(draft: StoredDraft): {
-  readonly draft: string;
-  readonly text: string;
-} {
-  const { description, ...listing } = draft.listing;
-
-  return {
-    draft: encode({
-      listing,
-      photos: draft.photos,
-      violations: draft.violations,
-      ...(draft.featuresDeclared === true ? { featuresDeclared: true } : {}),
-      ...(draft.raw !== undefined ? { raw: draft.raw } : {}),
-    }),
-    text: encode(description ?? ""),
-  };
+  // **La descripción se pega ANTES de normalizar**, no después: así "vacía es lo
+  // mismo que no escrita" está dicho una sola vez, en el dominio, y no una vez
+  // por puerta. Pegarla después dejaría a esta función decidiendo una regla.
+  return normaliseStoredDraft({ ...rest, listing: { ...source, description: decode(rawText) } });
 }
