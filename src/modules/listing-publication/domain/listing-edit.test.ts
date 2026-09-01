@@ -33,6 +33,13 @@ function published(overrides: Partial<EditableListingSnapshot> = {}): EditableLi
   return {
     publisherType: "owner",
     propertyType: "apartamento",
+    // Los cinco de la F6 tal como la fila los tiene: `NOT NULL DEFAULT false`,
+    // así que un aviso siempre trae los cinco booleanos y nunca un hueco.
+    hasPowerPlant: false,
+    hasRegularWater: true,
+    isFurnished: true,
+    hasSecurity: false,
+    hasAppliances: true,
     cityId: CITY,
     zoneId: ZONE,
     title: "Apartamento amoblado en La Castellana",
@@ -52,6 +59,17 @@ function published(overrides: Partial<EditableListingSnapshot> = {}): EditableLi
 function rejectionOf(plan: ListingEditPlan): readonly ListingEditViolation[] {
   if (plan.ok) throw new Error("se esperaba un rechazo y la edición fue aceptada");
   return plan.violations;
+}
+
+/** Los cinco de la F6 en el orden de `ListingFeatures`, para leerlos de un tirón. */
+function atributos(write: ListingEditWrite): readonly boolean[] {
+  return [
+    write.hasPowerPlant,
+    write.hasRegularWater,
+    write.isFurnished,
+    write.hasSecurity,
+    write.hasAppliances,
+  ];
 }
 
 function writeOf(plan: ListingEditPlan): ListingEditWrite {
@@ -109,7 +127,7 @@ describe("planListingEdit — quién publica, en una sola dirección (18.38)", (
     expect(writeOf(plan).priceUsd).toBe(700);
   });
 
-  it("lo que la edición escribe son doce campos y ninguno más: ni la zona, ni la ciudad", () => {
+  it("lo que la edición escribe son dieciséis campos y ninguno más: ni quién publica, ni la zona, ni la ciudad", () => {
     const plan = planListingEdit(published(), ZONES, { title: "Otro título del aviso" });
 
     expect(Object.keys(writeOf(plan)).sort()).toEqual([
@@ -118,6 +136,11 @@ describe("planListingEdit — quién publica, en una sola dirección (18.38)", (
       "contactMethod",
       "contactValue",
       "description",
+      "hasAppliances",
+      "hasPowerPlant",
+      "hasRegularWater",
+      "hasSecurity",
+      "isFurnished",
       "parkingSpots",
       "priceUsd",
       "propertyType",
@@ -146,6 +169,11 @@ describe("planListingEdit — lo que la oferta sí puede tocar (18.14)", () => {
       parkingSpots: current.parkingSpots,
       reference: current.reference,
       publisherType: current.publisherType,
+      hasPowerPlant: current.hasPowerPlant,
+      hasRegularWater: current.hasRegularWater,
+      isFurnished: current.isFurnished,
+      hasSecurity: current.hasSecurity,
+      hasAppliances: current.hasAppliances,
     });
   });
 
@@ -300,5 +328,60 @@ describe("planListingEdit — edita con las MISMAS reglas con las que se publica
     expect(
       rejectionOf(planListingEdit(published({ zoneId: "zone-que-ya-no-existe" }), ZONES, {})),
     ).toContain("zoneId.notInCity");
+  });
+});
+
+/**
+ * tasks.md 18.37 — **los cinco atributos de la F6, que la regla general del
+ * fundador abre y la 18.27 no llegó a cerrar.** Duelen más que los otros tres
+ * porque se filtran: un aviso que declaró «sin planta eléctrica» porque el
+ * edificio todavía no la tenía queda fuera de la búsqueda de quien la pide.
+ *
+ * Lo que estas tres afirman, y ninguna pantalla puede afirmar por su cuenta:
+ * que `undefined` sigue siendo «no lo contesté» también para un booleano.
+ */
+describe("planListingEdit — los cinco atributos de la F6 (18.37)", () => {
+  it("declara los cinco cuando el pedido los trae, sin tocar nada más", () => {
+    const write = writeOf(
+      planListingEdit(published(), ZONES, {
+        hasPowerPlant: true,
+        hasRegularWater: true,
+        isFurnished: true,
+        hasSecurity: true,
+        hasAppliances: true,
+      }),
+    );
+
+    expect(atributos(write)).toEqual([true, true, true, true, true]);
+  });
+
+  /** **La mitad que hace que la anterior pregunte algo.** Un `writeFor` que
+   *  escribiera `edit.hasPowerPlant === true` pasaría la de arriba y borraría
+   *  acá las cuatro que el aviso ya declaraba. */
+  it("no mandar los atributos deja los cinco como el aviso los tenía", () => {
+    const current = published({
+      hasPowerPlant: true,
+      hasRegularWater: true,
+      isFurnished: false,
+      hasSecurity: true,
+      hasAppliances: false,
+    });
+
+    const write = writeOf(planListingEdit(current, ZONES, { priceUsd: 700 }));
+
+    expect(atributos(write)).toEqual([true, true, false, true, false]);
+  });
+
+  /** **Y su contrario.** Quien destildó las cinco está declarando que no tiene
+   *  ninguna, y eso se escribe: un `?? current` reemplazado por «sólo escribo
+   *  los `true`» dejaría un atributo imposible de sacar. */
+  it("un false que el pedido trae se escribe, y no se confunde con no haberlo mandado", () => {
+    const current = published({ hasPowerPlant: true, hasSecurity: true });
+
+    const write = writeOf(
+      planListingEdit(current, ZONES, { hasPowerPlant: false, hasSecurity: false }),
+    );
+
+    expect([write.hasPowerPlant, write.hasSecurity]).toEqual([false, false]);
   });
 });

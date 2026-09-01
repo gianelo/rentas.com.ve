@@ -32,7 +32,7 @@ import { createR2PhotoStorage } from "@/modules/listing-publication/infrastructu
 import { DrizzlePhotoHash } from "@/modules/listing-trust/infrastructure/drizzle-photo-hash";
 import { db } from "@/shared/db/client";
 import { getTransactionalDatabase } from "@/shared/db/transactional-client";
-import { formCount, formText } from "../publicar/step-values";
+import { FEATURES_DECLARED_FIELD, formChecked, formCount, formText } from "../publicar/step-values";
 
 /**
  * tasks.md 9.28 — **las dos llamadas que no existían.**
@@ -297,6 +297,11 @@ export async function activarBorrador(formData: FormData): Promise<void> {
  * dos veces — `publisherType.immutable` si cambia, y `publisherType.invalid`
  * si además no es ninguno de los dos. El `as` afirma la forma, nunca el
  * valor, que es el mismo reparto que `readStepAnswers` ya usa para el paso 9.
+ *
+ * **Los cinco atributos viajan juntos o no viajan** (18.37), y el porqué está
+ * en `FEATURES_DECLARED_FIELD`. **Qué significa la ausencia no se decide acá**:
+ * llega al dominio como los cinco `undefined` y lo contesta el `?? current` de
+ * `writeFor`, igual que cualquier otro campo sin contestar.
  */
 function leerEdicion(formData: FormData): ListingEdit {
   return {
@@ -323,6 +328,20 @@ function leerEdicion(formData: FormData): ListingEdit {
     contactMethod: formText(formData, "contactMethod") as ListingEdit["contactMethod"],
     contactValue: formText(formData, "contactValue"),
     publisherType: formText(formData, "publisherType") as ListingEdit["publisherType"],
+    ...leerAtributos(formData),
+  };
+}
+
+/** Los cinco de la F6, o ninguno. **La marca es la respuesta**, no las casillas. */
+function leerAtributos(formData: FormData): Partial<ListingEdit> {
+  if (!formData.has(FEATURES_DECLARED_FIELD)) return {};
+
+  return {
+    hasPowerPlant: formChecked(formData, "hasPowerPlant"),
+    hasRegularWater: formChecked(formData, "hasRegularWater"),
+    isFurnished: formChecked(formData, "isFurnished"),
+    hasSecurity: formChecked(formData, "hasSecurity"),
+    hasAppliances: formChecked(formData, "hasAppliances"),
   };
 }
 
