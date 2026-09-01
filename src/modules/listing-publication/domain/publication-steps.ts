@@ -66,6 +66,13 @@ export interface DraftPhoto {
   readonly key: string;
   readonly name: string;
   readonly bytes: number;
+  /**
+   * tasks.md 18.36 — cuando el servidor vio esta clave por primera vez, en ISO.
+   * **Lo pone `stampUploadInstants` y nunca el formulario**, porque es lo que
+   * `draftExpiresAt` usa para que la fila no prometa mas de lo que el bucket
+   * conserva. Opcional: una fila anterior a esa regla no lo lleva.
+   */
+  readonly uploadedAt?: string;
 }
 
 /**

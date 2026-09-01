@@ -89,6 +89,37 @@ describe("escribir el borrador", () => {
     );
   });
 
+  /**
+   * tasks.md 18.36 — **el vencimiento que se guarda mira las fotos de la fila.**
+   * Sin esto, guardar el paso 9 el sexto día vuelve a prometer veinticuatro horas
+   * sobre una foto que el bucket borra en tres. Se afirma el INSTANTE exacto y no
+   * «es menor»: eso lo cumple también un guardado que venciera todo en el acto.
+   */
+  it("no promete más allá de la foto que el bucket se lleva primero", async () => {
+    const deps = dependencias(null);
+    const conFotoVieja: StoredPublicationDraft = {
+      ...enTabla,
+      photos: [
+        {
+          key: "incoming/maria/uno",
+          name: "Sala",
+          bytes: 10,
+          uploadedAt: "2026-08-26T09:00:00.000Z",
+        },
+      ],
+    };
+
+    await savePublicationDraft(MARIA, conFotoVieja, AHORA, deps);
+
+    // Subida el 26 a las 09:00 → el bucket la borra el 2 de septiembre a las
+    // 09:00, tres horas antes de las veinticuatro que este guardado querría.
+    expect(deps.store.save).toHaveBeenCalledWith(
+      MARIA,
+      conFotoVieja,
+      new Date("2026-09-02T09:00:00.000Z"),
+    );
+  });
+
   it("descartar deja la cuenta sin fila", async () => {
     // Publicar de verdad y abandonar terminan igual: sin fila. Si quedara algo,
     // el aviso recién publicado volvería como borrador en la pantalla siguiente.
