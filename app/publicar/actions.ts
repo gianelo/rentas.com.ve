@@ -24,9 +24,8 @@ import { DrizzleZoneVocabulary } from "@/modules/listing-publication/infrastruct
 import { db } from "@/shared/db/client";
 import { requireSession } from "../_lib/require-session";
 import { reviewPathFor } from "./change-notice-url";
-import { emptyDraft } from "./draft";
+import { emptyDraft, publicationDraftDependencies } from "./draft";
 import { publishListingDependencies } from "./fotos/publication";
-import { publicationDraftDependencies } from "./legacy-draft-cookies";
 import { readStepAnswers } from "./step-values";
 
 /**
@@ -41,8 +40,8 @@ import { readStepAnswers } from "./step-values";
  * lo que hace que el boton de atras y un refresh se comporten, y una descripcion
  * de 1.200 caracteres no tiene nada que hacer en una cadena de consulta. Desde la
  * 18.30 ese borrador es una fila de `publish_draft` con la sesion como llave, y
- * ninguna de las dos funciones de aca vuelve a tocar una cookie: quien decide
- * que fuente gana y cuando se muere la vieja es `publication-draft-session`.
+ * **ninguna de las dos funciones de aca toca una cookie**: la tabla es la unica
+ * fuente, y las tres puertas viven en `publication-draft-session`.
  *
  * Ninguna regla vive aca. Este archivo ordena llamadas: leer, aplicar,
  * validar, guardar, redirigir. Cual es el paso siguiente, que esta completo,
@@ -192,9 +191,9 @@ export async function publishFromReview(): Promise<void> {
   }
 
   // Se descarta solo despues de que la escritura salio bien. Descartarlo antes
-  // perderia lo que alguien escribio por una falla en la que no tuvo parte. Se
-  // va la fila Y las dos cookies del puente: dejar una viva haria que el aviso
-  // recien publicado volviera como borrador en la pantalla siguiente.
+  // perderia lo que alguien escribio por una falla en la que no tuvo parte. Y se
+  // descarta: dejar la fila viva haria que el aviso recien publicado volviera
+  // como borrador en la pantalla siguiente.
   await discardPublicationDraft(session.userId, draftStore);
   redirect(`/publicar/listo?id=${encodeURIComponent(listingId)}`);
 }

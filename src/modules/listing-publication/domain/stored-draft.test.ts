@@ -4,15 +4,14 @@ import { MAX_PHOTOS_PER_LISTING } from "./publishable-listing";
 import { MAX_RAW_LENGTH, normaliseStoredDraft } from "./stored-draft";
 
 /**
- * La lista blanca del borrador guardado, **ahora con dos puertas** (tasks.md 18.30).
+ * La lista blanca del borrador guardado (tasks.md 18.30).
  *
  * Vivía en `app/publicar/draft.ts` porque la cookie era el único lugar donde un
- * borrador se guardaba. Con `publish_draft` hay una segunda fuente, y **una fila
- * escrita por el formulario de ayer vuelve con la forma de ayer**: un campo
- * renombrado, un número que se volvió texto, una foto a medias. Que la fila y la
- * cookie pasen por VALIDADORES DISTINTOS es exactamente la forma de defecto que
- * este cambio ya encontró ocho veces —dos lugares diciendo lo mismo hasta el día
- * en que se contradicen—, así que la regla es una sola y las dos puertas la usan.
+ * borrador se guardaba. Hoy la única fuente es `publish_draft`, y la regla sigue
+ * viva por la razón que nunca fue de la cookie: **una fila escrita por el
+ * formulario de ayer vuelve con la forma de ayer** —un campo renombrado, un
+ * número que se volvió texto, una foto a medias—, y el tipo del puerto promete
+ * una forma que la columna no garantiza.
  */
 
 const completo: StoredPublicationDraft = {
@@ -58,8 +57,8 @@ describe("normaliseStoredDraft", () => {
   });
 
   it("lo contestado vuelve entero, con la descripción adentro del aviso", () => {
-    // En la fila la descripción viaja con el resto. La cookie la parte en dos
-    // por su tamaño, y eso es asunto de la cookie y no de esta regla.
+    // La descripción viaja con el resto del aviso: la columna es `jsonb` y no
+    // tiene el techo de ~4 KB que obligaba a partirla en dos.
     expect(normaliseStoredDraft(structuredClone(completo))).toEqual(completo);
   });
 
