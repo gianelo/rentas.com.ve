@@ -37,6 +37,7 @@ const VACIO: FacetCounts = {
     hasSecurity: 0,
     hasAppliances: 0,
   },
+  byPriceBucket: Array.from({ length: 8 }, () => ({ count: 0 })),
   cityTotal: 0,
 };
 
