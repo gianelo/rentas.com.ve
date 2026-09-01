@@ -4,8 +4,10 @@ import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   discardPublicationDraft,
+  type ExpiredDraftSignalDependencies,
   type PublicationDraftDependencies,
   readPublicationDraft,
+  readPublicationDraftOrExpiry,
   savePublicationDraft,
 } from "../../src/modules/listing-publication/application/publication-draft-session";
 import type { StoredPublicationDraft } from "../../src/modules/listing-publication/domain/publication-steps";
@@ -36,7 +38,10 @@ const store = new DrizzlePublicationDraftStore(
 
 const MARIA = randomUUID();
 
-const deps: PublicationDraftDependencies = { store };
+const deps: PublicationDraftDependencies & ExpiredDraftSignalDependencies = {
+  store,
+  expiry: store,
+};
 
 const borrador: StoredPublicationDraft = {
   listing: { propertyType: "apartamento", priceUsd: 450, title: "Apartamento en Altamira" },
@@ -92,6 +97,29 @@ describe("el borrador de publicar, del caso de uso a Postgres", () => {
 
     expect(draft?.listing).toEqual({ title: "Real", rooms: 2 });
     expect(draft?.photos).toEqual([{ key: "a", name: "A", bytes: 10 }]);
+  });
+
+  /**
+   * tasks.md 18.34 — **contra Postgres y no contra un doble**, porque lo que se
+   * afirma es que el `timestamptz` vuelve como un `Date` que el dominio puede
+   * comparar: con un doble, la fecha la escribe la prueba y no prueba la costura.
+   */
+  it("vencido y nunca empezado dejan de ser la misma respuesta", async () => {
+    const ahora = new Date();
+    await savePublicationDraft(MARIA, borrador, ahora, deps);
+
+    const despues = new Date(ahora.getTime() + 25 * 60 * 60_000);
+    expect(await readPublicationDraftOrExpiry(MARIA, despues, deps)).toEqual({
+      draft: null,
+      expired: true,
+    });
+
+    // El par: sin fila no se venció nada, y es el mismo `null` de `load`.
+    await discardPublicationDraft(MARIA, deps);
+    expect(await readPublicationDraftOrExpiry(MARIA, despues, deps)).toEqual({
+      draft: null,
+      expired: false,
+    });
   });
 
   it("descartar deja la cuenta sin fila", async () => {

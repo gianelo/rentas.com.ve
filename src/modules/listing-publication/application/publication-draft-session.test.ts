@@ -4,8 +4,10 @@ import type { StoredPublicationDraft } from "../domain/publication-steps";
 import type { PublicationDraftStorePort } from "./ports/publication-draft-store.port";
 import {
   discardPublicationDraft,
+  type ExpiredDraftSignalDependencies,
   type PublicationDraftDependencies,
   readPublicationDraft,
+  readPublicationDraftOrExpiry,
   savePublicationDraft,
 } from "./publication-draft-session";
 
@@ -95,5 +97,78 @@ describe("escribir el borrador", () => {
     await discardPublicationDraft(MARIA, deps);
 
     expect(deps.store.discard).toHaveBeenCalledWith(MARIA);
+  });
+});
+
+/**
+ * tasks.md 18.34 — **vencido y nunca empezado dejan de ser el mismo observable.**
+ *
+ * `load` filtra en el `WHERE` con `expires_at > $ahora` y ese filtro se queda:
+ * un borrador vencido nunca llega a existir en memoria, que es lo único que
+ * impide devolver uno cuyas fotos el barrido de la 18.32 ya está borrando de R2.
+ * Lo que se agrega al lado es una lectura angosta que trae UN HECHO —cuándo
+ * vence la fila de esta cuenta— y deja la decisión donde vivía sin llamador:
+ * `hasDraftExpired`.
+ */
+describe("qué ve quien vuelve con el borrador vencido (18.34)", () => {
+  function conVencimiento(
+    load: StoredPublicationDraft | null,
+    expiry: Date | null,
+  ): PublicationDraftDependencies &
+    ExpiredDraftSignalDependencies & {
+      readonly store: { load: ReturnType<typeof vi.fn> };
+      readonly expiry: { findExpiry: ReturnType<typeof vi.fn> };
+    } {
+    return {
+      ...dependencias(load),
+      expiry: { findExpiry: vi.fn(async () => expiry) },
+    } as never;
+  }
+
+  it("con el borrador vivo no se pregunta nada más, y se devuelve el borrador", async () => {
+    // **Coste cero en el camino normal**, que es el argumento entero de esta
+    // salida: quien está a mitad de publicar no paga una segunda consulta.
+    const deps = conVencimiento(enTabla, null);
+
+    expect(await readPublicationDraftOrExpiry(MARIA, AHORA, deps)).toEqual({
+      draft: enTabla,
+      expired: false,
+    });
+    expect(deps.expiry.findExpiry).not.toHaveBeenCalled();
+  });
+
+  it("sin borrador y sin fila, no se venció nada: es alguien que nunca empezó", async () => {
+    const deps = conVencimiento(null, null);
+
+    expect(await readPublicationDraftOrExpiry(MARIA, AHORA, deps)).toEqual({
+      draft: null,
+      expired: false,
+    });
+    expect(deps.expiry.findExpiry).toHaveBeenCalledWith(MARIA);
+  });
+
+  it("sin borrador pero con una fila vencida, se venció: es lo que la pantalla explica", async () => {
+    const ayer = new Date(AHORA.getTime() - DRAFT_LIFETIME_MS);
+
+    expect(await readPublicationDraftOrExpiry(MARIA, AHORA, conVencimiento(null, ayer))).toEqual({
+      draft: null,
+      expired: true,
+    });
+  });
+
+  /**
+   * **El par que hace que la decisión sea del dominio y no de la consulta.** Sin
+   * esto, «hay fila» y «se venció» serían la misma afirmación y la lectura
+   * angosta podría contestar con un `SELECT 1` que reescribiera el borde en SQL
+   * — el tercer lugar donde estaría escrito el mismo `>=`. Acá la fila existe y
+   * NO venció, y la respuesta es que no se venció.
+   */
+  it("una fila que todavía no vence no se anuncia como vencida, aunque exista", async () => {
+    const manana = new Date(AHORA.getTime() + DRAFT_LIFETIME_MS);
+
+    expect(await readPublicationDraftOrExpiry(MARIA, AHORA, conVencimiento(null, manana))).toEqual({
+      draft: null,
+      expired: false,
+    });
   });
 });

@@ -31,13 +31,7 @@ export type ListingField =
   | "priceUsd"
   | "cityId"
   | "zoneId"
-  /**
-   * La referencia (18.7). **Tiene campo al publicar y no al editar**, y por
-   * eso figura acá y NO en `EDIT_REQUEST_FIELD`: la tabla del fundador de la
-   * 18.14 no la nombra entre lo que una edición puede tocar, así que su
-   * negativa cae en `elsewhere` en vez de colgarse de un control que la
-   * pantalla de editar no dibuja.
-   */
+  /** La referencia (18.7). Tiene campo en los dos formularios desde la 18.27. */
   | "reference"
   | "rooms"
   | "areaM2"
@@ -84,13 +78,20 @@ export const LISTING_VIOLATION_FIELD: Record<ListingEditViolation, ListingField>
 };
 
 /**
- * Los campos que un pedido de edición puede traer: los ocho que escribe más
+ * Los campos que un pedido de edición puede traer: los once que escribe más
  * `publisherType`, que viaja para ser rechazado y no para ser aplicado.
  *
  * **`Record<keyof ListingEdit, true>` y no una lista suelta**, que es lo que
  * hace que agregar un campo editable sin decir acá que se puede colocar deje
  * de compilar. Una lista escrita al lado de `ListingEdit` sería la segunda
- * fuente que después queda diciendo ocho cuando ya son nueve.
+ * fuente que después queda diciendo ocho cuando ya son once.
+ *
+ * **Los tres últimos entraron con la regla general del fundador** (2026-09-01,
+ * tasks.md 18.27): «se puede corregir cualquier dato menos el de la zona». La
+ * zona y la ciudad no están y no pueden estar — son segmentos de
+ * `/alquiler/<ciudad>/<zona>/<slug>-<id>`, y a diferencia del título, que
+ * también va en esa URL, no tienen el id que `listingIdFromSlug` usa para
+ * rescatar una dirección vieja.
  */
 const EDIT_REQUEST_FIELD: Record<keyof ListingEdit, true> = {
   title: true,
@@ -99,6 +100,9 @@ const EDIT_REQUEST_FIELD: Record<keyof ListingEdit, true> = {
   rooms: true,
   bathrooms: true,
   areaM2: true,
+  parkingSpots: true,
+  propertyType: true,
+  reference: true,
   contactMethod: true,
   contactValue: true,
   publisherType: true,
@@ -109,8 +113,7 @@ export interface PlacedEditViolations {
   readonly byField: ReadonlyMap<ListingField, ListingEditViolation>;
   /**
    * Las que no tienen dónde: un código que esta tabla no conoce, o uno sobre
-   * algo que una edición no manda (fotos, zona, ciudad, tipo de inmueble,
-   * puestos). **Se dicen igual.** Tragárselas dejaría un formulario que se
+   * algo que una edición no manda (fotos, zona, ciudad). **Se dicen igual.** Tragárselas dejaría un formulario que se
    * niega a guardar sin decir por qué, que es peor que un bloque arriba.
    */
   readonly elsewhere: readonly string[];

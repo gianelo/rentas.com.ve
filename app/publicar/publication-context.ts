@@ -1,4 +1,4 @@
-import { readPublicationDraft } from "@/modules/listing-publication/application/publication-draft-session";
+import { readPublicationDraftOrExpiry } from "@/modules/listing-publication/application/publication-draft-session";
 import {
   currentStepId,
   draftListingOf,
@@ -40,14 +40,26 @@ export interface PublicationContext {
   readonly draft: StoredDraft;
   readonly violations: readonly PublishViolation[];
   readonly currentStep: PublishStepId;
+  /**
+   * Esta cuenta tenía un borrador y se le venció (18.34). **No es «no hay
+   * borrador»**: quien nunca empezó llega acá con `false`, y ésa es exactamente
+   * la diferencia que hasta ahora no se podía observar.
+   */
+  readonly draftExpired: boolean;
   /** El nombre de la zona elegida. Un `zone_id` crudo no le dice nada a nadie. */
   readonly zoneName?: string;
 }
 
 export async function readPublicationContext(publisherId: string): Promise<PublicationContext> {
-  const draft =
-    (await readPublicationDraft(publisherId, new Date(), publicationDraftDependencies())) ??
-    emptyDraft();
+  // **La condición «preguntar sólo cuando no hay borrador» vive en el módulo**,
+  // no acá: escrita en `app/` sería una decisión de producto fuera del piso del
+  // 90 % (AGENTS.md §1), y ésta decide qué se le dice a alguien y cuánto cuesta.
+  const reading = await readPublicationDraftOrExpiry(
+    publisherId,
+    new Date(),
+    publicationDraftDependencies(),
+  );
+  const draft = reading.draft ?? emptyDraft();
 
   const violations = await validateDraft(draft);
 
@@ -55,6 +67,7 @@ export async function readPublicationContext(publisherId: string): Promise<Publi
     draft,
     violations,
     currentStep: currentStepId(draft, violations),
+    draftExpired: reading.expired,
     ...(await zoneNameOf(draft)),
   };
 }

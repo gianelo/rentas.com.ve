@@ -46,7 +46,9 @@ export default async function StepPage({ params, searchParams }: StepPageProps) 
   const { volver, q } = await searchParams;
   const returningToReview = volver === "revisar";
 
-  const { draft, violations, currentStep, zoneName } = await readPublicationContext(session.userId);
+  const { draft, violations, currentStep, draftExpired, zoneName } = await readPublicationContext(
+    session.userId,
+  );
 
   // **Criterio de aceptacion 10, aplicado en el servidor.** Que el riel no
   // dibuje el enlace es una cortesia; esto es la garantia. Escribir
@@ -112,6 +114,9 @@ export default async function StepPage({ params, searchParams }: StepPageProps) 
       jumpable={jumpableStepsFrom(stepId, draft, violations)}
       progress={progressPercent(draft, violations)}
       returningToReview={returningToReview}
+      // Por qué el formulario está en blanco (18.34). Lo contesta el módulo: acá
+      // no hay un `if` que decida a quién se le dice, sólo el cable.
+      draftExpired={draftExpired}
       // Si se ofrece lo contesta el dominio; acá sólo se elige a dónde lleva.
       // `reviewPathFor([])` y no la ruta escrita a mano: descartar vuelve sin
       // cambios que anunciar, y ésa es la misma función que ya sabe que sin

@@ -23,6 +23,7 @@ import { PhotoUploader } from "./fotos/PhotoUploader";
 import styles from "./publish-steps.module.css";
 import {
   DISCARD_CHANGE_LABEL,
+  DRAFT_EXPIRED_NOTICE,
   FEATURE_LABELS,
   STEP_COPY,
   STEP_MAP_TRIGGER_LABEL,
@@ -77,6 +78,17 @@ export interface PublishStepProps {
    */
   readonly jumpable: readonly PublishStepId[];
   readonly progress: number;
+  /**
+   * Esta cuenta volvió y su borrador se había vencido (18.34).
+   *
+   * **La decide `readPublicationDraftOrExpiry`, no esta pantalla**, y llega como
+   * prop requerida por la misma razón que `jumpable` y `discardHref`: opcional,
+   * un renderer nuevo se olvidaría de pasarla y la explicación desaparecería en
+   * silencio. Sólo puede ser `true` cuando no hay borrador, y sin borrador el
+   * único paso navegable es el 1 — así que no hace falta preguntar en cuál
+   * estamos, que sería un `if` de producto en un componente sin piso.
+   */
+  readonly draftExpired: boolean;
   readonly returningToReview: boolean;
   /**
    * Adonde lleva «Descartar el cambio», o `null` cuando este paso no lo ofrece.
@@ -214,6 +226,14 @@ export function PublishStep(props: PublishStepProps) {
         <main className={styles.column}>
           <h1 className={styles.title}>{copy.question}</h1>
           {copy.help ? <p className={styles.help}>{copy.help}</p> : null}
+
+          {/* Antes del formulario: explica por qué está vacío, y leerlo después
+              de contestarlo entero no explicaría nada. */}
+          {props.draftExpired ? (
+            <p className={styles.warning} role="status">
+              {DRAFT_EXPIRED_NOTICE}
+            </p>
+          ) : null}
 
           {/* El buscador del paso 2 es un GET aparte: un formulario dentro de
               otro no es HTML valido, y buscar no debe guardar nada. */}

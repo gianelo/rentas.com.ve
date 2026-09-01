@@ -292,6 +292,7 @@ export class DrizzleListingEdit implements ListingEditPort {
         propertyType: listings.propertyType,
         cityId: listings.cityId,
         zoneId: listings.zoneId,
+        reference: listings.reference,
         title: listings.title,
         description: listings.description,
         priceUsd: listings.priceUsd,
@@ -322,12 +323,21 @@ export class DrizzleListingEdit implements ListingEditPort {
       .from(listingPhotos)
       .where(eq(listingPhotos.listingId, listingId));
 
-    return { ...row, photoCount: photoCountRows[0]?.photoCount ?? 0 };
+    // `null` de la columna a `undefined` del dominio: «sin referencia» es una
+    // sola respuesta, y dos formas de decirla es como `referenceOrNone` termina
+    // recibiendo algo que no es ni una cosa ni la otra.
+    return {
+      ...row,
+      reference: row.reference ?? undefined,
+      photoCount: photoCountRows[0]?.photoCount ?? 0,
+    };
   }
 
   /**
    * `status` NO esta entre las columnas del `set`, y esa ausencia es la
-   * garantia: editar no puede resucitar nada. Lo que si esta en el `WHERE` es
+   * garantia: editar no puede resucitar nada. **`city_id` y `zone_id` tampoco
+   * estan**, y esa ausencia es la otra: son los segmentos de la URL que la regla
+   * del fundador cierra (18.27), y `ListingEditWrite` ni siquiera los lleva. Lo que si esta en el `WHERE` es
    * `status = 'active'`, el mismo compare-and-swap que `activate` y `renew`.
    */
   async applyEdit(
@@ -344,6 +354,12 @@ export class DrizzleListingEdit implements ListingEditPort {
         rooms: write.rooms,
         bathrooms: write.bathrooms,
         areaM2: write.areaM2,
+        parkingSpots: write.parkingSpots,
+        propertyType: write.propertyType,
+        // De vuelta a `null`, que es lo que la columna nulable guarda: escribir
+        // `undefined` en un `set` de Drizzle sería no tocar la columna, o sea un
+        // borrado que no borra (18.27).
+        reference: write.reference ?? null,
         contactMethod: write.contactMethod,
         contactValue: write.contactValue,
       })

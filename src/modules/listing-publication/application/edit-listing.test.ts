@@ -140,7 +140,7 @@ describe("editListing — la puerta, y el aviso ajeno que se contesta como inexi
 });
 
 describe("editListing — lo que escribe y lo que refusa (18.14)", () => {
-  it("escribe los ocho campos editables con el catálogo de zonas de SU ciudad", async () => {
+  it("escribe los once campos editables con el catálogo de zonas de SU ciudad", async () => {
     const listings = portReturning(listing());
 
     const result = await editListing(
@@ -159,6 +159,11 @@ describe("editListing — lo que escribe y lo que refusa (18.14)", () => {
       rooms: 3,
       bathrooms: 2,
       areaM2: 128,
+      parkingSpots: 1,
+      propertyType: "apartamento",
+      // Sin seña en el aviso, y se escribe igual: el `set` la lleva SIEMPRE,
+      // porque «sin referencia» es un valor y no una columna que no se toca.
+      reference: undefined,
       contactMethod: "email",
       contactValue: "d@example.com",
     });

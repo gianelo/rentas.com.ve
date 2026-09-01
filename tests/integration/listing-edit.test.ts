@@ -119,7 +119,8 @@ async function insertListing(
 
 async function readListing(id: string) {
   const { rows } = await pool.query(
-    `SELECT title, price_usd, contact_method, contact_value, publisher_type, status, zone_id
+    `SELECT title, price_usd, contact_method, contact_value, publisher_type, status, zone_id,
+            city_id, property_type, parking_spots, reference
      FROM "listing" WHERE id = $1`,
     [id],
   );
@@ -132,6 +133,10 @@ async function readListing(id: string) {
         publisher_type: string;
         status: string;
         zone_id: string;
+        city_id: string;
+        property_type: string;
+        parking_spots: number;
+        reference: string | null;
       }
     | undefined;
 }
@@ -182,6 +187,55 @@ describe("editar un aviso publicado — contra Postgres de verdad (18.14)", () =
     const untouched = await readListing(theirs);
     expect(untouched?.title).toBe("Apartamento amoblado en La Castellana");
     expect(untouched?.price_usd).toBe(610);
+  });
+
+  /**
+   * tasks.md 18.27 — **los tres campos que la regla general del fundador abre,
+   * en las columnas de verdad.** Con un doble del puerto, «se guardó» es una
+   * llamada que la prueba mira; contra Postgres es la fila releída. Y el par que
+   * hace que la prueba pregunte algo: la zona y la ciudad siguen donde estaban.
+   */
+  it("corrige la referencia, el tipo y los puestos, y no mueve la zona ni la ciudad", async () => {
+    const owner = await insertUser();
+    const mine = await insertListing(owner);
+    const antes = await readListing(mine);
+
+    await editListing(
+      {
+        listingId: mine,
+        edit: {
+          reference: "A dos calles de la plaza Altamira",
+          propertyType: "anexo",
+          parkingSpots: 0,
+        },
+      },
+      { sessionPort: sessionFor(owner), zones, listings },
+    );
+
+    const editado = await readListing(mine);
+    expect(editado?.reference).toBe("A dos calles de la plaza Altamira");
+    expect(editado?.property_type).toBe("anexo");
+    expect(editado?.parking_spots).toBe(0);
+    expect(editado?.zone_id).toBe(antes?.zone_id);
+    expect(editado?.city_id).toBe(antes?.city_id);
+  });
+
+  /** La referencia se BORRA, que es la otra mitad de «corregir cualquier dato»:
+   *  una seña equivocada que sólo se puede reemplazar no se puede sacar. */
+  it("mandar la referencia en blanco la deja en NULL, no en la de ayer", async () => {
+    const owner = await insertUser();
+    const mine = await insertListing(owner);
+
+    await editListing(
+      { listingId: mine, edit: { reference: "Frente a la panadería" } },
+      { sessionPort: sessionFor(owner), zones, listings },
+    );
+    await editListing(
+      { listingId: mine, edit: { reference: "" } },
+      { sessionPort: sessionFor(owner), zones, listings },
+    );
+
+    expect((await readListing(mine))?.reference).toBeNull();
   });
 
   it("el aviso de otra cuenta no se puede editar, y su fila no cambia", async () => {
@@ -292,6 +346,9 @@ describe("editar un aviso publicado — contra Postgres de verdad (18.14)", () =
       rooms: 3,
       bathrooms: 2,
       areaM2: 128,
+      parkingSpots: 1,
+      propertyType: "apartamento" as const,
+      reference: undefined,
       contactMethod: "whatsapp" as const,
       contactValue: "04121234567",
     };
