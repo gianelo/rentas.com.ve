@@ -39,11 +39,14 @@ const db = drizzle(pool, { schema }) as unknown as VerifiedContactDatabase;
 
 const evidence = new DrizzleContactVerificationEvidence(db);
 const verifiedContacts = new DrizzleVerifiedContacts(db);
+/** El reloj de la 19.11 llega desde el llamador; acá es el de verdad, como en producción. */
+const puertos = { evidence, verifiedContacts, now: () => new Date() };
 
 const MARIA = randomUUID();
 const AGENCIA = randomUUID();
 const SIN_CORREO_PROBADO = randomUUID();
 const DOS_NUMEROS = randomUUID();
+const CON_FILA_VIEJA = randomUUID();
 
 const CORREO_DE_MARIA = `maria-${MARIA}@example.com`;
 const CORREO_DE_LA_AGENCIA = `contacto-${AGENCIA}@example.com`;
@@ -92,6 +95,7 @@ beforeAll(async () => {
   await insertUser(AGENCIA, CORREO_DE_LA_AGENCIA, 200);
   await insertUser(SIN_CORREO_PROBADO, `sin-probar-${SIN_CORREO_PROBADO}@example.com`, null);
   await insertUser(DOS_NUMEROS, `dos-numeros-${DOS_NUMEROS}@example.com`, 10);
+  await insertUser(CON_FILA_VIEJA, `vieja-${CON_FILA_VIEJA}@example.com`, 10);
 });
 
 afterAll(async () => {
@@ -101,7 +105,7 @@ afterAll(async () => {
   // dentro de una corrida: dejar cuentas atrás es cómo otra suite se
   // encuentra con un correo que no esperaba.
   await pool.query('DELETE FROM "user" WHERE id = ANY($1)', [
-    [MARIA, AGENCIA, SIN_CORREO_PROBADO, DOS_NUMEROS],
+    [MARIA, AGENCIA, SIN_CORREO_PROBADO, DOS_NUMEROS, CON_FILA_VIEJA],
   ]);
   await pool.end();
 });
@@ -112,12 +116,7 @@ describe("verified_contact contra Postgres real", () => {
 
     const decisiones = [];
     for (let aviso = 0; aviso < 50; aviso += 1) {
-      decisiones.push(
-        await resolveContactVerification(
-          { userId: AGENCIA, contact },
-          { evidence, verifiedContacts },
-        ),
-      );
+      decisiones.push(await resolveContactVerification({ userId: AGENCIA, contact }, puertos));
     }
 
     // El primero verifica y registra; del segundo en adelante la fila viva ya
@@ -196,7 +195,7 @@ describe("verified_contact contra Postgres real", () => {
     // verificación: no hay fila, y sin fila no hay «verificado el …».
     const decision = await resolveContactVerification(
       { userId: MARIA, contact: { method: "whatsapp", value: "+58 412 555 0134" } },
-      { evidence, verifiedContacts },
+      puertos,
     );
 
     expect(decision).toEqual({ kind: "unverified" });
@@ -210,7 +209,7 @@ describe("verified_contact contra Postgres real", () => {
 
     const decision = await resolveContactVerification(
       { userId: SIN_CORREO_PROBADO, contact: { method: "email", value: rows[0].email as string } },
-      { evidence, verifiedContacts },
+      puertos,
     );
 
     expect(decision).toEqual({ kind: "unverified" });
@@ -233,6 +232,32 @@ describe("verified_contact contra Postgres real", () => {
 
     expect(await countVerifiedRows(MARIA)).toBe(1);
     expect(await readVerifiedAt(MARIA, "email", CORREO_DE_MARIA)).toEqual(ahora);
+  });
+
+  /**
+   * **tasks.md 19.12, contra la consulta de verdad — y es el hueco que la
+   * 19.11 dejaba abierto.** La ventana de doce meses NO puede vivir en este
+   * puerto porque lo comparten publicar y la ficha; el comentario del puerto
+   * lo dice ahora, pero un comentario no frena a nadie. Las pruebas de la
+   * ficha reemplazan este adaptador por un falso, y `infrastructure/` no tiene
+   * piso de cobertura, así que el día que alguien agregue el
+   * `WHERE verified_at > $desde` la suite entera quedaría verde mientras un
+   * aviso activo pierde su frase.
+   *
+   * Esto es lo único que lo delata: la fila cruda vuelve con su instante
+   * viejo, que es exactamente lo que la ficha necesita para seguir diciendo
+   * CUÁNDO se verificó.
+   */
+  it("una fila de tres años vuelve entera: la ficha de un aviso activo no pierde su fecha", async () => {
+    const contact = { method: "email", value: `vieja-${CON_FILA_VIEJA}@example.com` } as const;
+    const ahora = await databaseNow();
+    const haceTresAnos = new Date(ahora.getTime() - 3 * 365 * 86_400_000);
+
+    await verifiedContacts.record({ userId: CON_FILA_VIEJA, contact, verifiedAt: haceTresAnos });
+
+    const leida = await evidence.findEvidence({ userId: CON_FILA_VIEJA, contact });
+
+    expect(leida?.verifiedAt).toEqual(haceTresAnos);
   });
 
   /**
