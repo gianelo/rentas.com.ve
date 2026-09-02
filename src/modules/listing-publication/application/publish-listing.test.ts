@@ -738,5 +738,31 @@ describe("publishListing", () => {
       expect(listingId).toBe("lst_001");
       expect(verifiedContacts.written).toEqual([]);
     });
+
+    /**
+     * tasks.md 19.11 — **la costura, no la regla.** Los doce meses están
+     * probados en `contact-verification.test.ts`; lo que se mide acá es que
+     * este caso de uso le pase SU reloj a la decisión. Con el del sistema en
+     * su lugar la fecha de arriba seguiría estando dentro de la ventana y no
+     * se notaría nada: el par de abajo es lo que lo distingue.
+     */
+    it("no registra un `emailVerified` que ya caducó, y sí el mismo trece meses antes", async () => {
+      const caducado = makeVerifiedContacts();
+      const vivo = makeVerifiedContacts();
+      // Trece meses después de EMAIL_VERIFIED_AT, y once.
+      const publicandoTarde = new Date("2027-07-01T07:00:00.000Z");
+      const publicandoATiempo = new Date("2027-05-01T07:00:00.000Z");
+      const publicar = (verifiedContacts: VerifiedContactPort, now: Date) =>
+        publishListing(
+          request({ contactMethod: "email", contactValue: PUBLISHER_EMAIL }),
+          deps({ verifiedContacts, now: () => now }),
+        );
+
+      await publicar(caducado, publicandoTarde);
+      await publicar(vivo, publicandoATiempo);
+
+      expect(caducado.written).toEqual([]);
+      expect(vivo.written).toHaveLength(1);
+    });
   });
 });

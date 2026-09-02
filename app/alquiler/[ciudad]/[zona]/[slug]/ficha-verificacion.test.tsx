@@ -231,11 +231,16 @@ describe("la ficha servida y la verificación del contacto", () => {
    * instante reciente, así que una caducidad metida en el camino de dibujo
    * las dejaría a todas en verde.
    *
-   * Las dos formas que el puerto puede contestar, porque la 19.11 va a
-   * cambiar cuál llega: **hoy** la fila caducada vuelve con su instante viejo
-   * —el `WHERE verified_at > $desde` todavía no existe—, y **después** de la
-   * 19.11 la misma fila va a volver como `null`. En las dos el aviso sigue
-   * activo y su contacto revelado.
+   * **Corrección al párrafo que este comentario tenía (AGENTS.md §5).** Decía
+   * que después de la 19.11 esta misma fila iba a volver como `null`, porque
+   * los doce meses iban a ser un `WHERE` del puerto. No fue así, y por esta
+   * prueba: el puerto lo comparten publicar y la ficha, así que ese `WHERE`
+   * habría hecho fallar justo lo que acá se afirma. La ventana vive en
+   * `decideContactVerification`, que la ficha no llama, y **la primera forma
+   * es la que llega hoy y va a seguir llegando**. La segunda se conserva
+   * porque sigue siendo cierta como respuesta —una cuenta sin fila— y porque
+   * mide lo mismo por el otro lado: en las dos el aviso sigue activo y su
+   * contacto revelado.
    */
   it("la verificación caducada a mitad de vuelo no invalida el aviso ni afirma vigencia", async () => {
     findEvidence.mockResolvedValue({
