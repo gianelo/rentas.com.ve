@@ -42,6 +42,33 @@ export const EXPIRY_NOTICE_WINDOW_DAYS = 5;
  */
 export const PURGE_NOTICE_LEAD_DAYS = 5;
 
+/**
+ * Los estados del ciclo anunciado (19.16).
+ *
+ * **Es una sola lista porque son un solo conjunto, y ésa es la garantía.** La
+ * retención borra fotos para siempre, y lo único que la separa de «borrar data
+ * real» es que se anuncia (19.8): por correo en `lifecycle-notice.ts` y en la
+ * pantalla en `retention-notice.ts`. Si el conjunto que la purga alcanza fuera
+ * más ancho que el conjunto al que se le avisa, la diferencia sería
+ * exactamente gente a la que se le borra sin decirle nada — que fue lo que
+ * pasó hasta hoy con `hidden` y con `draft`.
+ *
+ * **`hidden` queda afuera y no por descuido**: a un aviso escondido por
+ * reportes no se le ofrece renovar (9.31 deja `hidden` como está al renovar),
+ * así que contarle los días sería anunciarle un borrado que no puede evitar, y
+ * la frase de la 19.7 —«renovalo y el aviso vuelve con sus fotos»— sería falsa
+ * justo en la ficha que la leería. Vuelve a entrar el día que la 9.31 decida
+ * qué hace renovar con un oculto, y ese día es un elemento de esta lista.
+ *
+ * **`draft` queda afuera porque su `expires_at` no significa esto.** La
+ * importación de cartera lo escribe como marcador de posición —«no carry
+ * meaning before activation», dice `confirm-import.ts` al lado del valor—, así
+ * que purgar por esa fecha es borrar por un número que nadie fijó. Si un
+ * borrador tiene que perder sus fotos, lo hace el barrido que le corresponde y
+ * con su propio criterio (la forma de la 18.32), no de rebote.
+ */
+export const ANNOUNCED_LIFECYCLE_STATUSES = ["active", "expired"] as const;
+
 export interface ListingClock {
   readonly publishedAt: Date;
   /** `null` mientras nadie haya renovado. */
