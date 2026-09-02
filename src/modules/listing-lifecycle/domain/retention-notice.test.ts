@@ -42,6 +42,26 @@ describe("el conteo regresivo de la purga (19.6)", () => {
     expect(cuatroDiasTarde.deadline).not.toContain("septiembre");
   });
 
+  /**
+   * **La zona horaria, con un instante donde de verdad se nota.** Este
+   * proyecto ya perdió un día por cuatro formateadores sin `timeZone`:
+   * Venezuela es UTC-4, así que una purga a las 02:00 Z cae el día ANTERIOR
+   * para quien la lee, y la fecha que alguien usa para decidir si renueva
+   * saldría corrida un día hacia atrás. El vencimiento de arriba es al
+   * mediodía a propósito —ahí ninguna zona cambia el día y la prueba no
+   * mediría nada—; éste no.
+   */
+  it("no corre la fecha un día por leerla fuera de UTC", () => {
+    const aviso = retentionNoticeFor(
+      4,
+      new Date("2026-09-01T02:00:00Z"),
+      new Date("2026-09-06T02:00:00Z"),
+    );
+
+    expect(aviso.deadline).toContain("16 de septiembre");
+    expect(aviso.deadline).not.toContain("15 de septiembre");
+  });
+
   it("sin fotos el conteo se acabó, y lo dice en pasado", () => {
     const aviso = retentionNoticeFor(0, VENCIO, new Date("2026-09-20T12:00:00Z"));
 
