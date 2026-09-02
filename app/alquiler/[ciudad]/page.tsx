@@ -14,7 +14,6 @@ import { homeSearchForm } from "@/modules/listing-catalogue/domain/search-destin
 import { resolveSearchPill } from "@/modules/listing-catalogue/domain/search-pill";
 import { DrizzleCatalogue } from "@/modules/listing-catalogue/infrastructure/drizzle-catalogue";
 import { buildListingGrid } from "@/modules/listing-discovery/domain/listing-grid";
-import { slugify } from "@/modules/listing-discovery/domain/listing-url";
 import {
   isFilteredZoneRoute,
   resolveCityRoute,
@@ -182,12 +181,7 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
     basePath: cityPath,
     cityPath,
     query,
-    cityId: city.id,
-    cities: cities.map((candidate) => ({
-      id: candidate.id,
-      name: candidate.name,
-      path: `/alquiler/${slugify(candidate.name)}`,
-    })),
+    cityName: city.name,
     // El recorte por ciudad y la ruta canónica de cada zona los arma el
     // dominio sobre el mismo slug que viaja en `?zona=`: dos derivaciones
     // distintas del nombre es cómo la query deja de nombrar lo que nombra la
@@ -218,10 +212,13 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
   // dice dónde se está buscando —las zonas elegidas, o la ciudad cuando no hay
   // ninguna— y `resolveSearchPill` traduce eso a un estado.
   //
-  // El conteo de filtros es `pillFilters` y **no** `activeFilters`: son dos
-  // números distintos y sólo uno abre lo que la pastilla abre. El engranaje del
-  // acordeón contaba la zona; el filtro de la pastilla no la incluye, porque
-  // "ciudad y zona no están ahí: eso lo resuelve el texto" (14i).
+  // El conteo de filtros es `pillFilters`, y **la zona no cuenta**: el filtro de
+  // la pastilla abre precio, tamaño, quién publica y atributos, porque "ciudad
+  // y zona no están ahí: eso lo resuelve el texto" (14i). Hasta la 14.49 el
+  // modelo llevaba además `activeFilters` —el número del engranaje de la barra
+  // resumen, que sí contaba la zona—, y elegir el equivocado dibujaba un «4
+  // filtros» sobre un panel que abre tres sin poner nada en rojo. Ese campo ya
+  // no existe, así que hoy el error no compila.
   const searchForm = homeSearchForm(panel.headline);
   const pill: SearchPillProps = {
     action: searchForm.action,

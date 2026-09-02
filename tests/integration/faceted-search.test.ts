@@ -1098,16 +1098,10 @@ describe("los criterios nuevos también son facetas (tasks 14.6 a 14.9)", () => 
  *
  * `buildFilterPanel.test.ts` ya prueba estas reglas contra un doble en
  * memoria, y ese doble cuenta porque fue escrito para contar. Acá se prueba lo
- * que ningún doble puede: que **el número de la placa de cada ciudad salga de
- * las filas de esa ciudad** (F3, regla transversal 3) y que **las zonas que se
- * ofrecen sean las que el conteo nombra** — no la taxonomía entera, que son
- * miles de filas por ciudad.
+ * que ningún doble puede: que **las zonas que se ofrecen sean las que el conteo
+ * nombra** —no la taxonomía entera, que son miles de filas por ciudad— y que
+ * **el panel entero cueste un solo viaje de red** (14.50).
  */
-const PANEL_CIUDADES = [
-  { id: MARACAIBO, name: "Maracaibo", path: "/alquiler/maracaibo" },
-  { id: DISTRITO, name: "Distrito Capital", path: "/alquiler/distrito-capital" },
-] as const;
-
 const PANEL_ZONAS = [
   { id: MCBO_CENTRO, name: "Centro", slug: "centro", path: "/alquiler/maracaibo/centro" },
   { id: MCBO_NORTE, name: "Norte", slug: "norte", path: "/alquiler/maracaibo/norte" },
@@ -1124,8 +1118,7 @@ function panelRequest(overrides: Partial<FilterPanelRequest> = {}): FilterPanelR
     basePath: "/alquiler/maracaibo",
     cityPath: "/alquiler/maracaibo",
     query: {},
-    cityId: MARACAIBO,
-    cities: PANEL_CIUDADES,
+    cityName: "Maracaibo",
     zones: PANEL_ZONAS,
     chosenZoneIds: [],
     criteria: { cityId: MARACAIBO },
@@ -1133,58 +1126,17 @@ function panelRequest(overrides: Partial<FilterPanelRequest> = {}): FilterPanelR
   };
 }
 
-describe("el panel armado contra la base: el conteo por ciudad (F3)", () => {
-  it("cada ciudad lleva SU número, contado sobre sus propias filas", async () => {
-    const { panel } = await buildFilterPanel(facets, panelRequest());
-
-    const maracaibo = panel.cities.find((city) => city.id === MARACAIBO);
-    const distrito = panel.cities.find((city) => city.id === DISTRITO);
-
-    // Los mismos cinco y uno que cuenta `countFacets`, ahora en la placa.
-    expect(maracaibo?.count).toBe(5);
-    expect(distrito?.count).toBe(1);
-    // Un solo número repetido en las dos placas es el bug que este caso
-    // atrapa: se ve razonable y no lo desmiente nada.
-    expect(maracaibo?.count).not.toBe(distrito?.count);
-  });
-
-  it("el conteo de la otra ciudad se calcula SIN las zonas de ésta", async () => {
-    // Las zonas pertenecen a la ciudad que se está mirando. Arrastradas a la
-    // otra dan cero sobre una ciudad llena de avisos, y la placa invitaría a
-    // un vacío — lo que la regla transversal 4 prohíbe.
-    const { panel } = await buildFilterPanel(
-      facets,
-      panelRequest({
-        chosenZoneIds: [MCBO_CENTRO],
-        criteria: { cityId: MARACAIBO, zoneIds: [MCBO_CENTRO] },
-      }),
-    );
-
-    expect(panel.cities.find((city) => city.id === MARACAIBO)?.count).toBe(3);
-    expect(panel.cities.find((city) => city.id === DISTRITO)?.count).toBe(1);
-  });
-
-  it("los demás filtros SÍ viajan a la otra ciudad: no dependen del lugar", async () => {
-    // Quien busca amoblado sigue buscando amoblado en la otra punta del país.
-    // D1, el único de Distrito Capital, está amoblado.
-    const { panel } = await buildFilterPanel(
-      facets,
-      panelRequest({ criteria: { cityId: MARACAIBO, attributes: ["isFurnished"] } }),
-    );
-
-    expect(panel.cities.find((city) => city.id === MARACAIBO)?.count).toBe(2); // A2 y A3
-    expect(panel.cities.find((city) => city.id === DISTRITO)?.count).toBe(1); // D1
-
-    const sinNada = await buildFilterPanel(
-      facets,
-      panelRequest({ criteria: { cityId: MARACAIBO, minPriceUsd: 100000 } }),
-    );
-
-    // Y si el filtro tampoco encuentra nada allá, la placa dice cero en vez de
-    // inventar el total de la ciudad.
-    expect(sinNada.panel.cities.find((city) => city.id === DISTRITO)?.count).toBe(0);
-  });
-});
+/**
+ * **Las tres afirmaciones del conteo por ciudad se borraron con la 14.50, y
+ * decirlo acá es la mitad honesta del borrado.** Medían `panel.cities[].count`
+ * contra Postgres real —«cada ciudad lleva SU número», «el conteo de la otra
+ * ciudad se calcula SIN las zonas de ésta», «los demás filtros SÍ viajan a la
+ * otra ciudad»— y las tres eran correctas. El problema no era lo que decían:
+ * era que el número que medían **costaba una consulta por ciudad en cada carga
+ * de resultados y no llegaba a ningún píxel** desde que la 14.36 sacó el paso
+ * de ubicación del panel. Se van con su sujeto, no antes; lo que ocupa su lugar
+ * es la cota de viajes de red del final de este archivo.
+ */
 
 describe("el panel armado contra la base: las zonas ofrecidas salen del conteo", () => {
   it("se ofrecen las zonas que el conteo nombra, no la taxonomía entera", async () => {
@@ -1340,5 +1292,43 @@ describe("ninguna pantalla termina en un vacío sin salida (F10 y F11)", () => {
 
     expect(outcome.closing).toBe(`Son los ${conDosOMas.length} avisos que coinciden`);
     expect(outcome.exit?.label).toBe(`Quitar las habitaciones y ver ${sinHabitaciones.length}`);
+  });
+});
+
+/**
+ * **El panel entero, contado en viajes de red (14.50, y la 14.11 es la razón).**
+ *
+ * La 14.11 dejó `queries === 1` afirmado sobre `countFacets`, y esa afirmación
+ * es cierta y no alcanza: envuelve **el adaptador**, y quien arma el panel está
+ * una capa más arriba. `buildFilterPanel` disparaba un `Promise.all` con una
+ * consulta por cada OTRA ciudad para llenar un conteo por ciudad, así que una
+ * promesa de un solo viaje viajaba bajo un abanico que nadie contaba — medido
+ * el 2026-09-02 con este mismo arnés: **2 viajes con dos ciudades**, N con N.
+ *
+ * Que la cota esté acá y no sólo abajo es la corrección: se mide **lo que la
+ * pantalla pide**, que es lo que se paga. Un abanico sin medir es exactamente
+ * cómo éste llegó a existir.
+ */
+describe("el panel entero cuesta UN viaje de red (14.50)", () => {
+  it("arma el panel de una ciudad con dos en el catálogo sin preguntar dos veces", async () => {
+    let queries = 0;
+    const counting = new Pool({ connectionString: getTestDatabaseUrl() });
+    const original = counting.query.bind(counting) as (...args: unknown[]) => unknown;
+    counting.query = ((...args: unknown[]) => {
+      queries += 1;
+      return original(...args);
+    }) as unknown as typeof counting.query;
+
+    const counted = new DrizzleFacetedSearch(
+      drizzle(counting, { schema }) as unknown as FacetedSearchDatabase,
+    );
+    const { counts } = await buildFilterPanel(counted, panelRequest());
+    await counting.end();
+
+    expect(queries).toBe(1);
+    // Y el viaje único trae de verdad los números del panel: sin esta línea la
+    // cota de arriba seguiría en verde el día que alguien devuelva un panel
+    // vacío sin preguntar nada.
+    expect(counts.total).toBe(5);
   });
 });

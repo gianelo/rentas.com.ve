@@ -53,11 +53,7 @@ const BASE: SearchPanelInput = {
   basePath: "/alquiler/distrito-capital",
   cityPath: "/alquiler/distrito-capital",
   query: {},
-  cityId: "dc",
-  cities: [
-    { id: "dc", name: "Distrito Capital", path: "/alquiler/distrito-capital", count: 47 },
-    { id: "mcbo", name: "Maracaibo", path: "/alquiler/maracaibo", count: 23 },
-  ],
+  cityName: "Distrito Capital",
   zones: [
     { id: "chacao", name: "Chacao", slug: "chacao", path: "/alquiler/distrito-capital/chacao" },
     {
@@ -110,53 +106,41 @@ describe("el panel entero", () => {
   });
 });
 
-describe("paso 1 · la ciudad (F3)", () => {
-  it("cada ciudad lleva su conteo", () => {
-    expect(panel().cities.map((city) => city.count)).toEqual([47, 23]);
+/**
+ * **El paso 1 —«la ciudad»— ya no existe, y sus seis casos se fueron con él
+ * (14.50).** Medían `model.cities`: el conteo de cada ciudad, cuál estaba
+ * elegida, y el aviso de `planCityChange` antes de perder las zonas. Ninguna
+ * pantalla dibujaba nada de eso desde que la 14.36 sacó la ubicación del panel
+ * —el único selector de ciudad que el producto sirve son las fichas del inicio,
+ * que arma `homeCityChips` y que no llevan conteo— así que eran seis
+ * afirmaciones que iban a seguir en verde para siempre midiendo un campo que
+ * costaba una consulta a Neon por ciudad y no llegaba a ningún píxel.
+ *
+ * **No se reapuntaron a otro sujeto**, por la razón que la 14.42 ya dejó
+ * escrita en `design-contract.test.tsx`: una aserción mudada de sujeto dice
+ * seguir protegiendo lo de antes y protege otra cosa.
+ */
+
+/**
+ * **El nombre de la ciudad llega como un dato y no como una lista** (14.50).
+ *
+ * Hasta el 2026-09-02 el panel recibía el catálogo entero de ciudades y le
+ * sacaba un nombre buscando por id. De todo aquello se dibujaba exactamente
+ * esto: el encabezado, que es lo que la pastilla dice cuando no hay zona
+ * elegida. **Nadie lo medía** —ninguna prueba de dominio leía `headline`— así
+ * que el día que la lista se cambió por el nombre lo único que se puso rojo fue
+ * una prueba de `app/`, donde el suelo de cobertura del 90 % no llega.
+ */
+describe("dónde se está buscando (14i: «eso lo resuelve el texto»)", () => {
+  it("sin zona elegida el encabezado es la ciudad", () => {
+    expect(panel().headline).toBe("Distrito Capital");
   });
 
-  it("la ciudad activa se ve elegida, y sólo ella", () => {
-    expect(
-      panel()
-        .cities.filter((city) => city.chosen)
-        .map((city) => city.id),
-    ).toEqual(["dc"]);
-  });
+  it("con zonas elegidas son ellas, y la ciudad deja de encabezar", () => {
+    const model = panel({ chosenZoneIds: ["chacao", "altamira"] });
 
-  it("cambiar de ciudad avisa que se pierden las zonas, antes de tocarla", () => {
-    const other = panel({
-      chosenZoneIds: ["chacao", "altamira"],
-      query: { zona: "chacao,altamira" },
-    }).cities.find((city) => city.id === "mcbo");
-
-    expect(other?.warning).toContain("Chacao");
-    expect(other?.warning).toContain("Altamira");
-  });
-
-  it("y la dirección a la que lleva no arrastra ninguna zona", () => {
-    const other = panel({
-      chosenZoneIds: ["chacao"],
-      query: { zona: "chacao", min: "250" },
-    }).cities.find((city) => city.id === "mcbo");
-
-    expect(other?.href).not.toContain("zona=");
-    expect(other?.href).toContain("/alquiler/maracaibo");
-    // El precio no depende de la ciudad, así que sobrevive.
-    expect(other?.href).toContain("min=250");
-  });
-
-  it("quedarse en la misma ciudad no avisa nada", () => {
-    const same = panel({ chosenZoneIds: ["chacao"] }).cities.find((city) => city.id === "dc");
-
-    expect(same?.warning).toBeNull();
-  });
-
-  it("elegir ciudad lleva a la otra ciudad, sin abrir ningún grupo", () => {
-    const other = panel().cities.find((city) => city.id === "mcbo");
-
-    // Cambiar de ciudad LLEVA a la otra ciudad; ya no abre ningún grupo,
-    // porque el panel dejó de tener paso de ciudad (14.36).
-    expect(other?.href).not.toContain("filtros=");
+    expect(model.headline).toBe("Chacao, Altamira");
+    expect(model.headline).not.toContain("Distrito Capital");
   });
 });
 
@@ -478,20 +462,25 @@ describe("«Limpiar todo» conserva la ciudad (F8)", () => {
 });
 
 /**
- * **El modelo lleva los dos conteos, y por eso ninguna pantalla tiene que
- * restar.** El engranaje de la barra resumen cuenta la zona; el filtro de la
- * pastilla no (14i/14.36). Una página que hiciera `activeFilters - 1` estaría
- * escribiendo esa regla en `app/`, donde el suelo de cobertura no llega.
+ * **El modelo lleva EL conteo de la pastilla, y por eso ninguna pantalla tiene
+ * que restar.** Hasta la 14.49 llevaba dos: éste y `activeFilters`, el del
+ * engranaje de la barra resumen, que contaba además la zona. La 14.41 se llevó
+ * esa barra y la 14.42 su componente, así que el segundo número se calculaba
+ * en cada carga sin llegar a ninguna pantalla — y sus tres afirmaciones iban a
+ * seguir en verde para siempre midiendo un campo muerto.
+ *
+ * **Lo que sigue medido es lo que se dibuja**: la zona NO cuenta acá, que es la
+ * regla que la 14i fija y la lámina 7c dibuja. Escrita en `app/` como una resta
+ * quedaría fuera del suelo de cobertura del 90 %.
  */
-describe("los dos conteos de filtros del modelo", () => {
-  it("con una zona elegida, el engranaje cuenta uno más que la pastilla", () => {
+describe("el conteo de filtros de la pastilla", () => {
+  it("una zona elegida no cuenta como filtro: la resuelve el texto (14i)", () => {
     const model = buildSearchPanel({ ...BASE, chosenZoneIds: ["chacao"] });
 
-    expect(model.activeFilters).toBe(1);
     expect(model.pillFilters).toBe(0);
   });
 
-  it("el caso de la lámina 7c: la pastilla dice 3 y el engranaje 4", () => {
+  it("el caso de la lámina 7c: con dos zonas, precio, habitaciones y dueños, dice 3", () => {
     const model = buildSearchPanel({
       ...BASE,
       chosenZoneIds: ["chacao", "altamira"],
@@ -499,14 +488,10 @@ describe("los dos conteos de filtros del modelo", () => {
     });
 
     expect(model.pillFilters).toBe(3);
-    expect(model.activeFilters).toBe(4);
   });
 
-  it("sin nada elegido los dos son cero: la ciudad no es un filtro (F8)", () => {
-    const model = buildSearchPanel(BASE);
-
-    expect(model.activeFilters).toBe(0);
-    expect(model.pillFilters).toBe(0);
+  it("sin nada elegido es cero: la ciudad tampoco es un filtro (F8)", () => {
+    expect(buildSearchPanel(BASE).pillFilters).toBe(0);
   });
 });
 

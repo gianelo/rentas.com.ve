@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  countActiveFilters,
   countPillFilters,
   PANEL_OPEN_TOKEN,
   readSearchStep,
@@ -183,48 +182,26 @@ describe("la barra resumen de resultados", () => {
     );
     expect(searchHeadline(CARACAS)).toBe("Distrito Capital");
   });
-
-  it("cuenta los filtros puestos, y la ciudad NO es uno de ellos (F8)", () => {
-    expect(countActiveFilters(CARACAS)).toBe(0);
-    expect(
-      countActiveFilters({
-        ...CARACAS,
-        zoneNames: ["Chacao", "Altamira"],
-        minPriceUsd: 250,
-        maxPriceUsd: 700,
-        minRooms: 2,
-        publisherType: "owner",
-      }),
-    ).toBe(4);
-  });
-
-  it("las zonas cuentan como un solo filtro, por muchas que sean", () => {
-    expect(countActiveFilters({ ...CARACAS, zoneNames: ["a", "b", "c"] })).toBe(1);
-  });
-
-  it("cada atributo declarado cuenta por su cuenta: se combinan con Y", () => {
-    expect(
-      countActiveFilters({ ...CARACAS, attributes: ["hasPowerPlant", "hasRegularWater"] }),
-    ).toBe(2);
-  });
 });
 
 /**
- * **El número de la pastilla no es el del engranaje, y esto es la corrección de
+ * **El número de la pastilla es el único que hay, y esto es la corrección de
  * una contradicción real entre dos contratos ya escritos.**
  *
- * `countActiveFilters` cuenta la zona como un filtro, porque el engranaje de la
- * barra resumen abría un acordeón que TENÍA un paso de zona. La 14.36 sacó
- * ciudad y zona del panel («la ubicación pasa a vivir SOLO en la ruta; los
- * filtros SOLO en la query»), y la 14i lo dice desde el otro lado: el filtro de
- * la pastilla «abre precio, tamaño, quién publica y atributos. Ciudad y zona no
- * están ahí: eso lo resuelve el texto».
+ * Hasta la 14.49 convivía con `countActiveFilters`, que contaba la zona como un
+ * filtro porque el engranaje de la barra resumen abría un acordeón que TENÍA un
+ * paso de zona. La 14.36 sacó ciudad y zona del panel («la ubicación pasa a
+ * vivir SOLO en la ruta; los filtros SOLO en la query»), la 14i lo dice desde el
+ * otro lado —el filtro de la pastilla «abre precio, tamaño, quién publica y
+ * atributos. Ciudad y zona no están ahí: eso lo resuelve el texto»— y la 14.41
+ * reemplazó la barra por la pastilla. Ese otro conteo quedó sin pantalla y se
+ * borró con `model.activeFilters`.
  *
  * Y la lámina 7b/7c lo dibuja: con Chacao, Altamira, $250–$700, 2 habitaciones
  * y "solo de dueños" puestos, la pastilla dice **«3 filtros»** — no 4, no 5.
  *
- * Pasarle `activeFilters` a la pastilla habría dibujado un número que no es el
- * que abre nada, y no hay lámina ni prueba de dominio que se ponga roja por eso.
+ * Dibujar acá el número del engranaje habría puesto un número que no es el que
+ * abre nada, y no hay lámina ni prueba de dominio que se ponga roja por eso.
  */
 describe("countPillFilters — lo que el filtro de la pastilla abre de verdad (14i)", () => {
   it("la zona NO cuenta: la resuelve el texto de la pastilla, no el panel", () => {
@@ -248,7 +225,7 @@ describe("countPillFilters — lo que el filtro de la pastilla abre de verdad (1
     expect(countPillFilters(CARACAS)).toBe(0);
   });
 
-  it("cada atributo cuenta por su cuenta, igual que en el engranaje", () => {
+  it("cada atributo cuenta por su cuenta: se combinan con Y", () => {
     expect(countPillFilters({ ...CARACAS, attributes: ["hasPowerPlant", "hasRegularWater"] })).toBe(
       2,
     );
@@ -259,16 +236,19 @@ describe("countPillFilters — lo que el filtro de la pastilla abre de verdad (1
     expect(countPillFilters({ ...CARACAS, minPriceUsd: 300 })).toBe(1);
   });
 
-  /** La diferencia con el engranaje es exactamente una: la zona. */
-  it("es el conteo del engranaje menos la zona, nunca otra cosa", () => {
-    const withZones = {
-      ...CARACAS,
-      zoneNames: ["Chacao"],
-      minRooms: 3,
-      attributes: ["hasSecurity"] as const,
-    };
+  /**
+   * **La zona era la única diferencia con el conteo del engranaje**, y hasta la
+   * 14.49 esto se afirmaba restando `countActiveFilters`. Ese conteo se borró
+   * con `model.activeFilters` —la barra resumen que lo dibujaba se fue en la
+   * 14.41— así que la resta ya no tiene minuendo. Lo que la resta protegía sí
+   * se conserva, y de la única forma que queda honesta: afirmando que agregar
+   * una zona a una selección **no mueve este número**.
+   */
+  it("agregar una zona no mueve el número: es lo único que no cuenta", () => {
+    const sinZonas = { ...CARACAS, minRooms: 3, attributes: ["hasSecurity"] as const };
+    const conZonas = { ...sinZonas, zoneNames: ["Chacao", "Altamira"] };
 
-    expect(countActiveFilters(withZones) - countPillFilters(withZones)).toBe(1);
-    expect(countActiveFilters(CARACAS) - countPillFilters(CARACAS)).toBe(0);
+    expect(countPillFilters(sinZonas)).toBe(2);
+    expect(countPillFilters(conZonas)).toBe(2);
   });
 });

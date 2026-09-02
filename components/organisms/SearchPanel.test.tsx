@@ -47,11 +47,7 @@ const INPUT: SearchPanelInput = {
   basePath: "/alquiler/distrito-capital",
   cityPath: "/alquiler/distrito-capital",
   query: {},
-  cityId: "dc",
-  cities: [
-    { id: "dc", name: "Distrito Capital", path: "/alquiler/distrito-capital", count: 47 },
-    { id: "mcbo", name: "Maracaibo", path: "/alquiler/maracaibo", count: 23 },
-  ],
+  cityName: "Distrito Capital",
   zones: [
     { id: "chacao", name: "Chacao", slug: "chacao", path: "/alquiler/distrito-capital/chacao" },
     {
