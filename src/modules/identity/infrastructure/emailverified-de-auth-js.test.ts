@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
 import NextAuth, { customFetch } from "next-auth";
 import type { Adapter, AdapterUser } from "next-auth/adapters";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { buildEmailProvider } from "./email-provider";
+import { buildProviderEmailVerificationEvent } from "./provider-email-verification-event";
 
 /**
  * **¿Qué deja escrito Auth.js en `emailVerified`, puerta por puerta?**
@@ -26,6 +27,8 @@ import { buildEmailProvider } from "./email-provider";
 
 const ORIGIN = "https://rentas.test";
 const CORREO = "maria.f@gmail.com";
+/** El reloj del asiento de la 19.14, fijo para que la fecha sea afirmable. */
+const AHORA = new Date("2026-09-02T15:00:00.000Z");
 
 /** Los `handlers` reciben `NextRequest`, que es lo que Next les entrega. */
 const pedido = (u: string, init?: RequestInit) => new NextRequest(u, init as never);
@@ -115,8 +118,24 @@ function puertaDelCorreo(cuentaExistente: AdapterUser | null) {
  * La puerta de OAuth, con un proveedor de mentira. La sesión de base de datos
  * obliga a un adaptador completo (`assertConfig` de Auth.js lo exige antes de
  * atender), y todo lo que no participa de la pregunta contesta vacío.
+ *
+ * **Las opciones existen para la 19.14 y son las que hacen la prueba
+ * medible.** El id del proveedor es `"google"` cuando lo que se conduce es la
+ * puerta de Google, porque el asiento decide por ese nombre: un proveedor de
+ * mentira llamado de otro modo nunca produciría la entrada que se quiere
+ * medir. `perfil` es el userinfo CRUDO —de ahí sale `email_verified`—, y
+ * `cuentaExistente` elige entre crear la cuenta y volver a entrar con una que
+ * ya estaba.
  */
-function puertaOAuth() {
+function puertaOAuth(
+  opciones: {
+    id?: string;
+    perfil?: Record<string, unknown>;
+    cuentaExistente?: AdapterUser | null;
+    conElAsiento?: boolean;
+    escrituraRota?: boolean;
+  } = {},
+) {
   const escrito: Escrito = { creados: [], actualizados: [] };
 
   const adapter = {
@@ -131,7 +150,7 @@ function puertaOAuth() {
     useVerificationToken: async () => null,
     getUser: async () => null,
     getUserByEmail: async () => null,
-    getUserByAccount: async () => null,
+    getUserByAccount: async () => opciones.cuentaExistente ?? null,
     getSessionAndUser: async () => null,
     updateSession: async (session) => session,
     deleteSession: async () => undefined,
@@ -140,6 +159,7 @@ function puertaOAuth() {
       return { ...user, id: "usuario-nuevo" };
     },
     updateUser: async (user) => {
+      if (opciones.escrituraRota) throw new Error("la base no contestó");
       escrito.actualizados.push(user as Partial<AdapterUser>);
       return user as AdapterUser;
     },
@@ -153,9 +173,14 @@ function puertaOAuth() {
     basePath: "/api/auth",
     session: { strategy: "database" },
     adapter,
+    // El asiento de la 19.14, con el reloj fijo. Es la MISMA función que
+    // `auth.ts` monta en producción, no una copia de su forma.
+    events: opciones.conElAsiento
+      ? { signIn: buildProviderEmailVerificationEvent(adapter, () => AHORA) }
+      : undefined,
     providers: [
       {
-        id: "proveedor-falso",
+        id: opciones.id ?? "proveedor-falso",
         name: "Proveedor falso",
         type: "oauth",
         clientId: "un-cliente",
@@ -184,7 +209,7 @@ function puertaOAuth() {
           return Response.json(
             url.includes("/token")
               ? { access_token: "un-token", token_type: "bearer", expires_in: 3600 }
-              : { sub: "proveedor-123", email: CORREO, name: "María F." },
+              : (opciones.perfil ?? { sub: "proveedor-123", email: CORREO, name: "María F." }),
           );
         },
       } as never,
@@ -192,8 +217,10 @@ function puertaOAuth() {
   });
 
   /** La vuelta del proveedor con el código, que es donde Auth.js decide. */
-  async function volverDelProveedor(): Promise<void> {
-    await handlers.GET(pedido(`${ORIGIN}/api/auth/callback/proveedor-falso?code=un-codigo`));
+  async function volverDelProveedor(): Promise<Response> {
+    return await handlers.GET(
+      pedido(`${ORIGIN}/api/auth/callback/${opciones.id ?? "proveedor-falso"}?code=un-codigo`),
+    );
   }
 
   return { volverDelProveedor, escrito };
@@ -279,5 +306,116 @@ describe("el instante que Auth.js deja al entrar (19.14)", () => {
     // pierde por el camino es el instante y nada más.
     expect(puerta.escrito.creados[0]?.email).toBe(CORREO);
     expect(puerta.escrito.creados[0]?.emailVerified).toBeNull();
+  });
+});
+
+/**
+ * **La segunda mitad de la 19.14: la fecha que Google deja y Auth.js tira.**
+ *
+ * Lo de arriba MIDE la asimetría; esto la cierra. El `null` de
+ * `handle-login.js:260` sigue escribiéndose —no se parchea la librería—, y lo
+ * que se afirma acá es que el asiento de `events.signIn` pasa después y anota
+ * el instante sobre la fila que quedó. El proveedor de mentira se llama
+ * `"google"` a propósito: el asiento decide por ese nombre, así que uno
+ * llamado de otro modo no produciría nunca la entrada que se quiere medir.
+ */
+describe("la fecha de Google se escribe al entrar (19.14)", () => {
+  const perfilDeGoogle = (email_verified: unknown) => ({
+    sub: "google-123",
+    email: CORREO,
+    name: "María F.",
+    email_verified,
+  });
+
+  it("anota el instante sobre la cuenta recién creada, que Auth.js dejó sin fecha", async () => {
+    const puerta = puertaOAuth({
+      id: "google",
+      perfil: perfilDeGoogle(true),
+      conElAsiento: true,
+    });
+
+    await puerta.volverDelProveedor();
+
+    // La mitad que no cambia: Auth.js sigue creando la cuenta con `null`.
+    expect(puerta.escrito.creados[0]?.emailVerified).toBeNull();
+    // Y la que sí: la fila queda con el instante de esta entrada.
+    expect(puerta.escrito.actualizados).toEqual([{ id: "usuario-nuevo", emailVerified: AHORA }]);
+  });
+
+  /**
+   * **Lo que le pasa a las cuentas de Google que YA existen.** No se rellenan
+   * hacia atrás —nadie sabe cuándo se verificaron— y no hacía falta: entrar
+   * es cuando Google lo afirma, así que la próxima entrada les deja su fecha
+   * sin crear una segunda cuenta ni inventar un pasado.
+   */
+  it("le deja su fecha a la cuenta de Google que ya existía, la próxima vez que entra", async () => {
+    const yaExistia = {
+      id: "usuario-viejo",
+      email: CORREO,
+      emailVerified: null,
+    } as unknown as AdapterUser;
+    const puerta = puertaOAuth({
+      id: "google",
+      perfil: perfilDeGoogle(true),
+      cuentaExistente: yaExistia,
+      conElAsiento: true,
+    });
+
+    await puerta.volverDelProveedor();
+
+    expect(puerta.escrito.creados).toEqual([]);
+    expect(puerta.escrito.actualizados).toEqual([{ id: "usuario-viejo", emailVerified: AHORA }]);
+  });
+
+  it("no anota nada cuando Google no afirma que el correo esté verificado", async () => {
+    const puerta = puertaOAuth({
+      id: "google",
+      perfil: perfilDeGoogle(false),
+      conElAsiento: true,
+    });
+
+    await puerta.volverDelProveedor();
+
+    expect(puerta.escrito.creados).toHaveLength(1);
+    expect(puerta.escrito.actualizados).toEqual([]);
+  });
+
+  /**
+   * El `null` lo escribe la rama genérica de CUALQUIER proveedor OAuth, y
+   * taparlo para todos sería escribir una fecha por un proveedor del que no
+   * se sabe nada. De Google se sabe porque `toMinimalGoogleProfile` ya
+   * rechaza un correo que Google no verificó.
+   */
+  it("no anota nada por un proveedor OAuth que no es Google, aunque afirme lo mismo", async () => {
+    const puerta = puertaOAuth({ perfil: perfilDeGoogle(true), conElAsiento: true });
+
+    await puerta.volverDelProveedor();
+
+    expect(puerta.escrito.creados).toHaveLength(1);
+    expect(puerta.escrito.actualizados).toEqual([]);
+  });
+
+  /**
+   * **Que la escritura falle no puede dejar a nadie afuera.** `events.signIn`
+   * corre después de `createSession` y antes de que la respuesta devuelva la
+   * cookie, así que un error propagado dejaría la sesión en la base y a la
+   * persona sin entrar. Sin fecha, la 19.10 vuelve a cerrar en falso, que es
+   * la dirección segura.
+   */
+  it("entra igual cuando la escritura de la fecha falla", async () => {
+    const anotado = vi.spyOn(console, "error").mockImplementation(() => {});
+    const puerta = puertaOAuth({
+      id: "google",
+      perfil: perfilDeGoogle(true),
+      conElAsiento: true,
+      escrituraRota: true,
+    });
+
+    const respuesta = await puerta.volverDelProveedor();
+
+    expect(respuesta.headers.getSetCookie().join(";")).toContain("session-token");
+    expect(puerta.escrito.actualizados).toEqual([]);
+    expect(anotado).toHaveBeenCalled();
+    anotado.mockRestore();
   });
 });

@@ -6,6 +6,7 @@ import { accounts, sessions, users, verificationTokens } from "@/shared/db/schem
 import { SIGN_IN_WAIT_PATH } from "../domain/safe-return-destination";
 import { buildEmailProvider } from "./email-provider";
 import { toMinimalGoogleProfile } from "./google-profile";
+import { buildProviderEmailVerificationEvent } from "./provider-email-verification-event";
 import { signInRedirect } from "./redirect-callback";
 
 // account-identity spec, Requirement: Google-Only Authentication has been
@@ -13,13 +14,21 @@ import { signInRedirect } from "./redirect-callback";
 // Google Sign-In and the magic-link email door, same account either way, no
 // credentials/password/SMS provider — see the spec file for the updated
 // requirement text.
+/**
+ * Sale de la llamada a `NextAuth` porque el asiento de la 19.14 escribe por
+ * `updateUser` del propio adaptador — la misma escritura que la puerta del
+ * enlace por correo ya hace (`@auth/core` 0.41.3, `handle-login.js:69`), en
+ * vez de una consulta nueva al lado.
+ */
+const adapter = DrizzleAdapter(db, {
+  usersTable: users,
+  accountsTable: accounts,
+  sessionsTable: sessions,
+  verificationTokensTable: verificationTokens,
+});
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: DrizzleAdapter(db, {
-    usersTable: users,
-    accountsTable: accounts,
-    sessionsTable: sessions,
-    verificationTokensTable: verificationTokens,
-  }),
+  adapter,
   providers: [
     Google({
       // Restricts the captured profile to email + display name at the
@@ -41,4 +50,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // F19, tasks.md 15.10: el único paso por donde cruzan las dos puertas y los
   // dos momentos del enlace por correo. Ver `redirect-callback.ts`.
   callbacks: { redirect: signInRedirect },
+  /**
+   * tasks.md 19.14 — Google verifica el correo MEJOR que el enlace mágico y
+   * era el único camino que quedaba sin fecha. Ver
+   * `provider-email-verification-event.ts` para por qué el asiento es éste y
+   * no el callback `signIn` ni `events.createUser`.
+   */
+  events: { signIn: buildProviderEmailVerificationEvent(adapter) },
 });

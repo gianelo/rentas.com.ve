@@ -1,4 +1,5 @@
 import type { GoogleProfile } from "next-auth/providers/google";
+import { providerClaimsVerifiedEmail } from "../domain/provider-email-verification";
 
 export class UnverifiedGoogleEmailError extends Error {
   constructor() {
@@ -24,9 +25,14 @@ export interface MinimalIdentityProfile {
  *
  * Also enforces Requirement: Google-Only Authentication's "verified ...
  * Google email" — an unverified email never reaches account creation.
+ *
+ * **Quién lee la afirmación de Google es del dominio** (tasks.md 19.14): la
+ * misma `providerClaimsVerifiedEmail` que decide a quién se deja entrar
+ * decide qué instante se registra, así que admitir a alguien por verificado y
+ * después negarle la fecha deja de ser posible.
  */
 export function toMinimalGoogleProfile(profile: GoogleProfile): MinimalIdentityProfile {
-  if (!profile.email_verified) {
+  if (!providerClaimsVerifiedEmail(profile as unknown as Record<string, unknown>)) {
     throw new UnverifiedGoogleEmailError();
   }
 
