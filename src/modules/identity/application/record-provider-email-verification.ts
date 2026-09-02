@@ -31,17 +31,16 @@ export async function recordProviderEmailVerification(
   const decision = decideProviderEmailVerification(signIn, dependencies.now());
   if (!decision) return;
 
-  // **Un fallo acá no cierra la puerta.** Registrar la evidencia es un hecho
-  // de la cuenta, no una condición para entrar: sin fecha, la 19.10 vuelve a
+  // **Sin `try` propio, y es una decisión medida y no un olvido.** Un fallo
+  // acá no puede cerrar la puerta: registrar la evidencia es un hecho de la
+  // cuenta, no una condición para entrar, y sin fecha la 19.10 vuelve a
   // cerrar en falso —no verifica, no escribe fila, la ficha no dibuja nada—,
-  // que es la dirección segura (AGENTS.md §7). Dejar propagar el error
-  // convertiría «no se pudo anotar» en «no podés entrar», y además dejaría al
-  // visitante afuera con la sesión ya creada en la base: `events.signIn` de
-  // `@auth/core` corre DESPUÉS de `createSession` y antes de que la respuesta
-  // devuelva la cookie.
-  try {
-    await dependencies.accounts.markEmailVerified(decision);
-  } catch (error) {
-    console.error("no se pudo registrar el correo verificado del proveedor", error);
-  }
+  // que es la dirección segura (AGENTS.md §7). Eso ya lo garantiza
+  // `@auth/core` 0.41.3, que envuelve TODOS los eventos en su propio
+  // `try`/`catch` (`lib/init.js:138`, `eventsErrorHandler`) y sigue
+  // devolviendo la cookie de sesión. Un segundo `catch` acá no agregaría una
+  // garantía: taparía la de la librería, y el día que la librería la quitara
+  // nada avisaría. Lo que avisa es la prueba que conduce esa vuelta con la
+  // escritura rota, en `emailverified-de-auth-js.test.ts`.
+  await dependencies.accounts.markEmailVerified(decision);
 }

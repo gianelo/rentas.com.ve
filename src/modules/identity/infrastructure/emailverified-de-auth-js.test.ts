@@ -396,14 +396,19 @@ describe("la fecha de Google se escribe al entrar (19.14)", () => {
   });
 
   /**
-   * **Que la escritura falle no puede dejar a nadie afuera.** `events.signIn`
-   * corre después de `createSession` y antes de que la respuesta devuelva la
-   * cookie, así que un error propagado dejaría la sesión en la base y a la
-   * persona sin entrar. Sin fecha, la 19.10 vuelve a cerrar en falso, que es
-   * la dirección segura.
+   * **Que la escritura falle no puede dejar a nadie afuera, y la garantía es
+   * de la librería.** `events.signIn` corre después de `createSession` y
+   * antes de que la respuesta devuelva la cookie, así que un error propagado
+   * dejaría la sesión escrita y a la persona sin entrar. `@auth/core` 0.41.3
+   * lo impide envolviendo TODOS los eventos en su propio `try`/`catch`
+   * (`lib/init.js:138`, `eventsErrorHandler`), y por eso el asiento no lleva
+   * uno encima: un segundo `catch` taparía éste y el día que la librería lo
+   * quitara nadie avisaría. Esto avisa — y se midió mutando el paquete
+   * instalado.
+   *
+   * Sin fecha, la 19.10 vuelve a cerrar en falso, que es la dirección segura.
    */
   it("entra igual cuando la escritura de la fecha falla", async () => {
-    const anotado = vi.spyOn(console, "error").mockImplementation(() => {});
     const puerta = puertaOAuth({
       id: "google",
       perfil: perfilDeGoogle(true),
@@ -413,9 +418,8 @@ describe("la fecha de Google se escribe al entrar (19.14)", () => {
 
     const respuesta = await puerta.volverDelProveedor();
 
+    expect(respuesta.status).toBe(302);
     expect(respuesta.headers.getSetCookie().join(";")).toContain("session-token");
     expect(puerta.escrito.actualizados).toEqual([]);
-    expect(anotado).toHaveBeenCalled();
-    anotado.mockRestore();
   });
 });

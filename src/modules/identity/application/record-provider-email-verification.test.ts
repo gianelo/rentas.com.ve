@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { AccountEmailVerified } from "../domain/provider-email-verification";
 import { recordProviderEmailVerification } from "./record-provider-email-verification";
 
@@ -53,36 +53,9 @@ describe("recordProviderEmailVerification (19.14)", () => {
   });
 
   /**
-   * **El fallo de la escritura no cierra la puerta.** Es un hecho de la
-   * cuenta, no una condición para entrar: sin fecha, la 19.10 vuelve a
-   * cerrar en falso —no verifica— que es la dirección segura (AGENTS.md §7).
-   * Dejar propagar el error convertiría «no se pudo anotar» en «no podés
-   * entrar», que es fallar abierto hacia el lado equivocado.
+   * **Que un fallo de escritura no cierre la puerta no se garantiza acá**, y
+   * por eso no hay `try` que probar: lo garantiza `@auth/core`, que envuelve
+   * todos los eventos en el suyo (`lib/init.js:138`). Lo conduce la prueba
+   * del arnés, contra la librería de verdad.
    */
-  it("no rompe la entrada cuando la escritura falla, y deja el fallo anotado", async () => {
-    const anotado = vi.spyOn(console, "error").mockImplementation(() => {});
-    const roto = new Error("la base no contestó");
-
-    await expect(
-      recordProviderEmailVerification(
-        {
-          userId: "usuario-1",
-          providerId: "google",
-          profile: { email: CORREO, email_verified: true },
-          accountEmail: CORREO,
-        },
-        {
-          accounts: {
-            markEmailVerified: async () => {
-              throw roto;
-            },
-          },
-          now: () => NOW,
-        },
-      ),
-    ).resolves.toBeUndefined();
-
-    expect(anotado).toHaveBeenCalledWith(expect.any(String), roto);
-    anotado.mockRestore();
-  });
 });
