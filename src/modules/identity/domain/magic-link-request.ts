@@ -30,6 +30,20 @@ import { type SignInWayOut, signInPathFor } from "./sign-in-page";
  */
 export const MAGIC_LINK_RESEND_COOLDOWN_SECONDS = 60;
 
+/**
+ * **Cada cuánto vuelve a preguntar la pestaña que espera** (15.12, 15.14).
+ *
+ * Cuatro segundos: la lámina 9c promete «te avisamos acá cuando pase», y quien
+ * lee el correo en el teléfono tarda en volver la vista. Más seguido no se nota
+ * y multiplica consultas; más espaciado convierte la promesa en un retraso que
+ * se siente. Vive acá y no en el guion porque es una decisión de producto — el
+ * guion sólo la ejecuta.
+ */
+export const MAGIC_LINK_POLL_INTERVAL_SECONDS = 4;
+
+/** La huella de un enlace: sha256 en hexadecimal, y nada más se acepta. */
+const FINGERPRINT = /^[0-9a-f]{64}$/;
+
 /** RFC 5321 §4.5.3.1.3. Más largo que esto no lo acepta ningún servidor. */
 const MAX_ADDRESS_LENGTH = 254;
 
@@ -39,6 +53,26 @@ export interface MagicLinkTicket {
   readonly sentAtMs: number;
   /** Ya juzgado por `safeSignInReturn`. `null` es «sin destino». */
   readonly returnTo: string | null;
+  /**
+   * **La huella del enlace que salió para ESTE navegador** (15.14): el sha256
+   * del token que Auth.js acaba de escribir en `verificationToken`. Es lo que
+   * convierte el sondeo en «¿sigue vivo MI enlace?» en vez de «¿entró esta
+   * persona?», que es una pregunta que cualquiera podría hacer sobre
+   * cualquiera. El token en claro NO se guarda: quien robara la cookie tendría
+   * el enlace entero, y una huella no se puede caminar hacia atrás.
+   *
+   * `null` cuando el comprobante es anterior a esta regla o la huella no se
+   * pudo leer: entonces no hay sondeo, y la pantalla sigue completa sin él.
+   */
+  readonly linkFingerprint?: string | null;
+  /**
+   * **El sello que prueba que la dirección y la huella salieron de acá.** Sin
+   * él la cookie es papel: la escribe cualquiera, y el sondeo volvería a
+   * contestar sobre la dirección que le pongan. Lo calcula y lo comprueba el
+   * transporte (`app/(auth)/signin/enlace.ts`), que es donde vive la llave;
+   * este dominio sólo lo lleva y lo devuelve.
+   */
+  readonly seal?: string | null;
 }
 
 export interface ResendState {
@@ -54,6 +88,16 @@ export type MagicLinkRequest =
   | { readonly send: false; readonly reason: "sin-direccion" }
   | { readonly send: false; readonly reason: "muy-pronto"; readonly retryInSeconds: number };
 
+/**
+ * Lo que el sondeo contesta, o `null` cuando no hay nada que contestar.
+ *
+ * **`null` no es «no entró»**: es «esta pregunta no se puede responder para
+ * quien la hace». Un booleano solo tendría que elegir entre dos mentiras.
+ */
+export interface MagicLinkPoll {
+  readonly entro: boolean;
+}
+
 export interface MagicLinkWait {
   readonly title: string;
   readonly leadBefore: string;
@@ -63,6 +107,21 @@ export interface MagicLinkWait {
   readonly troublesTitle: string;
   readonly troubles: readonly string[];
   readonly resend: ResendState;
+  /**
+   * Lo que la pestaña dice cuando el enlace se abrió en otro dispositivo — la
+   * frase que la lámina 9c promete («te avisamos acá cuando pase») y que hasta
+   * la 15.14 no se podía decir sin mentir. Va servida y escondida: el guion la
+   * descubre, no la escribe, así que no hay copia de producto en el frente.
+   */
+  readonly signedInNotice: string;
+  /**
+   * Cada cuánto preguntar y por cuánto tiempo, o `null` cuando no hay nada que
+   * preguntar. **El techo lo fija la vida del enlace**: pasada ella la
+   * respuesta ya no distingue «lo abrió» de «se venció», así que seguir
+   * preguntando sólo gasta consultas y podría anunciar una entrada que nunca
+   * ocurrió.
+   */
+  readonly poll: { readonly everySeconds: number; readonly forSeconds: number } | null;
   readonly googleLabel: string;
   readonly wayOut: SignInWayOut;
   readonly returnTo: string | null;
@@ -167,7 +226,13 @@ export function magicLinkRequestFor(input: {
 
 /** Las tres letras son del formato de la cookie, no del dominio: van cortas. */
 export function serialiseMagicLinkTicket(ticket: MagicLinkTicket): string {
-  return JSON.stringify({ a: ticket.address, t: ticket.sentAtMs, r: ticket.returnTo ?? undefined });
+  return JSON.stringify({
+    a: ticket.address,
+    t: ticket.sentAtMs,
+    r: ticket.returnTo ?? undefined,
+    k: ticket.linkFingerprint ?? undefined,
+    s: ticket.seal ?? undefined,
+  });
 }
 
 /**
@@ -192,11 +257,69 @@ export function magicLinkTicketOf(raw: string | undefined): MagicLinkTicket | nu
   }
   if (typeof parsed !== "object" || parsed === null) return null;
 
-  const { a, t, r } = parsed as { a?: unknown; t?: unknown; r?: unknown };
+  const { a, t, r, k, s } = parsed as {
+    a?: unknown;
+    t?: unknown;
+    r?: unknown;
+    k?: unknown;
+    s?: unknown;
+  };
   const address = magicLinkAddressOf(a);
   if (address === null || typeof t !== "number" || !Number.isFinite(t)) return null;
 
-  return { address, sentAtMs: t, returnTo: typeof r === "string" ? safeSignInReturn(r) : null };
+  // **Una huella mal formada se cae sola, y no se lleva el comprobante.** Sin
+  // ella no hay sondeo y la pantalla queda igual de completa: es la misma
+  // asimetría que el destino inadmisible de arriba.
+  const fingerprint = typeof k === "string" && FINGERPRINT.test(k) ? k : null;
+  const seal = fingerprint !== null && typeof s === "string" && FINGERPRINT.test(s) ? s : null;
+
+  return {
+    address,
+    sentAtMs: t,
+    returnTo: typeof r === "string" ? safeSignInReturn(r) : null,
+    linkFingerprint: seal === null ? null : fingerprint,
+    seal,
+  };
+}
+
+/**
+ * **Si el enlace que salió para este navegador sigue vivo** (15.14).
+ *
+ * La pregunta que se contesta es «¿sigue pendiente MI enlace?», nunca «¿entró
+ * esta persona?». La diferencia es la tarea entera: la segunda la podría hacer
+ * cualquiera sobre cualquiera con sólo saber una dirección, y eso convierte la
+ * pantalla de espera en una forma de saber cuándo alguien está conectado.
+ *
+ * **La huella desaparecida es la señal.** Auth.js borra la fila al canjear el
+ * enlace (`useVerificationToken`, probado contra Postgres en la 15.4), así que
+ * que la huella ya no esté entre las pendientes significa que el enlace se
+ * usó. Vencerse produce lo mismo, y por eso el sondeo se apaga con el enlace
+ * (`MagicLinkWait.poll`): mientras corre, no estar es haber entrado.
+ *
+ * `null` cuando el comprobante no trae huella — no hay respuesta que dar, y
+ * «no entró» sería inventarla.
+ */
+export function magicLinkPollFor(input: {
+  readonly ticket: MagicLinkTicket;
+  readonly pendingFingerprints: readonly string[];
+}): MagicLinkPoll | null {
+  const fingerprint = input.ticket.linkFingerprint ?? null;
+  if (fingerprint === null) return null;
+
+  return { entro: !input.pendingFingerprints.includes(fingerprint) };
+}
+
+/**
+ * Por cuánto tiempo tiene sentido preguntar. Deriva de la vida del enlace, que
+ * es el único reloj que importa acá: un enlace vencido ya no se puede abrir.
+ */
+function pollWindowFor(input: { readonly ticket: MagicLinkTicket; readonly nowMs: number }) {
+  if ((input.ticket.linkFingerprint ?? null) === null) return null;
+
+  const livedSeconds = Math.max(input.nowMs - input.ticket.sentAtMs, 0) / 1000;
+  const forSeconds = Math.ceil(MAGIC_LINK_MAX_AGE_SECONDS - livedSeconds);
+
+  return forSeconds <= 0 ? null : { everySeconds: MAGIC_LINK_POLL_INTERVAL_SECONDS, forSeconds };
 }
 
 /**
@@ -204,11 +327,11 @@ export function magicLinkTicketOf(raw: string | undefined): MagicLinkTicket | nu
  * **deriva** de `MAGIC_LINK_MAX_AGE_SECONDS`: dos lugares con el mismo número
  * es cómo uno se queda viejo.
  *
- * **Faltan a propósito dos frases dibujadas.** «Abrí el enlace en este mismo
- * teléfono» (8c) es la regla de mismo dispositivo que el fundador quitó en la
- * 15.6 y que la 15.15 manda corregir en la lámina; «te avisamos acá cuando
- * pase» (9c) la cumple el sondeo de la 15.12, que no está construido. Prometer
- * cualquiera de las dos es la mentira que §5 describe.
+ * **Falta a propósito una frase dibujada, y la otra ya se puede decir.** «Abrí
+ * el enlace en este mismo teléfono» (8c) es la regla de mismo dispositivo que
+ * el fundador quitó en la 15.6 y que la 15.15 manda corregir en la lámina: no
+ * se dibuja. «Te avisamos acá cuando pase» (9c) sí, desde la 15.14: la cumple
+ * `signedInNotice`, servida escondida y descubierta por el sondeo.
  */
 export function magicLinkWaitFor(input: {
   readonly ticket: MagicLinkTicket;
@@ -233,6 +356,12 @@ export function magicLinkWaitFor(input: {
       `El enlace sirve una sola vez y vence en ${MAGIC_LINK_MAX_AGE_SECONDS / 60} minutos.`,
     ],
     resend: resendStateFor({ sentAtMs: ticket.sentAtMs, nowMs }),
+    // **«Podés seguir ahí» y no «ya entraste acá»**: la sesión quedó en el otro
+    // dispositivo y esta pestaña no la tiene. Prometerle que ya está adentro
+    // sería la casilla que miente, sólo que dicha en pantalla.
+    signedInNotice:
+      "Abriste el enlace en otro dispositivo. Podés seguir ahí: acá ya no hace falta esperar.",
+    poll: pollWindowFor({ ticket, nowMs }),
     googleLabel: "Mejor entro con Google",
     // Conserva el destino: cambiar de correo no puede costar la vuelta al
     // aviso. La dirección la escribe `signInPathFor`, que es la misma que usa
