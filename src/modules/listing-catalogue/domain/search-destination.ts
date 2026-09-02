@@ -95,6 +95,16 @@ export interface SearchChoice {
   readonly label: string;
   readonly scope: string;
   readonly href: string;
+  /**
+   * Cuántos avisos hay del otro lado, **tal como se dibuja**, o `null` para no
+   * dibujar ninguno (14.51).
+   *
+   * `null` cuando quien armó el vocabulario no contó —el camino del servidor,
+   * que estrecha con `ILIKE` y no cuenta— y también cuando contó cero: un «0»
+   * pegado a una opción se lee como un conteo roto, que es la misma regla que
+   * `resolveZoneOptions` ya tomó para el panel de filtros.
+   */
+  readonly countLabel: string | null;
 }
 
 export type SearchDestination =
@@ -155,13 +165,27 @@ function filtersOf(suggestions: readonly FilterSuggestion[]): SearchQueryChanges
   return changes as SearchQueryChanges;
 }
 
-export function resolveSearchDestination(
+/**
+ * **Las opciones, en forma de lista y sin colapsar** (14.51).
+ *
+ * `resolveSearchDestination` colapsa una sola opción a una redirección, que es
+ * lo correcto cuando alguien ya envió el formulario. El panel de sugerencias
+ * necesita lo contrario: con una sola coincidencia sigue habiendo algo que
+ * dibujar, y `route` lleva la dirección sin la etiqueta.
+ *
+ * Sacarla afuera es lo que hace que **la misma función alimente las dos
+ * partes** — el servidor al enviar y el panel al escribir, sobre el mismo
+ * `suggestFilters` y el mismo armado de dirección. Una segunda copia en el
+ * cliente es exactamente lo que la 14.35 y la 14.51 prohíben, y es cómo «la
+ * etiqueta dice 9» y «la lista trae 9» dejan de ser la misma pregunta.
+ */
+export function searchChoices(
   text: string,
   vocabulary: SuggestionVocabulary,
   limit: number = DEFAULT_LIMIT,
-): SearchDestination {
+): readonly SearchChoice[] {
   const suggestions = suggestFilters(text, vocabulary);
-  if (suggestions.length === 0) return { kind: "unknown" };
+  if (suggestions.length === 0) return [];
 
   const cityById = new Map(vocabulary.cities.map((city) => [city.id, city]));
   const zoneById = new Map(vocabulary.zones.map((zone) => [zone.id, zone]));
@@ -171,10 +195,23 @@ export function resolveSearchDestination(
   const seen = new Set<string>();
   const zoneCityIds = new Set<string>();
 
-  const add = (label: string, scope: string, basePath: string): void => {
+  const add = (
+    label: string,
+    scope: string,
+    basePath: string,
+    // Cero y "no sé" se dibujan igual —sin número— y por la misma razón que en
+    // `resolveZoneOptions`: un «0» pegado a una opción se lee como un conteo
+    // roto, y `undefined` no es un número que se pueda escribir.
+    count?: number,
+  ): void => {
     if (seen.has(basePath) || options.length >= limit) return;
     seen.add(basePath);
-    options.push({ label, scope, href: buildSearchHref(basePath, {}, filters) });
+    options.push({
+      label,
+      scope,
+      href: buildSearchHref(basePath, {}, filters),
+      countLabel: count === undefined || count === 0 ? null : String(count),
+    });
   };
 
   for (const suggestion of suggestions) {
@@ -199,6 +236,11 @@ export function resolveSearchDestination(
       // « · » colgando se lee como un dato que faltó cargar.
       zone.parentName ? `${zone.parentName} · ${city.name}` : city.name,
       `/alquiler/${slugify(city.name)}/${slugify(zone.name)}`,
+      // **El conteo es de la ZONA y nunca de la ciudad**: la ciudad no tiene un
+      // conteo por zona que contar, y escribirle uno sería inventar un número
+      // que nadie mandó — la misma negativa que `search-preview.ts` ya toma con
+      // el precio.
+      zone.count,
     );
   }
 
@@ -221,6 +263,16 @@ export function resolveSearchDestination(
       add(city.name, city.name, `/alquiler/${slugify(city.name)}`);
     }
   }
+
+  return options;
+}
+
+export function resolveSearchDestination(
+  text: string,
+  vocabulary: SuggestionVocabulary,
+  limit: number = DEFAULT_LIMIT,
+): SearchDestination {
+  const options = searchChoices(text, vocabulary, limit);
 
   if (options.length === 0) return { kind: "unknown" };
   if (options.length === 1 && options[0]) return { kind: "route", href: options[0].href };

@@ -195,3 +195,60 @@ describe("SearchPill — carga el mecanismo del inicio sin degradarlo", () => {
     expect(html).toContain('value="chacao"');
   });
 });
+
+/**
+ * **El panel de sugerencias es una MEJORA, y el piso tiene que seguir abajo**
+ * (tasks.md 14.51; AGENTS.md §2; SISTEMA.md: *"la pastilla es un
+ * `<form method="get">` de verdad — sin script sigue buscando, y las
+ * sugerencias al escribir son una mejora encima, nunca el mecanismo"*).
+ *
+ * Estas pruebas miran **los bytes que el servidor manda**, que es donde vive un
+ * navegador con el bundle caído. Lo que la mejora hace cuando el script sí
+ * llega se mide en un navegador de verdad: `tests/measure/sugerencias.spec.ts`.
+ */
+describe("SearchPill — las sugerencias al escribir", () => {
+  const VOCABULARY = {
+    cities: [{ id: "c-ccs", name: "Distrito Capital" }],
+    zones: [
+      { id: "z-altamira", name: "Altamira", cityId: "c-ccs", parentName: "Chacao", count: 9 },
+    ],
+    aliases: [],
+  };
+
+  it("no dibuja una sola sugerencia en el marcado servido: aparecen al escribir", () => {
+    const html = renderToStaticMarkup(
+      <SearchPill {...BASE} state={{ kind: "empty" }} suggestions={VOCABULARY} />,
+    );
+
+    expect(html).not.toContain("Altamira");
+    expect(html).not.toContain("/alquiler/distrito-capital/altamira");
+  });
+
+  /**
+   * **La pareja de la negativa de arriba**, y sin ella aquélla pasa igual de
+   * verde con el formulario roto: una pastilla que no dibuja nada tampoco
+   * dibuja sugerencias.
+   */
+  it("y el formulario sigue entero con el vocabulario puesto", () => {
+    const html = renderToStaticMarkup(
+      <SearchPill {...BASE} state={{ kind: "empty" }} suggestions={VOCABULARY} />,
+    );
+
+    expect(html).toContain('method="get"');
+    expect(html).toContain(`action="${BASE.action}"`);
+    expect(html).toContain(`name="${BASE.name}"`);
+    expect(html).toMatch(/<button[^>]*type="submit"/);
+    // El ancla de la mejora, que es lo único que la pastilla agrega al marcado.
+    expect(html).toContain("data-search-suggestions");
+  });
+
+  /**
+   * Sin vocabulario no hay isla: es lo que deja al inicio —que todavía no tiene
+   * de dónde sacar el vocabulario acotado (14.52)— exactamente como estaba.
+   */
+  it("sin vocabulario no agrega nada al marcado", () => {
+    const html = renderToStaticMarkup(<SearchPill {...BASE} state={{ kind: "empty" }} />);
+
+    expect(html).not.toContain("data-search-suggestions");
+  });
+});

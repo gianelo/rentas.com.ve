@@ -10,6 +10,7 @@ import { Nav } from "@/../components/organisms/Nav";
 import { SearchOutcome } from "@/../components/organisms/SearchOutcome";
 import { SearchPanel } from "@/../components/organisms/SearchPanel";
 import { resolveNavAccount, resolveNavPublish } from "@/modules/identity/domain/nav-account";
+import { boundedVocabulary } from "@/modules/listing-catalogue/domain/bounded-vocabulary";
 import { homeSearchForm } from "@/modules/listing-catalogue/domain/search-destination";
 import { resolveSearchPill } from "@/modules/listing-catalogue/domain/search-pill";
 import { DrizzleCatalogue } from "@/modules/listing-catalogue/infrastructure/drizzle-catalogue";
@@ -251,6 +252,11 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
     // abierto desde el servidor. Sin el ancla, el panel queda debajo de la
     // cuadrícula y fuera de vista.
     filtersHref: `${buildSearchHref(basePath, query, { step: PANEL_OPEN_TOKEN })}#filtros`,
+    // **El vocabulario acotado de las sugerencias, sin un byte de datos
+    // nuevos** (14.51): `counts.byZone` vino en la MISMA consulta que las filas
+    // y las facetas (14.11), y el catálogo ya estaba leído para resolver la
+    // ruta. Cuáles zonas entran lo decide el dominio, no esta página.
+    suggestions: boundedVocabulary(cities, zones, counts.byZone),
   };
 
   const pagination = resolvePagination(criteria.page, total);
