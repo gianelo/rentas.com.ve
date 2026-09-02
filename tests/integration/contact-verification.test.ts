@@ -234,4 +234,54 @@ describe("verified_contact contra Postgres real", () => {
     expect(await countVerifiedRows(MARIA)).toBe(1);
     expect(await readVerifiedAt(MARIA, "email", CORREO_DE_MARIA)).toEqual(ahora);
   });
+
+  /**
+   * **De quién es la garantía de la 19.13, preguntándoselo a Postgres.**
+   * «Una inmobiliaria que sube cincuenta avisos verifica una vez» se lee
+   * arriba como una consecuencia del código —`resolveContactVerification` no
+   * llega a escribir—, y eso es cierto pero no es lo que la tarea afirma. La
+   * tarea afirma que **la clave primaria no deja escribir una segunda fila**,
+   * y eso sólo se comprueba intentándolo: una escritura desnuda, sin el
+   * `ON CONFLICT` del adaptador, que es justamente el que hoy absorbe el
+   * choque y por lo tanto lo esconde.
+   *
+   * Lo que esto descarta es el día en que alguien mueva la primaria —a la
+   * cuenta sola, o agregándole `verified_at` para «guardar el historial»— y
+   * la suite siga verde porque nadie escribió nunca dos veces el mismo triple
+   * sin red.
+   */
+  it("la segunda fila del mismo triple la rechaza Postgres, no un `if` de la aplicación", async () => {
+    const numero = "+58 414 555 0001";
+    const ahora = await databaseNow();
+    const antes = await countVerifiedRows(DOS_NUMEROS);
+
+    const escribir = (valor: string, instante: Date) =>
+      pool.query(
+        `INSERT INTO "verified_contact" (user_id, method, value, verified_at)
+         VALUES ($1, $2, $3, $4)`,
+        [DOS_NUMEROS, "whatsapp", valor, instante],
+      );
+
+    await escribir(numero, ahora);
+
+    // El segundo aviso, con el mismo contacto y otro instante: la base lo
+    // rechaza por su nombre, y no queda a medio escribir.
+    const rechazo: { code?: string; constraint?: string } | null = await escribir(
+      numero,
+      new Date(ahora.getTime() + 1000),
+    ).then(
+      () => null,
+      (error: { code?: string; constraint?: string }) => error,
+    );
+
+    expect(rechazo?.code).toBe("23505");
+    expect(rechazo?.constraint).toBe("verified_contact_user_id_method_value_pk");
+
+    // **La pareja positiva, para que la negativa signifique algo**: otro valor
+    // de la misma cuenta entra sin pelear, así que lo que la primaria frena es
+    // el duplicado del triple y no la escritura.
+    await escribir("+58 414 555 0002", ahora);
+
+    expect(await countVerifiedRows(DOS_NUMEROS)).toBe(antes + 2);
+  });
 });
