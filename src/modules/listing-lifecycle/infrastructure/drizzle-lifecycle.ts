@@ -23,6 +23,7 @@ import type {
 } from "../application/ports/listing-photo-purge.port";
 import type { ReminderClaim, ReminderLedgerPort } from "../application/ports/reminder-ledger.port";
 import {
+  ANNOUNCED_LIFECYCLE_STATUSES,
   EXPIRY_NOTICE_WINDOW_DAYS,
   PURGE_GRACE_DAYS,
   PURGE_NOTICE_LEAD_DAYS,
@@ -81,8 +82,10 @@ export class DrizzleLifecycleListings implements LifecycleListingsPort {
    * hueco del medio. La base trae de más a propósito: el corte fino es una
    * regla de producto y no pertenece a un `WHERE`.
    *
-   * `hidden` queda afuera: a un aviso escondido por reportes no se le ofrece
-   * renovar.
+   * `hidden` y `draft` quedan afuera, y desde la 19.16 por la misma lista que
+   * usa la purga (`ANNOUNCED_LIFECYCLE_STATUSES`): a un aviso escondido por
+   * reportes no se le ofrece renovar, y el `expires_at` de un borrador es un
+   * marcador de posición que la activación reescribe.
    */
   async noticeCandidates(now: Date): Promise<readonly LifecycleListing[]> {
     const upperBound = daysFrom(now, EXPIRY_NOTICE_WINDOW_DAYS);
@@ -99,7 +102,7 @@ export class DrizzleLifecycleListings implements LifecycleListingsPort {
       .innerJoin(users, eq(users.id, listings.publisherId))
       .where(
         and(
-          inArray(listings.status, ["active", "expired"]),
+          inArray(listings.status, [...ANNOUNCED_LIFECYCLE_STATUSES]),
           lte(listings.expiresAt, upperBound),
           gt(listings.expiresAt, lowerBound),
         ),
@@ -248,7 +251,16 @@ export class DrizzleListingPhotoPurge implements ListingPhotoPurgePort {
       // corrida vieja— igual tiene que poder borrarse. Con `inner` quedaría
       // invisible para la purga y para siempre.
       .leftJoin(listingPhotoDerivatives, eq(listingPhotoDerivatives.photoId, listingPhotos.id))
-      .where(lt(listings.expiresAt, purgeBefore));
+      // **El mismo conjunto que `noticeCandidates`, y de la misma lista**
+      // (19.16). La purga no puede alcanzar un estado al que no se le avisa:
+      // la diferencia entre las dos consultas sería gente a la que se le borra
+      // sin decirle nada, que es la distinción entera de la 19.8.
+      .where(
+        and(
+          inArray(listings.status, [...ANNOUNCED_LIFECYCLE_STATUSES]),
+          lt(listings.expiresAt, purgeBefore),
+        ),
+      );
 
     const byListing = new Map<string, { photoIds: Set<string>; objectKeys: Set<string> }>();
     for (const row of rows) {

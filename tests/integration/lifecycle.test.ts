@@ -325,3 +325,69 @@ describe("job_run — la corrida deja rastro", () => {
     });
   });
 });
+
+/**
+ * 19.16 — la purga alcanza EXACTAMENTE los estados a los que se le anuncia.
+ *
+ * Medido al cerrar la 19.6: `candidates` filtraba sólo por `expires_at`, así
+ * que un `hidden` y un `draft` con 45 días encima perdían sus fotos igual que
+ * un vencido, mientras `noticeCandidates` no les manda correo y el conteo de
+ * `/mis-avisos` los deja afuera a propósito. Para esos dos estados la política
+ * se anunciaba por CERO canales, que es justo lo que la 19.8 prohíbe.
+ *
+ * **Las dos consultas se afirman juntas y contra la misma lista de estados.**
+ * Sola, cualquiera de las dos pasa igual si la purga dejara de alcanzar TODO,
+ * o si el anuncio se ensanchara en vez de encogerse el borrado; por eso cada
+ * negativa viaja con su positiva —el vencido sigue alcanzado, y sigue
+ * recibiendo correo— y las dos ventanas se prueban por separado, porque son
+ * disjuntas por diseño (la purga mira antes del día 45, el aviso después).
+ */
+describe("la purga alcanza lo mismo que se anuncia (19.16)", () => {
+  const purgado = randomUUID();
+  const oculto = randomUUID();
+  const borrador = randomUUID();
+  const avisado = randomUUID();
+  const ocultoPorAvisar = randomUUID();
+  const borradorPorAvisar = randomUUID();
+
+  const haceSesentaDias = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+  const dentroDeTresDias = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+
+  beforeAll(async () => {
+    for (const [id, status] of [
+      [purgado, "expired"],
+      [oculto, "hidden"],
+      [borrador, "draft"],
+    ] as const) {
+      await insertListing(id, status, haceSesentaDias, `19.16 purga ${id}`);
+      await insertPhoto(id, 0);
+    }
+    for (const [id, status] of [
+      [avisado, "expired"],
+      [ocultoPorAvisar, "hidden"],
+      [borradorPorAvisar, "draft"],
+    ] as const) {
+      await insertListing(id, status, dentroDeTresDias, `19.16 aviso ${id}`);
+    }
+  });
+
+  it("no se lleva las fotos de un oculto ni de un borrador, y sí las del vencido", async () => {
+    const corte = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
+
+    const alcanzados = (await purge.candidates(corte)).map((candidate) => candidate.listingId);
+
+    // La positiva primero: sin ella, una purga que dejara de alcanzar
+    // cualquier cosa pasaría las dos negativas de abajo.
+    expect(alcanzados).toContain(purgado);
+    expect(alcanzados).not.toContain(oculto);
+    expect(alcanzados).not.toContain(borrador);
+  });
+
+  it("y tampoco les manda el correo que sí le manda al vencido", async () => {
+    const candidatos = (await listings.noticeCandidates(new Date())).map((row) => row.id);
+
+    expect(candidatos).toContain(avisado);
+    expect(candidatos).not.toContain(ocultoPorAvisar);
+    expect(candidatos).not.toContain(borradorPorAvisar);
+  });
+});

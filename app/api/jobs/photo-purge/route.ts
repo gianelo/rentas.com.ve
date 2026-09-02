@@ -16,17 +16,19 @@ import { db } from "../../../../src/shared/db/client";
  * que NO borra lo decide `purgeExpiredPhotos`, sobre un puerto que no tiene
  * con qué tocar la fila del aviso.
  *
- * **SIGUE SIN ESTAR EN `vercel.json`, y ahora por otra razón.** El bloqueo
- * técnico se levantó el 2026-08-24: `ResendLifecycleMailer` entró con 7.11 y
- * el aviso de purga YA sale por correo de verdad. Lo que 19.8 pedía —que lo
- * que separa esta retención de un borrado silencioso sea el aviso— está
- * cumplido.
+ * **YA ESTÁ EN `vercel.json`, a las `0 17 * * *`** (19.4). Estuvo ausente a
+ * propósito hasta el 2026-09-02, esperando que la política estuviera
+ * anunciada; hoy lo está por los dos canales que la 19.8 exige —el segundo
+ * correo (19.5) y el conteo regresivo de `/mis-avisos` (19.6)— y sobre
+ * exactamente los mismos estados que esta purga alcanza (19.16). Mientras
+ * tanto el producto prometía un borrado que nadie ejecutaba, que es peor que
+ * cualquiera de las dos mitades por separado.
  *
- * Lo que falta es una decisión, no código. Programar esto empieza a **borrar
- * fotos reales de forma irreversible** todos los días, así que el cron lo
- * agrega el fundador cuando quiera, no un agente porque el bloqueo se cayó.
- * Antes de programarlo conviene mirar 19.5 y comprobar contra datos reales
- * que la anticipación de 5 días alcanza para que alguien reaccione.
+ * **Las 17:00 UTC son cuatro horas después del trabajo de recordatorios.** El
+ * plan Hobby corre cada cron una vez por día con ±59 minutos de deriva, así
+ * que esa distancia sobra para que `markExpired` y el correo del día 40 hayan
+ * salido antes de que se borre nada, y para que una caída de uno no se lea
+ * como la del otro en `job_run`.
  */
 
 export const dynamic = "force-dynamic";
