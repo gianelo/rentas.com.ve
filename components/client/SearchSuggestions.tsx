@@ -15,6 +15,17 @@ const PANEL_LABEL = "Sugerencias";
  * **Las sugerencias mientras se escribe** (tasks.md 14.51 — la 14.35 con la
  * forma que sí entra).
  *
+ * ## Por qué vive acá y no en `components/molecules`
+ *
+ * Esa carpeta tiene una garantía puesta a prueba en
+ * `components/design-contract.test.tsx`: **ningún átomo ni molécula declara
+ * `"use client"`**. No es orden — es lo que mantiene el camino de lectura sin
+ * runtime, y esconder una isla ahí adentro la convertiría en una regla que
+ * nadie puede verificar. `CopyContact` ya dejó escrito el mismo razonamiento y
+ * abrió este directorio para eso: la excepción se dice en voz alta en vez de
+ * disolverse entre las piezas que no la tienen. **Lo descubrió el gate**, no la
+ * revisión: este archivo nació en `molecules/` y la suite lo puso en rojo.
+ *
  * ## Es una mejora, y el piso está intacto debajo
  *
  * AGENTS.md §2 y SISTEMA.md §14i, textual: *"la pastilla es un

@@ -71,9 +71,15 @@ export function boundedVocabulary(
     // una segunda regla de ciudad escrita en esta función sería una segunda
     // oportunidad de escribirla mal, y las dos tendrían que coincidir para
     // siempre.
-    zones: zones
-      .filter((zone) => (byZone[zone.id] ?? 0) > 0)
-      .map((zone) => ({ ...zone, count: byZone[zone.id] ?? 0 })),
+    //
+    // `flatMap` y no `filter` + `map`: con los dos, la condición se escribe una
+    // vez y el conteo se vuelve a buscar en la otra, y esa segunda búsqueda
+    // arrastra un `?? 0` que ya no puede pasar — una rama que ninguna prueba
+    // puede poner en rojo porque es inalcanzable.
+    zones: zones.flatMap((zone) => {
+      const count = byZone[zone.id] ?? 0;
+      return count > 0 ? [{ ...zone, count }] : [];
+    }),
     aliases: [],
   };
 }

@@ -5,8 +5,8 @@ import {
 import type { SuggestionVocabulary } from "@/modules/listing-catalogue/domain/suggest-filters";
 import { AppLink } from "../atoms/AppLink";
 import { FilterIcon, MagnifierIcon } from "../atoms/icons";
+import { SearchSuggestions } from "../client/SearchSuggestions";
 import styles from "./SearchPill.module.css";
-import { SearchSuggestions } from "./SearchSuggestions";
 
 const FIELD_ID = "pastilla-de-busqueda";
 
