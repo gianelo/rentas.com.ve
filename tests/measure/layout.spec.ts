@@ -936,6 +936,8 @@ test.describe("el fondo del modal de filtros (14.46)", () => {
         sheetBg: getComputedStyle(sheet).backgroundColor,
         panelWidth: Math.round(panel.getBoundingClientRect().width),
         sheetWidth: Math.round(sheet.getBoundingClientRect().width),
+        panelTop: Math.round(panel.getBoundingClientRect().top),
+        sheetTop: Math.round(sheet.getBoundingClientRect().top),
       };
     });
   }
@@ -959,6 +961,9 @@ test.describe("el fondo del modal de filtros (14.46)", () => {
     // «El modal sobre la lista»: si la hoja ocupara el ancho del panel, el velo
     // existiría en la hoja de estilos y no en la pantalla.
     expect(seen.sheetWidth).toBeLessThan(seen.panelWidth);
+    // Y tampoco pegada al borde de arriba: una hoja que arranca en el filo del
+    // panel deja el velo en dos franjas laterales, que es media tarjeta.
+    expect(seen.sheetTop).toBeGreaterThan(seen.panelTop);
   });
 
   test("14.46: el velo se repinta con el tema — el par claro/oscuro es real", async ({ page }) => {
@@ -993,5 +998,6 @@ test.describe("el fondo del modal de filtros (14.46)", () => {
 
     expect(seen.panelWidth).toBe(360);
     expect(seen.sheetWidth).toBe(seen.panelWidth);
+    expect(seen.sheetTop).toBe(seen.panelTop);
   });
 });
