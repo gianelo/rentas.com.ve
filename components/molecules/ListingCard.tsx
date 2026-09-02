@@ -55,16 +55,33 @@ export function ListingCard({
 }: ListingCardProps) {
   return (
     <article className={styles.card} data-testid="listing-card">
-      {/* `thumb` en el teléfono y `card` en el escritorio. Mandar la imagen
-          grande a un teléfono es gastar dos veces el presupuesto de 150 KB
-          que la 14.27 dice que decide si esta cuadrícula sobrevive. */}
-      <picture>
-        <source media="(min-width: 768px)" srcSet={photo.cardUrl} />
-        <img className={styles.photo} src={photo.thumbUrl} alt={photo.alt} loading="lazy" />
-      </picture>
+      <div className={styles.cover}>
+        {/* `thumb` en el teléfono y `card` en el escritorio. Mandar la imagen
+            grande a un teléfono es gastar dos veces el presupuesto de 150 KB
+            que la 14.27 dice que decide si esta cuadrícula sobrevive. */}
+        <picture>
+          <source media="(min-width: 768px)" srcSet={photo.cardUrl} />
+          <img className={styles.photo} src={photo.thumbUrl} alt={photo.alt} loading="lazy" />
+        </picture>
+
+        {/* **La placa encima de la portada**, que es lo que dibujan las dos
+            láminas (6c `left:8px;top:8px`, 7c `left:9px;top:9px`) y lo que el
+            fundador pidió el 2026-09-02. En el cuerpo se llevaba ~21 px de
+            alto por tarjeta, que es la mitad de lo que le falta al escritorio
+            para los ocho avisos de la 14.29.
+
+            El `<span>` que envuelve **no es decoración**: es el piso opaco que
+            hace que la foto no participe. La 14.25 exige que dueño e
+            inmobiliaria se distingan en escala de grises por relleno contra
+            borde, y encima de una foto de verdad —clara u oscura, la sube
+            quien publica— un borde sin relleno desaparece. Con el piso, la
+            placa se dibuja contra `--surface` igual que antes. */}
+        <span className={styles.badgeSlot}>
+          <PublisherBadge publisherType={publisherType} />
+        </span>
+      </div>
 
       <div className={styles.body}>
-        <PublisherBadge publisherType={publisherType} />
         {/* El precio antes del título, en orden de documento (regla
             transversal 2). Un lector de pantalla lee este orden y no el
             visual, y en un alquiler el precio decide si el resto importa. */}

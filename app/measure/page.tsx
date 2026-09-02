@@ -252,6 +252,39 @@ export default async function MeasureHarnessPage({
           </ListingGrid>
         </div>
 
+        {/* **La placa del publicador encima de una foto clara y una oscura**
+            (14.53, 22.10). La 14.25 exige que dueño e inmobiliaria se
+            distingan **en escala de grises**, y encima de una portada esa
+            garantía no se hereda: la foto la sube quien publica y puede ser
+            cualquier cosa. Se dibujan las cuatro combinaciones para poder
+            medirlas —dueño e inmobiliaria, sobre claro y sobre oscuro— en
+            `tests/measure/layout.spec.ts`.
+
+            Las dos portadas son PNG de un píxel en línea, no descargas: el
+            navegador tiene que poder leer sus píxeles desde un `<canvas>` para
+            que «clara» y «oscura» sean una medida y no una palabra, y una
+            imagen de otro origen contamina el lienzo y no se deja leer. */}
+        <div data-testid="placa-sobre-foto">
+          <ListingGrid>
+            {PORTADAS.map(({ nombre, url }) =>
+              (["owner", "broker"] as const).map((quien) => (
+                <li key={`${nombre}-${quien}`} data-portada={nombre} data-publica={quien}>
+                  <ListingCard
+                    href={`/alquiler/distrito-capital/chacao/placa-${nombre}-${quien}`}
+                    priceUsd={450}
+                    title="Apartamento 2 hab con puesto"
+                    zone="Chacao"
+                    rooms={2}
+                    areaM2={78}
+                    publisherType={quien}
+                    photo={{ thumbUrl: url, cardUrl: url, alt: `Portada ${nombre}` }}
+                  />
+                </li>
+              )),
+            )}
+          </ListingGrid>
+        </div>
+
         {/* **La fila de `/mis-avisos`, al lado de la tarjeta y a propósito.**
             Las dos dibujan el mismo aviso con la misma anatomía —precio,
             título de lista, metadatos— y hasta la 22.3/22.4 lo hacían con
@@ -571,3 +604,20 @@ function harnessPanel() {
     criteria: {},
   });
 }
+
+/**
+ * Las dos portadas del arnés de la placa: un PNG de un píxel casi blanco y
+ * otro casi negro, en línea. El `object-fit: cover` de la tarjeta los estira
+ * a la portada entera, así que cada foto es un plano de un solo tono — que es
+ * lo que hace falta para que «clara» y «oscura» se puedan medir con un número.
+ */
+const PORTADAS = [
+  {
+    nombre: "clara",
+    url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR42mP49OUrAAW3Atyfuv3kAAAAAElFTkSuQmCC",
+  },
+  {
+    nombre: "oscura",
+    url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR42mMQEBYBAABuADjKuEn2AAAAAElFTkSuQmCC",
+  },
+] as const;

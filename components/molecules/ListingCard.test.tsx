@@ -154,6 +154,92 @@ describe("ListingCard — la portada", () => {
   });
 });
 
+/**
+ * **La placa sube a la foto** (14.53, decisión del fundador del 2026-09-02:
+ * *«súbela a la foto porque es lo que dice el último diseño que hicimos»*).
+ *
+ * Las dos láminas la dibujan encima de la portada —6c `left:8px;top:8px`, 7c
+ * `left:9px;top:9px`— y el código la dibujaba en el flujo del cuerpo, arriba
+ * del precio, donde se llevaba ~21 px de alto por tarjeta.
+ *
+ * **Lo que NO se toca es la placa.** La 14.25 exige que dueño e inmobiliaria
+ * sigan distinguiéndose **en escala de grises** —relleno contra borde, nunca el
+ * acento— y eso lo fija `design-contract.test.tsx` sobre el átomo. Encima de
+ * una foto esa garantía se cae sola: la portada es una foto de verdad, puede
+ * ser clara u oscura, y un borde sin relleno sobre una foto oscura desaparece.
+ * Por eso la placa no se repinta: se le pone **un piso opaco de `--surface`
+ * debajo**, del tamaño exacto de la placa, así que lo que hay detrás deja de
+ * participar. Dueño queda relleno de `--ink` sobre `--surface`, inmobiliaria
+ * queda borde de `--strong` sobre `--surface` — los mismos dos píxeles de
+ * antes, en otro sitio.
+ *
+ * Lo medido sobre fotos claras y oscuras de verdad vive en
+ * `tests/measure/layout.spec.ts` (22.10/14.53), con la luminancia de la foto
+ * leída de un `<canvas>` y no afirmada.
+ */
+describe("ListingCard — la placa encima de la portada (14.53)", () => {
+  /**
+   * **Estructural y no por nombre de clase**: la placa se emite entre la foto y
+   * el cuerpo, o sea que ya no es un hijo del flujo del cuerpo. Antes de este
+   * cambio salía DESPUÉS de que abriera el `<div>` del cuerpo, que es lo que
+   * la empujaba a ocupar alto propio.
+   */
+  it("emite la placa entre la portada y el cuerpo, y no dentro del cuerpo", () => {
+    const markup = render();
+    const finFoto = markup.indexOf("</picture>");
+    const abreCuerpo = markup.indexOf("<div", finFoto);
+    const placa = markup.indexOf("Dueño");
+
+    expect(finFoto).toBeGreaterThan(-1);
+    expect(abreCuerpo).toBeGreaterThan(finFoto);
+    expect(placa).toBeGreaterThan(finFoto);
+    expect(placa).toBeLessThan(abreCuerpo);
+  });
+
+  /** El ancla del posicionamiento es la caja de la portada, no la tarjeta. */
+  it("ancla el posicionamiento en la portada", () => {
+    expect(block(cardCss, "cover")).toContain("position: relative");
+  });
+
+  /**
+   * **Sacada del flujo**: si quedara `position: static`, la placa seguiría
+   * ocupando alto y el cambio no habría movido nada — que es justo el defecto
+   * que este cambio viene a arreglar.
+   */
+  it("saca la placa del flujo, que es de donde salen los píxeles", () => {
+    expect(block(cardCss, "badgeSlot")).toMatch(/position:\s*absolute/);
+  });
+
+  /**
+   * **El piso opaco, que es lo que sostiene la garantía de la 14.25 sobre una
+   * foto.** Sin él, «relleno contra borde» se lee contra lo que haya en la
+   * portada, y una foto oscura se traga el borde de la inmobiliaria.
+   */
+  it("le pone a la placa un piso opaco, para que la foto no participe", () => {
+    const slot = block(cardCss, "badgeSlot");
+
+    expect(slot).toContain("background: var(--surface)");
+    // Ni un `opacity` ni un `rgba`: los dos dejarían pasar la foto, que es
+    // exactamente lo que este piso existe para impedir.
+    expect(slot).not.toMatch(/opacity\s*:/);
+    // Del tamaño de la placa y no de la portada: un piso del ancho de la foto
+    // sería una banda blanca sobre la imagen.
+    expect(slot).toMatch(/display:\s*inline-flex/);
+  });
+
+  /**
+   * Y la placa sigue siendo la del átomo. Sin esto, «piso opaco» se podría
+   * satisfacer repintando la distinción acá, que es como una regla probada
+   * deja de aplicarse.
+   */
+  it("no repinta la distinción para meterla en la foto", () => {
+    expect(cardCss).not.toMatch(/\.(owner|broker)\s*\{/);
+    expect(readFileSync("components/molecules/ListingCard.tsx", "utf-8")).toContain(
+      "PublisherBadge",
+    );
+  });
+});
+
 describe("ListingCard — a dónde lleva", () => {
   it("tiene un solo enlace, y su nombre accesible es el título", () => {
     const markup = render();
