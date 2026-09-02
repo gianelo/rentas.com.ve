@@ -40,6 +40,11 @@ export default defineConfig({
       // está—, así que su prueba se nombra una por una en vez de abrir la
       // raíz entera a este glob.
       "instrumentation.{test,spec}.ts",
+      // Los gates de `scripts/` no tenían dónde probarse, y esa ausencia es
+      // parte de por qué `lint:tokens` pasó meses sin ver un token huérfano
+      // (14.48): un gate sin prueba propia puede dejar de comprobar en
+      // silencio, que es la peor forma de verde.
+      "scripts/**/*.{test,spec}.{ts,tsx}",
     ],
     coverage: {
       provider: "v8",

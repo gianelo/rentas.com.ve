@@ -65,26 +65,24 @@
      respuestas y por lo tanto no preguntaba nada. */
   --target-min-desktop: 44px;
 
-  /* ---------- La barra de búsqueda del inicio (14.21/14.42) ----------
+  /* ---------- La barra de búsqueda del inicio: NO se declara, y la ausencia
+     es deliberada ----------
 
-     **La referencia decía «16.23» y era la tarea equivocada** (corregido por la
-     16.39). La 16.23 es la TIPOGRAFÍA DE LA FICHA, doce líneas más abajo. Un
-     comentario que apunta a otra tarea es peor que ninguno: manda al próximo
-     lector a leer algo que no habla de lo que tiene delante, y no hay gate que
-     pueda verlo — `lint:tokens` lee valores, no prosa.
+     **`--searchbar-h` (50) y `--searchbar-fs` (14) se retiraron el 2026-09-02
+     (tasks.md 14.48).** Eran de `SearchBar.module.css` y de ninguna otra hoja;
+     la 14.42 borró esa hoja con su pieza —la reemplazó la pastilla, que tiene
+     su propio contrato más abajo— y los dos tokens quedaron declarados sin un
+     solo lector. **Se tiran en vez de retirarse con nota** porque son medidas
+     que este proyecto inventó: no están en `design/reference/sistema/tokens.css`
+     ni los nombra `SISTEMA.md`, así que sacarlos no es un cambio al conjunto.
+     Es la diferencia que la 16.37 dejó escrita al retirar `--fpb`, que sí es
+     del sistema.
 
-     Dos medidas que el conjunto no nombraba, y que la hoja de la barra estaba
-     resolviendo con el token *vecino*: `--target-min` (44) por el alto y
-     `--control-fs` (15) por el texto. Los dos se leían bien y los dos eran el
-     valor equivocado — que es exactamente el defecto que este archivo ya
-     documenta más abajo con el `<h1>` del inicio agarrando `--fpb`.
-
-     Propios y no alias: la barra es la pieza más grande de la pantalla y la
-     primera que un pulgar busca, así que su alto es una decisión de esa pieza.
-     Atarlo a `--target-min` haría que subir el mínimo táctil del sistema
-     redimensionara la barra, y bajarlo la encogiera por debajo de lo dibujado. */
-  --searchbar-h: 50px;
-  --searchbar-fs: 14px;
+     **Y esta ausencia ya no depende de que alguien la note**: desde la 14.48
+     `lint:tokens` cuenta usos, así que un token declarado sin lector rompe el
+     gate. Antes era invisible por construcción — el mismo hueco por el que el
+     `<h1>` del inicio terminó agarrando `--fpb`, que este archivo documenta
+     cuatro veces. */
 
   /* La línea de conteo debajo del encabezado de una tira. 12,5 en el teléfono
      y 13 en 1280 — el diseño da los dos, y una sola escala obligaría a elegir

@@ -102,6 +102,33 @@ export default async function MeasureHarnessPage({
         />
       </div>
 
+      {/* **La barra con sesión, para medir el menú de cuenta** (14.48). El
+          arnés de arriba es anónimo, así que las iniciales del avatar no se
+          dibujaban en ninguna parte medible — y ahí vivía un token que el
+          conjunto declara para el teléfono y que la hoja nunca leía. */}
+      <div data-testid="nav-harness-cuenta">
+        <Nav
+          account={{
+            kind: "authenticated",
+            displayName: "María Fernández",
+            email: "maria@example.com",
+            initials: "MF",
+            imageUrl: null,
+            canImportListings: false,
+          }}
+          publish={{ bar: { label: "Publicar", emphasis: "accent" }, menu: null }}
+          signInHref="/signin"
+          pill={{
+            action: "/",
+            name: "q",
+            value: "",
+            placeholder: "¿En qué zona buscás?",
+            submitLabel: "Buscar",
+            state: { kind: "empty" },
+          }}
+        />
+      </div>
+
       <div data-testid="nav-harness-ficha">
         <Nav
           account={{ kind: "anonymous" }}
