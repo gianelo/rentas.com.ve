@@ -14,7 +14,8 @@ import {
 } from "@/modules/identity/domain/safe-return-destination";
 import { signInPathFor } from "@/modules/identity/domain/sign-in-page";
 import { signIn } from "@/modules/identity/infrastructure/auth";
-import { TICKET_COOKIE, TICKET_COOKIE_OPTIONS } from "./enlace";
+import type { PendingMagicLinkDatabase } from "@/modules/identity/infrastructure/drizzle-pending-magic-link";
+import { sealTicket, TICKET_COOKIE, TICKET_COOKIE_OPTIONS } from "./enlace";
 
 /**
  * Pedir el enlace por correo (22.22, láminas 8a/9a) y volver a pedirlo (15.9).
@@ -43,6 +44,42 @@ function despachado(destino: string): boolean {
     return new URL(destino, "https://rentas.invalid").pathname.endsWith("/verify-request");
   } catch {
     return false;
+  }
+}
+
+/**
+ * La huella del enlace que ACABA de salir (15.14), o `null`.
+ *
+ * **La más nueva es la nuestra**: el puerto devuelve las pendientes de la más
+ * nueva a la más vieja, y la que se escribió hace un instante es la de mayor
+ * vencimiento. Dos pedidos simultáneos al mismo buzón podrían cruzarse, y el
+ * peor caso es que esta pestaña vigile el enlace de la otra — el mismo buzón,
+ * la misma persona.
+ *
+ * **Un fallo acá no puede cerrar la puerta.** El correo ya salió; negarse
+ * ahora dejaría a alguien esperando un enlace que existe sin pantalla que se
+ * lo diga. Se pierde el sondeo, que es una mejora, y no la espera. Es la misma
+ * asimetría que `recordProviderEmailVerification` documenta.
+ *
+ * **La base entra por importación diferida y no arriba**, igual que
+ * `readAuthMailerConfig` pospone su configuración: `client.ts` exige
+ * `DATABASE_URL` al cargarse, y arriba lo exigiría también la pantalla de
+ * espera —que importa este módulo por sus formularios— sin necesitarlo para
+ * nada.
+ */
+async function huellaDelEnlace(address: string): Promise<string | null> {
+  try {
+    const [{ DrizzlePendingMagicLinks }, { db }] = await Promise.all([
+      import("@/modules/identity/infrastructure/drizzle-pending-magic-link"),
+      import("@/shared/db/client"),
+    ]);
+    const pendientes = await new DrizzlePendingMagicLinks(
+      db as unknown as PendingMagicLinkDatabase,
+    ).findPendingFingerprints({ identifier: address, now: new Date() });
+
+    return pendientes[0] ?? null;
+  } catch {
+    return null;
   }
 }
 
@@ -76,7 +113,14 @@ export async function requestMagicLink(formData: FormData): Promise<void> {
 
   store.set(
     TICKET_COOKIE,
-    serialiseMagicLinkTicket({ address: decision.address, sentAtMs: Date.now(), returnTo }),
+    serialiseMagicLinkTicket(
+      sealTicket({
+        address: decision.address,
+        sentAtMs: Date.now(),
+        returnTo,
+        linkFingerprint: await huellaDelEnlace(decision.address),
+      }),
+    ),
     TICKET_COOKIE_OPTIONS,
   );
   redirect(SIGN_IN_WAIT_PATH);
