@@ -220,4 +220,54 @@ describe("la ficha servida y la verificación del contacto", () => {
       contact: { method: "whatsapp", value: TELEFONO },
     });
   });
+
+  /**
+   * **La 19.12, en los bytes: los dos relojes se cruzan y el aviso no se
+   * invalida.** Un aviso vive 30 días y puede publicarse el último día de una
+   * verificación, así que a mitad de vuelo la verificación caduca mientras el
+   * aviso sigue vivo. Lo que la tarea afirma es que no hay nada que arreglar
+   * porque la ficha dice CUÁNDO y nunca «vigente» — y hasta hoy eso no lo
+   * medía nadie: las otras pruebas de este archivo y las del dominio fijan un
+   * instante reciente, así que una caducidad metida en el camino de dibujo
+   * las dejaría a todas en verde.
+   *
+   * Las dos formas que el puerto puede contestar, porque la 19.11 va a
+   * cambiar cuál llega: **hoy** la fila caducada vuelve con su instante viejo
+   * —el `WHERE verified_at > $desde` todavía no existe—, y **después** de la
+   * 19.11 la misma fila va a volver como `null`. En las dos el aviso sigue
+   * activo y su contacto revelado.
+   */
+  it("la verificación caducada a mitad de vuelo no invalida el aviso ni afirma vigencia", async () => {
+    findEvidence.mockResolvedValue({
+      verifiedAt: new Date("2023-08-19T12:00:00.000Z"),
+      accountEmail: "maria@ejemplo.com",
+      accountEmailVerifiedAt: null,
+    });
+
+    const conFilaVieja = await servida();
+
+    // Positiva: el contacto sigue revelado y la frase sigue diciendo el día.
+    expect(conFilaVieja).toContain(TELEFONO);
+    expect(conFilaVieja).toContain("verificado por WhatsApp el 19 ago.");
+    // Y no se convierte en el aviso vencido, que es el único estado en el que
+    // esta ficha deja de mostrar contacto.
+    expect(conFilaVieja).not.toContain("Aviso vencido");
+    // La ficha no AFIRMA vigencia por ninguna de las dos vías: ni un adjetivo
+    // de estado, ni una caducidad dibujada.
+    expect(conFilaVieja).not.toContain("vigente");
+    expect(conFilaVieja).not.toContain("vencida");
+
+    // La forma que la 19.11 va a hacer llegar para esa misma fila caducada.
+    findEvidence.mockResolvedValue({
+      verifiedAt: null,
+      accountEmail: "maria@ejemplo.com",
+      accountEmailVerifiedAt: null,
+    });
+
+    const yaFiltrada = await servida();
+
+    expect(yaFiltrada).toContain(TELEFONO);
+    expect(yaFiltrada).not.toContain("Aviso vencido");
+    expect(yaFiltrada).not.toContain("erificado");
+  });
 });
