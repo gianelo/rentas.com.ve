@@ -4,34 +4,49 @@ import { expect, test } from "@playwright/test";
  * **Criterio de aceptación 1, medido en vez de afirmado** (tasks.md 14.29).
  *
  * Cuántos avisos COMPLETOS entran sobre el pliegue en la pantalla principal
- * del producto. Hasta acá era una frase en el plan; acá es un número, y el
- * número contesta que **no**: entran la mitad de los que la lámina dibuja.
+ * del producto.
  *
- * **Actualizado el 2026-09-02 por la 14.53, y los conteos no se movieron.** Las
- * dos decisiones del fundador —las fichas quitables fuera del teléfono, la
- * placa del publicador encima de la portada— se llevaron 181 px del teléfono y
- * 54 del escritorio, y aun así entran los mismos 2 y 4: a la segunda fila le
- * sobran 35 px en el teléfono y 33 en el escritorio. Lo que queda es el
- * encabezado de tres líneas —miga de pan, `<h1>` y conteo— contra la única que
- * dibujan 6c y 7c, y eso es otra decisión de diseño. Está anotado en la 14.53
- * y acá se mide como `sobra`.
+ * **EL CRITERIO SON 2 Y 4, POR DECISIÓN DEL FUNDADOR DEL 2026-09-02 — y esto
+ * NO es una cota bajada para que dé.** La distinción importa y por eso se
+ * escribe entera. El criterio decía 4 y 8, que es lo que dibujan las láminas
+ * 6c y 7c. La 14.53 construyó las dos decisiones que él tomó ese día —las
+ * fichas quitables fuera del teléfono, la placa del publicador encima de la
+ * portada— y se llevó 181 px del teléfono y 54 del escritorio; siguieron
+ * entrando 2 y 4, con la segunda fila a 35 px del pliegue en el teléfono y a
+ * 33 en el escritorio. Lo único que quedaba por sacar era el encabezado de
+ * tres líneas: miga de pan, `<h1>` y conteo, contra la única línea que dibujan
+ * las láminas.
  *
- * **Las cotas son las medidas de HOY y no las de la lámina, a propósito.** Una
- * prueba que afirme 4 cuando entran 2 no es una medición, es un pendiente
- * escrito en rojo permanente, y una suite con un rojo permanente deja de
- * distinguir la próxima regresión. Lo que fija esta prueba es el número
- * dibujado, con `toBe` exacto en las dos pantallas: mover el alto de la
- * tarjeta, el ancho de la columna o cualquier cosa del encabezado lo pone
- * rojo diciendo cuánto se movió y hacia dónde. **Lo que falta para la lámina
- * está anotado en la 14.29 con su presupuesto en píxeles**, que es donde una
- * decisión de diseño se puede tomar; acá no se toma ninguna.
+ * **Preguntó lo correcto —«pero los avisos pueden ser con scroll, no?»— y la
+ * respuesta es que sí: nada está roto y la lista se baja.** Lo que el criterio
+ * mide es la primera pantalla, y el argumento de su propio documento es que la
+ * densidad es lo que hace que un catálogo chico se lea como un mercado y no
+ * como un vacío. Sabiendo eso eligió: **volver, en un teléfono, vale más que un
+ * aviso y medio.** La miga de pan es la salida que la 14.41 dejó puesta al
+ * borrarse la `SearchSummaryBar`, y sacarla del teléfono se la quita a quien
+ * llegó a una zona filtrada. El `<h1>` y el conteo se quedan por lo mismo.
  *
- * **De dónde salen los dos objetivos, que no son los del enunciado.** El
- * enunciado de la 14.29 dice «6 a 1280» y ese 6 es anterior a la 14.33: la
- * lámina 7c lo escribe entero —*«cuatro columnas de 254: 8 avisos sobre el
- * pliegue, contra 6 antes»*—, donde el 6 es el de la barra lateral que el
- * fundador sacó el 2026-08-26. El 4 del teléfono sí sobrevive: la lámina 6c lo
- * anota con esas palabras, *«tarjeta de 195 px · 4 avisos completos»*.
+ * **Lo que cuesta, dicho y no rodeado**: las láminas dibujan 4 y 8, el producto
+ * sirve 2 y 4, y la diferencia es ese encabezado de tres líneas que las láminas
+ * no dibujan. Está anotado en la 14.29 con su fecha y su razón.
+ *
+ * **Las cotas son exactas a propósito.** Un `toBe` en las dos pantallas: mover
+ * el alto de la tarjeta, el ancho de la columna o cualquier cosa del encabezado
+ * lo pone rojo diciendo cuánto se movió y hacia dónde.
+ *
+ * **Y son las dos únicas cotas de esta pantalla que las dos plataformas
+ * firman.** Medido: sobre el mismo commit, macOS mide la tarjeta del teléfono
+ * en 222 px y el Linux de CI en 239 —una caja de línea de metadato de
+ * diferencia—, y aun así las dos cuentan 2 y 4. Una cota en píxeles sobre esta
+ * pantalla mide la máquina; el conteo, no. El porqué está medido abajo, en «el
+ * metadato del teléfono va a un pelo de plegarse».
+ *
+ * **De dónde salían los dos objetivos de las láminas.** El enunciado de la
+ * 14.29 dice «6 a 1280» y ese 6 es anterior a la 14.33: la lámina 7c lo escribe
+ * entero —*«cuatro columnas de 254: 8 avisos sobre el pliegue, contra 6
+ * antes»*—, donde el 6 es el de la barra lateral que el fundador sacó el
+ * 2026-08-26. El 4 del teléfono venía de la 6c, *«tarjeta de 195 px · 4 avisos
+ * completos»*.
  *
  * **Por qué necesita su propia ruta y no cabía en `/measure`.** Aquel arnés
  * apila veinte composiciones en una sola página para medirlas de a una, y
@@ -53,6 +68,10 @@ const LAMINA_MOVIL = 4;
 /** Lo que la lámina 7c dibuja sobre el pliegue del escritorio, después de la 14.33. */
 const LAMINA_ESCRITORIO = 8;
 
+/** El criterio, revisado por el fundador el 2026-09-02. Ver la cabecera. */
+const CRITERIO_MOVIL = 2;
+const CRITERIO_ESCRITORIO = 4;
+
 /**
  * Cuántas tarjetas se ven ENTERAS sin tocar la rueda.
  *
@@ -64,7 +83,6 @@ async function avisosCompletosSobreElPliegue(page: import("@playwright/test").Pa
   completos: number;
   dibujadas: number;
   fondos: readonly number[];
-  pliegue: number;
 }> {
   return page
     .getByTestId("lista-grid")
@@ -77,24 +95,18 @@ async function avisosCompletosSobreElPliegue(page: import("@playwright/test").Pa
         completos: fondos.filter((fondo) => fondo <= alto).length,
         dibujadas: nodes.length,
         fondos,
-        pliegue: alto,
       };
     });
 }
 
 test.describe("14.29: los avisos completos sobre el pliegue", () => {
-  test("a 360×640 entran 2 avisos completos, y la lámina 6c dibuja 4", async ({ page }) => {
+  test("a 360×640 entran 2 avisos completos, que es el criterio del fundador", async ({ page }) => {
     await page.setViewportSize(MOVIL);
     await page.goto("/measure/lista");
 
-    const { completos, dibujadas, fondos, pliegue } = await avisosCompletosSobreElPliegue(page);
-    // Lo que le sobra a la segunda fila para caber: el presupuesto que queda,
-    // en píxeles, y por eso se registra y se acota en vez de contarse en una
-    // tarea. La 14.53 se llevó 181 de los 243 que faltaban —154 de fichas y 27
-    // de la placa por tarjeta—; esto es lo que no se llevó.
-    const sobra = (fondos[3] ?? 0) - pliegue;
+    const { completos, dibujadas, fondos } = await avisosCompletosSobreElPliegue(page);
     console.log(
-      `[14.29] 360×640: ${completos} avisos completos (cota: === 2 · lámina 6c: ${LAMINA_MOVIL}) · dibujadas=${dibujadas} · fondos=${fondos} · a la 2ª fila le sobran ${sobra}px`,
+      `[14.29] 360×640: ${completos} avisos completos (criterio: === ${CRITERIO_MOVIL} · lámina 6c: ${LAMINA_MOVIL}) · dibujadas=${dibujadas} · fondos=${fondos}`,
     );
 
     // **La mitad positiva, y sin ella el número no significa nada.** Si el
@@ -102,52 +114,46 @@ test.describe("14.29: los avisos completos sobre el pliegue", () => {
     // fixture y no una medida de la pantalla: una medición sobre una entrada
     // que el fixture nunca produce no mide nada.
     expect(dibujadas).toBeGreaterThan(LAMINA_MOVIL);
-    expect(completos).toBe(2);
-
-    // Y el porqué del 2, como número: la segunda fila termina PASADO el
-    // pliegue, y por poco. Las dos cotas juntas — sigue sin entrar, y lo que
-    // falta cabe en 40 px — son las que un cambio futuro va a mover.
-    expect(sobra).toBeGreaterThan(0);
-    expect(sobra).toBeLessThanOrEqual(40);
+    expect(completos).toBe(CRITERIO_MOVIL);
   });
 
-  test("a 1280×800 entran 4 avisos completos, y la lámina 7c dibuja 8", async ({ page }) => {
+  test("a 1280×800 entran 4 avisos completos, que es el criterio del fundador", async ({
+    page,
+  }) => {
     await page.setViewportSize(ESCRITORIO);
     await page.goto("/measure/lista");
 
-    const { completos, dibujadas, fondos, pliegue } = await avisosCompletosSobreElPliegue(page);
-    // Lo mismo que en el teléfono: la fila de escritorio son cuatro tarjetas,
-    // así que la segunda empieza en la quinta celda.
-    const sobra = (fondos[4] ?? 0) - pliegue;
+    const { completos, dibujadas, fondos } = await avisosCompletosSobreElPliegue(page);
     console.log(
-      `[14.29] 1280×800: ${completos} avisos completos (cota: === 4 · lámina 7c: ${LAMINA_ESCRITORIO}) · dibujadas=${dibujadas} · fondos=${fondos} · a la 2ª fila le sobran ${sobra}px`,
+      `[14.29] 1280×800: ${completos} avisos completos (criterio: === ${CRITERIO_ESCRITORIO} · lámina 7c: ${LAMINA_ESCRITORIO}) · dibujadas=${dibujadas} · fondos=${fondos}`,
     );
 
     expect(dibujadas).toBeGreaterThan(LAMINA_ESCRITORIO);
-    expect(completos).toBe(4);
-
-    expect(sobra).toBeGreaterThan(0);
-    expect(sobra).toBeLessThanOrEqual(40);
+    expect(completos).toBe(CRITERIO_ESCRITORIO);
   });
 
   /**
-   * **El encabezado, que es donde está el hueco del teléfono.**
+   * **El encabezado, que es lo que el fundador eligió conservar.**
    *
    * Los 2 de arriba no son culpa de la tarjeta: la cuadrícula empieza a **219
    * px** en un teléfono, contra los ~74 que dibuja la lámina 6c —60 de barra
-   * más el relleno—, porque la pantalla servida agrega miga de pan, título y
-   * conteo, y ninguno de los tres aparece en 6c.
+   * más el relleno—, porque la pantalla servida agrega miga de pan, `<h1>` y
+   * conteo, y ninguno de los tres aparece en 6c. **Eran 373 hasta la 14.53**, y
+   * los 154 que faltan son las fichas quitables al irse del teléfono.
    *
-   * **Eran 373 hasta la 14.53**, y los 154 que faltan son las fichas quitables
-   * al irse del teléfono. Lo que queda por encima de la lámina son esos tres
-   * bloques: la miga de pan es de la 14.41 —cubre la salida que la
-   * `SearchSummaryBar` dejó al borrarse— y sacarla reabre esa puerta, así que
-   * es otra decisión y no se toma midiendo.
+   * Esos tres bloques son exactamente el aviso y medio que separa el 2 del 4, y
+   * el 2026-09-02 el fundador decidió que se quedan: la miga de pan es la
+   * salida que la 14.41 dejó puesta al borrarse la `SearchSummaryBar`, y
+   * **volver, en un teléfono, vale más que un aviso y medio**. Así que esta
+   * medida dejó de ser un pendiente y pasó a ser una guardia: si el encabezado
+   * creciera, esto lo dice.
    *
-   * Se afirma como cota superior y no como igualdad exacta: lo que decide es
-   * el presupuesto que le queda a la cuadrícula, y una igualdad al píxel sobre
-   * texto renderizado se rompe por una versión de fuente sin que nada del
-   * producto haya cambiado. Los conteos de arriba son los que van exactos.
+   * Se afirma como cota superior y no como igualdad exacta: una igualdad al
+   * píxel sobre texto renderizado se rompe por una versión de fuente sin que
+   * nada del producto haya cambiado. **La holgura de 6 px que se deja está
+   * medida y no elegida a ojo**: 219 px en macOS y 219 en el Linux de CI sobre
+   * el mismo commit — este encabezado es corto y sobrado en las dos, que es
+   * justo lo contrario de lo que le pasa al metadato de la tarjeta.
    */
   test("el encabezado se come 219 px del teléfono antes de la primera foto", async ({ page }) => {
     await page.setViewportSize(MOVIL);
@@ -169,6 +175,112 @@ test.describe("14.29: los avisos completos sobre el pliegue", () => {
       .evaluate((node) => Math.round(node.getBoundingClientRect().bottom));
     console.log(`[14.29] 360×640: la barra termina a ${barra}px`);
     expect(arranque).toBeGreaterThan(barra);
+  });
+
+  /**
+   * **Por qué esta pantalla no admite una cota en píxeles, medido.**
+   *
+   * Esto no nació como una prueba: nació de una diferencia. La primera versión
+   * de este archivo acotaba en 40 px lo que le faltaba a la segunda fila para
+   * caber, y sobre **el mismo commit** macOS medía 35 y el Linux de CI 69. La
+   * causa se midió en vez de suponerse, y no es la que parecía:
+   *
+   * - el encabezado mide **219 px en las dos** — o sea que no es una diferencia
+   *   de interlínea en sus tres renglones;
+   * - la tarjeta de **escritorio mide 294 px en las dos**, mismas fuentes,
+   *   mismos átomos;
+   * - la del teléfono mide **222 en una y 239 en la otra**, y la diferencia es
+   *   exactamente una caja de línea de metadato (12 px × 1,4 = 16,8).
+   *
+   * La causa es esta medida: la línea `Chacao · 2 hab · 78 m²` ocupa **131,3 px
+   * de los 136 disponibles** en la tarjeta del teléfono —**4,7 px de holgura, un
+   * 3,5 %**— y `system-ui` no resuelve a la misma fuente en macOS que en Linux.
+   * Un 3,6 % más ancha y la línea se pliega: +16,8 px por tarjeta, ×2 filas =
+   * +33,6, que son los 34 px de diferencia. En escritorio la misma frase tiene
+   * **100,7 px de holgura** y por eso allá las dos máquinas coinciden al píxel.
+   *
+   * **La aritmética descarta la otra causa posible.** Si en Linux se angostara
+   * la columna —una barra de desplazamiento clásica— la segunda fila caería en
+   * 707; si la columna sigue en 158 y sólo se pliega el texto, cae en **709**, y
+   * CI mide 709. Reproducido además en esta máquina: con la columna intacta y
+   * `letter-spacing: 0,3px` sobre el metadato, la pantalla mide 458/709 y la
+   * tarjeta 239 — los números de CI, clavados.
+   *
+   * **Esto es un dato del producto y no ruido de medición**, y por eso se queda
+   * medido: el teléfono dibuja sus tarjetas a un pelo de plegar el metadato, así
+   * que un aparato con una fuente de sistema un poco más ancha ve cada tarjeta
+   * 17 px más alta. Se afirma como **proporción y nunca en píxeles**, que es lo
+   * único que las dos máquinas pueden firmar.
+   */
+  test("el metadato del teléfono va a un pelo de plegarse, y el del escritorio no", async ({
+    page,
+  }) => {
+    /** El ancho de la línea SIN plegar, que es el número que cambia de máquina. */
+    const holguraDelMetadato = async () =>
+      page
+        .getByTestId("lista-grid")
+        .locator("ol > li")
+        .first()
+        .evaluate((celda) => {
+          // **El metadato es el último `<p>` de la tarjeta**, apuntado por
+          // estructura: el otro `<p>` es el precio y va antes por la regla
+          // transversal 2. Nunca por clase — en producción son hashes.
+          const parrafos = celda.querySelectorAll("p");
+          const meta = parrafos[parrafos.length - 1] as HTMLElement;
+          const cuerpo = meta.parentElement as HTMLElement;
+          const cs = getComputedStyle(meta);
+          const csCuerpo = getComputedStyle(cuerpo);
+
+          // Medido sobre una copia con `nowrap` fuera de pantalla: si el texto
+          // ya se plegó, su propia caja mide el ancho del contenedor y no el de
+          // la frase, y la holgura saldría 0 justo en la máquina donde importa.
+          const copia = document.createElement("span");
+          copia.textContent = meta.textContent;
+          copia.style.cssText = `position:absolute;left:-9999px;top:0;white-space:nowrap;font:${cs.font};letter-spacing:${cs.letterSpacing}`;
+          document.body.append(copia);
+          const anchoNatural = copia.getBoundingClientRect().width;
+          copia.remove();
+
+          const disponible =
+            cuerpo.getBoundingClientRect().width -
+            Number.parseFloat(csCuerpo.paddingLeft) -
+            Number.parseFloat(csCuerpo.paddingRight);
+
+          return {
+            texto: meta.textContent ?? "",
+            anchoNatural: Math.round(anchoNatural * 10) / 10,
+            disponible: Math.round(disponible * 10) / 10,
+            holgura: Math.round((disponible - anchoNatural) * 10) / 10,
+            proporcion: (disponible - anchoNatural) / disponible,
+          };
+        });
+
+    await page.setViewportSize(MOVIL);
+    await page.goto("/measure/lista");
+    const telefono = await holguraDelMetadato();
+
+    await page.setViewportSize(ESCRITORIO);
+    await page.goto("/measure/lista");
+    const escritorio = await holguraDelMetadato();
+
+    console.log(
+      `[14.29] holgura del metadato «${telefono.texto}»: 360 → ${telefono.holgura}px de ${telefono.disponible} (${(telefono.proporcion * 100).toFixed(1)}%) · 1280 → ${escritorio.holgura}px de ${escritorio.disponible} (${(escritorio.proporcion * 100).toFixed(1)}%)`,
+    );
+
+    // **La frase es la misma en las dos**, así que lo que cambia es la caja y no
+    // el contenido. Sin esta igualdad, las dos proporciones de abajo podrían
+    // estar comparando dos textos distintos.
+    expect(escritorio.texto).toBe(telefono.texto);
+    expect(escritorio.anchoNatural).toBeCloseTo(telefono.anchoNatural, 0);
+
+    // El teléfono, al filo: menos de un 10 % de holgura. Puede ser 3,5 % y puede
+    // ser negativa, según a qué fuente resuelva `system-ui`; lo que no puede es
+    // ser holgada, porque entonces esta explicación dejó de valer y hay que
+    // volver a mirarla.
+    expect(telefono.proporcion).toBeLessThan(0.1);
+    // El escritorio, sobrado: es lo que hace que allá las dos máquinas midan lo
+    // mismo al píxel.
+    expect(escritorio.proporcion).toBeGreaterThan(0.25);
   });
 });
 
