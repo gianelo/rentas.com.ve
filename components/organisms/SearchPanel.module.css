@@ -24,7 +24,12 @@
   inset-block-end: 0;
   inset-inline: 0;
   overflow-y: auto;
-  background: var(--surface);
+  /* **El velo, y por qué no `var(--surface)`** (14.46). Esto tapaba el viewport
+     con la lámina: un token, `lint:tokens` en verde, y una pantalla entera
+     donde la 14.33 dice modal. `--scrim` es el mismo velo de la puerta de
+     entrar, y se repinta con el tema — el par claro/oscuro está medido en
+     `components/design-contract.test.tsx`, no afirmado acá. */
+  background: var(--scrim);
   /* Por encima del menú de cuenta (2), que es lo único que se levanta en esta
      pantalla. */
   z-index: 3;
@@ -39,6 +44,11 @@
   flex-direction: column;
   gap: var(--gap);
   min-block-size: 100%;
+  /* La lámina va acá y no en `.panel`: lo que se lee tiene que apoyarse en una
+     superficie opaca, o el texto del panel queda sobre la lista velada. En el
+     teléfono ocupa el ancho entero y se ve igual que antes — la lámina 6b
+     dibuja una pantalla completa, no una tarjeta. */
+  background: var(--surface);
 }
 
 .head {
@@ -454,6 +464,18 @@
 @media (min-width: 768px) {
   .panel {
     inset-block-start: var(--nav-h-desktop);
+  }
+
+  /* **De pantalla a tarjeta** (lámina 7b, 14.46): en escritorio la hoja deja de
+     llegar al piso y se separa del velo, que es lo que la vuelve un modal
+     sobre la lista en vez de una pantalla que la reemplaza. La lámina dibuja
+     además una sombra; no se reproduce, porque el velo ya hace ese trabajo y
+     una sombra más sería un token más para nada. */
+  .sheet {
+    min-block-size: auto;
+    margin-block: var(--gap);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
   }
 
   .option,

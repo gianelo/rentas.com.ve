@@ -295,10 +295,12 @@
 
   /* **La puerta de entrar** (láminas 8b y 9b, tasks.md 15.8): la misma pieza
      es hoja abajo en el móvil y diálogo centrado de 460 en escritorio. El
-     velo va acá y no en el tema porque oscurece lo que haya detrás, igual que
-     `--viewer-scrim`: no es un color de la paleta, es una sombra sobre ella.
-     El radio es propio y no `--r` (12): las dos láminas dibujan 18. */
-  --door-veil: rgba(30, 32, 34, 0.55);
+     radio es propio y no `--r` (12): las dos láminas dibujan 18.
+
+     **El velo se llamaba `--door-veil` y ahora es `--scrim`** (14.46), abajo
+     con los temas: el modal de filtros necesitaba el mismo velo, y declarar un
+     segundo nombre para el mismo valor es exactamente lo que la 16.22 dejó
+     prohibido en `scripts/lint-tokens.mjs`. */
   --door-r: 18px;
   --door-w: 460px;
   --door-shadow: 0 24px 64px rgba(30, 32, 34, 0.34);
@@ -351,6 +353,11 @@
   --dark-accent: #bae8e8;
   --dark-accent-ink: #272343;
   --dark-tint: #332e52;
+  /* El velo de los modales bajo `oscuro`. Negro y no `rgba(30,32,34,…)`: la
+     paleta oscura no tiene ningún color más oscuro que su propio fondo con el
+     que velarlo, así que el velo es sombra pura. El alfa está elegido por
+     medición y no por gusto — ver `--scrim` en el bloque de `menta`. */
+  --dark-scrim: rgba(0, 0, 0, 0.66);
   /* **El ámbar de la spec NO sirve acá, y este es el número.** `#8a5a00` da
      2,52:1 sobre `--dark-surface` y 2,90:1 sobre `--dark-bg`: los dos por
      debajo de 4,5, y el contrato de tema exige AA en `menta` Y en `oscuro`.
@@ -470,6 +477,26 @@
   --accent: #272343;
   --accent-ink: #ffffff;
   --tint: #e3f6f5;
+  /* **El velo de los modales** (14.46). Un modal se dibuja SOBRE lo que había,
+     y sin un token de velo la única salida que dejaba `lint:tokens` era tapar
+     el viewport con `var(--surface)` — un token, cero quejas del gate, y una
+     hoja opaca donde la lámina dibuja un modal. Lo usan la puerta de entrar
+     (era `--door-veil`) y el panel de filtros.
+
+     `rgba(30, 32, 34, 0.55)` es el valor que la lámina 9b dibuja, textual, y
+     es `--ink` de `menta` con alfa. **La lámina 7b no dibuja velo ninguno**:
+     dibuja el panel como tarjeta sobre una banda de `--bg`. Se toma el de 9b
+     porque la 14.46 es posterior y pide el modal sobre la lista, y porque es
+     el único velo que el diseño dibuja en alguna parte.
+
+     **Y va en el tema, no en `:root` como `--viewer-scrim` o como estaba
+     `--door-veil`.** Ése era el atajo tentador y está medido que es falso: el
+     mismo velo oscuro que acá separa el fondo velado de la lámina 3,98:1
+     —contra 1,10:1 sin velo— deja `oscuro` en 1,13:1 contra el 1,15:1 sin
+     velo, o sea PEOR que no ponerlo. Oscurecer un fondo ya oscuro no separa
+     nada. La cuenta la hace `components/design-contract.test.tsx`, contra
+     este archivo y no contra una copia. */
+  --scrim: rgba(30, 32, 34, 0.55);
   /* **Ámbar, y el azul del acento era el error.** El repintado del 2026-08-18
      llevó `--warn` al azul del acento y `--warn-bg` a la menta, para que
      "vence pronto" perteneciera a la paleta. El resultado fue que un aviso
@@ -514,6 +541,7 @@
   --accent: var(--dark-accent);
   --accent-ink: var(--dark-accent-ink);
   --tint: var(--dark-tint);
+  --scrim: var(--dark-scrim);
   --warn: var(--dark-warn);
   --warn-bg: var(--dark-warn-bg);
   --shadow-raised: var(--dark-shadow-raised);

@@ -87,6 +87,10 @@ const THUMBNAIL_TOKEN_NAMES = ["--tw", "--th", "--twd", "--thd"];
 const TOKEN_ALIASES = new Map([
   ["--rule", "--strong"],
   ["--acc-ink", "--accent-ink"],
+  // 14.46: el velo de la puerta pasó a ser el velo de todos los modales y se
+  // llama `--scrim`. El nombre viejo queda rechazado acá y no sólo borrado,
+  // porque `var(--door-veil)` sin declarar no pinta nada: no da síntoma.
+  ["--door-veil", "--scrim"],
 ]);
 
 const COLOUR_PROPERTIES = new Set([
