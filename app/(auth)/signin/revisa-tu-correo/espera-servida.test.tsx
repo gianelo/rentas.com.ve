@@ -53,6 +53,20 @@ function conComprobante(sentAtMs: number, returnTo: string | null = FICHA) {
   jar.set(TICKET_COOKIE, serialiseMagicLinkTicket({ address: CORREO, sentAtMs, returnTo }));
 }
 
+/** Con huella hay sondeo; sin ella la pantalla es la misma menos el aviso. */
+function conHuella(sentAtMs: number) {
+  jar.set(
+    TICKET_COOKIE,
+    serialiseMagicLinkTicket({
+      address: CORREO,
+      sentAtMs,
+      returnTo: FICHA,
+      linkFingerprint: "4f1a".repeat(16),
+      seal: "c0de".repeat(16),
+    }),
+  );
+}
+
 async function servida(): Promise<string> {
   return renderToStaticMarkup(await EsperaPage());
 }
@@ -165,6 +179,50 @@ describe("la pantalla de espera sale entera en el HTML (15.9)", () => {
     expect(html).toMatch(
       new RegExp(`<input[^>]*type="hidden"[^>]*name="callbackUrl"[^>]*value="${FICHA}"`),
     );
+  });
+
+  /**
+   * **El aviso de la 9c sale servido y escondido** (15.14). Que el texto viaje
+   * en el HTML y el guion sólo le quite el `hidden` es lo que mantiene la copia
+   * de producto adentro del dominio: si el guion la escribiera, la frase
+   * viviría en el frente.
+   */
+  it("el aviso de que el enlace se abrió en otro dispositivo va servido y oculto", async () => {
+    conHuella(AHORA);
+    const html = await servida();
+
+    expect(html).toMatch(
+      /<p[^>]*data-testid="espera-entro"[^>]*hidden[^>]*>Abriste el enlace en otro dispositivo\./,
+    );
+  });
+
+  /**
+   * **El sondeo no lleva la dirección a ninguna parte**, que es la tarea 15.14
+   * entera: lo que identifica a quien pregunta es el comprobante `httpOnly`, y
+   * una dirección en la ruta la haría preguntable por cualquiera.
+   */
+  it("el sondeo va en línea y no escribe la dirección en ninguna parte", async () => {
+    conHuella(AHORA);
+    const html = await servida();
+
+    // El `<script>` de reenvío de formularios que React inyecta fuera del
+    // compilador de Next también está acá (ver el encabezado), así que se
+    // busca el que lleva el sondeo y no «el primero».
+    const guion =
+      html
+        .match(/<script>([\s\S]*?)<\/script>/g)
+        ?.find((etiqueta) => etiqueta.includes("/signin/revisa-tu-correo/estado")) ?? "";
+
+    expect(guion).not.toBe("");
+    expect(guion).not.toContain(CORREO);
+    expect(guion).not.toContain("@");
+  });
+
+  /** Sin huella no hay nada que preguntar: no se dibuja el sondeo. */
+  it("sin huella no se sirve el sondeo", async () => {
+    conComprobante(AHORA);
+
+    expect(await servida()).not.toContain("/signin/revisa-tu-correo/estado");
   });
 
   /** Un destino forjado en la cookie no llega a la pantalla (§7). */
