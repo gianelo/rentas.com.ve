@@ -136,3 +136,65 @@ test.describe("14.29: los avisos completos sobre el pliegue", () => {
     expect(arranque).toBeGreaterThan(barra);
   });
 });
+
+/**
+ * **Las fichas quitables se van del teléfono** (14.53, decisión del fundador
+ * del 2026-09-02: *«sí quítalos, ocupan mucho espacio»*).
+ *
+ * Acá se mide lo DIBUJADO a los dos anchos, que es lo que la hoja no puede
+ * afirmar sola. `FilterChips.test.tsx` fija lo declarado.
+ *
+ * **Sobre el conjunto de filtros que se mide**: el arnés arma el panel con
+ * `buildSearchPanel` y las cinco fichas de la lámina 7c — dos zonas, precio,
+ * habitaciones y quién publica—, que es un conjunto que un visitante produce
+ * caminando la pantalla. Medir con un conjunto inventado mediría otra cosa.
+ */
+test.describe("14.53: las fichas quitables y el ancho de la pantalla", () => {
+  test("a 360 no se dibujan, y el número de filtros lo dice la pastilla", async ({ page }) => {
+    await page.setViewportSize(MOVIL);
+    await page.goto("/measure/lista");
+
+    const fichas = page.getByTestId("filter-chips");
+    await expect(fichas).toBeHidden();
+
+    // **Ni una parada invisible al tabular.** `display: none` saca al enlace
+    // del orden de tabulación y del árbol de accesibilidad; si alguien lo
+    // resolviera con `visibility` o un `clip`, esto lo diría.
+    const alcanzables = await fichas.locator("a").evaluateAll((nodos) =>
+      nodos.filter((nodo) => (nodo as HTMLElement).offsetParent !== null).length,
+    );
+    console.log(`[14.53] 360×640: enlaces de ficha alcanzables=${alcanzables}`);
+    expect(alcanzables).toBe(0);
+
+    // **Lo que queda en su lugar, y es lo único que le dice al visitante que
+    // hay filtros puestos** (14.31: "en móvil el filtro de la pastilla pierde
+    // la palabra, nunca el número"). Sin esta mitad, quitar las fichas deja la
+    // pantalla sin decir que está filtrando.
+    const conteo = page.getByTestId("pill-filter-count");
+    await expect(conteo).toBeVisible();
+    const numero = Number.parseInt((await conteo.innerText()).trim(), 10);
+    console.log(`[14.53] 360×640: la pastilla dice ${numero} filtros`);
+    expect(numero).toBeGreaterThan(0);
+  });
+
+  /**
+   * **La mitad positiva.** Sin ella, la prueba de arriba pasa igual de bien con
+   * las fichas borradas de todas las pantallas — que es exactamente lo que la
+   * decisión NO dice: en escritorio entran en un renglón y no cuestan nada.
+   */
+  test("a 1280 siguen dibujadas, con sus cinco fichas y su «Limpiar todo»", async ({ page }) => {
+    await page.setViewportSize(ESCRITORIO);
+    await page.goto("/measure/lista");
+
+    const fichas = page.getByTestId("filter-chips");
+    await expect(fichas).toBeVisible();
+
+    const alto = await fichas.evaluate((nodo) => Math.round(nodo.getBoundingClientRect().height));
+    const enlaces = await fichas.locator("a").count();
+    console.log(`[14.53] 1280×800: fichas visibles, alto=${alto}px, enlaces=${enlaces}`);
+
+    // Cinco «×» más «Limpiar todo».
+    expect(enlaces).toBe(6);
+    expect(alto).toBeGreaterThan(0);
+  });
+});
