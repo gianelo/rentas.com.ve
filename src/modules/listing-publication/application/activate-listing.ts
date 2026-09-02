@@ -1,5 +1,10 @@
 import type { SessionPort } from "../../identity/application/ports/session.port";
+import type {
+  ContactVerificationEvidencePort,
+  VerifiedContactPort,
+} from "../../identity/application/ports/verified-contact.port";
 import { requireAuthenticatedSession } from "../../identity/application/require-authenticated-session";
+import { resolveContactVerification } from "../../identity/application/resolve-contact-verification";
 import { expiryFor } from "../../listing-lifecycle/domain/expiry";
 import { type PublishViolation, validatePublishableListing } from "../domain/publishable-listing";
 import type { ListingActivationPort } from "./ports/listing-activation.port";
@@ -69,6 +74,20 @@ export interface ActivateListingDependencies {
   readonly sessionPort: SessionPort;
   readonly zones: ZoneCataloguePort;
   readonly listings: ListingActivationPort;
+  /**
+   * tasks.md 19.15 — los dos lados de `verified_contact`, los mismos que
+   * `publishListing` recibe y por la misma razón: no deciden si el aviso se
+   * activa, registran un hecho de la CUENTA para que la ficha tenga qué fecha
+   * dibujar (16.12/16.34).
+   *
+   * **Obligatorios y no opcionales.** Una inmobiliaria que importa cincuenta
+   * filas por este camino no dejaba ni una fila en `verified_contact`, y nada
+   * lo delataba porque la ausencia de fila se lee igual que «no verificado».
+   * Con dependencias opcionales, el llamador que las olvide vuelve a abrir ese
+   * mismo agujero en silencio; así lo abre en `tsc`.
+   */
+  readonly contactEvidence: ContactVerificationEvidencePort;
+  readonly verifiedContacts: VerifiedContactPort;
   readonly now?: () => Date;
 }
 
@@ -111,6 +130,29 @@ export async function activateListing(
   if (violations.length > 0) {
     throw new ActivateListingRejectedError(violations);
   }
+
+  // tasks.md 19.15 — la línea que faltaba. Va DESPUÉS de la validación, para
+  // que un borrador que nunca fue activable no haga trabajo, y ANTES de la
+  // escritura por la misma razón que en `publishListing`: es un hecho sobre el
+  // contacto de la CUENTA, cierto se gane o no la carrera del compare-and-swap
+  // de abajo. El contacto sale del borrador —la fila que está por volverse
+  // activa y que la ficha va a leer—, nunca de la petición.
+  //
+  // No corta la activación y no puede: el canal de WhatsApp está diferido
+  // (fundador, 2026-08-29), así que convertirlo en puerta cerraría la
+  // importación de cartera entera. Sin fila no hay «verificado» que dibujar, y
+  // eso lo garantiza la ausencia de la fila.
+  await resolveContactVerification(
+    {
+      userId: session.userId,
+      contact: { method: draft.contactMethod, value: draft.contactValue },
+    },
+    {
+      evidence: dependencies.contactEvidence,
+      verifiedContacts: dependencies.verifiedContacts,
+      now,
+    },
+  );
 
   const publishedAt = now();
   // The 30 days are `expiryFor`'s number, not this file's. `lastRenewedAt:

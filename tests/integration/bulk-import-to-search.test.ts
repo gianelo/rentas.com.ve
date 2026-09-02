@@ -11,6 +11,11 @@ import type {
   SessionPort,
 } from "../../src/modules/identity/application/ports/session.port";
 import {
+  DrizzleContactVerificationEvidence,
+  DrizzleVerifiedContacts,
+  type VerifiedContactDatabase,
+} from "../../src/modules/identity/infrastructure/drizzle-verified-contact";
+import {
   type CatalogueDatabase,
   DrizzleCatalogue,
 } from "../../src/modules/listing-catalogue/infrastructure/drizzle-catalogue";
@@ -82,6 +87,16 @@ const db = drizzle(pool, { schema });
 
 const listingsRepo = new DrizzleListingRepository(db as unknown as PublicationDatabase);
 const activation = new DrizzleListingActivation(db as unknown as PublicationDatabase);
+
+/**
+ * tasks.md 19.15 — activation resolves contact verification now, the same way
+ * `publishListing` has since 19.9. Real adapters here, because the point of
+ * this suite is the database rather than the fake.
+ */
+const verificacion = {
+  contactEvidence: new DrizzleContactVerificationEvidence(db as unknown as VerifiedContactDatabase),
+  verifiedContacts: new DrizzleVerifiedContacts(db as unknown as VerifiedContactDatabase),
+};
 const zones = new DrizzleZoneCatalogue(db as unknown as PublicationDatabase);
 const accounts = new DrizzleBulkImportAccounts(db as unknown as PublicationDatabase);
 const contact = new DrizzleImportAccountContact(db as unknown as PublicationDatabase);
@@ -209,6 +224,7 @@ function photoDependencies(userId: string) {
   return {
     sessionPort: sessionFor(userId),
     listings: activation,
+    ...verificacion,
     photos: activation,
     storage: fakeStorage,
     derive: fakeDerive,
@@ -286,6 +302,7 @@ describe("9.27 — importar, fotografiar, activar, aparecer (contra Postgres rea
         sessionPort: sessionFor(broker),
         zones,
         listings: activation,
+        ...verificacion,
         now: () => activatedAt,
       },
     );
@@ -330,7 +347,7 @@ describe("9.27 — importar, fotografiar, activar, aparecer (contra Postgres rea
     );
     await activateListing(
       { listingId },
-      { sessionPort: sessionFor(broker), zones, listings: activation },
+      { sessionPort: sessionFor(broker), zones, listings: activation, ...verificacion },
     );
 
     expect((await search.search({ cityId: suya.cityId })).map((row) => row.id)).toEqual([
@@ -360,7 +377,7 @@ describe("9.27 — importar, fotografiar, activar, aparecer (contra Postgres rea
     await expect(
       activateListing(
         { listingId },
-        { sessionPort: sessionFor(broker), zones, listings: activation },
+        { sessionPort: sessionFor(broker), zones, listings: activation, ...verificacion },
       ),
     ).rejects.toThrow(/photos\.required/);
 
@@ -405,7 +422,12 @@ describe("9.27 — importar, fotografiar, activar, aparecer (contra Postgres rea
     // 2. La firma que la pantalla pide antes de subir, contra la fila real.
     const destino = await requestDraftPhotoUpload(
       { listingId, contentType: "image/webp", byteLength: 38_000 },
-      { sessionPort: sessionFor(broker), listings: activation, storage: fakeStorage },
+      {
+        sessionPort: sessionFor(broker),
+        listings: activation,
+        ...verificacion,
+        storage: fakeStorage,
+      },
     );
     expect(destino.key).toBe(`incoming/${broker}/${TOKEN}`);
 
@@ -417,7 +439,7 @@ describe("9.27 — importar, fotografiar, activar, aparecer (contra Postgres rea
     );
     await activateListing(
       { listingId },
-      { sessionPort: sessionFor(broker), zones, listings: activation },
+      { sessionPort: sessionFor(broker), zones, listings: activation, ...verificacion },
     );
 
     // 4. El mismo tablero, después: activa, con su foto contada, y ya no
@@ -465,7 +487,12 @@ describe("9.27 — importar, fotografiar, activar, aparecer (contra Postgres rea
     await expect(
       requestDraftPhotoUpload(
         { listingId: deA, contentType: "image/webp", byteLength: 1000 },
-        { sessionPort: sessionFor(brokerB), listings: activation, storage: fakeStorage },
+        {
+          sessionPort: sessionFor(brokerB),
+          listings: activation,
+          ...verificacion,
+          storage: fakeStorage,
+        },
       ),
     ).rejects.toThrow(/does not belong to the caller/);
   });
