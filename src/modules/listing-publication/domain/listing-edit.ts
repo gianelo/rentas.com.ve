@@ -5,20 +5,45 @@ import {
   type PropertyType,
   type PublisherType,
   type PublishViolation,
+  referenceOrNone,
   validatePublishableListing,
 } from "./publishable-listing";
 
 /**
- * Editar un aviso ya publicado (tasks.md 18.14), decidido por el fundador el
- * 2026-08-29 campo por campo.
+ * Editar un aviso ya publicado.
+ *
+ * **La regla es del fundador, y es general** (2026-09-01, tasks.md 18.27): «Se
+ * puede corregir cualquier dato menos el de la zona, y eso porque va con la URL
+ * del SEO y eso no puede cambiar. Si quiere cambiar la zona después de publicado
+ * hay que desactivar ese anuncio y crear otro y ya.»
+ *
+ * **Reemplaza a la tabla campo por campo del 2026-08-29** (18.14), que enumeraba
+ * lo permitido y por eso dejaba cerrado todo lo que no llegó a nombrar: la
+ * referencia no existía ese día, y el tipo de inmueble y los puestos quedaron
+ * afuera sin ninguna razón de integridad. Hoy la lista es al revés — lo cerrado
+ * es lo que se enumera:
  *
  * | Campo | Editable | Por qué |
  * |---|---|---|
- * | título, descripción, precio | sí | son la oferta, y cambian con el mercado |
- * | habitaciones, baños, metros² | sí | corregir un dato mal cargado no es publicar otro aviso |
- * | fotos | sí, respetando el límite | el tope que rige al publicar rige al editar |
- * | contacto | sí | «el que reveló, reveló. Si entra de nuevo que vea el contacto nuevo» |
- * | tipo de publicador | **NO** | cambiarlo invalidaría hacia atrás el filtro «solo de dueños» |
+ * | la zona | **NO** | es un segmento de `/alquiler/<ciudad>/<zona>/<slug>-<id>` |
+ * | la ciudad | **NO** | la determina la zona, así que viaja con ella |
+ * | tipo de publicador | **en un solo sentido** | dueño → inmobiliaria sí; inmobiliaria → dueño no |
+ * | todo lo demás | sí | «corregir un dato mal cargado no es publicar otro aviso» |
+ *
+ * **Por qué el título sí, si también va en esa URL.** Porque el último segmento
+ * termina en el id y `listingIdFromSlug` resuelve por id: la dirección vieja
+ * sigue encontrando el aviso aunque el título cambie. La zona no tiene ese
+ * rescate — es su propio segmento y no lleva ningún id adentro, así que cambiarla
+ * rompería toda dirección publicada. Ésa asimetría es la razón entera de la
+ * regla, y por eso está escrita acá en vez de tener que volver a derivarse.
+ *
+ * **El contacto**: «el que reveló, reveló. Si entra de nuevo que vea el contacto
+ * nuevo». **Las fotos**: sí, y el tope que rige al publicar rige al editar.
+ *
+ * **Los cinco atributos de la F6 entran con la misma regla** (18.37), y son los
+ * que más falta hacían: se filtran, así que un aviso que declaró «sin planta
+ * eléctrica» antes de que el edificio la tuviera desaparece de la búsqueda de
+ * quien la pide.
  *
  * **Un solo juego de reglas, no dos.** Todo lo que no es la inmutabilidad de
  * `publisherType` lo contesta `validatePublishableListing` en etapa
@@ -42,6 +67,28 @@ import {
  */
 
 /**
+ * **Hacia dónde puede moverse `publisherType`** (tasks.md 18.38, decisión del
+ * fundador del 2026-09-01): dueño → inmobiliaria **sí**, inmobiliaria → dueño
+ * **no**.
+ *
+ * **La asimetría es la decisión, y su razón queda acá para que nadie tenga que
+ * volver a derivarla.** Corregir hacia la honestidad no cuesta nada: quien se
+ * declaró dueño y en realidad es corredor arregla su aviso. La dirección
+ * contraria es exactamente el camino por el que alguien APRENDE que mentir sale
+ * barato — declararse inmobiliaria, quedar fuera del filtro de quien busca
+ * trato directo, y volver a dueño cuando no llegan mensajes. Mentir en el paso
+ * 9 ya era posible; lo que la irreversibilidad impedía era aprenderlo.
+ *
+ * **Devuelve la lista y no un booleano** porque la pantalla la necesita para
+ * decidir si dibuja el control: para una inmobiliaria no hay a dónde ir, y
+ * ofrecerle un control prometería algo que la guarda va a negar. El valor
+ * vigente va primero — repetirlo nunca fue un cambio.
+ */
+export function editablePublisherTypes(current: PublisherType): readonly PublisherType[] {
+  return current === "owner" ? ["owner", "broker"] : [];
+}
+
+/**
  * `PublishViolation` extendida para ESTE camino, con la misma forma que
  * `ImportRowViolation` ya usa para el suyo — nunca ensanchando la unión de
  * publicar. `STEP_FOR_VIOLATION` es un `Record` sobre esa unión: agregar acá
@@ -51,10 +98,27 @@ import {
  */
 export type ListingEditViolation = PublishViolation | "publisherType.immutable";
 
+/**
+ * Los cinco atributos de la F6 (18.37), escritos UNA vez: el aviso, el pedido y
+ * la escritura los nombran los tres, y tres listas sueltas es como una termina
+ * con cuatro. **Booleanos y no opcionales**: las columnas son
+ * `NOT NULL DEFAULT false`, así que la fila siempre tiene los cinco — y `false`
+ * es «no lo declaró», nunca «no lo tiene» (`search-criteria.ts`).
+ */
+export interface ListingFeatures {
+  readonly hasPowerPlant: boolean;
+  readonly hasRegularWater: boolean;
+  readonly isFurnished: boolean;
+  readonly hasSecurity: boolean;
+  readonly hasAppliances: boolean;
+}
+
 /** El aviso publicado tal como está hoy: hechos, ninguno interpretado. */
-export interface EditableListingSnapshot {
+export interface EditableListingSnapshot extends ListingFeatures {
   readonly publisherType: PublisherType;
   readonly propertyType: PropertyType;
+  /** La seña del paso 2, cuando el aviso tiene una. La columna es nulable. */
+  readonly reference?: string;
   readonly cityId: string;
   readonly zoneId: string;
   readonly title: string;
@@ -78,29 +142,50 @@ export interface EditableListingSnapshot {
  * es la diferencia entre una garantía y una omisión. Un formulario que no
  * dibuja el campo no prueba nada sobre lo que pasa cuando alguien manda el
  * campo igual — y una acción de servidor es un endpoint HTTP público.
+ *
+ * **Los cinco atributos son opcionales igual que todo lo demás** (18.37): un
+ * `undefined` sigue siendo «no lo contesté» también para un booleano, que es lo
+ * que hace que corregir el precio no se lleve por delante cinco declaraciones.
+ * Separarlos de «destildé las cinco», que en un `<form>` es el mismo POST, lo
+ * resuelve `FEATURES_DECLARED_FIELD`, y acá llegan ya separados.
  */
-export interface ListingEdit {
+export interface ListingEdit extends Partial<ListingFeatures> {
   readonly title?: string;
   readonly description?: string;
   readonly priceUsd?: number;
   readonly rooms?: number;
   readonly bathrooms?: number;
   readonly areaM2?: number;
+  readonly parkingSpots?: number;
+  readonly propertyType?: PropertyType;
+  /**
+   * **El único campo donde ausente y en blanco son respuestas distintas.** Es el
+   * único opcional del aviso, así que `undefined` es «no lo contesté» y deja la
+   * seña de ayer, mientras que `""` es «no tengo ninguna» y la borra. Sin esa
+   * diferencia una seña equivocada se podría corregir pero no sacar.
+   */
+  readonly reference?: string;
   readonly contactMethod?: ContactMethod;
   readonly contactValue?: string;
   readonly publisherType?: PublisherType;
 }
 
-/** Los ocho campos que una edición escribe, y ninguno más. */
-export interface ListingEditWrite {
+/** Los dieciséis campos que una edición escribe, y ninguno más. */
+export interface ListingEditWrite extends ListingFeatures {
   readonly title: string;
   readonly description: string;
   readonly priceUsd: number;
   readonly rooms: number;
   readonly bathrooms: number;
   readonly areaM2: number;
+  readonly parkingSpots: number;
+  readonly propertyType: PropertyType;
+  /** `undefined` es «sin referencia», y se escribe: es un borrado, no una omisión. */
+  readonly reference: string | undefined;
   readonly contactMethod: ContactMethod;
   readonly contactValue: string;
+  /** Sólo puede haber cambiado hacia `broker`; el plan ya lo refusó si no. */
+  readonly publisherType: PublisherType;
 }
 
 export type ListingEditPlan =
@@ -109,9 +194,9 @@ export type ListingEditPlan =
 
 /**
  * `?? current` campo por campo, y no `{ ...current, ...edit }`: el spread
- * copiaría cualquier cosa que el pedido traiga, incluido `publisherType`. Los
- * ocho nombres escritos a mano son lo que hace que agregar un campo editable
- * sea una decisión y no un descuido.
+ * copiaría cualquier cosa que el pedido traiga, incluido `publisherType` y la
+ * zona. Los dieciséis nombres escritos a mano son lo que hace que agregar un
+ * campo editable sea una decisión y no un descuido.
  */
 function writeFor(current: EditableListingSnapshot, edit: ListingEdit): ListingEditWrite {
   return {
@@ -121,8 +206,28 @@ function writeFor(current: EditableListingSnapshot, edit: ListingEdit): ListingE
     rooms: edit.rooms ?? current.rooms,
     bathrooms: edit.bathrooms ?? current.bathrooms,
     areaM2: edit.areaM2 ?? current.areaM2,
+    // `??` y no `||`: cero puestos es un hecho —un anexo sin puesto es un aviso
+    // normal— y no un campo sin contestar.
+    parkingSpots: edit.parkingSpots ?? current.parkingSpots,
+    propertyType: edit.propertyType ?? current.propertyType,
+    // **`referenceOrNone` y no un `trim()` propio**: es la misma función que
+    // decide «en blanco es ninguna» al publicar, así que las dos puertas no
+    // pueden discrepar sobre qué queda en la columna.
+    reference: referenceOrNone(edit.reference ?? current.reference),
     contactMethod: edit.contactMethod ?? current.contactMethod,
     contactValue: edit.contactValue ?? current.contactValue,
+    // Se compone igual que los demás, y la guarda de abajo es lo único que lo
+    // acota: cuando el cambio no está permitido no hay `write` que aplicar,
+    // porque el plan entero vuelve rechazado.
+    publisherType: edit.publisherType ?? current.publisherType,
+    // `??` y no `||`, y acá pesa más que en ningún otro campo: con `||` un
+    // atributo declarado en `false` volvería al `true` de ayer, o sea que se
+    // podría corregir hacia arriba y nunca hacia abajo.
+    hasPowerPlant: edit.hasPowerPlant ?? current.hasPowerPlant,
+    hasRegularWater: edit.hasRegularWater ?? current.hasRegularWater,
+    isFurnished: edit.isFurnished ?? current.isFurnished,
+    hasSecurity: edit.hasSecurity ?? current.hasSecurity,
+    hasAppliances: edit.hasAppliances ?? current.hasAppliances,
   };
 }
 
@@ -133,24 +238,27 @@ export function planListingEdit(
 ): ListingEditPlan {
   const violations: ListingEditViolation[] = [];
 
-  // Se prohíbe CAMBIARLO, no nombrarlo: repetir el valor vigente no invalida
-  // hacia atrás ningún filtro, y refusar un no-cambio convertiría cualquier
-  // formulario que devuelva lo que recibió en un error sin causa.
-  if (edit.publisherType !== undefined && edit.publisherType !== current.publisherType) {
+  // **Se prohíbe UNA dirección, no nombrarlo y no cambiarlo** (18.38). Repetir
+  // el valor vigente no invalida hacia atrás ningún filtro, y refusar un
+  // no-cambio convertiría cualquier formulario que devuelva lo que recibió en
+  // un error sin causa — por eso la guarda compara en vez de mirar si vino.
+  if (
+    edit.publisherType !== undefined &&
+    edit.publisherType !== current.publisherType &&
+    !editablePublisherTypes(current.publisherType).includes(edit.publisherType)
+  ) {
     violations.push("publisherType.immutable");
   }
 
   const write = writeFor(current, edit);
 
   // El aviso completo como lo ve el validador de publicar: lo editable ya
-  // resuelto, lo demás tal como la fila lo tiene. `publisherType` sale de
-  // `current` SIEMPRE, nunca del pedido.
+  // resuelto, lo demás tal como la fila lo tiene. La ciudad y la zona salen de
+  // `current` SIEMPRE, nunca del pedido — y no figuran en `write`, así que el
+  // spread no puede pisarlas aunque alguien las mande.
   const merged: DraftListing = {
-    publisherType: current.publisherType,
-    propertyType: current.propertyType,
     cityId: current.cityId,
     zoneId: current.zoneId,
-    parkingSpots: current.parkingSpots,
     photoCount: current.photoCount,
     ...write,
   };

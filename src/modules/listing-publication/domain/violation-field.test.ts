@@ -38,9 +38,9 @@ describe("el campo que produjo cada negativa (18.22)", () => {
 
 describe("dónde va cada negativa de una edición (18.22)", () => {
   /**
-   * Los nueve campos que un pedido de edición puede traer —los ocho que
-   * escribe más `publisherType`, que viaja para ser rechazado— tienen dónde
-   * leerse en la pantalla, así que el mensaje va ahí.
+   * Los doce campos que un pedido de edición puede traer —los once que escribe
+   * más `publisherType`, que viaja para ser rechazado— tienen dónde leerse en la
+   * pantalla, así que el mensaje va ahí.
    */
   it("una negativa sobre un campo que la edición manda se coloca al lado de ese campo", () => {
     const placed = placeListingEditViolations([
@@ -57,8 +57,8 @@ describe("dónde va cada negativa de una edición (18.22)", () => {
 
   /**
    * **El par de la anterior, y existe porque una sola afirmación aceptaría las
-   * dos respuestas.** Una edición no manda fotos, ni zona, ni ciudad, ni tipo
-   * de inmueble, ni puestos: si el validador se queja de alguno, no hay campo
+   * dos respuestas.** Una edición no manda fotos, ni zona, ni ciudad: si el
+   * validador se queja de alguno, no hay campo
    * al lado del cual ponerlo. Se dice aparte en vez de tragarse, que es la
    * diferencia entre una negativa y un formulario que se niega en silencio
    * (AGENTS.md §7).
@@ -68,18 +68,10 @@ describe("dónde va cada negativa de una edición (18.22)", () => {
       "photos.required",
       "zoneId.notInCity",
       "cityId.unknown",
-      "propertyType.invalid",
-      "parkingSpots.invalid",
     ]);
 
     expect(placed.byField.size).toBe(0);
-    expect(placed.elsewhere).toEqual([
-      "photos.required",
-      "zoneId.notInCity",
-      "cityId.unknown",
-      "propertyType.invalid",
-      "parkingSpots.invalid",
-    ]);
+    expect(placed.elsewhere).toEqual(["photos.required", "zoneId.notInCity", "cityId.unknown"]);
   });
 
   /**
@@ -90,16 +82,20 @@ describe("dónde va cada negativa de una edición (18.22)", () => {
    * `listingEditViolationMessage` con su `?? violation`.
    */
   /**
-   * tasks.md 18.7 — **la referencia tiene campo en el aviso y no en editar.**
-   * La tabla del fundador de la 18.14 no la nombra, asi que la pantalla de
-   * editar no la dibuja; la negativa igual tiene que leerse, porque tragarsela
-   * dejaria un formulario que se niega a guardar sin decir por que.
+   * tasks.md 18.27 — **corrección de lo que la 18.7 dejó escrito acá.** Estas
+   * tres caían en `elsewhere` porque la tabla campo por campo del 2026-08-29 no
+   * las nombraba; la regla general del fundador del 2026-09-01 las abrió, así
+   * que ahora tienen control y su negativa se lee al lado de él.
    */
-  it("la negativa de la referencia no tiene control en editar, y se dice igual", () => {
-    const placed = placeListingEditViolations(["reference.tooLong"]);
+  it("la referencia, el tipo de inmueble y los puestos ya tienen campo en editar", () => {
+    const placed = placeListingEditViolations([
+      "reference.tooLong",
+      "propertyType.invalid",
+      "parkingSpots.invalid",
+    ]);
 
-    expect(placed.byField.size).toBe(0);
-    expect(placed.elsewhere).toEqual(["reference.tooLong"]);
+    expect([...placed.byField.keys()]).toEqual(["reference", "propertyType", "parkingSpots"]);
+    expect(placed.elsewhere).toEqual([]);
   });
 
   it("un código inventado no se coloca en ningún campo, y tampoco se traga", () => {

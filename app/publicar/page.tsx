@@ -21,9 +21,9 @@ export const metadata: Metadata = {
  * home habiendo perdido lo que venia a hacer.
  */
 export default async function PublishPage() {
-  await requireSession("/publicar");
+  const session = await requireSession("/publicar");
 
-  const { currentStep } = await readPublicationContext();
+  const { currentStep } = await readPublicationContext(session.userId);
 
   redirect(`/publicar/paso/${currentStep}`);
 }

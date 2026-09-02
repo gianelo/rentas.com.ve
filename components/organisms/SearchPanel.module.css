@@ -285,6 +285,55 @@
   min-inline-size: 0;
 }
 
+/* **El histograma del paso de precio** (F5, lámina 7b). Ocho barras, el eje
+   rotulado en las dos puntas y la frase debajo. El alto de cada barra es el
+   único valor que llega inline, porque es dato medido; todo lo demás es token. */
+.histogram {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  block-size: 56px;
+}
+
+.bar {
+  flex: 1;
+  min-inline-size: 0;
+  border-radius: var(--r) var(--r) 0 0;
+  background: var(--accent);
+}
+
+/* Fuera del rango elegido. **La diferencia no puede ser sólo el color** — eso
+   es «invisible para quien no distingue colores y para el modo de alto
+   contraste» (violation-copy.ts) —, así que además del relleno claro va un
+   borde, que el modo de alto contraste sí conserva. Y el dibujo entero se lee
+   en palabras en el `aria-label` de la fila. */
+.bar[data-placement="outside"] {
+  background: var(--tint);
+  border: 1px solid var(--strong);
+}
+
+.axis {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  color: var(--soft);
+}
+
+.histogramSummary,
+.histogramNotice {
+  margin: 0;
+  font-size: var(--meta-fs);
+  line-height: 1.5;
+  color: var(--soft);
+}
+
 .searchAction {
   min-block-size: var(--target-min);
   padding-inline: 14px;

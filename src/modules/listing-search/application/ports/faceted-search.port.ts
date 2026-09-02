@@ -1,4 +1,5 @@
 import type { PropertyType } from "../../../../shared/db/schema";
+import type { PriceBucketTally } from "../../domain/price-histogram";
 import type { RoomStep } from "../../domain/room-steps";
 import type { RelaxableFilter } from "../../domain/search-confirm";
 import type { ListingAttribute, PublisherType, SearchCriteria } from "../../domain/search-criteria";
@@ -50,6 +51,7 @@ import type { ListingAttribute, PublisherType, SearchCriteria } from "../../doma
  * daría un número distinto del que la opción produce, y la regla 3 no permite
  * que la etiqueta y el resultado discrepen.
  */
+export type { PriceBucketTally } from "../../domain/price-histogram";
 export type { RoomStep } from "../../domain/room-steps";
 export type { RelaxableFilter } from "../../domain/search-confirm";
 export type { ListingAttribute, PublisherType } from "../../domain/search-criteria";
@@ -83,6 +85,22 @@ export interface FacetCounts {
   readonly byAttribute: Readonly<Record<ListingAttribute, number>>;
   readonly byPropertyType: Readonly<Record<PropertyType, number>>;
   readonly byPublisherType: Readonly<Record<PublisherType, number>>;
+  /**
+   * **El precio repartido en `PRICE_HISTOGRAM_BUCKETS` cubos ascendentes**, la
+   * cuenta que `priceHistogram` del dominio recibe ya hecha (tasks 14.12 y
+   * 18.9). Siempre los ocho, vacíos incluidos: el eje no se recorta. **No trae
+   * el total, ni los extremos, ni la franja** —los deriva el dominio de estos
+   * mismos cubos, para que el mismo número no se escriba distinto dos veces.
+   *
+   * **Es faceta y no una segunda pregunta**: repartir necesita los extremos y
+   * los extremos necesitan las filas, así que aparte serían dos viajes de red
+   * y la 14.11 se ganó con uno. Es **obligatoria**, al revés que
+   * `withWidenedPrice`, porque sale de filas que la consulta ya recorre. Y
+   * **tampoco se cuenta contra su propio filtro** — misma regla que el resto,
+   * acá la más decisiva: el histograma existe para que alguien ELIJA un rango,
+   * y medido contra el rango ya elegido las barras de afuera caen a cero.
+   */
+  readonly byPriceBucket: readonly PriceBucketTally[];
   /**
    * **Cuántos quedarían al soltar ese filtro y ningún otro** — el número que
    * F10 y F11 ponen adentro del botón: «Quitar el precio y ver 21».

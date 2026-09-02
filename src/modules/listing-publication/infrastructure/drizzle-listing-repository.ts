@@ -16,6 +16,7 @@ import type {
 import type { EditableListing, ListingEditPort } from "../application/ports/listing-edit.port";
 import type { ListingPhotoAttachmentPort } from "../application/ports/listing-photo-attachment.port";
 import type {
+  ListingPhotoDerivativeKeysPort,
   ListingPhotoDetachmentPort,
   ListingPhotoOrderPort,
   ListingPhotoThumbnail,
@@ -291,6 +292,7 @@ export class DrizzleListingEdit implements ListingEditPort {
         propertyType: listings.propertyType,
         cityId: listings.cityId,
         zoneId: listings.zoneId,
+        reference: listings.reference,
         title: listings.title,
         description: listings.description,
         priceUsd: listings.priceUsd,
@@ -300,6 +302,13 @@ export class DrizzleListingEdit implements ListingEditPort {
         parkingSpots: listings.parkingSpots,
         contactMethod: listings.contactMethod,
         contactValue: listings.contactValue,
+        // Los cinco de la F6 (18.37): la pantalla dibuja las casillas con
+        // esto, y `?? current` saca de aca lo que un pedido no mande.
+        hasPowerPlant: listings.hasPowerPlant,
+        hasRegularWater: listings.hasRegularWater,
+        isFurnished: listings.isFurnished,
+        hasSecurity: listings.hasSecurity,
+        hasAppliances: listings.hasAppliances,
       })
       .from(listings)
       .where(
@@ -321,12 +330,23 @@ export class DrizzleListingEdit implements ListingEditPort {
       .from(listingPhotos)
       .where(eq(listingPhotos.listingId, listingId));
 
-    return { ...row, photoCount: photoCountRows[0]?.photoCount ?? 0 };
+    // `null` de la columna a `undefined` del dominio: «sin referencia» es una
+    // sola respuesta, y dos formas de decirla es como `referenceOrNone` termina
+    // recibiendo algo que no es ni una cosa ni la otra.
+    return {
+      ...row,
+      reference: row.reference ?? undefined,
+      photoCount: photoCountRows[0]?.photoCount ?? 0,
+    };
   }
 
   /**
    * `status` NO esta entre las columnas del `set`, y esa ausencia es la
-   * garantia: editar no puede resucitar nada. Lo que si esta en el `WHERE` es
+   * garantia: editar no puede resucitar nada. **`publisher_type` SI esta desde
+   * la 18.38**, y no ensancha nada: el plan solo lo deja pasar de `owner` a
+   * `broker`, asi que la fila no puede volver a decir dueno. **`city_id` y
+   * `zone_id` tampoco estan**, y esa ausencia es la otra: son los segmentos de la URL que la regla
+   * del fundador cierra (18.27), y `ListingEditWrite` ni siquiera los lleva. Lo que si esta en el `WHERE` es
    * `status = 'active'`, el mismo compare-and-swap que `activate` y `renew`.
    */
   async applyEdit(
@@ -343,8 +363,25 @@ export class DrizzleListingEdit implements ListingEditPort {
         rooms: write.rooms,
         bathrooms: write.bathrooms,
         areaM2: write.areaM2,
+        parkingSpots: write.parkingSpots,
+        propertyType: write.propertyType,
+        // De vuelta a `null`, que es lo que la columna nulable guarda: escribir
+        // `undefined` en un `set` de Drizzle sería no tocar la columna, o sea un
+        // borrado que no borra (18.27).
+        reference: write.reference ?? null,
         contactMethod: write.contactMethod,
         contactValue: write.contactValue,
+        // 18.38: solo puede venir cambiado hacia `broker`; la unica direccion
+        // cerrada la refuso `planListingEdit` antes de llegar aca.
+        publisherType: write.publisherType,
+        // Los cinco SIEMPRE se escriben, incluso los `false` (18.37): el plan
+        // ya resolvio cuales vienen del pedido, y omitir los `false` dejaria un
+        // atributo imposible de sacar.
+        hasPowerPlant: write.hasPowerPlant,
+        hasRegularWater: write.hasRegularWater,
+        isFurnished: write.isFurnished,
+        hasSecurity: write.hasSecurity,
+        hasAppliances: write.hasAppliances,
       })
       .where(
         and(
@@ -377,7 +414,11 @@ const THUMBNAIL_DERIVATIVE: DerivativeName = "thumb";
  * (AGENTS.md §3).
  */
 export class DrizzleListingPhotoSet
-  implements ListingPhotoOrderPort, ListingPhotoThumbnailPort, ListingPhotoDetachmentPort
+  implements
+    ListingPhotoOrderPort,
+    ListingPhotoThumbnailPort,
+    ListingPhotoDerivativeKeysPort,
+    ListingPhotoDetachmentPort
 {
   constructor(private readonly db: PublicationDatabase) {}
 
@@ -435,6 +476,29 @@ export class DrizzleListingPhotoSet
   }
 
   /**
+   * tasks.md 18.32 — las claves de R2 de UNA foto, para poder quitarlas al
+   * desprenderla.
+   *
+   * **`innerJoin` acá y `leftJoin` en la de arriba, y la asimetría es la
+   * decisión.** Aquélla dibuja un renglón y una foto sin derivadas tiene que
+   * seguir apareciendo para poder quitarse; ésta produce la lista de lo que se
+   * va a BORRAR, y una fila con la clave en `null` sería un `DELETE` contra un
+   * objeto que no existe.
+   *
+   * **`listing_id` en el `WHERE` aunque `photo_id` sea único**, el idioma de
+   * `detachPhoto`: la clave de la foto de un aviso ajeno no se lee ni por error.
+   */
+  async listDerivativeKeys(listingId: string, photoId: string): Promise<readonly string[]> {
+    const rows = await this.db
+      .select({ key: listingPhotoDerivatives.key })
+      .from(listingPhotoDerivatives)
+      .innerJoin(listingPhotos, eq(listingPhotos.id, listingPhotoDerivatives.photoId))
+      .where(and(eq(listingPhotos.listingId, listingId), eq(listingPhotos.id, photoId)));
+
+    return rows.map((row) => row.key);
+  }
+
+  /**
    * Borrar y renumerar, **en una transacción y en tres sentencias de
    * conjunto** — nunca leyendo las filas para reescribirlas una por una, que
    * es la forma con ventana que este repositorio ya evita en el uso único del
@@ -455,10 +519,10 @@ export class DrizzleListingPhotoSet
    * portada asciende a la siguiente» que `planPhotoRemoval` decide en memoria:
    * la portada es la de `position` más baja.
    *
-   * **El objeto de R2 no se toca** (tasks.md 18.21/18.23): sus derivadas viven
-   * bajo el prefijo promovido, junto a las fotos de todos los avisos activos,
-   * así que sólo son distinguibles por la ausencia de esta fila. Borrarlas
-   * pediría permiso de borrado sobre el bucket.
+   * **El objeto de R2 no se toca ACÁ, y desde la 18.32 sí lo toca el caso de
+   * uso**: `detachPhotoFromListing` lee las claves con `listDerivativeKeys`
+   * antes de llamar a este método y las borra después. Este adaptador sigue sin
+   * conocer R2, que es lo que lo deja probable contra Postgres solo.
    */
   async detachPhoto(listingId: string, photoId: string): Promise<boolean> {
     return this.db.transaction(async (tx) => {

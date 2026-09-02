@@ -101,6 +101,7 @@ import {
   EditListingRejectedError,
 } from "../../src/modules/listing-publication/application/edit-listing";
 import { ListingPhotoRemovalRefusedError } from "../../src/modules/listing-publication/application/edit-listing-photos";
+import type { ListingEdit } from "../../src/modules/listing-publication/domain/listing-edit";
 import {
   activarBorrador,
   adjuntarFotoAlAviso,
@@ -249,12 +250,15 @@ const CAMPOS = {
   rooms: "3",
   bathrooms: "2",
   areaM2: "128",
+  parkingSpots: "1",
+  propertyType: "apartamento",
+  reference: "Frente a la panadería",
   contactMethod: "whatsapp",
   contactValue: "04121234567",
 };
 
 describe("guardarEdicion — la ruta que le faltaba a editListing (18.20)", () => {
-  it("llama a editListing con el id del formulario y los ocho campos editables, y vuelve a la lista", async () => {
+  it("llama a editListing con el id del formulario y los once campos editables, y vuelve a la lista", async () => {
     editListing.mockResolvedValueOnce({ listingId: "aviso-1" });
 
     await expect(guardarEdicion(edicionDe(CAMPOS))).rejects.toThrow("NEXT_REDIRECT:/mis-avisos");
@@ -269,12 +273,67 @@ describe("guardarEdicion — la ruta que le faltaba a editListing (18.20)", () =
         rooms: 3,
         bathrooms: 2,
         areaM2: 128,
+        parkingSpots: 1,
+        propertyType: "apartamento",
+        reference: "Frente a la panadería",
         contactMethod: "whatsapp",
         contactValue: "04121234567",
         publisherType: undefined,
       },
     });
     expect(revalidatePath).toHaveBeenCalledWith("/mis-avisos");
+  });
+
+  /**
+   * tasks.md 18.37 — **la marca que distingue «destildé las cinco» de «este
+   * POST no traía atributos».** Esta capa sólo la traduce: con la marca, los
+   * cinco booleanos; sin ella, los cinco ausentes. Lo que la ausencia significa
+   * lo contesta `writeFor` con su `?? current`.
+   */
+  it("con la marca, las cinco casillas viajan como booleanos y las que no se marcaron viajan en false", async () => {
+    editListing.mockResolvedValueOnce({ listingId: "aviso-1" });
+
+    await expect(
+      guardarEdicion(
+        edicionDe({
+          ...CAMPOS,
+          featuresDeclared: "1",
+          hasPowerPlant: "on",
+          hasSecurity: "on",
+        }),
+      ),
+    ).rejects.toThrow("NEXT_REDIRECT:/mis-avisos");
+
+    const [pedido] = editListing.mock.calls[0] as [{ edit: Record<string, unknown> }];
+
+    expect(pedido.edit.hasPowerPlant).toBe(true);
+    expect(pedido.edit.hasSecurity).toBe(true);
+    // Las tres destildadas. `false` y no `undefined`: es la declaración que
+    // borra la de ayer, sin la cual un atributo se pone pero no se saca.
+    expect(pedido.edit.hasRegularWater).toBe(false);
+    expect(pedido.edit.isFurnished).toBe(false);
+    expect(pedido.edit.hasAppliances).toBe(false);
+  });
+
+  /** **La mitad sin la cual la anterior no prueba nada.** Una acción de servidor
+   *  es un endpoint HTTP público: un pedido escrito a mano que sólo trae el
+   *  precio no puede llevarse por delante cinco declaraciones. */
+  it("sin la marca los cinco viajan ausentes, jamás en false", async () => {
+    editListing.mockResolvedValueOnce({ listingId: "aviso-1" });
+
+    await expect(guardarEdicion(edicionDe(CAMPOS))).rejects.toThrow("NEXT_REDIRECT:/mis-avisos");
+
+    const [pedido] = editListing.mock.calls[0] as [{ edit: Record<string, unknown> }];
+
+    for (const campo of [
+      "hasPowerPlant",
+      "hasRegularWater",
+      "isFurnished",
+      "hasSecurity",
+      "hasAppliances",
+    ]) {
+      expect(pedido.edit[campo], campo).toBeUndefined();
+    }
   });
 
   /**
@@ -296,12 +355,13 @@ describe("guardarEdicion — la ruta que le faltaba a editListing (18.20)", () =
   });
 
   /**
-   * **La pantalla no dibuja el campo, y aun así el POST lo lleva al dominio.**
-   * Una acción de servidor es un endpoint HTTP público: descartar el campo acá
-   * aceptaría en silencio un pedido que el producto refusa, y la garantía
-   * pasaría a depender de que ningún formulario lo dibuje nunca.
+   * **El POST lo lleva al dominio y esta capa no lo juzga** — ni siquiera desde
+   * la 18.38, que abre una de las dos direcciones. Una acción de servidor es un
+   * endpoint HTTP público: decidir acá cuál sentido pasa pondría la mitad de la
+   * regla fuera del piso del 90 % (AGENTS.md §1), y un aviso de inmobiliaria
+   * podría volver a dueño por un POST que esta pantalla no dibuja.
    */
-  it("un tipo de publicador que llegue en el POST viaja al dominio para que lo refuse", async () => {
+  it("un tipo de publicador que llegue en el POST viaja al dominio, que es quien decide", async () => {
     editListing.mockResolvedValueOnce({ listingId: "aviso-1" });
 
     await expect(guardarEdicion(edicionDe({ ...CAMPOS, publisherType: "broker" }))).rejects.toThrow(
@@ -311,6 +371,43 @@ describe("guardarEdicion — la ruta que le faltaba a editListing (18.20)", () =
     const [pedido] = editListing.mock.calls[0] as [{ edit: Record<string, unknown> }];
     const edit = pedido.edit;
     expect(edit.publisherType).toBe("broker");
+  });
+
+  /**
+   * tasks.md 18.27 — **la referencia es el único campo con dos ausencias.** El
+   * dominio decide qué hacer con cada una; lo que se prueba acá es que la acción
+   * no las aplasta en una sola antes de llegar: `formText` devuelve `undefined`
+   * para lo vacío, y mandarlo así haría que `?? current` diera la seña de ayer
+   * por buena y que borrarla fuera imposible desde la pantalla.
+   */
+  it("la referencia en blanco viaja como cadena vacía, y ausente del POST viaja como ausente", async () => {
+    editListing.mockResolvedValueOnce({ listingId: "aviso-1" });
+    await expect(guardarEdicion(edicionDe({ ...CAMPOS, reference: "  " }))).rejects.toThrow(
+      "NEXT_REDIRECT:/mis-avisos",
+    );
+    const [primero] = editListing.mock.calls[0] as [{ edit: ListingEdit }];
+    expect(primero.edit.reference).toBe("");
+
+    editListing.mockResolvedValueOnce({ listingId: "aviso-1" });
+    const { reference: _sin, ...sinReferencia } = CAMPOS;
+    await expect(guardarEdicion(edicionDe(sinReferencia))).rejects.toThrow(
+      "NEXT_REDIRECT:/mis-avisos",
+    );
+    const [segundo] = editListing.mock.calls[1] as [{ edit: ListingEdit }];
+    expect(segundo.edit.reference).toBeUndefined();
+  });
+
+  /** Cero puestos es una respuesta, y llega como cero y no como ausente: es el
+   *  único campo numérico del aviso donde el vacío significa algo. */
+  it("dejar los puestos en blanco viaja como cero, no como «no contestó»", async () => {
+    editListing.mockResolvedValueOnce({ listingId: "aviso-1" });
+
+    await expect(guardarEdicion(edicionDe({ ...CAMPOS, parkingSpots: "" }))).rejects.toThrow(
+      "NEXT_REDIRECT:/mis-avisos",
+    );
+
+    const [pedido] = editListing.mock.calls[0] as [{ edit: ListingEdit }];
+    expect(pedido.edit.parkingSpots).toBe(0);
   });
 
   it("una negativa del dominio vuelve a la pantalla de editar con los códigos, no con la frase", async () => {

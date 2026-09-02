@@ -88,3 +88,27 @@ export interface ListingPhotoDetachmentPort {
    */
   detachPhoto(listingId: string, photoId: string): Promise<boolean>;
 }
+
+/**
+ * tasks.md 18.32 — **las claves de R2 de UNA foto, para poder quitarlas cuando
+ * se la desprende.** Un puerto de lectura al lado, por la misma razón que
+ * `ListingPhotoThumbnailPort`: `ListingPhotoDetachmentPort` escribe y nada más,
+ * y `ListingPhotoOrderPort` contesta el orden que `planPhotoRemoval` recibe tal
+ * cual (AGENTS.md §3).
+ *
+ * **Las cinco y no la miniatura**: `listPhotoThumbnailsInOrder` devuelve `thumb`
+ * porque dibuja un renglón; acá se borra, y borrar cuatro de cinco deja el
+ * mismo huérfano que no borrar ninguna.
+ *
+ * **`listingId` va en el `WHERE` aunque `photoId` sea único**, el idioma de
+ * `detachPhoto`: la clave de la foto de un aviso ajeno no se lee ni por error.
+ */
+export interface ListingPhotoDerivativeKeysPort {
+  /**
+   * Vacío cuando la foto no tiene derivadas o no es de ese aviso. **Se llama
+   * ANTES de `detachPhoto`**: `listing_photo_derivative` cuelga de
+   * `listing_photo` con `ON DELETE cascade`, así que después del borrado esta
+   * consulta devuelve cero claves y los objetos quedan pagados para siempre.
+   */
+  listDerivativeKeys(listingId: string, photoId: string): Promise<readonly string[]>;
+}

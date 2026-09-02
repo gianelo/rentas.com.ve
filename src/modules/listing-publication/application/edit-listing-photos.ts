@@ -7,6 +7,7 @@ import { EditListingNotFoundError, loadListingForEdit } from "./edit-listing";
 import type { ListingEditPort } from "./ports/listing-edit.port";
 import type { ListingPhotoAttachmentPort } from "./ports/listing-photo-attachment.port";
 import type {
+  ListingPhotoDerivativeKeysPort,
   ListingPhotoDetachmentPort,
   ListingPhotoOrderPort,
   ListingPhotoThumbnail,
@@ -46,14 +47,13 @@ import { processUploadedPhoto } from "./process-uploaded-photo";
  * el ascenso de la portada los decide `planPhotoRemoval`, que ya existe desde
  * la 18.15 y ya está probado. Acá sólo se ordenan las puertas.
  *
- * **Al desprender, el objeto de R2 se queda.** Sus derivadas viven bajo el
- * prefijo PROMOVIDO, donde también viven las fotos de todos los avisos
- * activos, así que la regla de ciclo de vida barata de la 18.23 no las
- * alcanza sin arrasar con las que sí se muestran: sólo son distinguibles por
- * la ausencia de su fila en `listing_photo`, o sea un barrido contra la tabla.
- * Borrarlas desde acá pediría permiso de borrado sobre el bucket, que es
- * exactamente el ensanche que la 18.23 ya decidió no hacer. Dicho, no
- * escondido.
+ * **Al desprender, las derivadas de R2 se borran acá mismo (18.32).** Viven
+ * bajo el prefijo PROMOVIDO, junto a las fotos de todos los avisos activos, así
+ * que ninguna regla de ciclo de vida del bucket las distingue: lo único que las
+ * separa es la ausencia de su fila en `listing_photo`, o sea exactamente este
+ * instante. **Y el permiso ya estaba**: `PhotoStoragePort.remove` existe desde
+ * D12 y `purgeExpiredPhotos` ya lo usa contra el mismo bucket, así que la razón
+ * que la 18.21 anotó —«pediría ensanchar un puerto angosto»— era falsa.
  */
 
 export class ListingPhotoLimitReachedError extends Error {
@@ -197,7 +197,10 @@ export async function loadListingPhotosForEdit(
 
 export interface DetachPhotoFromListingDependencies extends EditableListingGate {
   readonly order: ListingPhotoOrderPort;
+  readonly derivatives: ListingPhotoDerivativeKeysPort;
   readonly photos: ListingPhotoDetachmentPort;
+  /** Sólo `remove`: desprender no firma subidas ni lee objetos. */
+  readonly storage: Pick<PhotoStoragePort, "remove">;
 }
 
 /**
@@ -220,12 +223,40 @@ export async function detachPhotoFromListing(
     throw new ListingPhotoRemovalRefusedError(listing.id, plan.refusal);
   }
 
+  // ANTES del borrado, y no por prolijidad: `listing_photo_derivative` cuelga de
+  // `listing_photo` con `ON DELETE cascade`, así que leído después esto devuelve
+  // cero claves y los cinco objetos quedan pagados sin que nada los nombre.
+  const derivativeKeys = await dependencies.derivatives.listDerivativeKeys(
+    listing.id,
+    request.photoId,
+  );
+
   const detached = await dependencies.photos.detachPhoto(listing.id, request.photoId);
   if (!detached) {
     // La fila estaba cuando la lectura de arriba la vio y dejó de estar antes
     // del `DELETE`. No hay nada que ESTA llamada pueda haber hecho, y el
-    // aviso se contesta como el inexistente que ahora es.
+    // aviso se contesta como el inexistente que ahora es. **Sin tocar R2**: el
+    // borrado fue de otra transacción y sus objetos son decisión de aquélla.
     throw new EditListingNotFoundError(listing.id);
+  }
+
+  /**
+   * **La fila primero y R2 después, al revés que `purgeExpiredPhotos`.** Ahí
+   * nada vivo muestra esas fotos y el trabajo vuelve a correr mañana; acá la
+   * fila es de un aviso PUBLICADO y no hay segunda corrida. Con R2 primero, un
+   * borrado de fila que falle deja un aviso vivo apuntando a cinco 404 que no se
+   * pueden rehacer —D12 descartó el original—, y un objeto que ya no está en R2
+   * hace `remove` gritar para siempre: la foto queda imposible de quitar, el
+   * fallo abierto que `listPhotoThumbnailsInOrder` se escribió para evitar. Con
+   * la fila primero, lo peor que queda es el huérfano: una cuenta, no una
+   * pantalla rota.
+   *
+   * **Y grita.** `remove` está fuera de todo `try` a propósito (D12): tragarse
+   * la falla es el silencio que fabricó la 18.23. La fila ya se fue, así que
+   * recargar muestra la foto quitada.
+   */
+  for (const key of derivativeKeys) {
+    await dependencies.storage.remove(key);
   }
 
   return { listingId: listing.id, coverChangedTo: plan.coverChangedTo };

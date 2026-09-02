@@ -448,6 +448,8 @@ function stepHarness(
       // página: uno armado a mano acá volvería a medir algo que no se sirve.
       jumpable={jumpableStepsFrom(stepId, draft, violations)}
       progress={progressPercent(draft, violations)}
+      // El arnés arma el borrador, así que nunca hay uno vencido que explicar.
+      draftExpired={false}
       returningToReview={false}
       // El arnés mide el recorrido hacia adelante, que no viene de revisar.
       discardHref={null}
@@ -528,6 +530,16 @@ function harnessPanel() {
         hasSecurity: 21,
         hasAppliances: 23,
       },
+      byPriceBucket: [
+        { count: 1, lowestUsd: 200, highestUsd: 240 },
+        { count: 2, lowestUsd: 300, highestUsd: 380 },
+        { count: 4, lowestUsd: 400, highestUsd: 495 },
+        { count: 3, lowestUsd: 505, highestUsd: 590 },
+        { count: 3, lowestUsd: 610, highestUsd: 690 },
+        { count: 1, lowestUsd: 720, highestUsd: 780 },
+        { count: 1, lowestUsd: 880, highestUsd: 880 },
+        { count: 1, lowestUsd: 1000, highestUsd: 1000 },
+      ],
       cityTotal: 70,
     },
     criteria: {},

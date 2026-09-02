@@ -32,7 +32,7 @@ import { createR2PhotoStorage } from "@/modules/listing-publication/infrastructu
 import { DrizzlePhotoHash } from "@/modules/listing-trust/infrastructure/drizzle-photo-hash";
 import { db } from "@/shared/db/client";
 import { getTransactionalDatabase } from "@/shared/db/transactional-client";
-import { formCount, formText } from "../publicar/step-values";
+import { FEATURES_DECLARED_FIELD, formChecked, formCount, formText } from "../publicar/step-values";
 
 /**
  * tasks.md 9.28 — **las dos llamadas que no existían.**
@@ -215,7 +215,11 @@ export async function quitarFotoDelAviso(formData: FormData): Promise<void> {
         sessionPort: nextAuthSessionPort,
         listings: new DrizzleListingEdit(transactional),
         order: photoSet,
+        // 18.32 — las derivadas se leen antes del borrado y se quitan de R2
+        // después; el orden y el porqué viven en `detachPhotoFromListing`.
+        derivatives: photoSet,
         photos: photoSet,
+        storage: createR2PhotoStorage(),
       },
     );
     // Quien quita la portada cambió la cara del aviso sin pedirlo, así que la
@@ -293,6 +297,11 @@ export async function activarBorrador(formData: FormData): Promise<void> {
  * dos veces — `publisherType.immutable` si cambia, y `publisherType.invalid`
  * si además no es ninguno de los dos. El `as` afirma la forma, nunca el
  * valor, que es el mismo reparto que `readStepAnswers` ya usa para el paso 9.
+ *
+ * **Los cinco atributos viajan juntos o no viajan** (18.37), y el porqué está
+ * en `FEATURES_DECLARED_FIELD`. **Qué significa la ausencia no se decide acá**:
+ * llega al dominio como los cinco `undefined` y lo contesta el `?? current` de
+ * `writeFor`, igual que cualquier otro campo sin contestar.
  */
 function leerEdicion(formData: FormData): ListingEdit {
   return {
@@ -302,9 +311,37 @@ function leerEdicion(formData: FormData): ListingEdit {
     rooms: formCount(formData, "rooms"),
     bathrooms: formCount(formData, "bathrooms"),
     areaM2: formCount(formData, "areaM2"),
+    // El unico campo numerico del aviso donde el vacio ES una respuesta, igual
+    // que en el paso 4: un anexo sin puesto es un aviso normal, y nadie deberia
+    // tener que escribir un cero para corregirlo.
+    parkingSpots: formCount(formData, "parkingSpots") ?? 0,
+    propertyType: formText(formData, "propertyType") as ListingEdit["propertyType"],
+    /**
+     * **En blanco es «ninguna», y no «no la mandes»** (18.27). Es el unico campo
+     * opcional del aviso, asi que las dos ausencias significan cosas distintas y
+     * el dominio las distingue: `""` borra la seña, `undefined` deja la de ayer.
+     * `formText` colapsa las dos en `undefined`, que dejaria la referencia
+     * imposible de sacar desde la pantalla — asi que acá se conserva la
+     * diferencia que el formulario mandó, sin decidir nada sobre ella.
+     */
+    reference: formData.has("reference") ? (formText(formData, "reference") ?? "") : undefined,
     contactMethod: formText(formData, "contactMethod") as ListingEdit["contactMethod"],
     contactValue: formText(formData, "contactValue"),
     publisherType: formText(formData, "publisherType") as ListingEdit["publisherType"],
+    ...leerAtributos(formData),
+  };
+}
+
+/** Los cinco de la F6, o ninguno. **La marca es la respuesta**, no las casillas. */
+function leerAtributos(formData: FormData): Partial<ListingEdit> {
+  if (!formData.has(FEATURES_DECLARED_FIELD)) return {};
+
+  return {
+    hasPowerPlant: formChecked(formData, "hasPowerPlant"),
+    hasRegularWater: formChecked(formData, "hasRegularWater"),
+    isFurnished: formChecked(formData, "isFurnished"),
+    hasSecurity: formChecked(formData, "hasSecurity"),
+    hasAppliances: formChecked(formData, "hasAppliances"),
   };
 }
 

@@ -13,6 +13,7 @@ import {
 import { loadListingPhotosForEdit } from "@/modules/listing-publication/application/edit-listing-photos";
 import { readCarriedMeasure } from "@/modules/listing-publication/domain/carried-value";
 import { COVER_PHOTO_INDEX } from "@/modules/listing-publication/domain/draft-photo-actions";
+import { editablePublisherTypes } from "@/modules/listing-publication/domain/listing-edit";
 import type { ChangedField } from "@/modules/listing-publication/domain/publication-steps";
 import {
   MAX_PHOTOS_PER_LISTING,
@@ -44,11 +45,14 @@ import styles from "../../../publicar/publish-steps.module.css";
 import {
   CHANGE_FIELD_LABEL,
   CONTACT_METHOD_LABEL,
+  FEATURE_LABELS,
+  PROPERTY_TYPE_LABEL,
   PUBLISHER_TYPE_LABEL,
 } from "../../../publicar/step-copy";
+import { FEATURES_DECLARED_FIELD } from "../../../publicar/step-values";
 import {
   listingEditViolationMessage,
-  PUBLISHER_TYPE_IMMUTABLE_NOTICE,
+  PUBLISHER_TYPE_ONE_WAY_NOTICE,
   type PublishCopyContext,
 } from "../../../publicar/violation-copy";
 import {
@@ -209,6 +213,9 @@ export default async function EditarAvisoPage({
       : {};
   const claseControl = (field: ListingField) =>
     negativas.byField.has(field) ? ` ${styles.controlInvalid}` : "";
+
+  // Vacía para una inmobiliaria, que no tiene a dónde ir (18.38).
+  const publisherTypes = editablePublisherTypes(aviso.publisherType);
 
   return (
     <>
@@ -432,6 +439,9 @@ export default async function EditarAvisoPage({
                   [
                     ["rooms", aviso.rooms],
                     ["bathrooms", aviso.bathrooms],
+                    // Cero es una respuesta y no un hueco, igual que en el paso
+                    // 4: se dibuja el cero en vez de dejar el campo vacío.
+                    ["parkingSpots", aviso.parkingSpots],
                     ["areaM2", aviso.areaM2],
                   ] as const
                 ).map(([name, value]) => (
@@ -452,6 +462,87 @@ export default async function EditarAvisoPage({
                   </div>
                 ))}
               </div>
+
+              {/*
+                **El tipo de inmueble y la referencia, desde la 18.27.** «Se
+                puede corregir cualquier dato menos el de la zona» (fundador,
+                2026-09-01). Los dos estaban cerrados porque la tabla campo por
+                campo del 2026-08-29 no los nombraba, no porque cambiarlos
+                rompiera nada: ninguno de los dos está en la URL del aviso.
+              */}
+              <fieldset
+                className={styles.choices}
+                aria-describedby={
+                  negativas.byField.has("propertyType") ? "propertyType-error" : undefined
+                }
+              >
+                <FieldError id="propertyType-error" message={mensaje("propertyType")} />
+                <legend className={styles.legend}>{etiqueta("propertyType")}</legend>
+                {Object.entries(PROPERTY_TYPE_LABEL).map(([value, label]) => (
+                  <label key={value} className={styles.choice}>
+                    <input
+                      className={styles.choiceInput}
+                      type="radio"
+                      name="propertyType"
+                      value={value}
+                      defaultChecked={aviso.propertyType === value}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </fieldset>
+
+              <div>
+                <FieldError id="reference-error" message={mensaje("reference")} />
+                <label className={styles.label} htmlFor="reference">
+                  {etiqueta("reference")}
+                </label>
+                <input
+                  id="reference"
+                  name="reference"
+                  type="text"
+                  className={`${styles.control}${claseControl("reference")}`}
+                  defaultValue={aviso.reference ?? ""}
+                  {...invalido("reference")}
+                />
+                {/* Y se dice que se puede vaciar: es el único campo del aviso
+                    donde borrar el contenido es una corrección válida, y sin la
+                    frase nadie sabría que dejarlo en blanco la saca. */}
+                <p className={styles.help}>Opcional. Dejala en blanco para sacarla.</p>
+              </div>
+
+              {/*
+                **Los cinco atributos de la F6, desde la 18.37**: eran los
+                únicos campos del aviso que se filtran y no se podían corregir.
+
+                **El campo oculto es lo que hace que esto funcione sin
+                JavaScript**, y su porqué vive en `FEATURES_DECLARED_FIELD`. Va
+                DENTRO de este formulario, así que destildar las cinco y guardar
+                ya es «no tiene ninguna» — el POST aparte del paso 5 no hace
+                falta acá, donde los nueve pasos son uno solo.
+              */}
+              <fieldset className={styles.choices}>
+                <legend className={styles.legend}>{etiqueta("hasPowerPlant")}</legend>
+                <input type="hidden" name={FEATURES_DECLARED_FIELD} value="1" />
+                {FEATURE_LABELS.map(([field, label]) => (
+                  <label key={field} className={styles.choice}>
+                    <input
+                      className={styles.choiceInput}
+                      type="checkbox"
+                      name={field}
+                      defaultChecked={aviso[field]}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+                {/* **Se dice lo que una casilla marcada afirma, y nada sobre la
+                    que no.** `false` es «no lo declaró» y jamás «no lo tiene»
+                    (`search-criteria.ts`): destildar saca el aviso de esa
+                    búsqueda, no lo mete en la contraria. */}
+                <p className={styles.help}>
+                  Marcá lo que tiene. Quien busca puede filtrar por cada uno.
+                </p>
+              </fieldset>
 
               {/* **El grupo, no un radio.** Tres opciones excluyentes no tienen
                   un control único al que apuntar, así que se describe el
@@ -500,25 +591,47 @@ export default async function EditarAvisoPage({
               </div>
 
               {/*
-                **Quién publica: el valor sí, el control no.** El dominio refusa
-                el CAMBIO con `publisherType.immutable`; esto es la otra mitad, y
-                hacen falta las dos — una acción de servidor es un endpoint HTTP
-                público, así que no dibujar el campo no prueba nada sobre lo que
-                pasa cuando alguien lo manda igual. Y se dice en vez de callarse:
-                el paso 9 prometió esta misma frase, y callarla acá dejaría a un
-                dueño buscando un control que no existe.
+                **Quién publica, en un solo sentido** (tasks.md 18.38): dueño →
+                inmobiliaria sí, la vuelta no. **A quién se le ofrece el control
+                lo contesta el dominio** con `editablePublisherTypes`, no un
+                `if` de esta pantalla — para una inmobiliaria la lista viene
+                vacía porque no hay a dónde ir, y ofrecerle un control
+                prometería algo que la guarda va a negar.
+
+                **Y no dibujar el control nunca fue la garantía.** Una acción de
+                servidor es un endpoint HTTP público, así que la mitad que de
+                verdad cierra la dirección es la del dominio; ésta sólo evita
+                prometer lo imposible.
               */}
-              <div>
-                {/* **El hueco que la 18.22 nombraba, cerrado.** Sin campo en la
-                    tabla, `publisherType.immutable` era el único código que no
-                    podía colocarse y salía arriba, lejos de lo que explica. No
-                    lleva `aria-invalid`: no hay control que invalidar, que es
-                    justamente lo que la negativa dice. */}
+              <fieldset
+                className={styles.choices}
+                aria-describedby={
+                  negativas.byField.has("publisherType") ? "publisherType-error" : undefined
+                }
+              >
                 <FieldError id="publisherType-error" message={mensaje("publisherType")} />
-                <p className={styles.label}>{etiqueta("publisherType")}</p>
-                <p className={styles.help}>{PUBLISHER_TYPE_LABEL[aviso.publisherType]}</p>
-                <p className={styles.warning}>{PUBLISHER_TYPE_IMMUTABLE_NOTICE}</p>
-              </div>
+                <legend className={styles.legend}>{etiqueta("publisherType")}</legend>
+                {publisherTypes.length === 0 ? (
+                  <p className={styles.help}>{PUBLISHER_TYPE_LABEL[aviso.publisherType]}</p>
+                ) : (
+                  publisherTypes.map((value) => (
+                    <label key={value} className={styles.choice}>
+                      <input
+                        className={styles.choiceInput}
+                        type="radio"
+                        name="publisherType"
+                        value={value}
+                        defaultChecked={aviso.publisherType === value}
+                      />
+                      <span>{PUBLISHER_TYPE_LABEL[value]}</span>
+                    </label>
+                  ))
+                )}
+                {/* **Antes de guardar, no después en una negativa.** Una vez
+                    guardado `broker` la guarda cierra la vuelta, así que decirlo
+                    recién en el rechazo llegaría cuando ya no evita nada. */}
+                <p className={styles.warning}>{PUBLISHER_TYPE_ONE_WAY_NOTICE}</p>
+              </fieldset>
 
               <div className={styles.actions}>
                 <button type="submit" className={styles.primary}>

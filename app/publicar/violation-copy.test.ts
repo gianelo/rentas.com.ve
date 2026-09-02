@@ -10,7 +10,7 @@ import {
 import {
   listingEditViolationMessage,
   PUBLISH_VIOLATION_COPY,
-  PUBLISHER_TYPE_IMMUTABLE_NOTICE,
+  PUBLISHER_TYPE_ONE_WAY_NOTICE,
   publishViolationMessage,
 } from "./violation-copy";
 
@@ -219,17 +219,19 @@ describe("listingEditViolationMessage — un solo español para publicar y edita
   });
 
   /**
-   * **La misma promesa, no una parecida.** El paso 9 dice «Aparece siempre en
-   * tu aviso y no se puede cambiar después» ANTES de publicar; la negativa al
-   * editar tiene que decir eso mismo, o el producto habla con dos voces sobre
-   * una sola regla.
+   * **La misma promesa, no una parecida**, y desde la 18.38 dice cuál de las
+   * dos direcciones está cerrada: el paso 9 la promete ANTES de publicar y la
+   * negativa al editar la repite, o el producto habla con dos voces sobre una
+   * sola regla. El literal se fija acá porque «no se puede cambiar después»
+   * dejó de ser cierto y nada más lo notaría.
    */
-  it("el código propio de editar dice la promesa del paso 9, entera", () => {
+  it("el código propio de editar nombra la dirección cerrada y repite la promesa del paso 9", () => {
     const message = listingEditViolationMessage("publisherType.immutable", {});
 
-    expect(message).toContain(PUBLISHER_TYPE_IMMUTABLE_NOTICE);
-    expect(PUBLISHER_TYPE_IMMUTABLE_NOTICE).toBe(
-      "Aparece siempre en tu aviso y no se puede cambiar después.",
+    expect(message).toContain("Una inmobiliaria no puede volver a declararse dueño.");
+    expect(message).toContain(PUBLISHER_TYPE_ONE_WAY_NOTICE);
+    expect(PUBLISHER_TYPE_ONE_WAY_NOTICE).toBe(
+      "Aparece siempre en tu aviso. Después podés corregirlo de dueño a inmobiliaria, nunca al revés.",
     );
   });
 

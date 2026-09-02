@@ -7,7 +7,8 @@ import {
   PHOTO_ACTION_COPY,
   PHOTO_REMOVAL_REFUSAL_COPY,
 } from "../../../publicar/photo-action-copy";
-import { PUBLISHER_TYPE_IMMUTABLE_NOTICE } from "../../../publicar/violation-copy";
+import { FEATURES_DECLARED_FIELD } from "../../../publicar/step-values";
+import { PUBLISHER_TYPE_ONE_WAY_NOTICE } from "../../../publicar/violation-copy";
 
 /**
  * tasks.md 18.20 — **la pantalla que le faltaba a `editListing`**, en los
@@ -86,6 +87,12 @@ const AVISO = {
   areaM2: 128,
   bathrooms: 2,
   parkingSpots: 1,
+  reference: "Frente a la panadería",
+  hasPowerPlant: false,
+  hasRegularWater: false,
+  isFurnished: false,
+  hasSecurity: false,
+  hasAppliances: false,
   contactMethod: "whatsapp" as const,
   contactValue: "04121234567",
   photoCount: 3,
@@ -191,6 +198,31 @@ describe("el contador de una negativa de editar (18.25)", () => {
   });
 });
 
+/** Sólo el `<fieldset>` de los atributos, acotado por su leyenda y no por una
+ *  clase: los nombres de clase son hashes del CSS, y la pantalla dibuja otros
+ *  dos `<fieldset>` con la misma. */
+function atributos(html: string): string {
+  const legend = html.indexOf("Lo que tiene la propiedad");
+  expect(legend).toBeGreaterThan(-1);
+  return html.slice(html.lastIndexOf("<fieldset", legend), html.indexOf("</fieldset>", legend));
+}
+
+/** El formulario que guarda, acotado por su botón. **`lastIndexOf` y no
+ *  `indexOf`**: la ayuda de las fotos cita «Guardar cambios» para decir que
+ *  ellas NO esperan a ese botón, así que la primera aparición está afuera. */
+function guardado(html: string): string {
+  const boton = html.lastIndexOf("Guardar cambios");
+  expect(boton).toBeGreaterThan(-1);
+  return html.slice(html.lastIndexOf("<form", boton), boton);
+}
+
+/** Devuelve la etiqueta del control, y falla si no está dibujado. */
+function control(alcance: string, name: string): string {
+  const match = new RegExp(`<input[^>]*name="${name}"[^>]*/>`).exec(alcance);
+  if (!match) throw new Error(`no se dibuja el control name="${name}"`);
+  return match[0];
+}
+
 describe("/mis-avisos/[id]/editar — la pantalla de corregir un aviso (18.20)", () => {
   /**
    * Un `<form>` de verdad con `method="post"`, como publicar y como las
@@ -223,28 +255,152 @@ describe("/mis-avisos/[id]/editar — la pantalla de corregir un aviso (18.20)",
   });
 
   /**
-   * **La ausencia del control y la negativa del dominio son dos garantías, no
-   * una.** El dominio ya refusa `publisherType.immutable`; esto prueba la otra
-   * mitad, que la pantalla ni siquiera lo ofrece.
+   * tasks.md 18.38 — **el control existe para un dueño y sólo para un dueño.**
+   * Hacia dónde puede moverse lo contesta `editablePublisherTypes`, no esta
+   * pantalla; acá se prueba que lo dibuja cargado con lo que el aviso declaró —
+   * un radio sin marcar haría que guardar cualquier otro campo cambiara quién
+   * publica sin que nadie lo pidiera.
    */
-  it("no dibuja ningún control de tipo de publicador", async () => {
+  it("un dueño puede corregirse a inmobiliaria, y el control vuelve con su valor", async () => {
     const html = await dibujar();
 
-    expect(html).not.toContain('name="publisherType"');
+    expect(html).toMatch(/name="publisherType" checked="" value="owner"/);
+    expect(html).toContain('name="publisherType" value="broker"');
+    expect(html).toContain("Inmobiliaria");
   });
 
   /**
-   * «Aparece siempre en tu aviso y no se puede cambiar después» es lo que el
-   * paso 9 promete ANTES de publicar. La pantalla de editar lo dice donde
-   * debería haber estado el campo: callarlo dejaría a un dueño buscando un
-   * control que nunca va a encontrar.
+   * **La mitad que hace que la anterior pregunte algo, y la que el fundador
+   * decidió**: para una inmobiliaria no hay a dónde ir, y ofrecerle un control
+   * prometería algo que la guarda va a negar. El par positivo va pegado a
+   * propósito — un `not.toContain` sobre una pantalla que dejó de dibujar el
+   * formulario pasa solo.
    */
-  it("dice quién publica y repite la promesa del paso 9 donde debería haber estado el campo", async () => {
+  it("una inmobiliaria no ve ningún control, y su valor se sigue diciendo", async () => {
+    loadListingForEdit.mockResolvedValue({ ...AVISO, publisherType: "broker" as const });
+
+    const html = await dibujar();
+
+    expect(html).not.toContain('name="publisherType"');
+    expect(html).toContain("Inmobiliaria");
+    expect(html).toContain("Guardar cambios");
+  });
+
+  /**
+   * **La advertencia va ANTES de guardar, no después en una negativa.** El
+   * cambio no es reversible dentro de la misma sesión de edición: una vez
+   * guardado `broker`, la guarda cierra la vuelta. Decirlo recién en el
+   * rechazo llegaría cuando ya no evita nada.
+   */
+  it("dice quién publica y advierte que el sentido es uno solo, antes del botón", async () => {
     const html = await dibujar();
 
     expect(html).toContain("Quién publica");
-    expect(html).toContain("Dueño");
-    expect(html).toContain(PUBLISHER_TYPE_IMMUTABLE_NOTICE);
+    expect(guardado(html)).toContain(PUBLISHER_TYPE_ONE_WAY_NOTICE);
+  });
+
+  /**
+   * tasks.md 18.27 — **los tres campos que la regla general del fundador abre**
+   * («se puede corregir cualquier dato menos el de la zona», 2026-09-01).
+   * Ninguna regla se afirma acá: que el dominio los escriba lo prueba
+   * `listing-edit.test.ts`; acá se prueba que la pantalla los ofrece cargados.
+   */
+  it("ofrece corregir la referencia, el tipo de inmueble y los puestos, con lo que el aviso tiene", async () => {
+    const html = await dibujar();
+
+    expect(html).toContain('name="reference"');
+    expect(html).toContain('value="Frente a la panadería"');
+    expect(html).toContain('name="parkingSpots"');
+    expect(html).toContain('name="propertyType"');
+    // Cargado con el valor del aviso, no en blanco: un radio sin marcar haría
+    // que guardar cualquier otro campo cambiara el tipo sin que nadie lo pidiera.
+    expect(html).toMatch(/name="propertyType" checked="" value="apartamento"/);
+    expect(html).not.toMatch(/name="propertyType" checked="" value="casa"/);
+  });
+
+  /**
+   * tasks.md 18.37 — los cinco nombres y las cinco etiquetas **a mano y
+   * apareados**, igual que en el paso 5: derivarlos de `FEATURE_LABELS` sería
+   * preguntarle a la misma constante que el sujeto usa. Y se cuenta que son
+   * cinco, porque uno perdido es un dato que deja de poder corregirse sin que
+   * nada avise.
+   */
+  it("ofrece las cinco casillas de la F6, cada nombre con su etiqueta", async () => {
+    const campos = atributos(await dibujar());
+
+    expect(campos).toMatch(/name="hasPowerPlant"[^>]*\/><span>Planta eléctrica<\/span>/);
+    expect(campos).toMatch(/name="hasRegularWater"[^>]*\/><span>Agua regular<\/span>/);
+    expect(campos).toMatch(/name="isFurnished"[^>]*\/><span>Amoblado<\/span>/);
+    expect(campos).toMatch(/name="hasSecurity"[^>]*\/><span>Vigilancia 24 h<\/span>/);
+    expect(campos).toMatch(/name="hasAppliances"[^>]*\/><span>Línea blanca<\/span>/);
+
+    expect(campos.match(/type="checkbox"/g)).toHaveLength(5);
+  });
+
+  /** **Lo declarado vuelve marcado, y lo demás vuelve DIBUJADO y sin marcar.**
+   *  Las tres sin marcar se piden por `control`, que falla si la casilla no
+   *  está: un `not.toContain("checked")` sobre un control borrado pasa solo. */
+  it("las casillas vuelven con lo que el aviso declaró, no en blanco", async () => {
+    loadListingForEdit.mockResolvedValue({
+      ...AVISO,
+      hasPowerPlant: true,
+      hasSecurity: true,
+      hasRegularWater: false,
+      isFurnished: false,
+      hasAppliances: false,
+    });
+
+    const campos = atributos(await dibujar());
+
+    expect(control(campos, "hasPowerPlant")).toContain('checked=""');
+    expect(control(campos, "hasSecurity")).toContain('checked=""');
+    expect(control(campos, "hasRegularWater")).not.toContain("checked");
+    expect(control(campos, "isFurnished")).not.toContain("checked");
+    expect(control(campos, "hasAppliances")).not.toContain("checked");
+  });
+
+  /**
+   * **La marca, que es la tarea entera.** Sin un campo que SIEMPRE viaje, el
+   * servidor no puede distinguir «las destildé todas» de «este pedido no traía
+   * atributos», y guardar el precio borraría cinco declaraciones. Va DENTRO del
+   * formulario de guardar, así que destildar las cinco y apretar «Guardar
+   * cambios» ya es «no tiene ninguna» con el script apagado — sin el POST
+   * aparte que el paso 5 sí necesita.
+   */
+  it("manda la marca de que el pedido declara los cinco, dentro del formulario que guarda", async () => {
+    const html = await dibujar();
+
+    expect(guardado(html)).toContain(
+      `<input type="hidden" name="${FEATURES_DECLARED_FIELD}" value="1"/>`,
+    );
+    // El par: la marca sin las casillas declararía cinco `false` en cada
+    // guardado, que es el borrado que esto existe para impedir.
+    expect(atributos(html).match(/type="checkbox"/g)).toHaveLength(5);
+  });
+
+  /**
+   * **La zona y la ciudad siguen sin control, y esa ausencia es la mitad de la
+   * garantía.** La otra la tiene el dominio, que no las lleva en `ListingEdit`.
+   * El par positivo va pegado a propósito: un `not.toContain` sobre una pantalla
+   * que dejó de dibujar el formulario pasa solo.
+   */
+  it("no ofrece cambiar la zona ni la ciudad, que van en la URL del aviso", async () => {
+    const html = await dibujar();
+
+    expect(html).not.toContain('name="zoneId"');
+    expect(html).not.toContain('name="cityId"');
+    expect(html).toContain('name="propertyType"');
+    expect(html).toContain("Guardar cambios");
+  });
+
+  /** La negativa de la referencia dejó de caer en el bloque de arriba el día que
+   *  tuvo control: se lee al lado del campo, como todas las que sí lo tienen. */
+  it("la negativa de la referencia se lee al lado de su campo y no en el bloque", async () => {
+    const html = await dibujar("reference.tooLong");
+
+    expect(html).toContain('id="reference-error"');
+    expect(html).toContain('aria-describedby="reference-error"');
+    expect(html).not.toContain('role="alert"');
   });
 
   /**
@@ -261,7 +417,7 @@ describe("/mis-avisos/[id]/editar — la pantalla de corregir un aviso (18.20)",
   it("traduce los códigos que vuelven en la URL al castellano de publicar", async () => {
     const html = await dibujar("publisherType.immutable,priceUsd.invalid");
 
-    expect(html).toContain(PUBLISHER_TYPE_IMMUTABLE_NOTICE);
+    expect(html).toContain(PUBLISHER_TYPE_ONE_WAY_NOTICE);
     expect(html).toContain("Solo el número, en dólares y sin centavos");
   });
 
@@ -309,16 +465,15 @@ describe("/mis-avisos/[id]/editar — la pantalla de corregir un aviso (18.20)",
 
   /**
    * **El hueco que la 18.22 nombraba.** `publisherType.immutable` no estaba en
-   * el `Record` de publicar, así que era el único código sin campo. Ahora se lee
-   * donde debería haber estado el control — que es donde el paso 9 ya prometió
-   * que no lo habría.
+   * el `Record` de publicar, así que era el único código sin campo. Desde la
+   * 18.38 hay control de verdad para un dueño, y el mensaje se lee antes de él.
    */
-  it("la negativa de quién publica se lee donde debería haber estado el campo", async () => {
+  it("la negativa de quién publica se lee antes del control", async () => {
     const html = await dibujar("publisherType.immutable");
 
     expect(html).toContain('id="publisherType-error"');
-    expect(html.indexOf("Quién publica se declara una vez")).toBeLessThan(
-      html.indexOf(PUBLISHER_TYPE_IMMUTABLE_NOTICE),
+    expect(html.indexOf("Una inmobiliaria no puede volver a declararse dueño")).toBeLessThan(
+      html.indexOf('name="publisherType"'),
     );
   });
 

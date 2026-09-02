@@ -87,6 +87,8 @@ async function insertListing(
     readonly publisherType?: string;
     /** `false` deja el aviso sin una sola foto, que es lo que el validador refusa. */
     readonly withPhoto?: boolean;
+    /** Para la 18.37. Sin decir nada, la columna queda en `false`. */
+    readonly hasPowerPlant?: boolean;
   } = {},
 ): Promise<string> {
   const id = randomUUID();
@@ -94,8 +96,9 @@ async function insertListing(
     `INSERT INTO "listing" (
        id, publisher_id, publisher_type, property_type, city_id, zone_id, title, description,
        price_usd, rooms, area_m2, bathrooms, parking_spots, status,
+       has_power_plant,
        contact_method, contact_value, published_at, expires_at)
-     VALUES ($1,$2,$3,'apartamento',$4,$5,$6,$7,610,3,128,2,1,$8,'whatsapp','04121234567',
+     VALUES ($1,$2,$3,'apartamento',$4,$5,$6,$7,610,3,128,2,1,$8,$9,'whatsapp','04121234567',
        now(), now() + interval '30 days')`,
     [
       id,
@@ -106,6 +109,7 @@ async function insertListing(
       "Apartamento amoblado en La Castellana",
       VALID_DESCRIPTION,
       options.status ?? "active",
+      options.hasPowerPlant ?? false,
     ],
   );
   if (options.withPhoto !== false) {
@@ -119,7 +123,9 @@ async function insertListing(
 
 async function readListing(id: string) {
   const { rows } = await pool.query(
-    `SELECT title, price_usd, contact_method, contact_value, publisher_type, status, zone_id
+    `SELECT title, price_usd, contact_method, contact_value, publisher_type, status, zone_id,
+            city_id, property_type, parking_spots, reference,
+            has_power_plant, has_regular_water, is_furnished
      FROM "listing" WHERE id = $1`,
     [id],
   );
@@ -132,6 +138,13 @@ async function readListing(id: string) {
         publisher_type: string;
         status: string;
         zone_id: string;
+        city_id: string;
+        property_type: string;
+        parking_spots: number;
+        reference: string | null;
+        has_power_plant: boolean;
+        has_regular_water: boolean;
+        is_furnished: boolean;
       }
     | undefined;
 }
@@ -184,6 +197,103 @@ describe("editar un aviso publicado — contra Postgres de verdad (18.14)", () =
     expect(untouched?.price_usd).toBe(610);
   });
 
+  /**
+   * tasks.md 18.27 — **los tres campos que la regla general del fundador abre,
+   * en las columnas de verdad.** Con un doble del puerto, «se guardó» es una
+   * llamada que la prueba mira; contra Postgres es la fila releída. Y el par que
+   * hace que la prueba pregunte algo: la zona y la ciudad siguen donde estaban.
+   */
+  it("corrige la referencia, el tipo y los puestos, y no mueve la zona ni la ciudad", async () => {
+    const owner = await insertUser();
+    const mine = await insertListing(owner);
+    const antes = await readListing(mine);
+
+    await editListing(
+      {
+        listingId: mine,
+        edit: {
+          reference: "A dos calles de la plaza Altamira",
+          propertyType: "anexo",
+          parkingSpots: 0,
+        },
+      },
+      { sessionPort: sessionFor(owner), zones, listings },
+    );
+
+    const editado = await readListing(mine);
+    expect(editado?.reference).toBe("A dos calles de la plaza Altamira");
+    expect(editado?.property_type).toBe("anexo");
+    expect(editado?.parking_spots).toBe(0);
+    expect(editado?.zone_id).toBe(antes?.zone_id);
+    expect(editado?.city_id).toBe(antes?.city_id);
+  });
+
+  /** La referencia se BORRA, que es la otra mitad de «corregir cualquier dato»:
+   *  una seña equivocada que sólo se puede reemplazar no se puede sacar. */
+  it("mandar la referencia en blanco la deja en NULL, no en la de ayer", async () => {
+    const owner = await insertUser();
+    const mine = await insertListing(owner);
+
+    await editListing(
+      { listingId: mine, edit: { reference: "Frente a la panadería" } },
+      { sessionPort: sessionFor(owner), zones, listings },
+    );
+    await editListing(
+      { listingId: mine, edit: { reference: "" } },
+      { sessionPort: sessionFor(owner), zones, listings },
+    );
+
+    expect((await readListing(mine))?.reference).toBeNull();
+  });
+
+  /** tasks.md 18.37 — **los cinco en las columnas de verdad.** Con un doble,
+   *  «se guardó» es una llamada; contra Postgres es la fila releída, que es lo
+   *  único que la búsqueda va a filtrar. */
+  it("corrige los cinco atributos: escribe los que se declaran y BORRA los que ya no", async () => {
+    const owner = await insertUser();
+    const mine = await insertListing(owner, { hasPowerPlant: true });
+    const antes = await readListing(mine);
+
+    await editListing(
+      {
+        listingId: mine,
+        edit: {
+          hasPowerPlant: false,
+          hasRegularWater: true,
+          isFurnished: true,
+          hasSecurity: false,
+          hasAppliances: false,
+        },
+      },
+      { sessionPort: sessionFor(owner), zones, listings },
+    );
+
+    const editado = await readListing(mine);
+    // Los dos sentidos: sin el par, un `set` que escribiera siempre `true`
+    // pasaría la mitad de esta prueba.
+    expect(editado?.has_regular_water).toBe(true);
+    expect(editado?.is_furnished).toBe(true);
+    expect(editado?.has_power_plant).toBe(false);
+    expect(editado?.zone_id).toBe(antes?.zone_id);
+    expect(editado?.city_id).toBe(antes?.city_id);
+  });
+
+  /** La otra mitad: un pedido que no trae atributos deja los cinco como estaban.
+   *  Sin esto, corregir el precio se llevaría por delante lo que el aviso declaró. */
+  it("una edición que no manda atributos no toca ninguno de los cinco", async () => {
+    const owner = await insertUser();
+    const mine = await insertListing(owner, { hasPowerPlant: true });
+
+    await editListing(
+      { listingId: mine, edit: { priceUsd: 900 } },
+      { sessionPort: sessionFor(owner), zones, listings },
+    );
+
+    const editado = await readListing(mine);
+    expect(editado?.price_usd).toBe(900);
+    expect(editado?.has_power_plant).toBe(true);
+  });
+
   it("el aviso de otra cuenta no se puede editar, y su fila no cambia", async () => {
     const owner = await insertUser();
     const stranger = await insertUser();
@@ -218,12 +328,28 @@ describe("editar un aviso publicado — contra Postgres de verdad (18.14)", () =
     expect(after?.publisher_type).toBe("broker");
   });
 
-  it("mandar un publisher_type distinto se refusa y la fila no se toca", async () => {
+  /** tasks.md 18.38 — **las dos direcciones, en la columna de verdad.** Una sola
+   *  de las dos pasa con la guarda entera borrada. */
+  it("de dueño a inmobiliaria se guarda en la fila", async () => {
     const owner = await insertUser();
     const listingId = await insertListing(owner, { publisherType: "owner" });
 
-    const error = await editListing(
+    await editListing(
       { listingId, edit: { publisherType: "broker", priceUsd: 900 } },
+      { sessionPort: sessionFor(owner), zones, listings },
+    );
+
+    const after = await readListing(listingId);
+    expect(after?.publisher_type).toBe("broker");
+    expect(after?.price_usd).toBe(900);
+  });
+
+  it("volver de inmobiliaria a dueño se refusa y la fila no se toca", async () => {
+    const owner = await insertUser();
+    const listingId = await insertListing(owner, { publisherType: "broker" });
+
+    const error = await editListing(
+      { listingId, edit: { publisherType: "owner", priceUsd: 900 } },
       { sessionPort: sessionFor(owner), zones, listings },
     ).catch((thrown: unknown) => thrown);
 
@@ -231,7 +357,7 @@ describe("editar un aviso publicado — contra Postgres de verdad (18.14)", () =
     expect((error as EditListingRejectedError).violations).toContain("publisherType.immutable");
 
     const after = await readListing(listingId);
-    expect(after?.publisher_type).toBe("owner");
+    expect(after?.publisher_type).toBe("broker");
     expect(after?.price_usd).toBe(610);
   });
 
@@ -292,8 +418,17 @@ describe("editar un aviso publicado — contra Postgres de verdad (18.14)", () =
       rooms: 3,
       bathrooms: 2,
       areaM2: 128,
+      parkingSpots: 1,
+      propertyType: "apartamento" as const,
+      reference: undefined,
       contactMethod: "whatsapp" as const,
       contactValue: "04121234567",
+      publisherType: "owner" as const,
+      hasPowerPlant: false,
+      hasRegularWater: false,
+      isFurnished: false,
+      hasSecurity: false,
+      hasAppliances: false,
     };
 
     expect(await listings.applyEdit(theirs, owner, write)).toBe(false);

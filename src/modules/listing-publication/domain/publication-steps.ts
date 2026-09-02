@@ -66,6 +66,13 @@ export interface DraftPhoto {
   readonly key: string;
   readonly name: string;
   readonly bytes: number;
+  /**
+   * tasks.md 18.36 — cuando el servidor vio esta clave por primera vez, en ISO.
+   * **Lo pone `stampUploadInstants` y nunca el formulario**, porque es lo que
+   * `draftExpiresAt` usa para que la fila no prometa mas de lo que el bucket
+   * conserva. Opcional: una fila anterior a esa regla no lo lleva.
+   */
+  readonly uploadedAt?: string;
 }
 
 /**
@@ -89,6 +96,19 @@ export interface PublicationDraft {
    * legitimamente no tiene ninguno.
    */
   readonly featuresDeclared?: boolean;
+}
+
+/**
+ * El borrador **tal como se guarda**: lo contestado mas el eco del ultimo intento
+ * fallido. Vivia en `app/publicar/draft.ts` mientras el unico lugar donde se
+ * guardaba era una cookie; con una tabla detras lo lee tambien un puerto de la
+ * aplicacion, y un tipo que la infraestructura importe desde `app/` seria la
+ * dependencia al reves (AGENTS.md §3). `draft.ts` lo sigue exportando igual.
+ */
+export interface StoredPublicationDraft extends PublicationDraft {
+  /** Del ultimo intento. Vacia mientras se avanza sin errores. */
+  readonly violations: readonly PublishViolation[];
+  readonly raw?: Readonly<Record<string, string>>;
 }
 
 /**

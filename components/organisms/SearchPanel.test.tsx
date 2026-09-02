@@ -30,6 +30,16 @@ const COUNTS = {
     hasSecurity: 21,
     hasAppliances: 23,
   },
+  byPriceBucket: [
+    { count: 1, lowestUsd: 200, highestUsd: 240 },
+    { count: 2, lowestUsd: 300, highestUsd: 380 },
+    { count: 4, lowestUsd: 400, highestUsd: 495 },
+    { count: 3, lowestUsd: 505, highestUsd: 590 },
+    { count: 3, lowestUsd: 610, highestUsd: 690 },
+    { count: 1, lowestUsd: 720, highestUsd: 780 },
+    { count: 1, lowestUsd: 880, highestUsd: 880 },
+    { count: 1, lowestUsd: 1000, highestUsd: 1000 },
+  ],
   cityTotal: 70,
 } as const;
 
@@ -297,5 +307,66 @@ describe("el conteo en vivo se monta ENCIMA del piso, nunca en su lugar (14.34)"
 
   it("con el panel cerrado no hay ni un número adelantado dando vueltas", () => {
     expect(renderToStaticMarkup(<SearchPanel model={buildSearchPanel(INPUT)} />)).toBe("");
+  });
+});
+
+/**
+ * **El histograma del paso de precio** (F5, tasks 14.12 rebanada C). El modelo
+ * lo arma el dominio de verdad, así que lo que se afirma acá son los bytes que
+ * salen del servidor y no un modelo escrito a mano.
+ */
+describe("el histograma dice dónde está la oferta antes de elegir", () => {
+  it("dibuja una barra por cubo, con su alto medido adentro del marcado", () => {
+    const markup = render();
+
+    expect(markup.split("data-placement=").length - 1).toBe(8);
+    // La barra más alta llega a 100: el alto es dato y va inline, porque
+    // `SISTEMA.md` prohíbe el color, el radio y el tamaño escritos a mano —
+    // ocho alturas medidas no son ninguna de las tres.
+    expect(markup).toContain("block-size:100%");
+  });
+
+  it("marca cuáles quedan dentro del rango elegido y cuáles fuera", () => {
+    const markup = render({ criteria: { minPriceUsd: 250, maxPriceUsd: 700 } });
+
+    // Los cubos de la fixture van de $200 a $1000: el de abajo termina en
+    // $240 y los tres de arriba arrancan en $720, así que ninguno de los
+    // cuatro tiene un solo aviso que el rango $250–$700 admita.
+    expect(markup.split('data-placement="outside"').length - 1).toBe(4);
+    expect(markup.split('data-placement="within"').length - 1).toBe(4);
+  });
+
+  it("sin precio puesto ninguna queda afuera: no hay nada que excluya", () => {
+    const markup = render();
+
+    expect(markup).not.toContain('data-placement="outside"');
+    expect(markup).toContain('data-placement="within"');
+  });
+
+  it("la frase nombra el lugar y nunca sirve «En ,»", () => {
+    const markup = render({ chosenZoneIds: ["chacao", "altamira"] });
+
+    expect(markup).toContain("En Chacao y Altamira, la mayoría está entre");
+    expect(markup).not.toContain("En ,");
+  });
+
+  it("una fila de barras es una imagen de datos, y se dice en palabras", () => {
+    // El color solo es «invisible para quien no distingue colores y para el
+    // modo de alto contraste» (violation-copy.ts). Las barras van
+    // `role="img"` con el dibujo escrito al lado.
+    const markup = render({ criteria: { minPriceUsd: 250, maxPriceUsd: 700 } });
+
+    expect(markup).toContain('role="img"');
+    expect(markup).toContain("dentro del rango elegido");
+  });
+
+  it("por debajo de doce avisos dice cuántos hay en vez de dibujar cero barras", () => {
+    const pocos = { ...COUNTS, byPriceBucket: [{ count: 4, lowestUsd: 300, highestUsd: 480 }] };
+    const markup = render({ counts: pocos });
+
+    expect(markup).toContain("Con 4 avisos no alcanza");
+    expect(markup).not.toContain("data-placement=");
+    // Y el formulario sigue entero: lo que se calla es el dibujo.
+    expect(markup).toContain('id="precio-desde"');
   });
 });

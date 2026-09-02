@@ -1,10 +1,10 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { readPublicationDraft } from "@/modules/listing-publication/application/publication-draft-session";
 import { MAX_PHOTO_BYTES } from "@/modules/listing-publication/domain/uploaded-photo";
 import { createR2PhotoStorage } from "@/modules/listing-publication/infrastructure/r2-photo-storage";
 import { requireSession } from "../../_lib/require-session";
-import { DRAFT_COOKIE, DRAFT_TEXT_COOKIE, parseStoredDraft } from "../draft";
+import { publicationDraftDependencies } from "../draft";
 import { type RequestedUpload, validateUploadRequest } from "./upload-request";
 
 /**
@@ -38,10 +38,10 @@ export async function requestUploadTargets(
   // Photos belong to a listing somebody has already described. Without a
   // draft there is nothing to attach them to, and issuing write grants for a
   // listing that will never exist is how an empty prefix fills up.
-  const store = await cookies();
-  const draft = parseStoredDraft(
-    store.get(DRAFT_COOKIE)?.value,
-    store.get(DRAFT_TEXT_COOKIE)?.value,
+  const draft = await readPublicationDraft(
+    session.userId,
+    new Date(),
+    publicationDraftDependencies(),
   );
   if (!draft) return { ok: false, violations: ["draft.missing"] };
 

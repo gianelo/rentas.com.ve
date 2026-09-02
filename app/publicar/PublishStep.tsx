@@ -16,20 +16,22 @@ import {
   type ListingField,
 } from "../../src/modules/listing-publication/domain/violation-field";
 import type { PublicationZoneOption } from "../../src/modules/listing-publication/domain/zone-search";
+import type { PriceStepHistogramView } from "../../src/modules/listing-search/domain/price-histogram-step";
 import { submitStep } from "./actions";
 import { FieldError } from "./FieldError";
 import { PhotoUploader } from "./fotos/PhotoUploader";
 import styles from "./publish-steps.module.css";
 import {
   DISCARD_CHANGE_LABEL,
+  DRAFT_EXPIRED_NOTICE,
   FEATURE_LABELS,
   STEP_COPY,
   STEP_MAP_TRIGGER_LABEL,
 } from "./step-copy";
 import {
   PUBLISH_VIOLATION_COPY,
-  PUBLISHER_TYPE_IMMUTABLE_LEAD,
-  PUBLISHER_TYPE_IMMUTABLE_STRESS,
+  PUBLISHER_TYPE_ONE_WAY_LEAD,
+  PUBLISHER_TYPE_ONE_WAY_STRESS,
 } from "./violation-copy";
 
 /**
@@ -76,6 +78,17 @@ export interface PublishStepProps {
    */
   readonly jumpable: readonly PublishStepId[];
   readonly progress: number;
+  /**
+   * Esta cuenta volvió y su borrador se había vencido (18.34).
+   *
+   * **La decide `readPublicationDraftOrExpiry`, no esta pantalla**, y llega como
+   * prop requerida por la misma razón que `jumpable` y `discardHref`: opcional,
+   * un renderer nuevo se olvidaría de pasarla y la explicación desaparecería en
+   * silencio. Sólo puede ser `true` cuando no hay borrador, y sin borrador el
+   * único paso navegable es el 1 — así que no hace falta preguntar en cuál
+   * estamos, que sería un `if` de producto en un componente sin piso.
+   */
+  readonly draftExpired: boolean;
   readonly returningToReview: boolean;
   /**
    * Adonde lleva «Descartar el cambio», o `null` cuando este paso no lo ofrece.
@@ -91,6 +104,12 @@ export interface PublishStepProps {
   readonly zoneQuery?: string;
   readonly zoneResults?: readonly PublicationZoneOption[];
   readonly zoneName?: string;
+  /**
+   * El mercado de la zona en el paso 3 (18.9). Ausente cuando la pagina no
+   * consulto — que es lo unico que puede pasar, porque sin zona `page.tsx` no
+   * pregunta: la frase habla de un lugar o no se dice.
+   */
+  readonly priceHistogram?: PriceStepHistogramView;
 }
 
 function errorsByField(violations: readonly PublishViolation[], draft: PublicationDraft) {
@@ -207,6 +226,14 @@ export function PublishStep(props: PublishStepProps) {
         <main className={styles.column}>
           <h1 className={styles.title}>{copy.question}</h1>
           {copy.help ? <p className={styles.help}>{copy.help}</p> : null}
+
+          {/* Antes del formulario: explica por qué está vacío, y leerlo después
+              de contestarlo entero no explicaría nada. */}
+          {props.draftExpired ? (
+            <p className={styles.warning} role="status">
+              {DRAFT_EXPIRED_NOTICE}
+            </p>
+          ) : null}
 
           {/* El buscador del paso 2 es un GET aparte: un formulario dentro de
               otro no es HTML valido, y buscar no debe guardar nada. */}
@@ -338,6 +365,48 @@ function ZoneSearch({ query }: { query: string | undefined }) {
         Buscar
       </button>
     </form>
+  );
+}
+
+/**
+ * **El mercado de la zona debajo del campo de precio** (18.9, lamina «3 ·
+ * precio»). No decide nada: que barra marca la franja, como se llama el lugar,
+ * que dice la frase y que se lee por debajo del piso de doce vienen resueltos
+ * de `price-histogram-step.ts`. El alto de cada barra es el unico valor inline,
+ * porque es dato medido y no un tamano del sistema.
+ */
+function PriceStepMarket({ view }: { readonly view: PriceStepHistogramView }) {
+  if (view.kind === "insufficient") {
+    return (
+      <figure className={styles.market}>
+        <p className={styles.marketLine}>{view.notice}</p>
+      </figure>
+    );
+  }
+
+  return (
+    <figure className={styles.market}>
+      <figcaption className={styles.marketHeading}>{view.heading}</figcaption>
+      {/* Una fila de barras es una imagen de datos: se anuncia como UNA imagen
+          con el dibujo dicho en palabras, en vez de ocho cajas vacias que un
+          lector de pantalla recorreria sin poder decir nada de ellas. */}
+      <div className={styles.marketBars} role="img" aria-label={view.caption}>
+        {view.bars.map((bar, index) => (
+          <span
+            // biome-ignore lint/suspicious/noArrayIndexKey: la identidad de un cubo ES su lugar en el eje
+            key={index}
+            className={styles.marketBar}
+            data-band={bar.band}
+            style={{ blockSize: `${bar.heightPercent}%` }}
+          />
+        ))}
+      </div>
+      <div className={styles.marketAxis} aria-hidden="true">
+        <span>{view.fromLabel}</span>
+        <span>{view.toLabel}</span>
+      </div>
+      <p className={styles.marketLine}>{view.summary}</p>
+    </figure>
   );
 }
 
@@ -492,6 +561,7 @@ function StepFields(props: FieldsProps) {
               aria-describedby={errors.get("priceUsd") ? "priceUsd-error" : undefined}
             />
           </div>
+          {props.priceHistogram ? <PriceStepMarket view={props.priceHistogram} /> : null}
         </div>
       );
 
@@ -668,11 +738,11 @@ function StepFields(props: FieldsProps) {
             ))}
           </fieldset>
 
-          {/* La advertencia va ANTES, no despues de publicar. Declararlo mal
-              es motivo de baja, y nadie puede corregirlo despues. */}
+          {/* La advertencia va ANTES, no despues de publicar: declararlo mal es
+              motivo de baja, y desde la 18.38 solo se corrige en un sentido. */}
           <p className={styles.warning}>
-            {PUBLISHER_TYPE_IMMUTABLE_LEAD}
-            <strong>{PUBLISHER_TYPE_IMMUTABLE_STRESS}</strong>.
+            {PUBLISHER_TYPE_ONE_WAY_LEAD}
+            <strong>{PUBLISHER_TYPE_ONE_WAY_STRESS}</strong>.
           </p>
 
           <fieldset className={styles.choices}>

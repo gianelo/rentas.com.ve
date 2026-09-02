@@ -7,11 +7,13 @@ import type {
   FacetCounts,
   FacetedSearchPort,
   ListingAttribute,
+  PriceBucketTally,
   PriceRange,
   PublisherType,
   RelaxableFilter,
   RoomStep,
 } from "../application/ports/faceted-search.port";
+import { PRICE_HISTOGRAM_BUCKETS } from "../domain/price-histogram";
 import { LISTING_ATTRIBUTES, type SearchCriteria } from "../domain/search-criteria";
 
 /**
@@ -83,6 +85,12 @@ function countWhere(...conditions: readonly (SQL | undefined)[]): SQL<number> {
     predicate === undefined ? sql`count(*)` : sql`count(*) filter (where ${predicate})`;
   return expression.mapWith(Number);
 }
+
+/** Los cubos numerados como los numera `width_bucket`: desde 1, no desde 0. */
+const BUCKET_NUMBERS = Array.from({ length: PRICE_HISTOGRAM_BUCKETS }, (_, index) => index + 1);
+
+/** Un cubo crudo: cuántos, y `null` —no ausentes— cuando no hay ningún precio. */
+type RawBucket = readonly [count: number, lowestUsd: number | null, highestUsd: number | null];
 
 export class DrizzleFacetedSearch implements FacetedSearchPort {
   constructor(private readonly db: FacetedSearchDatabase) {}
@@ -178,9 +186,84 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
      */
     const without = (axis: FacetAxis) => countWhere(...others(axis));
 
+    // **Todo menos el filtro de precio**: misma regla que las otras seis
+    // facetas, y acá la más decisiva — el histograma existe para que alguien
+    // ELIJA un rango, y medido contra el ya elegido las barras caen a cero.
+    const priceless = and(...shared, ...others("price"));
+
+    /**
+     * **Los dos extremos del eje, calculados UNA vez** en una subconsulta unida
+     * por `true` —un producto de una sola fila— y no repetidos adentro de cada
+     * columna, que serían veinticuatro evaluaciones del mismo `min`.
+     *
+     * **El ensanche del borde de arriba no es cosmético**: con un solo precio
+     * distinto —una zona chica con cuatro avisos de $400, que es común— el
+     * mínimo y el máximo coinciden y `width_bucket` aborta la consulta entera
+     * con "lower bound cannot equal upper bound". Sumarle uno mete todo en el
+     * primer cubo, que es lo honesto: un solo precio no tiene distribución.
+     * Sin filas los dos son nulos y `width_bucket` devuelve nulo sin romperse.
+     */
+    const bounds = this.db
+      .select({
+        lowest: sql<number | null>`min(${listings.priceUsd})`.as("lowest"),
+        highest: sql<number | null>`case
+            when max(${listings.priceUsd}) > min(${listings.priceUsd}) then max(${listings.priceUsd})
+            else min(${listings.priceUsd}) + 1
+          end`.as("highest"),
+      })
+      .from(listings)
+      .where(priceless)
+      .as("price_bounds");
+
+    const bucketOf = sql`width_bucket(${listings.priceUsd}, ${bounds.lowest}, ${bounds.highest}, ${sql.raw(String(PRICE_HISTOGRAM_BUCKETS))})`;
+
+    /**
+     * Un cubo con sus tres números en un `jsonb`, en vez de veinticuatro
+     * columnas sueltas adentro de un `select` que ya tiene treinta.
+     *
+     * **`>=` en el último cubo: la trampa de `width_bucket`.** Parte `[lo, hi)`
+     * con el borde de arriba ABIERTO, así que el precio máximo cae en el cubo
+     * **N+1**, que no existe, y el aviso más caro desaparece del histograma que
+     * dice cuál es el más caro. Plegarlo con `least(…, N)` sería peor: `least`
+     * **ignora los nulos** y volvería un ocho el cubo nulo de una búsqueda
+     * sin filas.
+     */
+    const bucketCell = (number: number): SQL => {
+      const inside =
+        number === PRICE_HISTOGRAM_BUCKETS
+          ? sql`${bucketOf} >= ${number}`
+          : sql`${bucketOf} = ${number}`;
+      return sql`jsonb_build_array(
+        count(*) filter (where ${inside}),
+        min(${listings.priceUsd}) filter (where ${inside}),
+        max(${listings.priceUsd}) filter (where ${inside}))`;
+    };
+
+    /**
+     * **Los ocho cubos se agregan acá y no allá afuera**: la de afuera agrupa
+     * por zona, así que un cubo saldría partido y habría que rejuntarlo
+     * **sumando conteos pero comparando precios** — una rama que sólo falla
+     * cuando dos zonas caen en el mismo cubo, y que agregado entero no existe.
+     */
+    const priceFacet = this.db
+      .select({
+        tally: sql<readonly RawBucket[]>`jsonb_build_array(${sql.join(
+          BUCKET_NUMBERS.map(bucketCell),
+          sql`, `,
+        )})`.as("tally"),
+      })
+      .from(listings)
+      .innerJoin(bounds, sql`true`)
+      .where(priceless)
+      .as("price_facet");
+
     const rows = await this.db
       .select({
         zoneId: listings.zoneId,
+        // Los ocho cubos, iguales en cada fila porque se agregaron aparte
+        // (14.12). Se calculan siempre: saltearlos por debajo del piso de doce
+        // exigiría saber el total ANTES, o sea otra consulta.
+        priceTally: priceFacet.tally,
         // El total lleva todos: es la búsqueda entera, la que el botón dice.
         total: countWhere(...others()),
         // La faceta de zona ignora la zona elegida y respeta todo lo demás.
@@ -228,8 +311,14 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
         withinPrice: countWhere(priceFilter),
       })
       .from(listings)
+      // El histograma entra ya agregado, y su subconsulta devuelve UNA fila
+      // siempre —un agregado sin `group by` la devuelve incluso sobre cero
+      // filas—, así que unir por `true` no toca ninguna cuenta anterior.
+      .innerJoin(priceFacet, sql`true`)
       .where(and(...shared))
-      .groupBy(listings.zoneId);
+      // El arreglo entra al `group by` porque es una columna pelada en un
+      // `select` agrupado, no porque parta nada: tiene UN solo valor.
+      .groupBy(listings.zoneId, priceFacet.tally);
 
     const sums = {
       total: 0,
@@ -327,11 +416,29 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       byAttribute,
       byPropertyType,
       byPublisherType,
+      byPriceBucket: tallyOf(rows[0]?.priceTally),
       withoutFilter,
       cityTotal: sums.cityTotal,
       ...(widenedPrice === undefined ? {} : { withWidenedPrice: sums.widened }),
     };
   }
+}
+
+/**
+ * Los ocho cubos como el dominio los pide, o los ocho ceros. **Sin filas no hay
+ * arreglo que leer, y ese cero no es una aproximación**: el histograma mira un
+ * subconjunto de lo que mira la consulta de afuera. Y `null` no es ausente —
+ * un cubo vacío **no nombra ningún precio**, porque hay diferencia entre "no
+ * hay ninguno" y "hay uno que no sé cuál es" (AGENTS.md §7).
+ */
+function tallyOf(cells: readonly RawBucket[] | undefined): PriceBucketTally[] {
+  return BUCKET_NUMBERS.map((_, index) => {
+    const cell = cells?.[index];
+    if (cell === undefined) return { count: 0 };
+    const [count, lowestUsd, highestUsd] = cell;
+    if (count === 0 || lowestUsd === null || highestUsd === null) return { count };
+    return { count, lowestUsd, highestUsd };
+  });
 }
 
 /** Los dos extremos del precio como una condición, o `undefined` si no hay ninguno. */

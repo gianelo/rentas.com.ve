@@ -49,6 +49,7 @@ function dibujar(
       // Sin riel no hay mapa: esta prueba mira el error de campo, no la barra.
       jumpable={[]}
       progress={30}
+      draftExpired={false}
       returningToReview={false}
       discardHref={null}
       primaryLabel="Siguiente"
