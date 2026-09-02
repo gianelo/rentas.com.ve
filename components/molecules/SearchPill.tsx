@@ -94,7 +94,11 @@ export function SearchPill({
               {state.filterLabel}
             </span>
             {state.filterCount > 0 ? (
-              <span className={styles.filterCount} aria-hidden="true">
+              <span
+                className={styles.filterCount}
+                data-testid="pill-filter-count"
+                aria-hidden="true"
+              >
                 {state.filterCount}
               </span>
             ) : null}

@@ -25,6 +25,31 @@
   overflow: hidden;
 }
 
+/* El ancla de la placa. La tarjeta entera no sirve de ancla: `.link::after` ya
+   la usa para extender el área tocable, y anclar acá deja los 8 px de la lámina
+   medidos desde el borde de la FOTO y no desde el borde de la tarjeta. */
+.cover {
+  position: relative;
+}
+
+/* **El piso opaco de la placa** (14.53). Del tamaño exacto de la placa
+   —`inline-flex` se ajusta al contenido— y nunca del ancho de la portada, que
+   sería una banda blanca sobre la imagen.
+
+   Existe porque la garantía de la 14.25 no sobrevive sola encima de una foto:
+   la distinción es relleno contra borde, y un borde sin relleno sobre una foto
+   oscura no se ve. Opaco a propósito — ni `opacity` ni un `rgba`, que dejarían
+   pasar la foto y devolverían el contraste al azar de lo que subió quien
+   publica. */
+.badgeSlot {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: inline-flex;
+  border-radius: var(--rs);
+  background: var(--surface);
+}
+
 .photo {
   display: block;
   width: 100%;

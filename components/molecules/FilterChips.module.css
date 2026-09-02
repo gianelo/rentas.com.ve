@@ -1,11 +1,27 @@
 /* La fila de filtros puestos de la lámina 7c. Envuelve en vez de desplazarse
-   de costado: cinco fichas en 360 px no entran en un renglón, y una fila que
-   se va de lado esconde justamente el filtro que alguien quiere sacar. */
+   de costado: cinco fichas no entran en un renglón angosto, y una fila que se
+   va de lado esconde justamente el filtro que alguien quiere sacar.
+
+   **Y en el teléfono no se dibuja** (14.53, decisión del fundador del
+   2026-09-02: *«sí quítalos, ocupan mucho espacio»*). A 360 px las cinco se
+   plegaban a cuatro líneas y se llevaban 154 px antes de la primera foto — la
+   mitad del hueco que la 14.29 mide. La lámina 6c no las dibuja: pone el
+   número de filtros activos dentro de la pastilla, que es lo que queda
+   diciendo que la búsqueda está filtrada (14.31). La 7c sí las dibuja, y ahí
+   entran en un renglón y no cuestan nada.
+
+   **Se esconde, no se deja de emitir, y no es una comodidad: el servidor no
+   sabe el ancho de la pantalla.** Decidirlo allá pediría husmear el
+   `User-Agent` —poco fiable, y rompe una sola respuesta cacheable para todos
+   los anchos— o decidirlo en el cliente, que contradice el piso de AGENTS.md
+   §2. `display: none` saca además al enlace del orden de tabulación y del
+   árbol de accesibilidad, así que no queda una parada invisible; lo que sí se
+   sigue pagando son sus bytes. */
 .chips {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
+  display: none;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--gap);
@@ -54,6 +70,12 @@
 }
 
 @media (min-width: 768px) {
+  /* El mismo quiebre en el que la cuadrícula pasa a cuatro columnas: 7c es la
+     lámina de los dos, y las fichas son de ella. */
+  .chips {
+    display: flex;
+  }
+
   .remove,
   .clear {
     min-block-size: var(--target-min-desktop);
