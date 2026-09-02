@@ -18,10 +18,12 @@ import { expect, test } from "@playwright/test";
 const PASTILLA = "nav-harness-busqueda";
 
 test.describe("14.51 — las sugerencias mientras se escribe", () => {
-  test("14.51: escribir «alta» ofrece Altamira con su ámbito y su conteo", async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/measure");
+  });
 
+  test("14.51: escribir «alta» ofrece Altamira con su ámbito y su conteo", async ({ page }) => {
     const pastilla = page.getByTestId(PASTILLA);
     // Nada dibujado antes de escribir: la mejora no ocupa la pantalla de nadie.
     await expect(pastilla.getByRole("list", { name: "Sugerencias" })).toHaveCount(0);
@@ -46,9 +48,6 @@ test.describe("14.51 — las sugerencias mientras se escribe", () => {
   test("14.51: un nombre repetido se ofrece dos veces, cada uno con su ciudad", async ({
     page,
   }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto("/measure");
-
     const pastilla = page.getByTestId(PASTILLA);
     await pastilla.getByRole("searchbox").fill("centro");
 
@@ -67,9 +66,6 @@ test.describe("14.51 — las sugerencias mientras se escribe", () => {
    * correcta. El arnés le pone conteo cero a Chacao a propósito.
    */
   test("14.51: una zona sin avisos activos no se ofrece", async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto("/measure");
-
     const pastilla = page.getByTestId(PASTILLA);
     await pastilla.getByRole("searchbox").fill("chacao");
 
@@ -83,9 +79,6 @@ test.describe("14.51 — las sugerencias mientras se escribe", () => {
   });
 
   test("14.51: Escape cierra la lista sin borrar lo escrito", async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto("/measure");
-
     const pastilla = page.getByTestId(PASTILLA);
     const campo = pastilla.getByRole("searchbox");
     await campo.fill("alta");
