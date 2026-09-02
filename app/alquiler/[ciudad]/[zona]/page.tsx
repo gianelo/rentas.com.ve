@@ -193,7 +193,8 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
   // Que la ficha se pase cuando hay UNA tarjeta y no cuando el total es 1 es
   // lo mismo dicho antes: `resolveSearchConfirm` sólo la mira con el total en
   // 1, y con el total en 1 la única página trae esa única tarjeta.
-  const { panel, counts, outcome } = await buildFilterPanel(new DrizzleFacetedSearch(db), {
+  const facets = new DrizzleFacetedSearch(db);
+  const { panel, counts, outcome, priceNotices } = await buildFilterPanel(facets, {
     basePath,
     cityPath,
     query,
@@ -344,6 +345,15 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
           {total === 1 ? "1 propiedad activa" : `${total} propiedades activas`}
           {pagination.count > 1 ? ` — página ${pagination.current} de ${pagination.count}` : ""}
         </p>
+
+        {/* **Lo que se le corrigió al precio, dicho** (14.13, F5). Misma razón
+            que el aviso de arriba: una corrección callada es una pantalla
+            mintiendo sobre lo que hizo. La frase la escribe el dominio. */}
+        {priceNotices.map((notice) => (
+          <p key={notice} className={styles.alsoIn} role="status">
+            {notice}
+          </p>
+        ))}
 
         {/* **Los filtros puestos, quitables de a uno** (lámina 7c). Reemplazan a
             lo que la barra lateral mostraba de un vistazo. Cuáles son y adónde

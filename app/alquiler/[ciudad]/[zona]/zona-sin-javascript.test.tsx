@@ -189,3 +189,27 @@ describe("la página de zona sin JavaScript", () => {
     expect(volver).toBe("/alquiler/maracaibo/tierra-negra?max=500");
   });
 });
+
+/**
+ * **Lo mismo acá, y no por simetría** (14.13, F5): son dos archivos, y el que
+ * se olvidara del cable dejaría media mitad del producto corrigiendo en
+ * silencio sin romper nada visible — la forma de fallo que la 16.9 documentó.
+ */
+describe("lo que la búsqueda le corrigió al precio, dicho (14.13)", () => {
+  it("dice que intercambió los dos extremos, con los números que se pidieron", async () => {
+    const html = await servedBody("maracaibo", "tierra-negra", { min: "900", max: "300" });
+
+    expect(html).toContain("Pediste de $900 a $300");
+    expect(search).toHaveBeenCalledWith(
+      expect.objectContaining({ minPriceUsd: 300, maxPriceUsd: 900 }),
+    );
+  });
+
+  it("una búsqueda que no se corrigió no dice nada", async () => {
+    // El otro lado: una frase que saliera siempre pasaría la de arriba.
+    const html = await servedBody("maracaibo", "tierra-negra", { min: "300", max: "900" });
+
+    expect(html).not.toContain("Pediste de");
+    expect(html).not.toContain("se ajustó");
+  });
+});

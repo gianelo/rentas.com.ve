@@ -121,6 +121,16 @@ export interface SearchCriteria {
   readonly page?: number;
 }
 
+/**
+ * Un precio de la dirección, leído con **exactamente la misma regla** que el
+ * criterio. Lo lee `price-correction.ts` (14.13): un segundo lector más
+ * permisivo anunciaría la corrección de un filtro que `buildSearchCriteria`
+ * había descartado sin aplicar.
+ */
+export function readPriceUsd(raw: string | null | undefined): number | undefined {
+  return readCount(raw);
+}
+
 /** Whole, non-negative, and actually a number. Anything else is noise. */
 function readCount(raw: string | null | undefined): number | undefined {
   if (raw === null || raw === undefined || raw.trim() === "") return undefined;

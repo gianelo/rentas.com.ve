@@ -67,6 +67,12 @@ export interface PriceBucketTally {
   readonly highestUsd?: number;
 }
 
+/** El aviso más barato y el más caro que se encontró — los dos rótulos del eje. */
+export interface PriceExtremes {
+  readonly lowestUsd: number;
+  readonly highestUsd: number;
+}
+
 /**
  * Una franja de precios con los avisos que lleva adentro.
  *
@@ -178,6 +184,19 @@ function narrowestMajority(counts: readonly number[], total: number): [number, n
     if (best !== null) return best;
   }
   return whole;
+}
+
+/**
+ * Los dos precios reales que enmarcan la cuenta, o `null` si no hay ninguno.
+ *
+ * **Es el eje del histograma sin el piso de los doce avisos**, y esa diferencia
+ * es todo el motivo de que exista aparte: dibujar sobre tres es ruido vestido
+ * de dato, pero «el más caro cuesta $900» es cierto con tres y con trescientos.
+ */
+export function priceExtremes(tally: readonly PriceBucketTally[]): PriceExtremes | null {
+  if (!tally.every((bucket) => isWholeCount(bucket.count))) return null;
+  const axis = bandOver(tally);
+  return axis === null ? null : { lowestUsd: axis.fromUsd, highestUsd: axis.toUsd };
 }
 
 /**

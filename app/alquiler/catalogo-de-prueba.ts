@@ -105,6 +105,10 @@ export function facetsFor(
   offeredZoneIds: readonly string[],
 ): FacetCounts {
   const rows = matching(criteria);
+  // Las mismas filas con el precio apagado: es contra ellas que se reparte el
+  // histograma, y de ellas salen los extremos reales del mercado.
+  const { minPriceUsd: _min, maxPriceUsd: _max, ...withoutPrice } = criteria;
+  const unpriced = matching(withoutPrice);
   const cityTotal = LISTINGS.filter((row) => row.cityId === criteria.cityId).length;
   const byZone: Record<string, number> = {};
   for (const id of offeredZoneIds) byZone[id] = 0;
@@ -127,14 +131,20 @@ export function facetsFor(
     // repartición válida y ninguna de las dos pantallas que leen este catálogo
     // dibuja todavía una barra. Repartir de verdad sería meter la regla del
     // histograma en `app/`, donde no vive.
+    //
+    // **Se cuenta SIN el filtro de precio**, como el adaptador real (14.12
+    // rebanada B, decisión (a)): es esa propiedad la que deja saber cuánto
+    // cuesta el más caro cuando el mínimo pedido no lo alcanza (14.13).
     byPriceBucket: [
-      rows.length === 0
-        ? { count: 0 }
-        : {
-            count: rows.length,
-            lowestUsd: Math.min(...rows.map((row) => row.priceUsd)),
-            highestUsd: Math.max(...rows.map((row) => row.priceUsd)),
-          },
+      ...(unpriced.length === 0
+        ? [{ count: 0 }]
+        : [
+            {
+              count: unpriced.length,
+              lowestUsd: Math.min(...unpriced.map((row) => row.priceUsd)),
+              highestUsd: Math.max(...unpriced.map((row) => row.priceUsd)),
+            },
+          ]),
       ...Array.from({ length: 7 }, () => ({ count: 0 })),
     ],
     withoutFilter: {
