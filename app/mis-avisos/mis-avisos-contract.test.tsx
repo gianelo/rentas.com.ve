@@ -268,6 +268,85 @@ describe("/mis-avisos — la lista de avisos (14d)", () => {
     expect(html).not.toContain("Subir fotos");
   });
 
+  /**
+   * tasks.md 19.6 — **el segundo canal, servido en los bytes de la ruta.** El
+   * correo de purga puede no llegar y una borrada irreversible no puede
+   * depender de que llegue. Lo que se afirma acá es que la frase que el
+   * dominio ya decidió SALE del servidor; qué dice y cuándo lo prueba
+   * `retention-notice.test.ts`, bajo el piso de 90%.
+   */
+  it("un aviso vencido con fotos sirve el conteo regresivo de la purga", async () => {
+    listPublisherListings.mockResolvedValue(
+      boardOf([
+        listing({
+          id: "vencida",
+          status: "expired",
+          photoCount: 4,
+          expiresAt: new Date("2026-08-17T12:00:00Z"),
+        }),
+      ]),
+    );
+
+    const html = await draw();
+
+    expect(html).toContain("Sus fotos se borran el 1 de septiembre");
+    expect(html).toContain("Renovalo antes de esa fecha y el aviso vuelve con sus fotos.");
+  });
+
+  /**
+   * tasks.md 19.7 — **la otra mitad del mismo botón.** Las dos ramas se
+   * afirman por separado y la de acá comprueba además que la del otro lado NO
+   * salió: una pantalla que dibujara las dos frases juntas pasaría cualquiera
+   * de las dos aserciones sola.
+   */
+  it("un aviso vencido sin fotos sirve la otra promesa, y no la del conteo", async () => {
+    listPublisherListings.mockResolvedValue(
+      boardOf([
+        listing({
+          id: "purgada",
+          status: "expired",
+          photoCount: 0,
+          expiresAt: new Date("2026-08-17T12:00:00Z"),
+        }),
+      ]),
+    );
+
+    const html = await draw();
+
+    // El control: la ficha se sigue dibujando entera. Sin esto, una pantalla
+    // que no dibujara NADA pasaría las dos negativas de abajo.
+    expect(html).toContain("Apartamento amoblado en La Castellana");
+    expect(html).toContain("Las fotos de este aviso ya se borraron.");
+    expect(html).toContain("Volver a publicarlo significa subir las fotos de nuevo.");
+    expect(html).not.toContain("Renovalo antes de esa fecha");
+  });
+
+  /**
+   * El par positivo de la negativa. Un aviso activo no corre riesgo y no
+   * puede leer un conteo regresivo de sus fotos; sin la primera aserción,
+   * una pantalla que hubiera dejado de dibujar el aviso de retención en
+   * TODAS las fichas pasaría la segunda.
+   */
+  it("el conteo aparece en la ficha vencida y en ninguna otra de la misma lista", async () => {
+    listPublisherListings.mockResolvedValue(
+      boardOf([
+        listing({
+          id: "vencida",
+          status: "expired",
+          photoCount: 4,
+          expiresAt: new Date("2026-08-17T12:00:00Z"),
+        }),
+        listing({ id: "activa", status: "active", photoCount: 3 }),
+      ]),
+    );
+
+    const html = await draw();
+    const conteos = html.match(/data-retencion="/g) ?? [];
+
+    expect(conteos).toHaveLength(1);
+    expect(html).toMatch(/data-estado="expired"[\s\S]*?data-retencion="countdown"/);
+  });
+
   /** La puerta de la 9.26 sigue en pie: lo que esta porción agrega no la mueve. */
   it("sigue mostrando «Importar cartera» para una cuenta habilitada", async () => {
     const html = await draw();
