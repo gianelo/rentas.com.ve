@@ -282,10 +282,23 @@ describe("no webfont, no read-path JS (1b.18)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Form fields (3.9). These are SYSTEM rules, not publish-form rules: the
-// renewal screen, the report flow and the import preview all get them by
-// composing `Field`, and each assertion below is the thing that would
-// silently rot if a future screen hand-rolled its own markup instead.
+// Form fields (3.9). These are SYSTEM rules and not publish-form rules: each
+// assertion below is the thing that would silently rot if a screen hand-rolled
+// its own markup instead.
+//
+// **CORREGIDO EL 2026-09-02, contando consumidores archivo por archivo (1b.5).**
+// Esta cabecera decía que «la pantalla de renovación, el flujo de reporte y la
+// vista previa de la importación» obtenían estas reglas componiendo `Field`.
+// Los tres son falsos, y verificados uno por uno: la renovación no es una
+// pantalla sino `app/renovar/[token]/route.ts`, un manejador de ruta sin
+// formulario; `reportar/page.tsx` sólo lleva campos ocultos y sus propios
+// controles; e `ImportarCartera.tsx` escribe su `<input type="file">` a mano.
+// El único consumidor vivo de `Field` es `ContactBlock.tsx`.
+//
+// La cuenta importa porque cambia lo que este bloque prueba: no que el sistema
+// haya adoptado un campo común —no lo ha hecho, y eso es lo que la 1b.5 sigue
+// teniendo abierto—, sino que la pieza que existe es correcta. La adopción se
+// afirma abajo, y por separado.
 // ---------------------------------------------------------------------------
 
 const fieldCss = readFileSync("components/molecules/Field.module.css", "utf-8");
@@ -366,4 +379,46 @@ describe("field geometry comes from tokens, not literals (3.9/D16)", () => {
    * razón que la 14.42 dejó escrita más arriba: una aserción mudada de sujeto
    * dice seguir protegiendo lo de antes y protege otra cosa.
    */
+});
+
+/** Cada componente entregado bajo un directorio, recorriendo el árbol. */
+function shippedComponents(root: string): readonly string[] {
+  return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(root, entry.name);
+    if (entry.isDirectory()) return shippedComponents(path);
+    if (extname(entry.name) !== ".tsx" || entry.name.includes(".test.")) return [];
+    return [path];
+  });
+}
+
+/**
+ * **Que `Field` lo componga alguien, y no sólo esta prueba (1b.5).**
+ *
+ * Es la lección de la 8.9 escrita como aserción en vez de como párrafo.
+ * `FieldRow` se entregó probado y sin que lo dibujara nadie, y su prueba
+ * estuvo verde hasta el día que se borró la pieza entera: una aserción sobre
+ * un componente sin consumidor no protege el producto, protege un archivo.
+ * `Field` está hoy a un consumidor de esa misma situación —`ContactBlock` es
+ * el único—, y lo que lo delató fue contar, no leer la cabecera de arriba, que
+ * nombraba tres.
+ *
+ * **Se cuenta del árbol y no de una lista**: una lista de consumidores se
+ * pondría roja al AGREGAR uno, que es justo el movimiento que esta tarea
+ * quiere. Ésta sólo se pone roja cuando desaparece el último.
+ */
+describe("el campo del sistema tiene quien lo dibuje (1b.5)", () => {
+  const consumers = ["components", "app"]
+    .flatMap(shippedComponents)
+    .filter((path) => path !== join("components", "molecules", "Field.tsx"))
+    .filter((path) => /<Field[\s/>]/.test(readFileSync(path, "utf-8")));
+
+  // Sin esto, un recorrido que se leyera vacío dejaría la afirmación de abajo
+  // comparando nada contra nada.
+  it("la guarda: el recorrido encuentra los componentes entregados", () => {
+    expect(["components", "app"].flatMap(shippedComponents).length).toBeGreaterThan(20);
+  });
+
+  it("lo compone código entregado, no sólo esta prueba", () => {
+    expect(consumers).not.toEqual([]);
+  });
 });
