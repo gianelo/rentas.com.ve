@@ -69,6 +69,19 @@
   font-size: var(--ficha-body-fs);
   line-height: 1.45;
 }
+/* El aviso de que el enlace se abrió en otro dispositivo (9c, 15.14). Sale
+   servido con `hidden`, así que sin JavaScript no ocupa nada; el guion se lo
+   quita. Toma el tinte de la marca de arriba: es una buena noticia, no un
+   error. */
+.entered {
+  margin: 20px 0 0;
+  padding: 12px 16px;
+  border-radius: var(--r);
+  background: var(--tint);
+  font-size: var(--ficha-body-fs);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
 /* Apiladas en el teléfono (8c) y lado a lado en escritorio (9c): con 520 de
    ancho las dos entran, y a 360 una al lado de la otra parte las etiquetas. */
 .actions {

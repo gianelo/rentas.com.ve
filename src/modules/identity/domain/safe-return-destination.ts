@@ -38,6 +38,16 @@ export const SIGN_IN_FALLBACK = "/signin";
 export const SIGN_IN_WAIT_PATH = "/signin/revisa-tu-correo";
 
 /**
+ * El sondeo de esa pantalla (15.12, 15.14). **Cuelga de ella y no es una ruta
+ * de primer nivel**, por lo mismo que la pantalla cuelga de la puerta: el
+ * alcance `/signin` de la cookie del comprobante lo cubre entero, y una ruta
+ * hermana en la raíz quedaría fuera y habría que ensanchar la cookie para
+ * llegarle. Lo nombran dos sitios que no se ven —la ruta y el guion que la
+ * pregunta—, así que se escribe una vez.
+ */
+export const SIGN_IN_POLL_PATH = `${SIGN_IN_WAIT_PATH}/estado`;
+
+/**
  * Un origen que no existe. Nunca se emite: sólo sirve para que `URL` acepte una
  * ruta relativa y para tener contra qué comparar el origen del candidato.
  */

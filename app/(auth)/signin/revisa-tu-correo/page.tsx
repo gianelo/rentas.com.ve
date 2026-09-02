@@ -9,6 +9,7 @@ import {
 } from "../../../../src/modules/identity/domain/magic-link-request";
 import {
   SIGN_IN_FALLBACK,
+  SIGN_IN_POLL_PATH,
   safeSignInReturn,
 } from "../../../../src/modules/identity/domain/safe-return-destination";
 import { signIn } from "../../../../src/modules/identity/infrastructure/auth";
@@ -32,9 +33,14 @@ export const metadata: Metadata = {
  *
  * **La cuenta regresiva la calcula el servidor, que es quien sabe cuándo salió
  * el enlace.** Con el script apagado el número es una foto del instante en que
- * se sirvió la página: no se mueve solo, y eso es todo lo que se pierde. El tic
- * —y el sondeo que avisa cuando la sesión abrió en otro dispositivo— son la
- * mejora de la 15.12, deliberadamente fuera de esta entrega: primero el piso.
+ * se sirvió la página: no se mueve solo, y eso es todo lo que se pierde.
+ *
+ * **El sondeo (15.12/15.14) es una mejora y nunca el mecanismo.** Va en línea
+ * —veinte líneas, sin React y sin peso en el paquete de las pantallas que
+ * importan— y lo único que hace es descubrir un aviso que ya salió servido.
+ * Cada cuánto pregunta, hasta cuándo y qué dice el aviso salen de
+ * `magicLinkWaitFor`: acá no se decide nada, tampoco del lado del navegador.
+ * Sin JavaScript la pantalla queda exactamente como estaba.
  *
  * **Sin `"use client"` y sin la marca de Google**, igual que las otras dos
  * puertas: los dos controles son formularios con Server Action, y el disco de
@@ -87,6 +93,14 @@ export default async function VerifyRequestPage() {
               </ul>
             </section>
 
+            {/* **Servido y escondido, no inyectado.** El texto sale del
+                dominio y viaja en el HTML; el guion sólo le quita el `hidden`.
+                Escribirlo desde el guion metería copia de producto en el
+                frente, que es la regla permanente del fundador. */}
+            <p className={styles.entered} data-testid="espera-entro" role="status" hidden>
+              {wait.signedInNotice}
+            </p>
+
             <div className={styles.actions} data-testid="espera-acciones">
               {wait.resend.allowed ? (
                 <form action={requestMagicLink}>
@@ -114,6 +128,40 @@ export default async function VerifyRequestPage() {
           </div>
         </Container>
       </main>
+
+      {wait.poll === null ? null : (
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: el guion va en línea a propósito — así no pesa en el paquete de las pantallas del camino de lectura — y su contenido lo arma este servidor, sin un solo dato de quien pide.
+          dangerouslySetInnerHTML={{
+            __html: guionDelSondeo(wait.poll.everySeconds, wait.poll.forSeconds),
+          }}
+        />
+      )}
     </div>
   );
+}
+
+/**
+ * El sondeo, en el navegador. **Ninguna regla acá**: cada cuánto, hasta cuándo
+ * y qué se lee los decidió el dominio; esto pregunta y descubre un párrafo.
+ *
+ * Se detiene solo en tres casos —se acabó la vida del enlace, el servidor no
+ * contestó (204: sin comprobante no hay nada que saber) o la red falló—, así
+ * que una pestaña olvidada no queda preguntando para siempre.
+ */
+function guionDelSondeo(everySeconds: number, forSeconds: number): string {
+  return `(function(){
+var a=document.querySelector('[data-testid="espera-entro"]');
+if(!a||!window.fetch)return;
+var fin=Date.now()+${forSeconds * 1000};
+var t=setInterval(function(){
+if(Date.now()>fin){clearInterval(t);return;}
+fetch(${JSON.stringify(SIGN_IN_POLL_PATH)},{headers:{accept:'application/json'}}).then(function(r){
+return r.status===200?r.json():null;
+}).then(function(d){
+if(d===null){clearInterval(t);return;}
+if(d.entro){clearInterval(t);a.hidden=false;}
+}).catch(function(){clearInterval(t);});
+},${everySeconds * 1000});
+})();`;
 }
