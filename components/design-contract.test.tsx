@@ -172,28 +172,19 @@ describe("los tokens que el conjunto no nombraba (16.22–16.26)", () => {
   const stripCss = readFileSync("components/molecules/ListingStrip.module.css", "utf-8");
 
   /**
-   * **Lo que la 14.42 se llevó de este bloque, dicho acá y no en el mensaje del
-   * commit.** Tres aserciones leían `SearchBar.module.css`: que `.bar` usara
-   * `--searchbar-h`, que `.label` usara `--searchbar-fs`, y el `it` entero de
-   * «la sombra es un token y no la línea del borde». Su sujeto era esa hoja, y
-   * la hoja se borró con la pieza. Se borran con ella en vez de reapuntarlas a
-   * `SearchPill.module.css`: una aserción mudada de sujeto es una que dice
-   * seguir protegiendo lo de antes y protege otra cosa, y eso es peor que no
-   * tenerla, porque nadie vuelve a mirarla.
+   * **Lo que la 14.42 se llevó de este bloque, y lo que se llevó la 14.48.** La
+   * 14.42 borró tres aserciones que leían `SearchBar.module.css` —`.bar` con
+   * `--searchbar-h`, `.label` con `--searchbar-fs`, y el `it` entero de «la
+   * sombra es un token y no la línea del borde»— porque su sujeto era esa hoja
+   * y la hoja se fue con la pieza. **No se reapuntaron a `SearchPill.module.css`**:
+   * una aserción mudada de sujeto dice seguir protegiendo lo de antes y protege
+   * otra cosa, y eso es peor que no tenerla.
    *
-   * **`--searchbar-h` y `--searchbar-fs` quedan sin un solo uso** — eran de esa
-   * hoja y de ninguna otra. No se borran acá: sacar un token es un cambio al
-   * conjunto (SISTEMA.md) y no un uso de él, y `lint:tokens` no lo exige porque
-   * verifica paridad de temas y literales, nunca si alguien lo usa. Queda
-   * anotado como hallazgo de la 14.42. Lo que sigue abajo sí sobrevive: mide
-   * `tokens.css`, que es un sujeto que no se borró.
+   * La 14.48 se llevó las dos que quedaban —«el alto propio de la barra no
+   * queda por debajo del mínimo táctil: 50 ≥ 44» y las dos líneas de
+   * `--searchbar-*` de la que sigue—, **con los tokens y no antes**: medían dos
+   * declaraciones que ya no existen. Lo que sobrevive mide tokens vivos.
    */
-  it("el alto propio de la barra no queda por debajo del mínimo táctil: 50 ≥ 44", () => {
-    expect(Number.parseFloat(tokenValue("--searchbar-h"))).toBeGreaterThanOrEqual(
-      Number.parseFloat(tokenValue("--target-min")),
-    );
-  });
-
   it("la sombra repinta al cambiar de tema, como cualquier otro color", () => {
     // Una sombra clara sobre un fondo oscuro no levanta nada: se ve como una
     // mancha. `lint:tokens` ya exige que los dos temas la declaren distinta;
@@ -211,13 +202,10 @@ describe("los tokens que el conjunto no nombraba (16.22–16.26)", () => {
   it("cada tamaño nuevo es el del diseño, no el del token que se le parecía", () => {
     // Si alguno volviera a apuntar al token vecino, este bloque seguiría en
     // verde por casualidad — salvo que se compare contra el número dibujado.
-    expect(tokenValue("--searchbar-h")).toBe("50px");
-    expect(tokenValue("--searchbar-fs")).toBe("14px");
     expect(tokenValue("--strip-subtitle-fs")).toBe("12.5px");
     expect(tokenValue("--strip-subtitle-fs-desktop")).toBe("13px");
-    // Y son distintos de sus vecinos, que es lo que los hace tokens propios y
-    // no alias: 14 ≠ --control-fs (15) y 12,5 ≠ --meta-fs (12).
-    expect(tokenValue("--searchbar-fs")).not.toBe(tokenValue("--control-fs"));
+    // Y es distinto de su vecino, que es lo que lo hace un token propio y no
+    // un alias: 12,5 ≠ --meta-fs (12).
     expect(tokenValue("--strip-subtitle-fs")).not.toBe(tokenValue("--meta-fs"));
   });
 

@@ -1001,3 +1001,56 @@ test.describe("el fondo del modal de filtros (14.46)", () => {
     expect(seen.sheetTop).toBe(seen.panelTop);
   });
 });
+
+/**
+ * **14.48 — los dos tamaños que el conjunto declara por ancho, dibujados.**
+ *
+ * Los destapó el gate de usos de `lint:tokens`: `--pill-text-fs-desktop` y
+ * `--nav-avatar-fs` estaban declarados y ninguna hoja los leía, así que de cada
+ * par se pintaba una sola mitad — la pastilla a 13,5 en todos los anchos y las
+ * iniciales a 11,5 en todos. **`lint:tokens` no puede probar esto**: verifica
+ * que un valor SEA una propiedad personalizada, nunca qué píxel sale. Lo que
+ * sigue lee `getComputedStyle` en un navegador de verdad, que es la única forma
+ * de contestar «¿cuál de los dos números se dibujó?».
+ */
+test.describe("los pares de tamaño por ancho (14.48)", () => {
+  async function fontSizeOf(locator: import("@playwright/test").Locator) {
+    return locator.evaluate((element) => getComputedStyle(element).fontSize);
+  }
+
+  test("14.48: el texto de la pastilla es 13,5 en el teléfono y 14 en escritorio", async ({
+    page,
+  }) => {
+    await page.goto("/measure");
+    const input = page.getByTestId("nav-harness-busqueda").locator('input[type="search"]');
+
+    await page.setViewportSize({ width: 360, height: 800 });
+    const movil = await fontSizeOf(input);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const escritorio = await fontSizeOf(input);
+
+    console.log(`[14.48] pastilla: 360px=${movil} 1280px=${escritorio}`);
+    expect(movil).toBe("13.5px");
+    expect(escritorio).toBe("14px");
+    // Y el par es real: un solo token en las dos ramas daba el mismo número en
+    // los dos anchos, que es exactamente lo que había.
+    expect(movil).not.toBe(escritorio);
+  });
+
+  test("14.48: las iniciales del avatar son 13 en el teléfono y 11,5 en escritorio", async ({
+    page,
+  }) => {
+    await page.goto("/measure");
+    const initials = page.getByTestId("nav-harness-cuenta").getByText("MF", { exact: true });
+
+    await page.setViewportSize({ width: 360, height: 800 });
+    const movil = await fontSizeOf(initials);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const escritorio = await fontSizeOf(initials);
+
+    console.log(`[14.48] iniciales: 360px=${movil} 1280px=${escritorio}`);
+    expect(movil).toBe("13px");
+    expect(escritorio).toBe("11.5px");
+    expect(movil).not.toBe(escritorio);
+  });
+});

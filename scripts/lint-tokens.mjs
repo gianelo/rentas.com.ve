@@ -37,7 +37,7 @@
 // thumbnail geometry is ever inlined at a near-miss value, no gate catches
 // it — review does.
 //
-// Two checks run:
+// Three checks run:
 //   1. Literal-value scan (tasks.md 1b.3) — no component style file may
 //      write a colour literal, a corner radius, a thumbnail dimension, or
 //      a type size as a value instead of a custom property.
@@ -51,6 +51,16 @@
 //      inspector-flip criterion (SISTEMA.md) is meant to catch — an
 //      element carrying it would not repaint, and would retain its
 //      previous colour.
+//   3. Uso de cada token (tasks.md 14.48) — un token declarado que NADIE lee
+//      es invisible para las otras dos comprobaciones **por construcción**:
+//      la primera mira valores escritos en una hoja, y la segunda mira que
+//      los dos temas lo declaren. Ninguna puede ver lo que no aparece. Este
+//      repositorio ya encontró tres veces la misma forma de defecto —14.48
+//      (`--searchbar-*`), 16.37 (`--fpb`), 22.13 (`--ft`/`--tclamp`)— y las
+//      tres se destaparon a mano, barriendo. Y no es sólo peso muerto: un
+//      token huérfano al lado de uno vivo es cómo el `<h1>` del inicio
+//      terminó agarrando `--fpb`, que es el defecto fundacional que
+//      `tokens.css` documenta cuatro veces.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { extname, join, relative } from "node:path";
@@ -92,6 +102,37 @@ const TOKEN_ALIASES = new Map([
   // porque `var(--door-veil)` sin declarar no pinta nada: no da síntoma.
   ["--door-veil", "--scrim"],
 ]);
+
+/**
+ * tasks.md 14.48 — **los tokens que nadie usa, y por qué hay una excepción.**
+ *
+ * Un token declarado sin un solo `var(--x)` es casi siempre peso muerto, y
+ * sacarlo es gratis cuando la medida la inventó este proyecto. **No lo es
+ * cuando el token es DEL SISTEMA**: `design/reference/sistema/tokens.css` lo
+ * declara para las cuatro estructuras y `SISTEMA.md` lo nombra, así que
+ * retirarlo del subconjunto que ship*a* es un cambio al conjunto y no un uso de
+ * él — la 16.37 lo resolvió así para `--fpb`, con la decisión del fundador y su
+ * fila en `SISTEMA.md`. Esa es la única clase de falso positivo que este gate
+ * tiene hoy, y la salida no es apagarlo: es nombrar el token, su razón y la
+ * tarea que lo debe.
+ *
+ * **La excepción caduca sola.** Si un token de esta tabla vuelve a usarse, el
+ * gate falla igual — por la excepción vencida y no por el uso. Una lista de
+ * perdones que nadie limpia es la forma en que un gate deja de significar algo.
+ */
+const UNUSED_TOKENS_ALLOWED = new Map([
+  [
+    "--ft",
+    "token del sistema («Título de aviso (lista)», SISTEMA.md); retirarlo es un cambio al conjunto — tasks.md 22.13",
+  ],
+  [
+    "--tclamp",
+    "token del sistema («Título de aviso (lista)», SISTEMA.md); retirarlo es un cambio al conjunto — tasks.md 22.13",
+  ],
+]);
+
+/** Dónde se busca un `var(--x)`. `src/` entra porque `tokens.css` encadena. */
+const USAGE_ROOTS = ["app", "components", "src"];
 
 const COLOUR_PROPERTIES = new Set([
   "color",
@@ -368,6 +409,62 @@ function checkThemeContract(cssText) {
   return issues;
 }
 
+/**
+ * tasks.md 14.48 — el tercer chequeo: **cada token declarado tiene un lector.**
+ *
+ * «Usar» es aparecer dentro de un `var(--x)` en cualquier archivo escaneado, y
+ * `src/` entra en el barrido a propósito: el tema oscuro llega a su paleta por
+ * indirección (`--ink: var(--dark-ink)`), así que `--dark-ink` se usa desde
+ * `tokens.css` mismo y contarlo de otra forma lo daría por huérfano.
+ *
+ * **Los archivos se recorren, no se enumeran.** Una lista escrita a mano de
+ * hojas a mirar es un gate que deja de ver la siguiente hoja que alguien
+ * agregue, que es el defecto que `cron-wiring.test.ts` ya corrigió una vez.
+ */
+function checkTokenUsage(cssText, files) {
+  if (cssText === null) return [];
+
+  const declared = new Set();
+  const declaredPattern = /(--[\w-]+)\s*:/g;
+  let declaration = declaredPattern.exec(cssText);
+  while (declaration) {
+    declared.add(declaration[1]);
+    declaration = declaredPattern.exec(cssText);
+  }
+
+  const used = new Set();
+  for (const file of files) {
+    const content = readFileSync(file, "utf-8");
+    const usagePattern = /var\(\s*(--[\w-]+)/g;
+    let usage = usagePattern.exec(content);
+    while (usage) {
+      used.add(usage[1]);
+      usage = usagePattern.exec(content);
+    }
+  }
+
+  const issues = [];
+  for (const token of declared) {
+    if (used.has(token)) continue;
+    const excuse = UNUSED_TOKENS_ALLOWED.get(token);
+    if (excuse) continue;
+    issues.push(
+      `${TOKENS_CSS_PATH}: "${token}" está declarado y no lo lee ningún var(${token}) en ${USAGE_ROOTS.join(", ")} — o se retira, o se le da el uso para el que se declaró.`,
+    );
+  }
+
+  // La excepción vencida es un error propio: un perdón que sobrevive a su
+  // motivo es cómo una lista de excepciones deja de significar algo.
+  for (const [token, excuse] of UNUSED_TOKENS_ALLOWED) {
+    if (!used.has(token)) continue;
+    issues.push(
+      `${TOKENS_CSS_PATH}: "${token}" ya se usa, así que su excepción caducó — sacarlo de UNUSED_TOKENS_ALLOWED (motivo registrado: ${excuse}).`,
+    );
+  }
+
+  return issues;
+}
+
 function getThumbnailDimensionValues(cssText) {
   if (cssText === null) return new Set();
   const layoutBlock = extractBlock(cssText, LAYOUT_SELECTOR);
@@ -387,6 +484,8 @@ function main() {
   const themeContractIssues = checkThemeContract(tokensCss);
 
   const files = SCAN_ROOTS.flatMap((root) => collectFiles(root));
+  const usageFiles = USAGE_ROOTS.flatMap((root) => collectFiles(root));
+  const usageIssues = checkTokenUsage(tokensCss, usageFiles);
 
   if (files.length === 0) {
     console.log(
@@ -399,10 +498,15 @@ function main() {
 
   const styleViolations = files.flatMap((file) => findViolations(file, thumbnailDimensions));
 
-  if (styleViolations.length === 0 && themeContractIssues.length === 0) {
+  if (
+    styleViolations.length === 0 &&
+    themeContractIssues.length === 0 &&
+    usageIssues.length === 0
+  ) {
     console.log(
       "lint:tokens: no literal values found; the theme contract holds across " +
-        `${LIGHT_THEME_SELECTOR} and ${DARK_THEME_SELECTOR} (1b.3, 1b.4).`,
+        `${LIGHT_THEME_SELECTOR} and ${DARK_THEME_SELECTOR} (1b.3, 1b.4); ` +
+        "y cada token declarado tiene un lector (14.48).",
     );
     process.exit(0);
   }
@@ -427,7 +531,17 @@ function main() {
     }
   }
 
-  const total = styleViolations.length + themeContractIssues.length;
+  if (usageIssues.length > 0) {
+    console.error(
+      "\nlint:tokens: tokens declarados que nadie lee — un token huérfano no da " +
+        "síntoma y es cómo el token de al lado termina usándose por error (14.48).\n",
+    );
+    for (const issue of usageIssues) {
+      console.error(`  ${issue}`);
+    }
+  }
+
+  const total = styleViolations.length + themeContractIssues.length + usageIssues.length;
   console.error(`\n${total} violation(s) found.`);
   process.exit(1);
 }
