@@ -14,7 +14,6 @@ import { homeSearchForm } from "@/modules/listing-catalogue/domain/search-destin
 import { resolveSearchPill } from "@/modules/listing-catalogue/domain/search-pill";
 import { DrizzleCatalogue } from "@/modules/listing-catalogue/infrastructure/drizzle-catalogue";
 import { buildListingGrid } from "@/modules/listing-discovery/domain/listing-grid";
-import { slugify } from "@/modules/listing-discovery/domain/listing-url";
 import {
   isFilteredZoneRoute,
   resolveCityRoute,
@@ -182,12 +181,7 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
     basePath: cityPath,
     cityPath,
     query,
-    cityId: city.id,
-    cities: cities.map((candidate) => ({
-      id: candidate.id,
-      name: candidate.name,
-      path: `/alquiler/${slugify(candidate.name)}`,
-    })),
+    cityName: city.name,
     // El recorte por ciudad y la ruta canónica de cada zona los arma el
     // dominio sobre el mismo slug que viaja en `?zona=`: dos derivaciones
     // distintas del nombre es cómo la query deja de nombrar lo que nombra la

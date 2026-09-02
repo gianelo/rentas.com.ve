@@ -6,12 +6,7 @@ import {
   type SearchOutcome,
   widenPrice,
 } from "../domain/search-exits";
-import {
-  buildSearchPanel,
-  type PanelCity,
-  type PanelZone,
-  type SearchPanelModel,
-} from "../domain/search-panel";
+import { buildSearchPanel, type PanelZone, type SearchPanelModel } from "../domain/search-panel";
 import type { SearchQuery } from "../domain/search-query";
 import type { FacetCounts, FacetedSearchPort } from "./ports/faceted-search.port";
 
@@ -26,10 +21,14 @@ import type { FacetCounts, FacetedSearchPort } from "./ports/faceted-search.port
  *
  * Lo que decide acá es **a quién se le pregunta qué**, y son tres decisiones:
  *
- * 1. **Un conteo por ciudad** (F3). El puerto exige una ciudad por consulta —
- *    es la garantía de aislamiento del D5— así que "47 en Caracas y 23 en
- *    Maracaibo" son dos preguntas. Salen en paralelo: Neon es HTTP y en
- *    paralelo cuestan un viaje, no dos.
+ * 1. **Una consulta y una sola, para toda la pantalla** (14.11, corregido por
+ *    la 14.50). Hasta el 2026-09-02 acá salía además una consulta por CADA
+ *    otra ciudad —un `Promise.all` sobre el catálogo— para llenar un conteo
+ *    por ciudad que ninguna pantalla dibuja desde que la 14.36 sacó el paso de
+ *    ubicación del panel. Se pagaba y no se mostraba, y crecía con el catálogo.
+ *    La cota vive ahora en `tests/integration/faceted-search.test.ts` («el
+ *    panel entero cuesta UN viaje de red»): **medida acá arriba y no sólo
+ *    dentro del adaptador**, que es por dónde se coló.
  * 2. **Las zonas ofrecidas salen del conteo, no del catálogo.** `zone` guarda
  *    la taxonomía entera —miles de filas por ciudad— y ofrecerlas todas sería
  *    una lista que nadie puede recorrer. El conteo devuelve una entrada por
@@ -48,8 +47,8 @@ export interface FilterPanelRequest {
   /** La ruta de la ciudad sola. Es adónde vuelve «Limpiar todo». */
   readonly cityPath: string;
   readonly query: SearchQuery;
-  readonly cityId: string;
-  readonly cities: readonly Omit<PanelCity, "count">[];
+  /** El nombre de la ciudad que se está mirando. Su id ya viaja en `criteria`. */
+  readonly cityName: string;
   /** Las zonas de ESTA ciudad, en el orden del catálogo. */
   readonly zones: readonly PanelZone[];
   readonly chosenZoneIds: readonly string[];
@@ -80,23 +79,13 @@ export async function buildFilterPanel(
 ): Promise<FilterPanelResult> {
   const { criteria, chosenZoneIds } = request;
 
-  const [counts, ...cityCounts] = await Promise.all([
-    // El escalón siguiente de precio viaja con la pregunta: es un número más
-    // en la misma consulta, y la alternativa es un viaje entero para él solo.
-    facets.countFacets(criteria, chosenZoneIds, widenPrice(criteria) ?? undefined),
-    ...request.cities.map(async (city) => {
-      if (city.id === criteria.cityId) return null;
-      // **Sin las zonas**: pertenecen a la ciudad que se está mirando, y
-      // arrastrarlas a la otra daría cero sobre una ciudad llena de avisos.
-      const { zoneIds: _zoneIds, ...rest } = criteria;
-      return facets.countFacets({ ...rest, cityId: city.id }, []);
-    }),
-  ]);
-
-  const cities: readonly PanelCity[] = request.cities.map((city, index) => ({
-    ...city,
-    count: (cityCounts[index] ?? counts).total,
-  }));
+  // El escalón siguiente de precio viaja con la pregunta: es un número más en
+  // la misma consulta, y la alternativa es un viaje entero para él solo.
+  const counts = await facets.countFacets(
+    criteria,
+    chosenZoneIds,
+    widenPrice(criteria) ?? undefined,
+  );
 
   // Las zonas ofrecidas: las que el conteo nombra, en el orden del catálogo. Un
   // id que este catálogo de ciudad no tiene se descarta — el conteo pertenece a
@@ -109,7 +98,7 @@ export async function buildFilterPanel(
     basePath: request.basePath,
     cityPath: request.cityPath,
     query: request.query,
-    cityName: cities.find((city) => city.id === criteria.cityId)?.name ?? "",
+    cityName: request.cityName,
     criteria,
     chosenZoneIds,
     zones,
@@ -124,8 +113,7 @@ export async function buildFilterPanel(
       basePath: request.basePath,
       cityPath: request.cityPath,
       query: request.query,
-      cityId: request.cityId,
-      cities,
+      cityName: request.cityName,
       zones,
       chosenZoneIds,
       counts,

@@ -348,29 +348,17 @@ export function toSearchSelection(
 }
 
 /**
- * Cuántos filtros hay puestos — el número que el engranaje lleva al lado.
- *
- * **La ciudad no cuenta, y es la misma razón por la que «Limpiar todo» no la
- * toca** (F8): es el contexto de la búsqueda, no un filtro. Las zonas cuentan
- * como uno solo por muchas que sean, porque se combinan con O y son una sola
- * decisión ensanchada; los atributos cuentan de a uno, porque se combinan con
- * Y y cada uno estrecha por su cuenta.
- */
-export function countActiveFilters(selection: SearchSelection): number {
-  let count = countPillFilters(selection);
-  if (selection.zoneNames.length > 0) count += 1;
-  return count;
-}
-
-/**
  * Cuántos filtros dice la pastilla — el número de «3 filtros» (14i).
  *
- * **No es el del engranaje, y la diferencia es la zona.** El engranaje abre el
- * acordeón, que tenía un paso de zona; la pastilla abre precio, tamaño, quién
- * publica y atributos, porque la 14.36 sacó ciudad y zona del panel y la 14i lo
- * dice desde el otro lado: *"ciudad y zona no están ahí: eso lo resuelve el
- * texto"*. La lámina 7c lo dibuja — Chacao, Altamira, $250–$700, 2 habitaciones
- * y dueños puestos, y la pastilla diciendo **«3 filtros»**.
+ * **La zona NO cuenta, y ésa era toda la diferencia con el número del
+ * engranaje** (`countActiveFilters`, borrado por la 14.49). Ese engranaje abría
+ * un acordeón que tenía un paso de zona; la 14.36 sacó ciudad y zona del panel,
+ * la 14.41 reemplazó la barra resumen por la pastilla, y desde entonces el
+ * número del engranaje se calculaba sin que ninguna pantalla lo dibujara. La
+ * pastilla abre precio, tamaño, quién publica y atributos, y la 14i lo dice
+ * desde el otro lado: *"ciudad y zona no están ahí: eso lo resuelve el texto"*.
+ * La lámina 7c lo dibuja — Chacao, Altamira, $250–$700, 2 habitaciones y dueños
+ * puestos, y la pastilla diciendo **«3 filtros»**.
  *
  * La ciudad tampoco cuenta, por la misma razón de siempre (F8): es el contexto
  * de la búsqueda, no un filtro.

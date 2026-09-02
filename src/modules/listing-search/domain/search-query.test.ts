@@ -4,7 +4,6 @@ import { buildSearchCriteria } from "./search-criteria";
 import {
   buildSearchHref,
   clearAllHref,
-  planCityChange,
   readZoneList,
   resultsOriginHref,
   SEARCH_QUERY_NAMES,
@@ -229,78 +228,25 @@ describe("«Limpiar todo» conserva la ciudad (F8)", () => {
   });
 });
 
-describe("cambiar de ciudad borra las zonas elegidas (F3)", () => {
-  const query = { zona: "chacao,altamira", min: "250", hab: "2" };
-
-  it("la dirección nueva no lleva ninguna zona", () => {
-    const plan = planCityChange({ path: "/alquiler/maracaibo", name: "Maracaibo" }, query, [
-      "Chacao",
-      "Altamira",
-    ]);
-
-    expect(plan.href).not.toContain("zona=");
-    expect(plan.href).not.toContain("chacao");
-  });
-
-  it("los demás filtros sobreviven: sólo la zona depende de la ciudad", () => {
-    const plan = planCityChange({ path: "/alquiler/maracaibo", name: "Maracaibo" }, query, [
-      "Chacao",
-    ]);
-
-    expect(plan.href).toContain("min=250");
-    expect(plan.href).toContain("hab=2");
-  });
-
-  it("avisa ANTES, y dice cuáles se pierden", () => {
-    const plan = planCityChange({ path: "/alquiler/maracaibo", name: "Maracaibo" }, query, [
-      "Chacao",
-      "Altamira",
-    ]);
-
-    expect(plan.droppedZones).toEqual(["Chacao", "Altamira"]);
-    expect(plan.warning).toContain("Chacao");
-    expect(plan.warning).toContain("Altamira");
-    expect(plan.warning).toContain("Maracaibo");
-  });
-
-  it("con una sola zona el aviso está en singular", () => {
-    const plan = planCityChange({ path: "/alquiler/maracaibo", name: "Maracaibo" }, query, [
-      "Chacao",
-    ]);
-
-    expect(plan.warning).toContain("la zona");
-    expect(plan.warning).not.toContain("las 1");
-  });
-
-  it("sin zonas elegidas no hay nada que avisar", () => {
-    const plan = planCityChange({ path: "/alquiler/maracaibo", name: "Maracaibo" }, {}, []);
-
-    expect(plan.warning).toBeNull();
-    expect(plan.droppedZones).toEqual([]);
-  });
-
-  it("acepta un cambio de más, y la zona se cae igual", () => {
-    // El acordeón pasa al paso siguiente al elegir ciudad. Que el `zone: null`
-    // no sea negociable desde afuera es el punto: es la regla, no un argumento.
-    const plan = planCityChange({ path: "/alquiler/maracaibo", name: "Maracaibo" }, query, [], {
-      step: "zona",
-      zone: "chacao",
-    });
-
-    expect(plan.href).toContain("filtros=zona");
-    expect(plan.href).not.toContain("zona=chacao");
-  });
-
-  it("vuelve a la primera página: la ciudad nueva tiene otras", () => {
-    const plan = planCityChange(
-      { path: "/alquiler/maracaibo", name: "Maracaibo" },
-      { pag: "4" },
-      [],
-    );
-
-    expect(plan.href).not.toContain("pag=");
-  });
-});
+/**
+ * **`planCityChange` y sus siete casos se borraron con la 14.50, y esto dice
+ * qué se fue y qué queda vivo.**
+ *
+ * Implementaba la 20.6 —«cambiar de ciudad borra las zonas elegidas, y se avisa
+ * ANTES» (F3)— y su único llamador de producción era `toCityChoice`, que armaba
+ * `model.cities`: el paso de ciudad del panel. La 14.36 sacó ese paso por
+ * decisión del fundador, así que desde entonces el aviso no tenía dónde salir y
+ * la función se ejecutaba en cada carga sin llegar a ninguna pantalla.
+ *
+ * **La regla NO se perdió, y ése es el punto de borrar el aviso y no la
+ * garantía.** El único selector de ciudad que el producto sirve son las fichas
+ * del inicio, y ahí la zona se cae *por construcción*: `homeCityChips` compone
+ * la dirección desde cero (`/?ciudad=…`) en vez de encima de la que había, y su
+ * propia prueba lo afirma. Del lado del criterio la sigue aplicando
+ * `buildSearchCriteria`, que descarta la zona que no pertenece a la ciudad.
+ * **Lo que sí queda sin superficie es el aviso previo**, y la 20.6 quedó
+ * anotada por eso en `tasks.md` en vez de darse por entregada en silencio.
+ */
 
 /**
  * **La dirección de esta pantalla de resultados, tal como viaja en el enlace a

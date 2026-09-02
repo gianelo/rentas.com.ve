@@ -14,7 +14,6 @@ import { homeSearchForm } from "@/modules/listing-catalogue/domain/search-destin
 import { resolveSearchPill } from "@/modules/listing-catalogue/domain/search-pill";
 import { DrizzleCatalogue } from "@/modules/listing-catalogue/infrastructure/drizzle-catalogue";
 import { buildListingGrid } from "@/modules/listing-discovery/domain/listing-grid";
-import { slugify } from "@/modules/listing-discovery/domain/listing-url";
 import {
   isFilteredZoneRoute,
   resolveZoneRoute,
@@ -198,12 +197,7 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
     basePath,
     cityPath,
     query,
-    cityId: place.city.id,
-    cities: cities.map((candidate) => ({
-      id: candidate.id,
-      name: candidate.name,
-      path: `/alquiler/${slugify(candidate.name)}`,
-    })),
+    cityName: place.city.name,
     // Las de esta ciudad, con el mismo slug que resuelve la ruta y que viaja
     // en `?zona=`: es lo que hace que tocar una sola zona caiga en su
     // dirección canónica en vez de en la ciudad con un parámetro.

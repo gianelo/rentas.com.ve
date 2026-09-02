@@ -498,8 +498,7 @@ function harnessPanel() {
     cityPath: "/alquiler/distrito-capital",
     // `filtros=todos`: el panel es un estado de la dirección (14.33).
     query: { filtros: "todos" },
-    cityId: "dc",
-    cities: [{ id: "dc", name: "Distrito Capital", path: "/alquiler/distrito-capital", count: 47 }],
+    cityName: "Distrito Capital",
     zones: [
       { id: "chacao", name: "Chacao", slug: "chacao", path: "/alquiler/distrito-capital/chacao" },
     ],

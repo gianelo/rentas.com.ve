@@ -51,18 +51,22 @@ describe("las dos pantallas de resultados y la barra del producto", () => {
       });
 
       /**
-       * **El número de la pastilla es `pillFilters`, nunca `activeFilters`.**
+       * **El número de la pastilla es `pillFilters`.**
        *
-       * Son dos conteos distintos y sólo uno abre lo que la pastilla abre: el
-       * engranaje del acordeón contaba la zona, y el filtro de la pastilla no
-       * la incluye (14i: *"ciudad y zona no están ahí: eso lo resuelve el
-       * texto"*; lámina 7c: con dos zonas, precio, habitaciones y dueños
-       * puestos, la pastilla dice «3 filtros»). Un «4 filtros» sobre un panel
-       * que abre tres se dibuja perfecto y está mal.
+       * Hasta la 14.49 el modelo llevaba dos conteos y sólo uno abría lo que la
+       * pastilla abre: el engranaje del acordeón contaba la zona, y el filtro de
+       * la pastilla no la incluye (14i: *"ciudad y zona no están ahí: eso lo
+       * resuelve el texto"*; lámina 7c: con dos zonas, precio, habitaciones y
+       * dueños puestos, la pastilla dice «3 filtros»). Un «4 filtros» sobre un
+       * panel que abre tres se dibuja perfecto y está mal.
+       *
+       * **La mitad negativa de esta aserción se fue con `activeFilters`**, y lo
+       * que la reemplaza es más fuerte que ella: el campo ya no existe en
+       * `SearchPanelModel`, así que escribirlo acá **no compila**. Dejar el
+       * `not.toMatch` habría sido una aserción que no puede fallar.
        */
-      it("cuenta los filtros de la pastilla con pillFilters, no con activeFilters", () => {
+      it("cuenta los filtros de la pastilla con pillFilters", () => {
         expect(page).toMatch(/filterCount:\s*panel\.pillFilters/);
-        expect(page).not.toMatch(/filterCount:\s*panel\.activeFilters/);
       });
 
       /**
