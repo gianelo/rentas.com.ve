@@ -2,6 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import {
+  DrizzleContactVerificationEvidence,
+  DrizzleVerifiedContacts,
+} from "@/modules/identity/infrastructure/drizzle-verified-contact";
 import { nextAuthSessionPort } from "@/modules/identity/infrastructure/session-port";
 import {
   ActivateListingRejectedError,
@@ -260,6 +264,11 @@ export async function activarBorrador(formData: FormData): Promise<void> {
         sessionPort: nextAuthSessionPort,
         zones: new DrizzleZoneCatalogue(db),
         listings: new DrizzleListingActivation(getTransactionalDatabase()),
+        // tasks.md 19.15 — los mismos dos que `publicar/fotos/publication.ts`
+        // arma, y con la misma repartición: la lectura contra el cliente
+        // normal, la escritura contra el transaccional.
+        contactEvidence: new DrizzleContactVerificationEvidence(db),
+        verifiedContacts: new DrizzleVerifiedContacts(getTransactionalDatabase()),
       },
     );
   } catch (error) {

@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import type { SessionPort } from "../../identity/application/ports/session.port";
+import type {
+  ContactVerificationEvidencePort,
+  ContactVerificationQuery,
+  NewVerifiedContact,
+  VerifiedContactPort,
+} from "../../identity/application/ports/verified-contact.port";
 import { UnauthenticatedError } from "../../identity/application/require-authenticated-session";
 import { expiryFor } from "../../listing-lifecycle/domain/expiry";
 import {
@@ -75,6 +81,46 @@ const zones: ZoneCataloguePort = {
   },
 };
 
+const PUBLISHER_EMAIL = "broker-1@example.com";
+const EMAIL_VERIFIED_AT = new Date("2026-06-01T07:00:00.000Z");
+
+/**
+ * tasks.md 19.15 — the two `verified_contact` ports activation now needs. The
+ * account signed in through the mail link, so Auth.js left the instant
+ * (19.10); Google would not have (19.14).
+ */
+function contactEvidencePort(): ContactVerificationEvidencePort & {
+  readonly asked: ContactVerificationQuery[];
+} {
+  const asked: ContactVerificationQuery[] = [];
+  return {
+    asked,
+    async findEvidence(query) {
+      asked.push(query);
+      return {
+        verifiedAt: null,
+        accountEmail: PUBLISHER_EMAIL,
+        accountEmailVerifiedAt: EMAIL_VERIFIED_AT,
+      };
+    },
+  };
+}
+
+function recordingContacts(): VerifiedContactPort & { readonly written: NewVerifiedContact[] } {
+  const written: NewVerifiedContact[] = [];
+  return {
+    written,
+    async record(verified) {
+      written.push(verified);
+    },
+  };
+}
+
+/** Fresh ports for the calls that do not inspect them. */
+function verification() {
+  return { contactEvidence: contactEvidencePort(), verifiedContacts: recordingContacts() };
+}
+
 function activationPort(row: DraftForActivation | null): ListingActivationPort & {
   readonly activateCalls: ReadonlyArray<readonly [string, Date, Date]>;
 } {
@@ -96,7 +142,13 @@ describe("activateListing", () => {
     await expect(
       activateListing(
         { listingId: DRAFT_ID },
-        { sessionPort: sessionPortReturning(null), zones, listings, now: () => NOW },
+        {
+          sessionPort: sessionPortReturning(null),
+          zones,
+          listings,
+          now: () => NOW,
+          ...verification(),
+        },
       ),
     ).rejects.toBeInstanceOf(UnauthenticatedError);
 
@@ -109,7 +161,13 @@ describe("activateListing", () => {
     await expect(
       activateListing(
         { listingId: DRAFT_ID },
-        { sessionPort: sessionPortReturning(PUBLISHER), zones, listings, now: () => NOW },
+        {
+          sessionPort: sessionPortReturning(PUBLISHER),
+          zones,
+          listings,
+          now: () => NOW,
+          ...verification(),
+        },
       ),
     ).rejects.toBeInstanceOf(ActivateListingNotFoundError);
   });
@@ -122,7 +180,13 @@ describe("activateListing", () => {
     await expect(
       activateListing(
         { listingId: DRAFT_ID },
-        { sessionPort: sessionPortReturning(PUBLISHER), zones, listings, now: () => NOW },
+        {
+          sessionPort: sessionPortReturning(PUBLISHER),
+          zones,
+          listings,
+          now: () => NOW,
+          ...verification(),
+        },
       ),
     ).rejects.toBeInstanceOf(ActivateListingNotOwnedError);
 
@@ -137,7 +201,13 @@ describe("activateListing", () => {
 
     const error = await activateListing(
       { listingId: DRAFT_ID },
-      { sessionPort: sessionPortReturning(PUBLISHER), zones, listings, now: () => NOW },
+      {
+        sessionPort: sessionPortReturning(PUBLISHER),
+        zones,
+        listings,
+        now: () => NOW,
+        ...verification(),
+      },
     ).catch((caught: unknown) => caught);
 
     expect(error).toBeInstanceOf(ActivateListingRejectedError);
@@ -150,7 +220,13 @@ describe("activateListing", () => {
 
     const error = await activateListing(
       { listingId: DRAFT_ID },
-      { sessionPort: sessionPortReturning(PUBLISHER), zones, listings, now: () => NOW },
+      {
+        sessionPort: sessionPortReturning(PUBLISHER),
+        zones,
+        listings,
+        now: () => NOW,
+        ...verification(),
+      },
     ).catch((caught: unknown) => caught);
 
     expect(error).toBeInstanceOf(ActivateListingRejectedError);
@@ -166,7 +242,13 @@ describe("activateListing", () => {
 
     const result = await activateListing(
       { listingId: DRAFT_ID },
-      { sessionPort: sessionPortReturning(PUBLISHER), zones, listings, now: () => NOW },
+      {
+        sessionPort: sessionPortReturning(PUBLISHER),
+        zones,
+        listings,
+        now: () => NOW,
+        ...verification(),
+      },
     );
 
     const expectedExpiresAt = expiryFor({ publishedAt: NOW, lastRenewedAt: null });
@@ -182,8 +264,152 @@ describe("activateListing", () => {
     await expect(
       activateListing(
         { listingId: DRAFT_ID },
-        { sessionPort: sessionPortReturning(PUBLISHER), zones, listings, now: () => NOW },
+        {
+          sessionPort: sessionPortReturning(PUBLISHER),
+          zones,
+          listings,
+          now: () => NOW,
+          ...verification(),
+        },
       ),
     ).rejects.toBeInstanceOf(ActivateListingNotFoundError);
+  });
+});
+
+/**
+ * tasks.md 19.15 — **the bulk import verified nothing.** `publishListing` has
+ * resolved contact verification since 2026-08-29; this path, the one Phase 9
+ * takes a `draft` to `active` through, did not — so an agency importing fifty
+ * rows left not one row in `verified_contact`.
+ *
+ * What is proven here is the SEAM, not the rule: the rule lives in
+ * `contact-verification.test.ts` and the natural key that makes fifty imports
+ * one row lives in `tests/integration/contact-verification.test.ts`. This is
+ * the argument-passing that this project has now found unwired five times.
+ */
+describe("contact verification on activation (19.15)", () => {
+  it("asks for the DRAFT's own contact triple, and records the account's email", async () => {
+    const listings = activationPort(
+      draft({ contactMethod: "email", contactValue: PUBLISHER_EMAIL }),
+    );
+    const contactEvidence = contactEvidencePort();
+    const verifiedContacts = recordingContacts();
+
+    await activateListing(
+      { listingId: DRAFT_ID },
+      {
+        sessionPort: sessionPortReturning(PUBLISHER),
+        zones,
+        listings,
+        now: () => NOW,
+        contactEvidence,
+        verifiedContacts,
+      },
+    );
+
+    // The contact is the draft's, never the request's: the row about to become
+    // active is the one whose `contact_method`/`contact_value` the ficha will
+    // read back (19.9/19.12).
+    expect(contactEvidence.asked).toEqual([
+      { userId: PUBLISHER, contact: { method: "email", value: PUBLISHER_EMAIL } },
+    ]);
+    expect(verifiedContacts.written).toEqual([
+      {
+        userId: PUBLISHER,
+        contact: { method: "email", value: PUBLISHER_EMAIL },
+        verifiedAt: EMAIL_VERIFIED_AT,
+      },
+    ]);
+  });
+
+  it("activates a draft whose contact cannot be verified, and leaves no row", async () => {
+    // The negative half, and it is the product decision rather than an
+    // omission: WhatsApp's channel is deferred to the end of the project
+    // (founder, 2026-08-29), so gating activation on verification would close
+    // the import to every broker. What must not happen is a row appearing
+    // anyway — without one, nothing can draw "verificado".
+    const listings = activationPort(draft());
+    const verifiedContacts = recordingContacts();
+
+    const result = await activateListing(
+      { listingId: DRAFT_ID },
+      {
+        sessionPort: sessionPortReturning(PUBLISHER),
+        zones,
+        listings,
+        now: () => NOW,
+        contactEvidence: contactEvidencePort(),
+        verifiedContacts,
+      },
+    );
+
+    expect(result.listingId).toBe(DRAFT_ID);
+    expect(listings.activateCalls).toHaveLength(1);
+    expect(verifiedContacts.written).toEqual([]);
+  });
+
+  it("never reads verification for a draft the rules refuse, or for a stranger's", async () => {
+    // Same ordering `publishListing` uses for the photo pipeline: a draft that
+    // was never activatable must not make this function do work. And a
+    // stranger's draft must not have its owner's contact touched at all.
+    const refused = contactEvidencePort();
+    const notOwned = contactEvidencePort();
+
+    await activateListing(
+      { listingId: DRAFT_ID },
+      {
+        sessionPort: sessionPortReturning(PUBLISHER),
+        zones,
+        listings: activationPort(draft({ photoCount: 0 })),
+        now: () => NOW,
+        contactEvidence: refused,
+        verifiedContacts: recordingContacts(),
+      },
+    ).catch(() => undefined);
+
+    await activateListing(
+      { listingId: DRAFT_ID },
+      {
+        sessionPort: sessionPortReturning(OTHER_PUBLISHER),
+        zones,
+        listings: activationPort(draft()),
+        now: () => NOW,
+        contactEvidence: notOwned,
+        verifiedContacts: recordingContacts(),
+      },
+    ).catch(() => undefined);
+
+    expect(refused.asked).toEqual([]);
+    expect(notOwned.asked).toEqual([]);
+  });
+
+  /**
+   * tasks.md 19.11 at this seam. The rule is proven in the domain; what is
+   * measured here is that activation hands the decision ITS clock. With the
+   * system clock in its place both halves below would answer the same.
+   */
+  it("records an account verification of eleven months, and refuses one of thirteen", async () => {
+    const vivo = recordingContacts();
+    const caducado = recordingContacts();
+    const activar = (verifiedContacts: VerifiedContactPort, now: Date) =>
+      activateListing(
+        { listingId: DRAFT_ID },
+        {
+          sessionPort: sessionPortReturning(PUBLISHER),
+          zones,
+          listings: activationPort(
+            draft({ contactMethod: "email", contactValue: PUBLISHER_EMAIL }),
+          ),
+          now: () => now,
+          contactEvidence: contactEvidencePort(),
+          verifiedContacts,
+        },
+      );
+
+    await activar(vivo, new Date("2027-05-01T07:00:00.000Z"));
+    await activar(caducado, new Date("2027-07-01T07:00:00.000Z"));
+
+    expect(vivo.written).toHaveLength(1);
+    expect(caducado.written).toEqual([]);
   });
 });

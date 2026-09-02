@@ -15,6 +15,11 @@ import type {
   SessionPort,
 } from "../../src/modules/identity/application/ports/session.port";
 import {
+  DrizzleContactVerificationEvidence,
+  DrizzleVerifiedContacts,
+  type VerifiedContactDatabase,
+} from "../../src/modules/identity/infrastructure/drizzle-verified-contact";
+import {
   type CatalogueDatabase,
   DrizzleCatalogue,
 } from "../../src/modules/listing-catalogue/infrastructure/drizzle-catalogue";
@@ -76,6 +81,16 @@ const db = drizzle(pool, { schema });
 
 const listingsRepo = new DrizzleListingRepository(db as unknown as PublicationDatabase);
 const activation = new DrizzleListingActivation(db as unknown as PublicationDatabase);
+
+/**
+ * tasks.md 19.15 — activation resolves contact verification now, the same way
+ * `publishListing` has since 19.9. Real adapters here, because the point of
+ * this suite is the database rather than the fake.
+ */
+const verificacion = {
+  contactEvidence: new DrizzleContactVerificationEvidence(db as unknown as VerifiedContactDatabase),
+  verifiedContacts: new DrizzleVerifiedContacts(db as unknown as VerifiedContactDatabase),
+};
 const zones = new DrizzleZoneCatalogue(db as unknown as PublicationDatabase);
 const accounts = new DrizzleBulkImportAccounts(db as unknown as PublicationDatabase);
 const contact = new DrizzleImportAccountContact(db as unknown as PublicationDatabase);
@@ -119,12 +134,30 @@ function sessionFor(userId: string): SessionPort {
 
 const USER_IDS: string[] = [];
 
-async function insertUser(id: string): Promise<void> {
+/**
+ * `contacto` exists for tasks.md 19.15: the imported draft copies the
+ * account's contact, so an agency whose contact IS its own verified address is
+ * the only fixture that can prove the row appears. Everyone else keeps the
+ * WhatsApp default, which stays unverified because that channel is deferred.
+ */
+async function insertUser(
+  id: string,
+  contacto?: { readonly method: string; readonly value: string; readonly verifiedDaysAgo: number },
+): Promise<void> {
   USER_IDS.push(id);
   await pool.query(
-    `INSERT INTO "user" (id, name, email, bulk_import_enabled, contact_method, contact_value)
-     VALUES ($1,$2,$3,true,'whatsapp','04121234567')`,
-    [id, "Broker", `broker-${id}@example.com`],
+    `INSERT INTO "user" (id, name, email, "emailVerified", bulk_import_enabled, contact_method, contact_value)
+     VALUES ($1,$2,$3,
+             CASE WHEN $4::int IS NULL THEN NULL ELSE now() - make_interval(days => $4::int) END,
+             true, $5, $6)`,
+    [
+      id,
+      "Broker",
+      `broker-${id}@example.com`,
+      contacto?.verifiedDaysAgo ?? null,
+      contacto?.method ?? "whatsapp",
+      contacto?.value ?? "04121234567",
+    ],
   );
 }
 
@@ -229,7 +262,13 @@ describe("a draft is invisible everywhere, until activated — against real Post
 
     const error = await activateListing(
       { listingId: draft.id },
-      { sessionPort: sessionFor(userId), zones, listings: activation, now: () => new Date() },
+      {
+        sessionPort: sessionFor(userId),
+        zones,
+        listings: activation,
+        ...verificacion,
+        now: () => new Date(),
+      },
     ).catch((caught: unknown) => caught);
 
     expect(error).toBeInstanceOf(ActivateListingRejectedError);
@@ -252,7 +291,13 @@ describe("a draft is invisible everywhere, until activated — against real Post
     await expect(
       activateListing(
         { listingId: draft.id },
-        { sessionPort: sessionFor(stranger), zones, listings: activation, now: () => new Date() },
+        {
+          sessionPort: sessionFor(stranger),
+          zones,
+          listings: activation,
+          ...verificacion,
+          now: () => new Date(),
+        },
       ),
     ).rejects.toBeInstanceOf(ActivateListingNotOwnedError);
 
@@ -279,7 +324,13 @@ describe("a draft is invisible everywhere, until activated — against real Post
 
     const result = await activateListing(
       { listingId: draft.id },
-      { sessionPort: sessionFor(userId), zones, listings: activation, now: () => activatedAt },
+      {
+        sessionPort: sessionFor(userId),
+        zones,
+        listings: activation,
+        ...verificacion,
+        now: () => activatedAt,
+      },
     );
 
     expect(result.publishedAt).toEqual(activatedAt);
@@ -337,14 +388,86 @@ describe("a draft is invisible everywhere, until activated — against real Post
 
     await activateListing(
       { listingId: draft.id },
-      { sessionPort: sessionFor(userId), zones, listings: activation, now: () => new Date() },
+      {
+        sessionPort: sessionFor(userId),
+        zones,
+        listings: activation,
+        ...verificacion,
+        now: () => new Date(),
+      },
     );
 
     await expect(
       activateListing(
         { listingId: draft.id },
-        { sessionPort: sessionFor(userId), zones, listings: activation, now: () => new Date() },
+        {
+          sessionPort: sessionFor(userId),
+          zones,
+          listings: activation,
+          ...verificacion,
+          now: () => new Date(),
+        },
       ),
     ).rejects.toBeInstanceOf(ActivateListingNotFoundError);
+  });
+
+  /**
+   * **tasks.md 19.15, y con ella la 19.13.** «Una inmobiliaria que sube
+   * cincuenta avisos verifica una vez» estaba medida sólo por el camino de
+   * `publishListing`; la importación de cartera sale a `active` por acá y no
+   * resolvía verificación ninguna, así que cincuenta filas importadas dejaban
+   * CERO en `verified_contact`.
+   *
+   * Contra Postgres de verdad porque lo que sostiene el «una vez» es la clave
+   * primaria `(user_id, method, value)` y no un `if`: dos activaciones del
+   * mismo contacto chocan contra ella y el `ON CONFLICT DO UPDATE` las
+   * absorbe. Dos borradores alcanzan para medirlo; cincuenta serían la misma
+   * afirmación cuarenta y ocho veces.
+   */
+  it("dos borradores activados de la misma cuenta dejan UNA fila verificada, no dos ni ninguna", async () => {
+    const userId = randomUUID();
+    const correo = `broker-${userId}@example.com`;
+    await insertUser(userId, { method: "email", value: correo, verifiedDaysAgo: 40 });
+
+    const contarFilas = async () => {
+      const { rows } = await pool.query(
+        'SELECT count(*)::int AS n FROM "verified_contact" WHERE user_id = $1',
+        [userId],
+      );
+      return rows[0].n as number;
+    };
+
+    // Antes de activar no hay nada: la importación por sí sola no verifica, y
+    // eso es lo que hace que el 1 de abajo signifique algo.
+    const importedAt = new Date("2026-01-05T00:00:00.000Z");
+    const borradores = [];
+    for (const referencia of ["ACT-VERIF-1", "ACT-VERIF-2"]) {
+      const borrador = await importOneDraft(userId, referencia, importedAt);
+      await attachPhoto(borrador.id);
+      borradores.push(borrador);
+    }
+    expect(await contarFilas()).toBe(0);
+
+    for (const borrador of borradores) {
+      await activateListing(
+        { listingId: borrador.id },
+        {
+          sessionPort: sessionFor(userId),
+          zones,
+          listings: activation,
+          ...verificacion,
+          now: () => new Date(Date.now() - 24 * 60 * 60 * 1000),
+        },
+      );
+    }
+
+    expect(await contarFilas()).toBe(1);
+    const { rows } = await pool.query(
+      'SELECT method, value FROM "verified_contact" WHERE user_id = $1',
+      [userId],
+    );
+    // El triple es el que el borrador copió, no el de la sesión ni el de la
+    // cuenta a secas.
+    expect(rows[0]).toEqual({ method: "email", value: correo });
   });
 });
