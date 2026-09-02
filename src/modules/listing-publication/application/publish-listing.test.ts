@@ -120,6 +120,7 @@ function makeDerive() {
 function makeStorage(
   failReadOf: readonly string[] = [],
   failRemoveOf: readonly string[] = [],
+  failPutOf: readonly string[] = [],
 ): PhotoStoragePort & { readonly reads: string[]; readonly calls: string[] } {
   const reads: string[] = [];
   const calls: string[] = [];
@@ -137,6 +138,7 @@ function makeStorage(
     },
     async put(key: string, bytes: Uint8Array): Promise<StoredObject> {
       calls.push(`put:${key}`);
+      if (failPutOf.includes(key)) throw new Error(`R2 rechazó escribir ${key}`);
       return { key, byteLength: bytes.byteLength };
     },
     async remove(key: string) {
@@ -510,6 +512,39 @@ describe("publishListing", () => {
       expect(dependencies.storage.calls.filter((call) => call.startsWith("remove:"))).toEqual([
         `remove:${photoKey(0)}`,
       ]);
+    });
+
+    /**
+     * tasks.md 18.39 — **la costura que la 18.35 no podía alcanzar.** Ahí la
+     * limpieza recorre FOTOS y junta lo que `processUploadedPhoto` devuelve; si
+     * la que falla es una de las CINCO derivadas de una foto, esa función lanza
+     * sin devolver nada y sus cuatro hermanas no entran nunca en `promoted`.
+     * Las dos capas se prueban por separado —la de adentro en
+     * `process-uploaded-photo.test.ts`— y ésta afirma que COMPONEN: después de
+     * un PUT rechazado en la segunda foto no queda ni una clave bajo `photos/`.
+     */
+    it("un PUT rechazado adentro de una foto no deja huérfanas ni las suyas ni las de la anterior", async () => {
+      const segunda = promotedKeys(1);
+      const dependencies = deps({
+        storage: makeStorage([], [], [segunda[2] as string]),
+      });
+
+      await expect(
+        publishListing(request({ photos: submittedPhotos(2) }), dependencies),
+      ).rejects.toThrow(`R2 rechazó escribir ${segunda[2]}`);
+
+      expect(dependencies.storage.calls).toEqual([
+        `read:${photoKey(0)}`,
+        ...promotedKeys(0).map((key) => `put:${key}`),
+        `remove:${photoKey(0)}`,
+        `read:${photoKey(1)}`,
+        ...segunda.map((key) => `put:${key}`),
+        // Las cuatro que sí subieron, borradas por la foto misma...
+        ...segunda.filter((key) => key !== segunda[2]).map((key) => `remove:${key}`),
+        // ...y las cinco de la primera, borradas por la publicación (18.35).
+        ...promotedKeys(0).map((key) => `remove:${key}`),
+      ]);
+      expect(dependencies.listings.saved).toEqual([]);
     });
 
     /** Misma disciplina que `discardQuietly`: el motivo por el que la publicación

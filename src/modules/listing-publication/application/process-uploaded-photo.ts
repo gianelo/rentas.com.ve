@@ -217,8 +217,18 @@ export async function processUploadedPhoto(
   // Las cinco en paralelo: son cinco PUT independientes contra R2 y hacerlas en
   // fila multiplicaría por cinco la latencia de publicar una foto, que es el
   // paso más lento del formulario.
+  //
+  // **`allSettled` y no `all`, y ahí está la tarea 18.39.** Con `all`, la que
+  // rechaza hace lanzar a esta función ANTES de devolver nada, así que las otras
+  // cuatro quedan escritas bajo `photos/` y ningún llamador se entera de que
+  // existen: la limpieza de la 18.35 recorre FOTOS y junta lo que ESTA función
+  // devuelve, de modo que no puede ver adentro de una sola. Y `photos/` es
+  // también donde viven las derivadas de todos los avisos activos, así que
+  // ninguna regla de ciclo de vida del bucket las separa; lo único que las
+  // delata es la ausencia de su fila. Esperar a las cinco no serializa nada:
+  // los cinco PUT siguen saliendo juntos.
   const names = Object.keys(derivatives) as DerivativeName[];
-  const stored = await Promise.all(
+  const settled = await Promise.allSettled(
     names.map(async (name) => {
       const put = await storage.put(
         `${base}/${name}.webp`,
@@ -228,6 +238,29 @@ export async function processUploadedPhoto(
       return { name, key: put.key, byteLength: put.byteLength };
     }),
   );
+
+  const stored: ProcessedDerivative[] = [];
+  // Envuelto, para distinguir «ninguna rechazó» de «rechazó con `undefined`».
+  let firstFailure: { readonly reason: unknown } | null = null;
+  for (const result of settled) {
+    if (result.status === "fulfilled") stored.push(result.value);
+    else firstFailure ??= { reason: result.reason };
+  }
+
+  if (firstFailure !== null) {
+    // En fila y sin exigir, la disciplina de `discardQuietly`: una clave que R2
+    // rechaza no deja sin intentar a las otras, y el motivo que quien publica
+    // necesita leer es el del PUT que falló, nunca el del barrido.
+    //
+    // **El original NO se toca acá.** Es lo único con lo que se puede volver a
+    // derivar —D12 no lo guarda en ningún otro lado— y borrarlo dejaría al
+    // borrador dibujando una foto que ya no se puede publicar. Si nadie vuelve,
+    // lo alcanza la retención del prefijo `incoming/` (18.23, 18.36).
+    for (const derivative of stored) {
+      await discardQuietly(storage, derivative.key);
+    }
+    throw firstFailure.reason;
+  }
 
   // Al final, y sólo cuando las cinco existen. Borrar primero sería una
   // función más corta y perdería la foto cada vez que un PUT fallara.
