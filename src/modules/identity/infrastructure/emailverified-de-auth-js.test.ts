@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import NextAuth, { customFetch } from "next-auth";
 import type { Adapter, AdapterUser } from "next-auth/adapters";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildEmailProvider } from "./email-provider";
 import { buildProviderEmailVerificationEvent } from "./provider-email-verification-event";
 
