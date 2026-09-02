@@ -4,6 +4,7 @@ import {
   homeSearchForm,
   noMatchMessage,
   resolveSearchDestination,
+  searchChoices,
 } from "./search-destination";
 import type { SuggestionVocabulary } from "./suggest-filters";
 
@@ -217,5 +218,74 @@ describe("noMatchMessage", () => {
 
     expect(message).toContain("nave espacial");
     expect(message).not.toMatch(/sin resultados|no hay avisos/i);
+  });
+});
+
+/**
+ * **`searchChoices` es la lista que `resolveSearchDestination` colapsa** (14.51).
+ *
+ * El panel de sugerencias necesita las opciones SIEMPRE en forma de lista: con
+ * una sola coincidencia el destino contesta `route`, que lleva la dirección y
+ * no la etiqueta, y una sugerencia sin etiqueta no se puede dibujar. Sacar la
+ * lista afuera es lo que deja que **la misma función alimente las dos partes**
+ * —el servidor al enviar y el panel al escribir— en vez de una segunda copia
+ * en el cliente, que es exactamente lo que la 14.35 prohíbe.
+ */
+describe("searchChoices", () => {
+  it("devuelve la opción en forma de lista aunque haya una sola", () => {
+    expect(searchChoices("altamira", VOCABULARY)).toEqual([
+      {
+        label: "Altamira",
+        scope: "Chacao · Distrito Capital",
+        href: "/alquiler/distrito-capital/altamira",
+        countLabel: null,
+      },
+    ]);
+  });
+
+  /**
+   * **El conteo viaja con la zona, y por eso el vocabulario acotado lo lleva.**
+   * La 14.51 lo pide textual: «sólo las zonas con avisos activos, **con su
+   * conteo**». Sin él la sugerencia diría a dónde ir y no cuánto hay.
+   */
+  it("dice cuántos avisos tiene la zona cuando el vocabulario lo trae", () => {
+    const conConteo: SuggestionVocabulary = {
+      ...VOCABULARY,
+      zones: VOCABULARY.zones.map((zone) =>
+        zone.id === "z-altamira" ? { ...zone, count: 9 } : zone,
+      ),
+    };
+
+    expect(searchChoices("altamira", conConteo)[0]?.countLabel).toBe("9");
+  });
+
+  /**
+   * **Un «0» pegado a una opción se lee como un conteo roto**, y es la misma
+   * regla que `resolveZoneOptions` ya tomó para el panel. Acá además no debería
+   * poder pasar: el vocabulario acotado sólo lleva zonas con avisos.
+   */
+  it("no escribe un cero al lado de una zona vacía", () => {
+    const enCero: SuggestionVocabulary = {
+      ...VOCABULARY,
+      zones: VOCABULARY.zones.map((zone) =>
+        zone.id === "z-altamira" ? { ...zone, count: 0 } : zone,
+      ),
+    };
+
+    expect(searchChoices("altamira", enCero)[0]?.countLabel).toBeNull();
+  });
+
+  /**
+   * La ciudad no es una zona: no tiene un conteo por zona que contar, y
+   * escribirle uno sería inventar un número que nadie mandó.
+   */
+  it("la ciudad se ofrece sin conteo", () => {
+    expect(searchChoices("maracaibo", VOCABULARY)).toEqual([
+      { label: "Maracaibo", scope: "Maracaibo", href: "/alquiler/maracaibo", countLabel: null },
+    ]);
+  });
+
+  it("no reconoce nada y no ofrece nada — nunca una lista vacía disfrazada", () => {
+    expect(searchChoices("nave espacial", VOCABULARY)).toEqual([]);
   });
 });

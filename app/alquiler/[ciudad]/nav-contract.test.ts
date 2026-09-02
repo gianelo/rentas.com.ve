@@ -119,6 +119,23 @@ describe("las dos pantallas de resultados y la barra del producto", () => {
         expect(page).toMatch(/name:\s*searchForm\.name/);
       });
 
+      /**
+       * **El vocabulario acotado de las sugerencias sale del dominio** (14.51).
+       *
+       * «Sólo las zonas con avisos activos» es una regla de producto: decide
+       * qué se le ofrece a quien escribe, y sugerir una zona vacía manda a una
+       * pantalla sin salida (regla transversal 4). Escrita como un `.filter()`
+       * en la página quedaría fuera del suelo de cobertura del 90 %, que es la
+       * regla permanente del fundador con su razón mecánica.
+       *
+       * **La negativa es la mitad que importa**: el cableado correcto y un
+       * recorte escrito a mano al lado se dibujan idénticos.
+       */
+      it("arma las sugerencias con el dominio y no con un recorte propio", () => {
+        expect(page).toContain("boundedVocabulary(cities, zones, counts.byZone)");
+        expect(page).not.toMatch(/zones\.filter\(|byZone\[/);
+      });
+
       /** Sin JavaScript de cliente: sigue siendo el camino de lectura (D13). */
       it("no agrega JavaScript de cliente", () => {
         expect(page).not.toContain('"use client"');

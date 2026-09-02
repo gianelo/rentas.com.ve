@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { contactDoorFor, DOOR_QUERY_NAME } from "@/modules/contact-reveal/domain/sign-in-door";
+import { boundedVocabulary } from "@/modules/listing-catalogue/domain/bounded-vocabulary";
 import {
   draftListingOf,
   isStepComplete,
@@ -98,6 +99,17 @@ export default async function MeasureHarnessPage({
             placeholder: "¿En qué zona buscás?",
             submitLabel: "Buscar",
             state: { kind: "empty" },
+            // **El vocabulario acotado de la 14.51, armado por la MISMA función
+            // que usan las dos pantallas de resultados** — no una lista escrita
+            // a mano que se parezca. `Chacao` va con conteo cero a propósito:
+            // es la zona que el dominio tiene que dejar afuera, y sin ella esa
+            // medición no tendría qué mirar (una mutación contra una entrada
+            // que la fixture nunca produce no mide nada).
+            suggestions: boundedVocabulary(
+              SUGERENCIAS_CIUDADES,
+              SUGERENCIAS_ZONAS,
+              SUGERENCIAS_CONTEOS,
+            ),
           }}
         />
       </div>
@@ -521,6 +533,32 @@ function stepHarness(
     />
   );
 }
+
+/**
+ * **El vocabulario acotado de la 14.51, con las dos trampas del dominio
+ * adentro**: un nombre repetido entre ciudades (`Centro`, la regla de la 14.18)
+ * y una zona **sin avisos activos** (`Chacao`, en cero), que es justo la que el
+ * dominio tiene que dejar afuera. Una fixture que no produjera esa entrada
+ * dejaría a la medición del recorte sin nada que mirar.
+ */
+const SUGERENCIAS_CIUDADES = [
+  { id: "dc", name: "Distrito Capital" },
+  { id: "mcbo", name: "Maracaibo" },
+];
+
+const SUGERENCIAS_ZONAS = [
+  { id: "z-altamira", name: "Altamira", cityId: "dc", parentName: "Chacao" },
+  { id: "z-chacao", name: "Chacao", cityId: "dc", parentName: "Chacao" },
+  { id: "z-centro-dc", name: "Centro", cityId: "dc", parentName: "Catedral" },
+  { id: "z-centro-mcbo", name: "Centro", cityId: "mcbo", parentName: "Coquivacoa" },
+];
+
+const SUGERENCIAS_CONTEOS = {
+  "z-altamira": 9,
+  "z-chacao": 0,
+  "z-centro-dc": 4,
+  "z-centro-mcbo": 2,
+};
 
 /** Zonas curadas de mentira, para que el validador tenga contra qué contestar. */
 const HARNESS_ZONES: readonly CuratedZone[] = [{ id: "altamira", cityId: "dc" }];
