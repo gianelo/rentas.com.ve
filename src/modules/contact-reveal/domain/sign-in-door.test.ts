@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { contactDoorFor, DOOR_OPEN_TOKEN, DOOR_QUERY_NAME, doorHrefFor } from "./sign-in-door";
+import {
+  contactDoorFor,
+  DOOR_OPEN_TOKEN,
+  DOOR_QUERY_NAME,
+  doorHrefFor,
+  lockedContactNotice,
+} from "./sign-in-door";
 
 const DUENO = { type: "owner" as const, name: "María F." };
 const CON_LLAVE = { state: "locked" as const, method: "whatsapp" as const };
@@ -70,5 +76,50 @@ describe("la dirección que abre la puerta (15.8)", () => {
       `${FICHA}?desde=%2Fmaracaibo&entrar=si`,
     );
     expect(doorHrefFor(doorHrefFor(FICHA))).toBe(doorHrefFor(FICHA));
+  });
+});
+
+/**
+ * **La otra mitad de la F20** (tasks.md 15.11). *«Entrar no es un muro: el
+ * contenido del aviso es público y solo el teléfono está detrás de la cuenta»*
+ * no se cumple sólo con una salida visible: hace falta que, al lado del número
+ * tapado, esté dicho qué falta y por qué. Esa frase estaba escrita a mano
+ * adentro de `ContactBlock` —producto en una capa sin piso de cobertura y sin
+ * una prueba que la nombrara—, y esto es lo que la trae al dominio.
+ */
+describe("lo que se lee al lado del número tapado (F20, 15.11)", () => {
+  it("dice qué falta, por qué, y que no cuesta nada", () => {
+    expect(lockedContactNotice("whatsapp")).toBe(
+      "Mostramos el WhatsApp a usuarios registrados. " +
+        "Pedimos la cuenta para frenar avisos falsos: es gratis y es un toque.",
+    );
+  });
+
+  it("nombra el canal que el aviso realmente guarda, y no siempre WhatsApp", () => {
+    expect(lockedContactNotice("telefono")).toContain("Mostramos el teléfono a usuarios");
+    expect(lockedContactNotice("email")).toContain("Mostramos el email a usuarios");
+  });
+
+  /**
+   * **Pineada por valor contra la puerta**, el mismo recurso que
+   * `sign-in-page.test.ts` usa entre los dos módulos: las láminas escriben la
+   * razón con punto en la hoja y con dos puntos en el bloque, y las dos formas
+   * pueden convivir — lo que no puede pasar es que digan cosas distintas.
+   */
+  it("hace la misma afirmación que la hoja, palabra por palabra", () => {
+    const hoja = contactDoorFor(
+      { state: "locked", method: "whatsapp" },
+      { type: "owner", name: null },
+      DOOR_OPEN_TOKEN,
+    );
+
+    expect(hoja?.reason).toContain("Pedimos la cuenta para frenar avisos falsos");
+    expect(lockedContactNotice("whatsapp")).toContain(
+      "Pedimos la cuenta para frenar avisos falsos",
+    );
+    // La mayúscula es lo único que cambia: la hoja abre frase con «Es gratis»
+    // y el bloque la encadena con dos puntos. Se pinea lo que afirman.
+    expect(hoja?.reason).toContain("gratis y es un toque");
+    expect(lockedContactNotice("whatsapp")).toContain("gratis y es un toque");
   });
 });

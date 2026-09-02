@@ -6,6 +6,7 @@ import {
   contactActionHref,
   contactChannelNoun,
 } from "@/modules/contact-reveal/domain/revealable-contact";
+import { lockedContactNotice } from "@/modules/contact-reveal/domain/sign-in-door";
 import { longSpanishDate } from "@/shared/format/spanish-date";
 import { ActionButton, ActionLink } from "../atoms/buttons";
 import { CopyContact } from "../client/CopyContact";
@@ -157,10 +158,11 @@ export function ContactBlock({
 
         {contact.state === "locked" ? (
           <>
-            <p className={styles.why}>
-              Mostramos el {contactChannelNoun(contact.method)} a usuarios registrados. Pedimos la
-              cuenta para frenar avisos falsos: es gratis y es un toque.
-            </p>
+            {/* **La razón sale del dominio** (F20, tasks.md 15.11). Estuvo
+                escrita a mano acá, que es una regla de producto en una capa a
+                la que el suelo del 90 % no llega: la misma afirmación que la
+                hoja ya decía desde `sign-in-door.ts`, escrita dos veces. */}
+            <p className={styles.why}>{lockedContactNotice(contact.method)}</p>
             {/* **Un formulario y no un enlace, que era el agujero.** El botón
                 iba a `/signin` y no llamaba a nada: se podía entrar, volver a
                 la ficha, y el número seguía tapado. Un enlace no ejecuta la
