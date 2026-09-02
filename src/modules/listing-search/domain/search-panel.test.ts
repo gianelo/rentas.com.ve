@@ -121,6 +121,29 @@ describe("el panel entero", () => {
  * seguir protegiendo lo de antes y protege otra cosa.
  */
 
+/**
+ * **El nombre de la ciudad llega como un dato y no como una lista** (14.50).
+ *
+ * Hasta el 2026-09-02 el panel recibía el catálogo entero de ciudades y le
+ * sacaba un nombre buscando por id. De todo aquello se dibujaba exactamente
+ * esto: el encabezado, que es lo que la pastilla dice cuando no hay zona
+ * elegida. **Nadie lo medía** —ninguna prueba de dominio leía `headline`— así
+ * que el día que la lista se cambió por el nombre lo único que se puso rojo fue
+ * una prueba de `app/`, donde el suelo de cobertura del 90 % no llega.
+ */
+describe("dónde se está buscando (14i: «eso lo resuelve el texto»)", () => {
+  it("sin zona elegida el encabezado es la ciudad", () => {
+    expect(panel().headline).toBe("Distrito Capital");
+  });
+
+  it("con zonas elegidas son ellas, y la ciudad deja de encabezar", () => {
+    const model = panel({ chosenZoneIds: ["chacao", "altamira"] });
+
+    expect(model.headline).toBe("Chacao, Altamira");
+    expect(model.headline).not.toContain("Distrito Capital");
+  });
+});
+
 describe("paso 2 · las zonas (F4)", () => {
   it("cada zona lleva su conteo, y la vacía no lleva número", () => {
     const zones = panel().zones;

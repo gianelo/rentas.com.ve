@@ -94,7 +94,7 @@ describe("buildFilterPanel", () => {
   it("le hace UNA sola pregunta al puerto, y es la de la ciudad que se mira", async () => {
     const { port, calls } = fakeFacets({ dc: { total: 47, byZone: { chacao: 12 } } });
 
-    const { counts } = await buildFilterPanel(port, {
+    const { counts, panel } = await buildFilterPanel(port, {
       ...PLACE,
       query: {},
       chosenZoneIds: [],
@@ -103,6 +103,9 @@ describe("buildFilterPanel", () => {
 
     expect(calls).toHaveLength(1);
     expect(calls[0]?.criteria.cityId).toBe("dc");
+    // Y el nombre que la petición trae es el que encabeza la búsqueda: es el
+    // ÚNICO dato que el panel leía del catálogo de ciudades que ya no viaja.
+    expect(panel.headline).toBe("Distrito Capital");
     // Y la respuesta de esa única pregunta es la que viaja: sin esto, no
     // preguntar nada también daría uno... o cero, sin que nadie lo note.
     expect(counts.total).toBe(47);
