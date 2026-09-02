@@ -79,6 +79,28 @@ describe("boundedVocabulary", () => {
   });
 
   /**
+   * **Lo que se ofrece viaja al navegador, así que se escribe campo por campo y
+   * nunca con un `...zone`.**
+   *
+   * No es higiene: el catálogo trae `kind` y `category` —«elemento»,
+   * «urbanizacion»— que ninguna sugerencia usa, y un `spread` los copiaba a los
+   * dos en cada zona del vocabulario serializado. **Se descubrió midiendo**, no
+   * revisando: leyendo el marcado servido de `/alquiler/distrito-capital` con
+   * la aplicación compilada, donde estaban escritos.
+   */
+  it("no le manda al navegador un solo campo que las sugerencias no usen", () => {
+    const conBasura = ZONES.map((zone) => ({
+      ...zone,
+      kind: "elemento",
+      category: "urbanizacion",
+    }));
+
+    expect(
+      Object.keys(boundedVocabulary(CITIES, conBasura, { "z-altamira": 9 }).zones[0] ?? {}),
+    ).toEqual(["id", "name", "cityId", "parentName", "count"]);
+  });
+
+  /**
    * Las ciudades van enteras aunque no tengan conteo: son dos filas, y son lo
    * que el dominio ofrece cuando alguien escribió filtros sin nombrar un lugar
    * («apartamento amoblado»). Es la misma decisión que `DrizzleSearchVocabulary`

@@ -76,9 +76,27 @@ export function boundedVocabulary(
     // vez y el conteo se vuelve a buscar en la otra, y esa segunda búsqueda
     // arrastra un `?? 0` que ya no puede pasar — una rama que ninguna prueba
     // puede poner en rojo porque es inalcanzable.
+    //
+    // **Campo por campo y nunca `...zone`**, y eso no es higiene. Este objeto se
+    // serializa entero hacia el navegador: el catálogo trae además `kind` y
+    // `category` —«elemento», «urbanizacion»— que ninguna sugerencia mira, y un
+    // `spread` los mandaba en CADA zona. Se descubrió leyendo el marcado
+    // servido de `/alquiler/distrito-capital` con la aplicación compilada, no
+    // revisando el código. El tipo no alcanzaba: `CatalogueZoneName` declara
+    // cuatro campos y TypeScript acepta de más en tiempo de ejecución.
     zones: zones.flatMap((zone) => {
       const count = byZone[zone.id] ?? 0;
-      return count > 0 ? [{ ...zone, count }] : [];
+      if (count === 0) return [];
+
+      return [
+        {
+          id: zone.id,
+          name: zone.name,
+          cityId: zone.cityId,
+          parentName: zone.parentName,
+          count,
+        },
+      ];
     }),
     aliases: [],
   };

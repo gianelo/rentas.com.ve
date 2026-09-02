@@ -5,6 +5,13 @@ import {
 import type { SuggestionVocabulary } from "@/modules/listing-catalogue/domain/suggest-filters";
 import { AppLink } from "../atoms/AppLink";
 import { FilterIcon, MagnifierIcon } from "../atoms/icons";
+// **Importado derecho, y `next/dynamic` está medido y descartado.** Esta isla
+// entra en el primer paquete de toda ruta que dibuja el `Nav` —la ficha
+// incluida, que ni siquiera lleva pastilla—: +2,5 KB gzip en ocho rutas.
+// Partirla con `next/dynamic` para que sólo la pidan las pantallas que traen
+// vocabulario **sube el número en vez de bajarlo**: medido ruta por ruta, +0,5
+// KB MÁS en las trece, porque el cargador perezoso pesa más que lo que evita y
+// se cuela en el trozo compartido de todas. Se paga el costo simple.
 import { SearchSuggestions } from "../client/SearchSuggestions";
 import styles from "./SearchPill.module.css";
 
