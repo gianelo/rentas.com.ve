@@ -177,7 +177,8 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
   // El panel va después de las filas por la misma razón que en la página de
   // zona: el atajo de F7 —con un solo resultado el botón lleva a la ficha—
   // necesita la dirección de esa ficha, y la arma `buildListingGrid`.
-  const { panel, counts, outcome } = await buildFilterPanel(new DrizzleFacetedSearch(db), {
+  const facets = new DrizzleFacetedSearch(db);
+  const { panel, counts, outcome, priceNotices } = await buildFilterPanel(facets, {
     basePath: cityPath,
     cityPath,
     query,
@@ -313,6 +314,16 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
           {total === 1 ? "1 propiedad activa" : `${total} propiedades activas`}
           {pagination.count > 1 ? ` — página ${pagination.current} de ${pagination.count}` : ""}
         </p>
+
+        {/* **Lo que se le corrigió al precio, dicho** (14.13, F5). El criterio
+            ya intercambiaba un rango invertido, y callarlo dejaba a alguien
+            mirando los resultados de un rango que no escribió. La frase la
+            escribe el dominio. */}
+        {priceNotices.map((notice) => (
+          <p key={notice} className={styles.alsoIn} role="status">
+            {notice}
+          </p>
+        ))}
 
         {/* **Los filtros puestos, quitables de a uno** (lámina 7c). Reemplazan a
             lo que la barra lateral mostraba de un vistazo: cuáles están puestos

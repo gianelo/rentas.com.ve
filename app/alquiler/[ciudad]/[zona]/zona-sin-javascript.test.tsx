@@ -189,3 +189,79 @@ describe("la página de zona sin JavaScript", () => {
     expect(volver).toBe("/alquiler/maracaibo/tierra-negra?max=500");
   });
 });
+
+/**
+ * **Lo mismo acá, y no por simetría** (14.13, F5): son dos archivos, y el que
+ * se olvidara del cable dejaría media mitad del producto corrigiendo en
+ * silencio sin romper nada visible — la forma de fallo que la 16.9 documentó.
+ */
+describe("lo que la búsqueda le corrigió al precio, dicho (14.13)", () => {
+  it("dice que intercambió los dos extremos, con los números que se pidieron", async () => {
+    const html = await servedBody("maracaibo", "tierra-negra", { min: "900", max: "300" });
+
+    expect(html).toContain("Pediste de $900 a $300");
+    expect(search).toHaveBeenCalledWith(
+      expect.objectContaining({ minPriceUsd: 300, maxPriceUsd: 900 }),
+    );
+  });
+
+  it("una búsqueda que no se corrigió no dice nada", async () => {
+    // El otro lado: una frase que saliera siempre pasaría la de arriba.
+    const html = await servedBody("maracaibo", "tierra-negra", { min: "300", max: "900" });
+
+    expect(html).not.toContain("Pediste de");
+    expect(html).not.toContain("se ajustó");
+  });
+});
+
+/**
+ * **«Limpiar todo» suelta la zona de la RUTA y conserva la ciudad** (14.22b,
+ * F8): *«la ciudad no es un filtro, es el contexto»*.
+ *
+ * La regla la deciden `clearAllHref` y `buildSearchPanel`, y las dos la tienen
+ * afirmada. Lo que **no** estaba afirmado es el cable: esta página elige qué
+ * ruta le pasa como `cityPath`, y pasarle la suya —la que ya nombra la zona—
+ * dejaría «Limpiar todo» conservando la zona sin poner roja una sola prueba de
+ * dominio. Se lee sobre el cuerpo servido porque es la única capa donde esa
+ * elección se ve.
+ */
+describe("«Limpiar todo» vuelve a la ciudad, no a la zona (14.22b)", () => {
+  it("suelta la zona del camino y todos los filtros, y deja la ciudad", async () => {
+    const html = await servedBody("maracaibo", "tierra-negra", {
+      max: "500",
+      hab: "2",
+      pag: "2",
+    });
+
+    expect(html).toContain('href="/alquiler/maracaibo">Limpiar todo');
+    // Y el otro lado, porque un enlace a la ciudad pelada podría ser cualquier
+    // otro de la miga de pan: la zona no viaja adentro de ESE enlace.
+    expect(html).not.toContain('href="/alquiler/maracaibo/tierra-negra">Limpiar todo');
+  });
+});
+
+/**
+ * **Un parámetro que esta ruta no admite se ignora CON aviso** (14.23b).
+ *
+ * `resolveSearchLocation` lo decide y `search-location.test.ts` lo afirma. Lo
+ * que faltaba es que la frase llegue a la pantalla: el dominio puede devolver
+ * el aviso perfecto y la página no dibujarlo, que es exactamente el modo de
+ * fallo que la 16.9 dejó documentado — nada se ve roto.
+ */
+describe("el «zona» que esta ruta no admite se dice en la pantalla (14.23b)", () => {
+  it("sale el aviso, y el parámetro no se arrastra a ningún enlace", async () => {
+    const html = await servedBody("maracaibo", "tierra-negra", {
+      zona: "la-lago",
+      max: "500",
+    });
+
+    expect(html).toContain("Esta dirección ya nombra una zona");
+    expect(html).not.toContain("zona=la-lago");
+  });
+
+  it("sin el parámetro no hay aviso: no se avisa de lo que nadie pidió", async () => {
+    const html = await servedBody("maracaibo", "tierra-negra", { max: "500" });
+
+    expect(html).not.toContain("Esta dirección ya nombra una zona");
+  });
+});

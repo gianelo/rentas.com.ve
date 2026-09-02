@@ -283,3 +283,38 @@ describe("buildFilterPanel", () => {
     expect(panel.confirm).toMatchObject({ label: "Ver 1 aviso" });
   });
 });
+
+/**
+ * **Lo que se le corrigió al precio sale de la MISMA respuesta** (14.13).
+ *
+ * Los extremos reales viven en `byPriceBucket`, que ya viaja en la única
+ * consulta; preguntarlos aparte sería el segundo viaje de red que la 14.11 se
+ * ganó y la 14.50 volvió a perder una vez. Qué dice la frase lo afirma el
+ * dominio; lo que sólo se ve acá es que sale de la respuesta que ya estaba.
+ */
+describe("la corrección del precio se dice, y no cuesta una pregunta más (14.13)", () => {
+  it("dice lo que corrigió con los cubos que ya volvieron, sin preguntar de nuevo", async () => {
+    const { port, calls } = fakeFacets({
+      dc: {
+        total: 5,
+        byPriceBucket: [
+          { count: 2, lowestUsd: 200, highestUsd: 280 },
+          ...Array.from({ length: 6 }, () => ({ count: 0 })),
+          { count: 3, lowestUsd: 850, highestUsd: 900 },
+        ],
+      },
+    });
+
+    const { priceNotices } = await buildFilterPanel(port, {
+      ...PLACE,
+      query: { min: "900", max: "5000" },
+      chosenZoneIds: [],
+      criteria: { cityId: "dc" },
+    });
+
+    // El $900 no sale de la query: es el aviso más caro que devolvieron los
+    // cubos, y es contra él que se ajustó el máximo de $5000.
+    expect(priceNotices).toEqual(["El máximo de $5000 se ajustó a $900: no hay nada más caro."]);
+    expect(calls).toHaveLength(1);
+  });
+});

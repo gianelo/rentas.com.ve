@@ -1,4 +1,5 @@
 import { resolvePagination } from "../domain/pagination";
+import { priceCorrectionNotices } from "../domain/price-correction";
 import type { SearchCriteria } from "../domain/search-criteria";
 import {
   bestExit,
@@ -71,6 +72,14 @@ export interface FilterPanelResult {
    * lo dibuja.
    */
   readonly outcome: SearchOutcome;
+  /**
+   * **Lo que la búsqueda le corrigió al precio, dicho** (14.13, F5). Vacío
+   * cuando no corrigió nada. Va acá y no adentro del panel porque el panel está
+   * cerrado por defecto y la corrección es sobre los resultados que se miran,
+   * no sobre el formulario que los pidió. Sale de `counts.byPriceBucket`: cero
+   * viajes de red extra.
+   */
+  readonly priceNotices: readonly string[];
 }
 
 export async function buildFilterPanel(
@@ -109,6 +118,7 @@ export async function buildFilterPanel(
   return {
     counts,
     outcome,
+    priceNotices: priceCorrectionNotices(request.query, counts.byPriceBucket),
     panel: buildSearchPanel({
       basePath: request.basePath,
       cityPath: request.cityPath,
