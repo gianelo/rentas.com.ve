@@ -20,6 +20,7 @@ import type {
 } from "../../src/modules/listing-publication/domain/publisher-listing-board";
 import { DrizzlePublisherListings } from "../../src/modules/listing-publication/infrastructure/drizzle-publisher-listings";
 import { db } from "../../src/shared/db/client";
+import { longSpanishDate } from "../../src/shared/format/spanish-date";
 import { requireSession } from "../_lib/require-session";
 import { importRowReasonText } from "../importar/import-copy";
 import { activarBorrador, adjuntarFotoAlBorrador, pedirDestinoDeFoto } from "./actions";
@@ -198,7 +199,7 @@ function etiquetaDeEstado(card: PublisherListingCard): string {
     case "hidden":
       return "Oculta por reportes";
     case "expired":
-      return `Vencida el ${fecha(card.expiresAt)}`;
+      return `Vencida el ${longSpanishDate(card.expiresAt)}`;
     default:
       return `Activa · vence en ${plural(card.daysToExpiry ?? 0)}`;
   }
@@ -206,15 +207,6 @@ function etiquetaDeEstado(card: PublisherListingCard): string {
 
 function plural(days: number): string {
   return days === 1 ? "1 día" : `${days} días`;
-}
-
-/** Igual que `lifecycle-notice.ts`: sin abreviar, y en UTC para no mentir. */
-function fecha(date: Date): string {
-  return new Intl.DateTimeFormat("es-VE", {
-    day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  }).format(date);
 }
 
 function FichaDeAviso({
@@ -243,6 +235,23 @@ function FichaDeAviso({
           {card.externalReference === null ? null : ` · ref. ${card.externalReference}`}
         </ListingMeta>
         <p className={styles.estado}>{etiquetaDeEstado(card)}</p>
+
+        {/*
+          **El segundo canal de la retención** (tasks.md 19.6 y 19.7). El
+          correo de purga puede no llegar —spam, casilla llena, dirección
+          vieja—, y una borrada irreversible no puede depender de que llegue.
+
+          **Acá no se decide nada** (AGENTS.md §1): cuál de las dos frases
+          corresponde, y qué promete hoy volver a publicar este aviso, lo
+          contesta `retention-notice.ts` bajo el piso de 90%. Esta pantalla
+          dibuja la respuesta, y ningún `if` de este archivo mira
+          `photoCount` ni la fecha de la purga.
+        */}
+        {card.retention === null ? null : (
+          <p className={styles.retencion} data-retencion={card.retention.kind}>
+            {card.retention.deadline} {card.retention.republish}
+          </p>
+        )}
 
         {/*
           **«Editar» en la fila de un aviso activo** (tasks.md 18.20). Quién lo

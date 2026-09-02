@@ -228,6 +228,22 @@
   font-size: var(--meta-fs);
 }
 
+/* 19.6/19.7 — el aviso de retención de una ficha vencida. Ningún literal:
+   toma la misma escala de metadato que `.estado` y la tinta atenuada del
+   sistema, para que `data-theme` lo repinte con el resto. */
+.retencion {
+  margin: 4px 0 0;
+  color: var(--soft);
+  font-size: var(--meta-fs);
+}
+
+/* Ya sin fotos la pérdida es un hecho consumado, no una advertencia: se lee
+   con la tinta del cuerpo y no con la de alarma, que aquí no avisa de nada
+   que todavía se pueda evitar. */
+.retencion[data-retencion="countdown"] {
+  color: var(--warn);
+}
+
 .fotoError,
 .negativa {
   margin: 4px 0 0;

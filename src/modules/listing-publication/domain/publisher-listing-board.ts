@@ -3,6 +3,10 @@ import {
   isExpired,
   wholeDaysBetween,
 } from "../../listing-lifecycle/domain/expiry";
+import {
+  type RetentionNotice,
+  retentionNoticeFor,
+} from "../../listing-lifecycle/domain/retention-notice";
 import { MIN_PHOTOS_FOR_ACTIVATION, type PublisherType } from "./publishable-listing";
 
 /**
@@ -71,6 +75,17 @@ export interface PublisherListingCard extends PublisherListing {
    * un vencido o uno oculto sería dibujar una puerta que la escritura cierra.
    */
   readonly editable: boolean;
+  /**
+   * El conteo regresivo de la purga y qué promete volver a publicar (19.6 y
+   * 19.7); `null` en toda ficha cuyo ciclo no terminó.
+   *
+   * **Sólo la vencida.** Antes del vencimiento las fotos no corren riesgo y
+   * la ficha ya dice «Vence en N días»; un `hidden` queda afuera porque
+   * renovar lo deja oculto (9.31) y la promesa sería falsa donde se lee — que
+   * la purga sí alcance sus fotos es deuda anotada en el plan, no un permiso
+   * para prometer.
+   */
+  readonly retention: RetentionNotice | null;
 }
 
 export interface PublisherListingChip {
@@ -171,6 +186,8 @@ export function buildPublisherListingBoard(
           ? wholeDaysBetween(now, listing.expiresAt)
           : null,
       editable: EDITABLE_STATES.includes(state),
+      retention:
+        state === "expired" ? retentionNoticeFor(listing.photoCount, listing.expiresAt, now) : null,
     };
   });
 
