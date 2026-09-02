@@ -267,3 +267,70 @@ describe("buildPublisherListingBoard — qué avisos se pueden editar (18.20)", 
     expect(board.cards[0]?.editable).toBe(false);
   });
 });
+
+/**
+ * tasks.md 19.6 y 19.7 — el conteo regresivo de la purga en la ficha, y qué
+ * promete el botón a cada lado de ella.
+ *
+ * **Lo que se afirma acá es a QUÉ ficha le corresponde**, no la frase: la
+ * frase la escribe `retention-notice.ts` con sus propias pruebas. Una ficha
+ * activa que llevara el conteo asustaría a quien no corre riesgo, y una
+ * vencida sin él es exactamente el agujero que 19.6 nombra.
+ */
+describe("el aviso de retención de la ficha (19.6/19.7)", () => {
+  it("una ficha vencida con fotos lleva el conteo regresivo", () => {
+    const board = buildPublisherListingBoard([EXPIRED], NOW);
+
+    expect(board.cards[0]?.retention?.kind).toBe("countdown");
+  });
+
+  it("una ficha vencida sin fotos dice que ya se borraron", () => {
+    const board = buildPublisherListingBoard(
+      [listing({ id: "purgada", status: "expired", photoCount: 0 })],
+      NOW,
+    );
+
+    expect(board.cards[0]?.retention?.kind).toBe("purged");
+  });
+
+  /**
+   * El par positivo de la negativa: sin él, un tablero que devolviera
+   * `retention: null` para TODAS las fichas pasaría la aserción de abajo sin
+   * dibujar ningún conteo en ninguna parte.
+   */
+  it("ni la activa, ni la que vence pronto, ni el borrador llevan aviso de retención", () => {
+    const board = buildPublisherListingBoard([ACTIVE, EXPIRING, DRAFT, EXPIRED], NOW);
+
+    expect(board.cards.map((card) => [card.id, card.retention === null])).toEqual([
+      ["borrador", true],
+      ["vence-pronto", true],
+      ["activa", true],
+      ["vencida", false],
+    ]);
+  });
+
+  /**
+   * **Un `hidden` no lo lleva aunque su reloj haya vencido, y eso es una
+   * deuda anotada, no un olvido.** `DrizzleLifecycleListings.candidates`
+   * filtra sólo por `expires_at` y no por estado, así que la purga SÍ alcanza
+   * sus fotos; pero renovar deja `hidden` como está (9.31), así que la
+   * promesa «renovalo y vuelve con sus fotos» sería falsa justamente en la
+   * ficha que la leería. Queda como tarea propia en el plan.
+   */
+  it("un oculto no lleva aviso de retención, aunque su reloj haya vencido", () => {
+    const board = buildPublisherListingBoard(
+      [
+        listing({
+          id: "oculta",
+          status: "hidden",
+          photoCount: 4,
+          expiresAt: new Date("2026-08-02T12:00:00Z"),
+        }),
+      ],
+      NOW,
+    );
+
+    expect(board.cards[0]?.state).toBe("hidden");
+    expect(board.cards[0]?.retention).toBeNull();
+  });
+});

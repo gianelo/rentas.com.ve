@@ -8,6 +8,10 @@
     {
       "path": "/api/jobs/draft-sweep",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/jobs/photo-purge",
+      "schedule": "0 17 * * *"
     }
   ]
 }

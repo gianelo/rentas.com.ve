@@ -28,8 +28,11 @@ export type VerifiedContactDatabase = PgDatabase<PgQueryResultHKT, typeof schema
  * verificado» y «no existe la cuenta» son respuestas distintas y sólo la
  * segunda es `null`.
  *
- * Los doce meses de la 19.11 entran acá como un `WHERE verified_at > $desde`
- * dentro de la condición del join, y nada más cambia.
+ * **Los doce meses de la 19.11 NO entran acá.** Este comentario decía que sí,
+ * dentro de la condición del join; la razón por la que no, y dónde viven, está
+ * escrita en el puerto que esta clase implementa. En una frase: esta consulta
+ * la comparten publicar y la ficha, y la ficha tiene que seguir viendo la fila
+ * vieja (19.12).
  */
 export class DrizzleContactVerificationEvidence implements ContactVerificationEvidencePort {
   constructor(private readonly db: VerifiedContactDatabase) {}

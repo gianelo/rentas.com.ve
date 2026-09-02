@@ -10,12 +10,23 @@ import type { ContactMethod } from "../../listing-publication/domain/publishable
  * verificó algo es lo que hace que la verificación deje de significar nada, y
  * distinguir un aviso real de uno falso es lo único para lo que existe.
  *
- * **Acá no se decide si una verificación sigue viva.** Los doce meses de la
- * 19.11 son un `WHERE` del puerto de lectura, y por eso `verifiedAt` llega ya
- * filtrado: esta función recibe la fila que YA está dentro de la ventana, del
- * mismo modo que `reveal-rate-limit.ts` recibe los avisos que ya están dentro
- * de la suya. Sin `Date`, sin I/O y sin una sola comparación de fechas — lo
- * que convierte la 19.11 en un cambio de consulta y no en una migración.
+ * **Acá SÍ se decide si una verificación sigue viva, y es una corrección al
+ * texto de la 19.9 con su razón (AGENTS.md §5).** Este comentario decía que
+ * los doce meses de la 19.11 eran un `WHERE verified_at > $desde` del puerto
+ * de lectura y que por eso `verifiedAt` llegaba ya filtrado. Ese puerto lo
+ * comparten los DOS caminos —`resolveContactVerification` al publicar y
+ * `viewListingContact` al dibujar la ficha—, así que el `WHERE` habría
+ * borrado la frase «verificado el …» de un aviso ya publicado y todavía
+ * activo el día que su verificación caduca: exactamente la invalidación que
+ * la 19.12 prohíbe. La ventana vive entonces en la decisión de publicar, que
+ * es la única que la 19.11 nombra, y la ficha sigue leyendo la fila cruda y
+ * escribiendo la FECHA en vez de un estado.
+ *
+ * Sigue sin haber I/O y sin reloj propio: `now` entra como parámetro, la
+ * misma forma que `isVerificationLinkExpired` usa en este mismo módulo y que
+ * `resolveListingAvailability` documenta —«es lo que mantiene la función pura
+ * y su test repetible»—. Sigue sin hacer falta una migración: `verified_at`
+ * ya existe.
  */
 export interface ChosenContact {
   readonly method: ContactMethod;
@@ -67,17 +78,44 @@ export type ContactVerification =
   | { readonly kind: "unverified" };
 
 /** Una dirección es la misma escrita con otras mayúsculas o con un espacio pegado. */
-function normaliseEmail(value: string): string {
+export function normaliseEmail(value: string): string {
   return value.trim().toLowerCase();
+}
+
+/** tasks.md 19.11 — decisión del fundador del 2026-08-22. */
+export const CONTACT_VERIFICATION_MONTHS = 12;
+
+/**
+ * Si una verificación todavía vale, contando desde el instante en que
+ * ocurrió.
+ *
+ * **El corte es `>` y no `>=`**, el mismo borde que `resolveListingAvailability`
+ * documenta y el mismo que el `WHERE verified_at > $desde` del puerto tenía
+ * escrito: los doce meses cumplidos son el primer instante que ya no vale.
+ *
+ * Los meses se restan del calendario y no en días, así que la ventana no se
+ * corre con los años bisiestos; el 29 de febrero cae en el 1 de marzo, que es
+ * lo que `setUTCMonth` hace y lo que un vencimiento un día antes haría de
+ * todos modos.
+ */
+export function contactVerificationIsLive(verifiedAt: Date, now: Date): boolean {
+  const desde = new Date(now.getTime());
+  desde.setUTCMonth(desde.getUTCMonth() - CONTACT_VERIFICATION_MONTHS);
+  return verifiedAt > desde;
 }
 
 export function decideContactVerification(
   chosen: ChosenContact,
   evidence: ContactVerificationEvidence | null,
+  now: Date,
 ): ContactVerification {
   if (!evidence) return { kind: "unverified" };
 
-  if (evidence.verifiedAt) {
+  // Una fila caducada NO gana por existir: cae, y el atajo del correo de abajo
+  // vuelve a contestar si puede. Eso ES «a publish whose verification has
+  // lapsed re-verifies» (19.11), y el `upsert` mueve el instante hacia
+  // adelante en la misma fila.
+  if (evidence.verifiedAt && contactVerificationIsLive(evidence.verifiedAt, now)) {
     return { kind: "already-verified", verifiedAt: evidence.verifiedAt };
   }
 
@@ -89,6 +127,15 @@ export function decideContactVerification(
   if (chosen.method !== "email") return { kind: "unverified" };
 
   if (!evidence.accountEmail || !evidence.accountEmailVerifiedAt) {
+    return { kind: "unverified" };
+  }
+
+  // **Los MISMOS doce meses, y la 19.10 ya lo había decidido.** Registrar
+  // `user.emailVerified` en vez de `now()` sólo tiene sentido si ese instante
+  // es el que envejece; si el atajo no caducara, un `emailVerified` de tres
+  // años entraría igual y se escribiría ya vencido — y la publicación
+  // siguiente lo volvería a escribir, que es la 19.13 al revés.
+  if (!contactVerificationIsLive(evidence.accountEmailVerifiedAt, now)) {
     return { kind: "unverified" };
   }
 
