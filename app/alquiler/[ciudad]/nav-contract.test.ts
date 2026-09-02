@@ -30,6 +30,32 @@ describe("las dos pantallas de resultados y la barra del producto", () => {
 
   for (const [name, page] of ENTRIES) {
     describe(`/alquiler/<ciudad>${name === "zona" ? "/<zona>" : ""}`, () => {
+      /**
+       * **La ciudad viaja como un nombre, y es el de ESTA ciudad** (14.50).
+       *
+       * Hasta el 2026-09-02 las dos páginas le pasaban al panel el catálogo
+       * entero de ciudades —que es lo que hacía expresable la consulta por cada
+       * otra ciudad— y el panel le sacaba un nombre buscando por id. Ahora va el
+       * nombre y nada más.
+       *
+       * **Se afirma acá y no sólo en el dominio porque es cableado de dos
+       * pantallas**: en la de zona el encabezado lo pone la zona, así que un
+       * `cityName` en blanco no se nota mirando la pastilla — sale en la causa
+       * del vacío («Ningún aviso de … coincide»), que es la pantalla que menos
+       * gente ve y la que peor queda rota.
+       */
+      it("le pasa al panel el nombre de SU ciudad, no una lista ni una constante", () => {
+        // **Se cuentan las apariciones, no se busca una.** Las dos páginas
+        // pasan el mismo nombre en DOS lugares —la cuadrícula y el panel— y
+        // buscar «hay una» dejaba pasar que el segundo se rompiera: medido
+        // mutando la línea del panel a `cityName: ""`, que con `toMatch` seguía
+        // en verde porque la de la cuadrícula alcanzaba.
+        const passes = page.match(/cityName:\s*(?:place\.)?city\.name,/g) ?? [];
+
+        expect(passes).toHaveLength(2);
+        expect(page).not.toContain("cities: cities.map(");
+      });
+
       it("dibuja el Nav y ya no la barra resumen que sólo existía en móvil", () => {
         expect(page).toContain("<Nav");
         expect(page).not.toContain("SearchSummaryBar");
