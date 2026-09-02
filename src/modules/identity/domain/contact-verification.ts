@@ -78,7 +78,7 @@ export type ContactVerification =
   | { readonly kind: "unverified" };
 
 /** Una dirección es la misma escrita con otras mayúsculas o con un espacio pegado. */
-function normaliseEmail(value: string): string {
+export function normaliseEmail(value: string): string {
   return value.trim().toLowerCase();
 }
 
