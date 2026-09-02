@@ -76,3 +76,42 @@ export function contrastRatio(hexA: string, hexB: string): number {
   const [lighter, darker] = la > lb ? [la, lb] : [lb, la];
   return (lighter + 0.05) / (darker + 0.05);
 }
+
+/**
+ * El alfa de un color escrito como `rgba(r, g, b, a)`. Devuelve 1 para
+ * cualquier color opaco (un hex, o un `rgb()` sin cuarto canal).
+ *
+ * Existe porque **la transparencia es el producto, no el color**: un velo que
+ * se declara con `var(--scrim)` y resuelve a un valor opaco pasa `lint:tokens`
+ * sin una sola queja y tapa la pantalla igual que antes. `lint:tokens` prueba
+ * que no hay literales; no prueba qué sale.
+ */
+export function alphaOf(colour: string): number {
+  const match = colour.trim().match(/^rgba?\(([^)]*)\)$/);
+  if (!match?.[1]) return 1;
+  const parts = match[1].split(/[,/]/).map((part) => part.trim());
+  const alpha = parts[3];
+  return alpha === undefined ? 1 : Number.parseFloat(alpha);
+}
+
+/**
+ * Compone `rgba(...)` sobre una base opaca y devuelve el hex resultante — que
+ * es el color que el ojo ve cuando el velo cae sobre el fondo de la página.
+ *
+ * Sin esto, una aserción sobre un velo sólo puede hablar del velo. Lo que hay
+ * que medir es otra cosa: si el fondo velado se separa de la lámina que va
+ * encima, y eso es una cuenta entre tres colores, no una propiedad de uno.
+ */
+export function compositeOver(overlay: string, baseHex: string): string {
+  const match = overlay.trim().match(/^rgba?\(([^)]*)\)$/);
+  if (!match?.[1]) return overlay;
+  const parts = match[1].split(/[,/]/).map((part) => Number.parseFloat(part.trim()));
+  const alpha = parts[3] ?? 1;
+  const base = hexToRgb(baseHex);
+  const mixed = [0, 1, 2].map((channel) => {
+    const top = parts[channel] ?? 0;
+    const bottom = base[channel] ?? 0;
+    return Math.round(top * alpha + bottom * (1 - alpha));
+  });
+  return `#${mixed.map((value) => value.toString(16).padStart(2, "0")).join("")}`;
+}

@@ -905,3 +905,99 @@ test.describe("los átomos de la lista y la ficha de selección (22.2-22.5)", ()
     });
   });
 });
+
+/**
+ * **El fondo del modal de filtros, en un navegador de verdad (14.46).**
+ *
+ * `lint:tokens` no puede ver este defecto y ya lo demostró: `.panel` tapaba el
+ * viewport con `background: var(--surface)` —un token, gate en verde— y lo que
+ * se dibujaba era una pantalla opaca donde la 14.33 dice modal. Un token no
+ * tiene comportamiento, así que lo que se mide acá es lo que produce: el color
+ * que sale del compositor, su alfa, y si la hoja deja ver el velo a los lados.
+ *
+ * Se toma del árbol (`data-testid` + primer hijo) y nunca de un nombre de
+ * clase: los de CSS Modules son hashes de compilación.
+ */
+test.describe("el fondo del modal de filtros (14.46)", () => {
+  async function backdrop(page: import("@playwright/test").Page) {
+    return page.evaluate(() => {
+      const panel = document.querySelector('[data-testid="search-panel"]') as HTMLElement | null;
+      const sheet = panel?.firstElementChild as HTMLElement | null;
+      if (!panel || !sheet) throw new Error("el panel de filtros no se dibujó");
+      const alpha = (colour: string) => {
+        const parts = colour.match(/^rgba?\(([^)]*)\)$/)?.[1]?.split(",") ?? [];
+        return parts[3] === undefined ? 1 : Number.parseFloat(parts[3]);
+      };
+      return {
+        panelBg: getComputedStyle(panel).backgroundColor,
+        panelAlpha: alpha(getComputedStyle(panel).backgroundColor),
+        sheetAlpha: alpha(getComputedStyle(sheet).backgroundColor),
+        surface: getComputedStyle(document.documentElement).getPropertyValue("--surface").trim(),
+        sheetBg: getComputedStyle(sheet).backgroundColor,
+        panelWidth: Math.round(panel.getBoundingClientRect().width),
+        sheetWidth: Math.round(sheet.getBoundingClientRect().width),
+        panelTop: Math.round(panel.getBoundingClientRect().top),
+        sheetTop: Math.round(sheet.getBoundingClientRect().top),
+      };
+    });
+  }
+
+  test("14.46: a 1280 el velo deja pasar la lista y la hoja no lo tapa entero", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    await page.goto("/measure");
+
+    const seen = await backdrop(page);
+    console.log(`[14.46] 1280px: ${JSON.stringify(seen)}`);
+
+    // La guarda: sin esto, un panel que no se dibujara pasaría las de abajo por
+    // no dibujar nada.
+    expect(seen.panelWidth).toBeGreaterThan(0);
+    expect(seen.panelAlpha).toBeGreaterThan(0);
+    expect(seen.panelAlpha).toBeLessThan(1);
+    // Y lo que se lee sigue apoyado en una lámina opaca.
+    expect(seen.sheetAlpha).toBe(1);
+    // «El modal sobre la lista»: si la hoja ocupara el ancho del panel, el velo
+    // existiría en la hoja de estilos y no en la pantalla.
+    expect(seen.sheetWidth).toBeLessThan(seen.panelWidth);
+    // Y tampoco pegada al borde de arriba: una hoja que arranca en el filo del
+    // panel deja el velo en dos franjas laterales, que es media tarjeta.
+    expect(seen.sheetTop).toBeGreaterThan(seen.panelTop);
+  });
+
+  test("14.46: el velo se repinta con el tema — el par claro/oscuro es real", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    await page.goto("/measure");
+
+    const claro = await backdrop(page);
+    await page.evaluate(() => {
+      document.documentElement.dataset.theme = "oscuro";
+    });
+    const oscuro = await backdrop(page);
+    console.log(`[14.46] velo claro=${claro.panelBg} oscuro=${oscuro.panelBg}`);
+
+    expect(oscuro.panelBg).not.toBe(claro.panelBg);
+    // Los dos siguen siendo velo: un par que repintara a opaco cumpliría la
+    // aserción de arriba y rompería la pantalla.
+    expect(oscuro.panelAlpha).toBeGreaterThan(0);
+    expect(oscuro.panelAlpha).toBeLessThan(1);
+    // Y la lámina de abajo también se repinta, que es la mitad que el velo no
+    // hace: el fondo velado no separa nada por sí solo.
+    expect(oscuro.sheetBg).not.toBe(claro.sheetBg);
+  });
+
+  test("14.46: a 360 la hoja ocupa el ancho entero — la lámina 6b dibuja pantalla, no tarjeta", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 900 });
+    await page.goto("/measure");
+
+    const seen = await backdrop(page);
+    console.log(`[14.46] 360px: ${JSON.stringify(seen)}`);
+
+    expect(seen.panelWidth).toBe(360);
+    expect(seen.sheetWidth).toBe(seen.panelWidth);
+    expect(seen.sheetTop).toBe(seen.panelTop);
+  });
+});

@@ -3,7 +3,7 @@ import { extname, join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import * as buttons from "./atoms/buttons";
-import { contrastRatio, relativeLuminance, themeColor } from "./contrast";
+import { alphaOf, compositeOver, contrastRatio, relativeLuminance, themeColor } from "./contrast";
 import { Field } from "./molecules/Field";
 
 const buttonCss = readFileSync("components/atoms/Button.module.css", "utf-8");
@@ -420,5 +420,63 @@ describe("el campo del sistema tiene quien lo dibuje (1b.5)", () => {
 
   it("lo compone código entregado, no sólo esta prueba", () => {
     expect(consumers).not.toEqual([]);
+  });
+});
+
+/**
+ * **El velo de los modales (14.46), medido por lo que produce.**
+ *
+ * `lint:tokens` prueba que ninguna hoja escribe un literal. No prueba **qué
+ * color sale**, y ésa es exactamente la diferencia que esta tarea existe para
+ * cubrir: `SearchPanel.module.css` tapaba el viewport con `background:
+ * var(--surface)` —un token, cero quejas del gate— y el resultado era una hoja
+ * opaca donde la lámina dibuja un modal. Una aserción de que `--scrim` está
+ * declarado tendría el mismo defecto: un velo opaco lo cumpliría.
+ *
+ * Se miden dos cosas que un token opaco no puede fingir: que deja pasar lo de
+ * atrás (alfa entre 0 y 1) y que, compuesto sobre el fondo de la página,
+ * **aleja** ese fondo de la lámina que va encima en vez de acercarlo. Lo
+ * segundo es lo que obliga al par claro/oscuro: el mismo velo oscuro que en
+ * `menta` separa 3,9:1 deja `oscuro` PEOR que sin velo, porque oscurecer un
+ * fondo ya oscuro no separa nada.
+ */
+describe("el velo de los modales (14.46)", () => {
+  const panelCss = readFileSync("components/organisms/SearchPanel.module.css", "utf-8");
+  const doorCss = readFileSync("components/organisms/SignInDoor.module.css", "utf-8");
+  const linterSource = readFileSync("scripts/lint-tokens.mjs", "utf-8");
+  const themes = ["menta", "oscuro"] as const;
+
+  it.each(themes)("%s: el velo deja ver la lista — no es una lámina opaca", (theme) => {
+    const scrim = themeColor(theme, "--scrim");
+    const alpha = alphaOf(scrim);
+    expect(alpha).toBeGreaterThan(0);
+    expect(alpha).toBeLessThan(1);
+  });
+
+  it.each(themes)("%s: el velo aleja el fondo de la lámina, no lo acerca", (theme) => {
+    const bg = themeColor(theme, "--bg");
+    const surface = themeColor(theme, "--surface");
+    const veiled = compositeOver(themeColor(theme, "--scrim"), bg);
+
+    // La cota no es un número inventado: es lo que el propio tema ya separa sin
+    // velo. Pedir más sería inventar una regla; pedir menos es dejar pasar un
+    // velo que empeora la pantalla, que es lo que hace el velo claro en oscuro.
+    expect(contrastRatio(veiled, surface)).toBeGreaterThan(contrastRatio(bg, surface));
+  });
+
+  it("el par existe de verdad: los dos temas no repiten el mismo velo", () => {
+    expect(themeColor("menta", "--scrim")).not.toBe(themeColor("oscuro", "--scrim"));
+  });
+
+  it("el modal de filtros se dibuja sobre el velo y su hoja conserva --surface", () => {
+    expect(block(panelCss, "panel")).toContain("background: var(--scrim)");
+    // El par de la negativa: sin esto, borrar el fondo de la hoja dejaría el
+    // texto del panel sobre el velo y esta prueba seguiría verde.
+    expect(block(panelCss, "sheet")).toContain("background: var(--surface)");
+  });
+
+  it("la puerta usa el mismo velo: un valor, un nombre (16.22)", () => {
+    expect(block(doorCss, "veil")).toContain("background: var(--scrim)");
+    expect(linterSource).toContain('["--door-veil", "--scrim"]');
   });
 });
