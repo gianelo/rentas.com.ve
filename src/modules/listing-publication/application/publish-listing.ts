@@ -176,7 +176,11 @@ export async function publishListing(
         value: present(request.contactValue, "contactValue"),
       },
     },
-    { evidence: dependencies.contactEvidence, verifiedContacts: dependencies.verifiedContacts },
+    {
+      evidence: dependencies.contactEvidence,
+      verifiedContacts: dependencies.verifiedContacts,
+      now,
+    },
   );
 
   const photos: NewListingPhoto[] = [];

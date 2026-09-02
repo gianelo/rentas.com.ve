@@ -21,10 +21,18 @@ export interface ContactVerificationQuery {
  * cuenta no existe — que se lee como «no verificado» y nunca como «sin
  * restricciones».
  *
- * **Acá es donde la 19.11 va a vivir.** Los doce meses se aplican como un
- * `WHERE verified_at > $desde` de esta consulta, así que la fila que sale ya
- * está dentro de la ventana y el dominio no compara fechas. Ese cambio no
- * toca ni esta interfaz ni el esquema.
+ * **Acá es donde la 19.11 NO vive, y es la advertencia que este comentario
+ * tiene que dar en vez de la instrucción que daba.** Decía que los doce meses
+ * se aplicaban como un `WHERE verified_at > $desde` de esta consulta. Este
+ * puerto lo llaman LOS DOS caminos —`resolveContactVerification` al publicar y
+ * `viewListingContact` al dibujar la ficha—, así que ese `WHERE` le borraría
+ * la frase «verificado el …» a un aviso ya publicado y todavía activo el día
+ * que su verificación caduca: la invalidación que la 19.12 prohíbe. Peor: no
+ * lo delataría ninguna prueba, porque las de la ficha reemplazan este puerto
+ * por un falso y `infrastructure/` no tiene piso de cobertura.
+ *
+ * La ventana vive en `decideContactVerification`, que sólo está en el camino
+ * de publicar. Lo que sale de acá es la fila CRUDA, y la ficha la quiere así.
  */
 export interface ContactVerificationEvidencePort {
   findEvidence(query: ContactVerificationQuery): Promise<ContactVerificationEvidence | null>;

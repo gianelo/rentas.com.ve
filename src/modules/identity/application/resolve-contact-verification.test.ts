@@ -16,8 +16,11 @@ import { resolveContactVerification } from "./resolve-contact-verification";
  */
 
 const MARIA = "usr_maria";
+const NOW = new Date("2026-08-25T12:00:00.000Z");
 const EMAIL_VERIFIED_AT = new Date("2026-02-02T12:00:00.000Z");
 const LIVE_VERIFIED_AT = new Date("2026-05-20T08:00:00.000Z");
+/** Trece meses antes de `NOW` — afuera de la ventana de la 19.11. */
+const CADUCADA = new Date("2025-07-25T12:00:00.000Z");
 
 function evidencePort(
   evidence: ContactVerificationEvidence | null,
@@ -54,7 +57,7 @@ describe("resolveContactVerification", () => {
 
     await resolveContactVerification(
       { userId: MARIA, contact: { method: "whatsapp", value: "+58 412 555 0134" } },
-      { evidence, verifiedContacts: recordingPort() },
+      { evidence, verifiedContacts: recordingPort(), now: () => NOW },
     );
 
     expect(evidence.asked).toEqual([
@@ -67,7 +70,7 @@ describe("resolveContactVerification", () => {
 
     const decision = await resolveContactVerification(
       { userId: MARIA, contact: { method: "email", value: "maria@example.com" } },
-      { evidence: evidencePort(ACCOUNT), verifiedContacts },
+      { evidence: evidencePort(ACCOUNT), verifiedContacts, now: () => NOW },
     );
 
     expect(decision).toEqual({ kind: "verified-by-account-email", verifiedAt: EMAIL_VERIFIED_AT });
@@ -88,6 +91,7 @@ describe("resolveContactVerification", () => {
       {
         evidence: evidencePort({ ...ACCOUNT, verifiedAt: LIVE_VERIFIED_AT }),
         verifiedContacts,
+        now: () => NOW,
       },
     );
 
@@ -103,7 +107,7 @@ describe("resolveContactVerification", () => {
 
     const decision = await resolveContactVerification(
       { userId: MARIA, contact: { method: "whatsapp", value: "+58 412 555 0134" } },
-      { evidence: evidencePort(ACCOUNT), verifiedContacts },
+      { evidence: evidencePort(ACCOUNT), verifiedContacts, now: () => NOW },
     );
 
     expect(decision).toEqual({ kind: "unverified" });
@@ -115,7 +119,56 @@ describe("resolveContactVerification", () => {
 
     const decision = await resolveContactVerification(
       { userId: MARIA, contact: { method: "email", value: "contacto@inmobiliaria.com" } },
-      { evidence: evidencePort(ACCOUNT), verifiedContacts },
+      { evidence: evidencePort(ACCOUNT), verifiedContacts, now: () => NOW },
+    );
+
+    expect(decision).toEqual({ kind: "unverified" });
+    expect(verifiedContacts.written).toEqual([]);
+  });
+
+  /**
+   * tasks.md 19.11 — la mitad de la caducidad que esta capa decide: qué se
+   * ESCRIBE cuando la fila vieja ya no vale. La regla en sí está probada en
+   * `contact-verification.test.ts`; lo que se mide acá es que la fila caducada
+   * deje de frenar la escritura, que es lo que hace que «se vuelve a
+   * verificar» signifique algo en la tabla y no sólo en el tipo devuelto.
+   */
+  it("vuelve a escribir la fila caducada, moviéndole el instante hacia adelante", async () => {
+    const verifiedContacts = recordingPort();
+
+    const decision = await resolveContactVerification(
+      { userId: MARIA, contact: { method: "email", value: "maria@example.com" } },
+      {
+        evidence: evidencePort({ ...ACCOUNT, verifiedAt: CADUCADA }),
+        verifiedContacts,
+        now: () => NOW,
+      },
+    );
+
+    expect(decision).toEqual({ kind: "verified-by-account-email", verifiedAt: EMAIL_VERIFIED_AT });
+    expect(verifiedContacts.written).toEqual([
+      {
+        userId: MARIA,
+        contact: { method: "email", value: "maria@example.com" },
+        verifiedAt: EMAIL_VERIFIED_AT,
+      },
+    ]);
+  });
+
+  it("una fila caducada de un teléfono no escribe nada: no hay canal con qué re-verificar", async () => {
+    // El par negativo del de arriba. El canal de WhatsApp está diferido
+    // (fundador, 2026-08-29), así que una verificación de teléfono que caduca
+    // no se renueva sola — y lo que NO puede pasar es que se reescriba con el
+    // instante viejo, que sería una verificación inventada de doce meses.
+    const verifiedContacts = recordingPort();
+
+    const decision = await resolveContactVerification(
+      { userId: MARIA, contact: { method: "whatsapp", value: "+58 412 555 0134" } },
+      {
+        evidence: evidencePort({ ...ACCOUNT, verifiedAt: CADUCADA }),
+        verifiedContacts,
+        now: () => NOW,
+      },
     );
 
     expect(decision).toEqual({ kind: "unverified" });
@@ -127,7 +180,7 @@ describe("resolveContactVerification", () => {
 
     const decision = await resolveContactVerification(
       { userId: "usr_fantasma", contact: { method: "email", value: "maria@example.com" } },
-      { evidence: evidencePort(null), verifiedContacts },
+      { evidence: evidencePort(null), verifiedContacts, now: () => NOW },
     );
 
     expect(decision).toEqual({ kind: "unverified" });
