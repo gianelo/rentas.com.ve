@@ -53,6 +53,21 @@ describe("la ficha cede la marca al enlace de vuelta (14.38)", () => {
    * `homeSearchForm` colgando sería trabajo muerto que el próximo arreglo
    * apurado vuelve a enchufar.
    */
+  /**
+   * **La placa del publicador, en el encabezado de móvil** (14.43; lámina
+   * `Rentas - Ficha - Mobile.dc.html`, líneas 93-95).
+   *
+   * El dato llega del aviso y no de esta página: escribir acá un `"owner"` o un
+   * ternario sería decidir quién publica en el frente, fuera del suelo de
+   * cobertura. Y `NavWithListing` lo hace obligatorio, así que una ficha sin
+   * publicador **no compila** — pero eso no protege que sea EL del aviso: un
+   * literal compilaría igual y dibujaría «Dueño» en toda ficha del sitio.
+   */
+  it("le pasa al Nav el publicador del aviso, no uno escrito acá", () => {
+    expect(FICHA).toContain("publisher={detail.publisherType}");
+    expect(FICHA).not.toMatch(/publisher=\{?["']/);
+  });
+
   it("no arma ninguna pastilla: la ficha no la lleva (láminas 10 y 11)", () => {
     expect(FICHA).not.toContain("homeSearchForm");
     expect(FICHA).not.toContain("SearchPillProps");

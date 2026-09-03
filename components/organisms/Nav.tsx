@@ -4,6 +4,7 @@ import {
   resolveAccountMenuItems,
 } from "@/modules/identity/domain/nav-account";
 import { AppLink } from "../atoms/AppLink";
+import { PublisherBadge } from "../atoms/PublisherBadge";
 import { SearchPill, type SearchPillProps } from "../molecules/SearchPill";
 import { AccountMenu } from "./AccountMenu";
 import styles from "./Nav.module.css";
@@ -35,11 +36,47 @@ interface NavCommon {
 export interface NavWithSearch extends NavCommon {
   readonly pill: SearchPillProps;
   readonly back?: never;
+  /**
+   * **Inexpresable a propósito** (14.43). El publicador es un dato de UN aviso,
+   * y estas cuatro pantallas no están mirando ninguno: una placa en la barra
+   * del inicio sería la de nadie. Un opcional acá lo habría dejado pasar en
+   * silencio.
+   */
+  readonly publisher?: never;
 }
 
-/** La ficha, y por ahora sólo ella. */
+/**
+ * Vuelta sin aviso: `/reportar`, que vuelve a la ficha que se está reportando.
+ *
+ * **El comentario que estaba acá decía «la ficha, y por ahora sólo ella», y era
+ * falso desde que existe `/reportar`.** Lo destapó `tsc`, no una lectura: al
+ * volver obligatorio el publicador, esa pantalla dejó de compilar.
+ */
 export interface NavWithReturn extends NavCommon {
   readonly back: NavBackAction;
+  readonly pill?: never;
+  /** `/reportar` no muestra ningún aviso: no tiene publicador que anunciar. */
+  readonly publisher?: never;
+}
+
+/**
+ * La ficha: vuelta **y** el publicador del aviso que está mostrando (14.43).
+ *
+ * **Una tercera forma de la unión, y la tarea lo había previsto bien.** El
+ * primer intento puso `publisher` obligatorio en `NavWithReturn` con la razón
+ * escrita de que «`back` tiene exactamente una pantalla»; `pnpm typecheck` lo
+ * contradijo en la primera corrida —`/reportar` también vuelve— y por eso la
+ * distinción es de forma y no de campo opcional.
+ *
+ * **Obligatorio acá, y no es celo**: la lámina de móvil dibuja ese encabezado
+ * con dos hijos, `← Resultados` y la placa, así que una ficha sin publicador es
+ * la mitad de la lámina. Y **fuera de acá es inexpresable**, que es lo que
+ * responde la duda que la 14.43 dejó abierta: el publicador es un dato de UN
+ * aviso, y la barra del inicio o la de `/reportar` no están mirando ninguno.
+ */
+export interface NavWithListing extends NavCommon {
+  readonly back: NavBackAction;
+  readonly publisher: "owner" | "broker";
   readonly pill?: never;
 }
 
@@ -56,7 +93,7 @@ export interface NavWithReturn extends NavCommon {
  * un valor comodín" — y lo que AGENTS.md §7 llama preferir la forma en la que
  * el modo de fallo es el rechazo.
  */
-export type NavProps = NavWithSearch | NavWithReturn;
+export type NavProps = NavWithSearch | NavWithReturn | NavWithListing;
 
 /**
  * La navegación (tasks.md 20.4; diseño §14a — "tres estados").
@@ -73,7 +110,7 @@ export type NavProps = NavWithSearch | NavWithReturn;
  * embudo de nueve pasos es una salida justo donde menos conviene. Tampoco
  * `/renovar/[token]`, deliberadamente sin estilo.
  */
-export function Nav({ account, publish, pill, signInHref, back }: NavProps) {
+export function Nav({ account, publish, pill, signInHref, back, publisher }: NavProps) {
   const publishClass =
     publish.bar.emphasis === "accent" ? styles.publishAccent : styles.publishOutline;
 
@@ -96,6 +133,28 @@ export function Nav({ account, publish, pill, signInHref, back }: NavProps) {
             {WORDMARK}
           </AppLink>
         )}
+
+        {/* **La placa del publicador, y sólo en la ficha** (14.43; lámina
+            `Rentas - Ficha - Mobile.dc.html`, líneas 93-95: el encabezado de 56
+            px con `← Resultados` y la placa `Dueño`).
+
+            **No se dibuja dos veces: se MUEVE.** La lámina de móvil la pone
+            acá y la de escritorio en la columna de datos, y el mismo elemento
+            cambia de sitio con el ancho. Como **el servidor no sabe el ancho de
+            la pantalla** —no hay ancho en una petición HTTP, y husmear el
+            `User-Agent` rompería una sola respuesta cacheable para todos los
+            anchos—, la mudanza se resuelve en la hoja de estilos: ésta se
+            esconde a partir de 768 px y la de la ficha aparece ahí. Es el mismo
+            argumento que la 14.53 dejó escrito para las fichas quitables.
+
+            Es el MISMO átomo, sin repintar: la garantía de la 14.25 —relleno
+            contra borde, distinguible en escala de grises— es suya y sigue
+            siéndolo. Acá no se decide nada: `publisherType` llega del aviso. */}
+        {publisher ? (
+          <span className={styles.publisher}>
+            <PublisherBadge publisherType={publisher} />
+          </span>
+        ) : null}
 
         {pill ? (
           <div className={styles.pillCol}>
