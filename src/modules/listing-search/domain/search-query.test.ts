@@ -15,6 +15,10 @@ describe("los nombres de la dirección", () => {
     expect(SEARCH_QUERY_NAMES.minPrice).toBe("min");
     expect(SEARCH_QUERY_NAMES.maxPrice).toBe("max");
     expect(SEARCH_QUERY_NAMES.minRooms).toBe("hab");
+    // Sin «ñ» a propósito: `?baños=` viaja como `ba%C3%B1os` y deja de poder
+    // leerse en el chat donde se pega, que es la mitad de para qué existen los
+    // nombres cortos (F12).
+    expect(SEARCH_QUERY_NAMES.minBathrooms).toBe("banos");
     expect(SEARCH_QUERY_NAMES.zone).toBe("zona");
     expect(SEARCH_QUERY_NAMES.page).toBe("pag");
   });
@@ -37,13 +41,15 @@ describe("los nombres de la dirección", () => {
    * en vez de derivados de la constante: derivarlos afirmaría que la constante
    * es igual a sí misma.
    */
-  it("son quince y ninguno más: un filtro nuevo tiene que pasar por acá", () => {
+  it("son dieciséis y ninguno más: un filtro nuevo tiene que pasar por acá", () => {
     expect(Object.values(SEARCH_QUERY_NAMES).sort()).toEqual(
       [
         "zona",
         "min",
         "max",
         "hab",
+        // Los baños (14.45).
+        "banos",
         "tipo",
         "pub",
         "planta",

@@ -92,6 +92,9 @@ export const FILTER_KEYS = [
   "min",
   "max",
   "hab",
+  // Los baños (14.45), por la misma razón que `hab`: refina la lista, así que
+  // la dirección deja de ser la de la zona y pasa a ser una combinación.
+  "banos",
   // Zonas EXTRA sobre la que ya afirma la ruta: la query sólo puede ensanchar
   // la búsqueda, y ensancharla la vuelve otra página.
   "zona",
