@@ -246,15 +246,25 @@ test.describe("el camino de lectura con el script apagado (11.16)", () => {
   });
 
   /**
-   * **El orden de la lista, con el script apagado** (14.47).
+   * **El orden de la lista, en los DOS proyectos** (14.47).
    *
-   * Es lo único que este control puede romper solo y lo que ninguna prueba
-   * determinista alcanza: que las tres opciones **naveguen**. Un
-   * `<select onchange>` se dibuja igual, pasa cualquier prueba de marcado y no
-   * hace nada acá — y acá es el navegador dentro de WhatsApp, por donde
-   * circulan los avisos.
+   * Lo que ninguna prueba determinista alcanza es que las tres opciones
+   * **naveguen**: un `<select onchange>` se dibuja igual, pasa cualquier prueba
+   * de marcado y no hace nada con el script apagado — y ahí es donde vive el
+   * navegador dentro de WhatsApp, por donde circulan los avisos.
+   *
+   * **Corre en `chromium` además de en `crawlability`, y no acotarla fue lo
+   * correcto: ahí apareció un defecto que la otra mitad no podía ver.** `open`
+   * es estado del DOM y no de React; sin script cada elección recarga el
+   * documento y el desplegable vuelve cerrado solo, así que `crawlability`
+   * pasaba en verde mientras con JavaScript el menú quedaba abierto sobre la
+   * lista después de elegir. Es el reparto que este archivo entero ya usa —
+   * `crawlability` prueba que el piso existe, `chromium` que la mejora no lo
+   * rompe (D13)— y por eso las dos afirmaciones de abajo valen en los dos.
    */
-  test("cambiar el orden de la lista funciona sin una línea de JavaScript", async ({ page }) => {
+  test("cambiar el orden de la lista es un enlace, y el menú se cierra al elegir", async ({
+    page,
+  }) => {
     await page.goto(CIUDAD_MARACAIBO);
 
     const menu = page.getByTestId("order-menu");
@@ -272,6 +282,10 @@ test.describe("el camino de lectura con el script apagado (11.16)", () => {
     // 900, 480 y 250 son los tres activos de Maracaibo que siembra el arnés.
     await expect(primera).toContainText(tituloDe(ID.mcboTierraNegra2));
     await expect(page).toHaveURL((url) => url.search === "?orden=precio-desc");
+    // **Y el menú vuelve cerrado**, que es la mitad que sólo `chromium` mide:
+    // elegir es lo último que se hace, y un panel colgado sobre la lista tapa
+    // justo los avisos que la persona acaba de pedir.
+    await expect(menu.locator("ul")).toBeHidden();
 
     await elegir("Precio: menor a mayor");
     await expect(primera).toContainText(tituloDe(ID.mcboBellaVista));

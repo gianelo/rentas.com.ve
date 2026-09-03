@@ -25,6 +25,17 @@ import styles from "./OrderMenu.module.css";
  * la lista vuelve con el menú cerrado, que es donde tiene que estar. Un
  * parámetro más sería una dirección más para la misma página.
  *
+ * **El `key` es lo que hace verdadera esa última frase cuando hay JavaScript, y
+ * llegó por un defecto medido.** `open` es estado del DOM, no de React: sin
+ * script cada elección recarga el documento y el desplegable vuelve cerrado
+ * solo, pero con `next/link` la navegación es de cliente, React reusa el mismo
+ * `<details>` y el menú quedaba **abierto sobre la lista** después de elegir —
+ * tapando los primeros avisos justo cuando la persona quiere verlos. Keyearlo
+ * por el orden puesto dice lo que de verdad pasa: *un orden distinto es un
+ * desplegable distinto*, así que React monta uno nuevo y nace cerrado. Lo
+ * encontró `tests/e2e/…spec.ts` en el proyecto `chromium`; en `crawlability` no
+ * podía verse, porque ahí la recarga tapaba el defecto.
+ *
  * **Se dibuja en los dos anchos, y la lámina sólo lo dibuja en escritorio.** La
  * decisión y su razón: esconderlo por debajo de 768 px no escondería una
  * decoración, borraría la única salida de un estado que la dirección igual
@@ -37,7 +48,7 @@ import styles from "./OrderMenu.module.css";
  */
 export function OrderMenu({ model }: { readonly model: SearchOrderMenu }) {
   return (
-    <details className={styles.menu} data-testid="order-menu">
+    <details key={model.order} className={styles.menu} data-testid="order-menu">
       {/* La «▾» es un carácter de texto, como el resto de los glifos del
           sistema, y va `aria-hidden`: el estado abierto ya lo anuncia el
           propio `<details>`. */}

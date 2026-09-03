@@ -62,6 +62,7 @@ describe("el menú de orden (14.47)", () => {
   it("el orden elegido se dice, y es el que la etiqueta muestra", () => {
     const menu = buildOrderMenu(BASE, { orden: "precio-desc" });
 
+    expect(menu.order).toBe("priceDesc");
     expect(menu.label).toBe("Precio: mayor a menor");
     expect(menu.options.map((option) => option.current)).toEqual([false, false, true]);
   });
@@ -69,6 +70,7 @@ describe("el menú de orden (14.47)", () => {
   it("con la dirección pelada el elegido es «Recientes»", () => {
     const menu = buildOrderMenu(BASE, {});
 
+    expect(menu.order).toBe("recent");
     expect(menu.label).toBe("Recientes");
     expect(menu.options.map((option) => option.current)).toEqual([true, false, false]);
   });

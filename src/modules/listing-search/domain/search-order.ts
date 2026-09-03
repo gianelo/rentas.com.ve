@@ -87,6 +87,12 @@ export interface SearchOrderOption {
 }
 
 export interface SearchOrderMenu {
+  /**
+   * **Cuál de los tres está puesto.** Es la IDENTIDAD del menú, no una
+   * etiqueta: con el script encendido la pantalla la usa como `key` para que
+   * un orden distinto sea un desplegable distinto — ver `OrderMenu.tsx`.
+   */
+  readonly order: SearchOrder;
   /** La etiqueta que la pantalla muestra cerrada: el orden puesto. */
   readonly label: string;
   readonly options: readonly SearchOrderOption[];
@@ -111,6 +117,7 @@ export function buildOrderMenu(basePath: string, query: SearchQuery): SearchOrde
   const current = readSearchOrder(query[SEARCH_QUERY_NAMES.order]);
 
   return {
+    order: current,
     label: SEARCH_ORDER_LABELS[current],
     options: SEARCH_ORDERS.map((order) => ({
       label: SEARCH_ORDER_LABELS[order],
