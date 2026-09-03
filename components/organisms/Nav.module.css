@@ -36,66 +36,6 @@
   text-decoration: none;
 }
 
-/* **La marca de la ficha, y por qué está acá abajo y no arriba.**
-
-   Comparte todo con `.brand` salvo el sitio, así que se compone con ella en
-   vez de repetir sus tokens. Va DESPUÉS a propósito: las dos son selectores de
-   una clase, misma especificidad, así que el orden del archivo es lo que hace
-   que este `display: none` gane sobre el `display: flex` de `.brand`.
-
-   A 360 px la lámina 10 dibuja dos hijos —`← Resultados` y el publicador— y la
-   marca no entra; a 1280 la lámina 11 dibuja tres y la marca va al medio. Es
-   un solo marcado con un punto de quiebre, nunca dos implementaciones. */
-.brandCentre {
-  display: none;
-}
-
-/* El enlace de vuelta de la ficha, en el primer slot (14.38 + lámina 10/11).
-   Lleva su texto a la vista —«← Resultados»— como lo dibujan las dos láminas,
-   así que no es un cuadrado de 44 px sino una fila que crece con la frase; los
-   44 px quedan como piso de área táctil. */
-.back {
-  order: 1;
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-inline-size: 44px;
-  min-block-size: 44px;
-  color: var(--ink);
-  text-decoration: none;
-  font-size: var(--nav-action-fs);
-  font-weight: 600;
-}
-
-.back:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-/* **La placa del publicador de la ficha** (14.43; lámina de móvil, líneas
-   93-95). Va en el primer renglón, pegada al enlace de vuelta, y en escritorio
-   desaparece: ahí la dibuja la columna de datos de la ficha, que es donde la
-   pone la lámina 11. Un solo elemento que cambia de sitio con el ancho, y el
-   ancho lo decide esta hoja porque el servidor no lo sabe.
-
-   `order: 1` la agrupa con la vuelta en vez de mandarla al extremo derecho: la
-   lámina dibuja ese encabezado con DOS hijos y `space-between`, pero la barra
-   servida lleva además «Publicar gratis» y «Entrar» —la divergencia que la
-   14.40 dejó abierta y que ninguna lámina de la ficha resuelve, porque ninguna
-   la dibuja con sesión—. Con cuatro hijos, `space-between` reparte espacio que
-   no sobra; agruparla con la vuelta es la lectura que sí cabe.
-
-   `flex: none` y no `1 1 auto`: la palabra «Inmobiliaria» ES la señal, y una
-   placa que se encoge hasta cortarla deja de distinguir de un dueño. Antes que
-   truncarla, el renglón crece. */
-.publisher {
-  order: 1;
-  flex: none;
-  display: flex;
-  align-items: center;
-}
-
 /* En móvil, la pastilla baja a su propio renglón — es el control más grande
    de la barra y el que un pulgar busca primero, así que se le da el ancho
    entero en vez de competir por espacio con la marca y las acciones. */
@@ -185,8 +125,7 @@
     padding-inline: 0;
   }
 
-  .brand,
-  .back {
+  .brand {
     font-size: var(--nav-brand-fs-desktop);
     min-block-size: 40px;
   }
@@ -206,26 +145,6 @@
      ("a 1280 la pastilla va en el centro"), con geometría real. */
   .pillCol {
     order: 2;
-    justify-content: center;
-  }
-
-  /* **La placa se va del encabezado en escritorio, porque se MUEVE.** La
-     lámina 11 la dibuja encabezando la columna de datos y no en la barra, y
-     dibujarla en los dos sitios a la vez sería tener dos fichas — que es lo que
-     el comentario de `page.tsx` desaconsejaba antes de la 14.53. `display: none`
-     además la saca del orden de tabulación y del árbol de accesibilidad, así
-     que no queda un anuncio duplicado para un lector de pantalla; lo que se
-     sigue pagando son sus bytes, y ése es el precio elegido. */
-  .publisher {
-    display: none;
-  }
-
-  /* La marca vuelve, y ocupa la columna del medio: es el `1fr` entre los dos
-     250 px, o sea el centro exacto que dibuja la lámina 11. Mismo slot que la
-     pastilla, porque en la ficha la marca ES lo que va en el centro. */
-  .brandCentre {
-    order: 2;
-    display: flex;
     justify-content: center;
   }
 

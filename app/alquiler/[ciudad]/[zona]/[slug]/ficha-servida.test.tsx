@@ -1,6 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CatalogueZone } from "@/modules/listing-catalogue/domain/catalogue";
+// El nombre del parámetro lo pone el dominio, acá también: escrito a mano, un
+// renombre dejaría a esta prueba midiendo la ficha SIN origen y pasando por eso.
+import { RETURN_PARAM } from "@/modules/listing-discovery/domain/return-to-results";
 import type { ListingSearchResult } from "@/modules/listing-search/application/ports/listing-search.port";
 import type { SearchCriteria } from "@/modules/listing-search/domain/search-criteria";
 
@@ -226,6 +229,74 @@ function jsonLd(html: string): string {
   if (!match?.[1]) throw new Error("la ficha no emitio JSON-LD");
   return match[1];
 }
+
+/**
+ * tasks.md 14.54 — **la vuelta se va del encabezado y entra al contenido.**
+ *
+ * La ficha era la única pantalla del camino de lectura donde la vuelta vivía en
+ * la barra; `/alquiler/[ciudad]` y `/alquiler/[ciudad]/[zona]` la dibujan
+ * adentro desde siempre. Y el enlace **no siempre dice «← Resultados»**:
+ * `resultsLink` es una regla de dominio que devuelve «Ver avisos en Tierra
+ * Negra» cuando no hay origen, una etiqueta que no entra en una barra de 60 px
+ * y sí entra en una fila arriba del contenido.
+ *
+ * Se mide sobre los bytes servidos y no sobre el texto del archivo porque lo
+ * que cambió es **dónde** se dibuja: una afirmación sobre el fuente no
+ * distingue un enlace dentro del `<header>` de uno dentro del `<main>`.
+ */
+describe("la vuelta vive dentro del contenido, no en la barra (14.54)", () => {
+  /** El encabezado servido: todo lo que va antes de que cierre el `<header>`. */
+  function encabezado(html: string): string {
+    const fin = html.indexOf("</header>");
+    if (fin < 0) throw new Error("la ficha no sirvió ningún encabezado");
+    return html.slice(0, fin);
+  }
+
+  it("el encabezado no lleva ninguna vuelta: ni la etiqueta con origen ni la de sin él", async () => {
+    const conOrigen = encabezado(
+      await servedBody(VENCIDO_SLUG, { [RETURN_PARAM]: "/alquiler/maracaibo?min=200" }),
+    );
+    const sinOrigen = encabezado(await servedBody());
+
+    expect(conOrigen).not.toContain("Resultados");
+    expect(sinOrigen).not.toContain("Ver avisos en");
+  });
+
+  it("la dibuja dentro del <main>, arriba del contenido", async () => {
+    const html = await servedBody();
+
+    // Posiciones y no `toContain`: lo que esta prueba existe para ver es el
+    // SITIO, y «está en el documento» seguía en verde con el enlace en la barra.
+    const main = html.indexOf("<main");
+    const vuelta = html.indexOf("Ver avisos en Tierra Negra");
+    // El `<h1>` y no el texto del título: éste sale ANTES dentro del JSON-LD,
+    // que la ficha emite arriba del contenido. Buscar el texto medía el script.
+    const titulo = html.indexOf("<h1");
+
+    expect(main).toBeGreaterThanOrEqual(0);
+    expect(vuelta).toBeGreaterThan(main);
+    expect(vuelta).toBeLessThan(titulo);
+  });
+
+  /**
+   * **La regla no se movió, se movió el marcado.** `resultsLink` sigue
+   * decidiendo las dos cosas —a dónde va y qué dice—, y las dos respuestas se
+   * comprueban acá: un destino fijo con etiqueta variable, o al revés, es el
+   * defecto original de la 16.9 escrito de nuevo un nivel más abajo.
+   */
+  it("el destino y la etiqueta los sigue decidiendo el dominio", async () => {
+    const origen = "/alquiler/maracaibo?min=200";
+    const conOrigen = await servedBody(VENCIDO_SLUG, { [RETURN_PARAM]: origen });
+
+    expect(conOrigen).toContain(">← Resultados<");
+    expect(conOrigen).toContain(`href="${origen.replace("&", "&amp;")}"`);
+
+    const sinOrigen = await servedBody();
+
+    expect(sinOrigen).toContain(">Ver avisos en Tierra Negra<");
+    expect(sinOrigen).toContain('href="/alquiler/maracaibo/tierra-negra"');
+  });
+});
 
 /**
  * tasks.md 18.7 — **la referencia se muestra y no se indexa, y las dos mitades
