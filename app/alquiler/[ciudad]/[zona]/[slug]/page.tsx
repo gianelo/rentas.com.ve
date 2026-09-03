@@ -300,6 +300,13 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
         publish={publish}
         signInHref={`/signin?callbackUrl=${encodeURIComponent(listingHref)}`}
         back={{ href: back.href, label: back.label }}
+        // **La placa del publicador, que a 360 px vive acá** (14.43; lámina de
+        // móvil, líneas 93-95). No es una segunda placa: es la MISMA que la
+        // columna de datos dibuja más abajo, y sólo una de las dos se ve a cada
+        // ancho. El servidor no sabe el ancho de la pantalla, así que la
+        // mudanza la resuelven las dos hojas de estilos y no una rama acá —el
+        // mismo argumento que la 14.53 dejó escrito— y el dato llega del aviso.
+        publisher={detail.publisherType}
       />
 
       <main className={styles.page}>
@@ -356,10 +363,24 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
                 <div className={styles.summary}>
                   {/* Dueño con relleno, inmobiliaria con borde: la distinción
                     tiene que sobrevivir a la escala de grises, y eso es
-                    estructura y no color. Va acá y no en la barra porque en
-                    escritorio encabeza la columna de datos, y dibujarlo dos
-                    veces sería tener dos fichas otra vez. */}
-                  <PublisherBadge publisherType={detail.publisherType} />
+                    estructura y no color.
+
+                    **El comentario que estaba acá decía «va acá y no en la
+                    barra … dibujarlo dos veces sería tener dos fichas otra
+                    vez», y la 14.43 lo corrige con una razón medida.** La lámina
+                    de escritorio la dibuja encabezando esta columna y la de
+                    móvil, en el encabezado de 56 px: es el mismo elemento
+                    cambiando de sitio con el ancho. Y **el servidor no sabe el
+                    ancho de la pantalla** —no hay ancho en una petición HTTP, y
+                    husmear el `User-Agent` rompe una sola respuesta cacheable
+                    para todos los anchos—, así que la única forma que el piso de
+                    AGENTS.md §2 sostiene es dibujarla en los dos sitios y dejar
+                    que la hoja esconda la que no toca. No son dos fichas: es una
+                    con un punto de quiebre, y `tests/measure/ficha.spec.ts` mide
+                    que a cada ancho se vea EXACTAMENTE una. */}
+                  <span className={styles.summaryPublisher}>
+                    <PublisherBadge publisherType={detail.publisherType} />
+                  </span>
 
                   <p className={styles.price}>
                     ${detail.priceUsd}

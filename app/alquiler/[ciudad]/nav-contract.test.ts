@@ -30,6 +30,32 @@ describe("las dos pantallas de resultados y la barra del producto", () => {
 
   for (const [name, page] of ENTRIES) {
     describe(`/alquiler/<ciudad>${name === "zona" ? "/<zona>" : ""}`, () => {
+      /**
+       * **La ciudad viaja como un nombre, y es el de ESTA ciudad** (14.50).
+       *
+       * Hasta el 2026-09-02 las dos páginas le pasaban al panel el catálogo
+       * entero de ciudades —que es lo que hacía expresable la consulta por cada
+       * otra ciudad— y el panel le sacaba un nombre buscando por id. Ahora va el
+       * nombre y nada más.
+       *
+       * **Se afirma acá y no sólo en el dominio porque es cableado de dos
+       * pantallas**: en la de zona el encabezado lo pone la zona, así que un
+       * `cityName` en blanco no se nota mirando la pastilla — sale en la causa
+       * del vacío («Ningún aviso de … coincide»), que es la pantalla que menos
+       * gente ve y la que peor queda rota.
+       */
+      it("le pasa al panel el nombre de SU ciudad, no una lista ni una constante", () => {
+        // **Se cuentan las apariciones, no se busca una.** Las dos páginas
+        // pasan el mismo nombre en DOS lugares —la cuadrícula y el panel— y
+        // buscar «hay una» dejaba pasar que el segundo se rompiera: medido
+        // mutando la línea del panel a `cityName: ""`, que con `toMatch` seguía
+        // en verde porque la de la cuadrícula alcanzaba.
+        const passes = page.match(/cityName:\s*(?:place\.)?city\.name,/g) ?? [];
+
+        expect(passes).toHaveLength(2);
+        expect(page).not.toContain("cities: cities.map(");
+      });
+
       it("dibuja el Nav y ya no la barra resumen que sólo existía en móvil", () => {
         expect(page).toContain("<Nav");
         expect(page).not.toContain("SearchSummaryBar");
@@ -51,18 +77,22 @@ describe("las dos pantallas de resultados y la barra del producto", () => {
       });
 
       /**
-       * **El número de la pastilla es `pillFilters`, nunca `activeFilters`.**
+       * **El número de la pastilla es `pillFilters`.**
        *
-       * Son dos conteos distintos y sólo uno abre lo que la pastilla abre: el
-       * engranaje del acordeón contaba la zona, y el filtro de la pastilla no
-       * la incluye (14i: *"ciudad y zona no están ahí: eso lo resuelve el
-       * texto"*; lámina 7c: con dos zonas, precio, habitaciones y dueños
-       * puestos, la pastilla dice «3 filtros»). Un «4 filtros» sobre un panel
-       * que abre tres se dibuja perfecto y está mal.
+       * Hasta la 14.49 el modelo llevaba dos conteos y sólo uno abría lo que la
+       * pastilla abre: el engranaje del acordeón contaba la zona, y el filtro de
+       * la pastilla no la incluye (14i: *"ciudad y zona no están ahí: eso lo
+       * resuelve el texto"*; lámina 7c: con dos zonas, precio, habitaciones y
+       * dueños puestos, la pastilla dice «3 filtros»). Un «4 filtros» sobre un
+       * panel que abre tres se dibuja perfecto y está mal.
+       *
+       * **La mitad negativa de esta aserción se fue con `activeFilters`**, y lo
+       * que la reemplaza es más fuerte que ella: el campo ya no existe en
+       * `SearchPanelModel`, así que escribirlo acá **no compila**. Dejar el
+       * `not.toMatch` habría sido una aserción que no puede fallar.
        */
-      it("cuenta los filtros de la pastilla con pillFilters, no con activeFilters", () => {
+      it("cuenta los filtros de la pastilla con pillFilters", () => {
         expect(page).toMatch(/filterCount:\s*panel\.pillFilters/);
-        expect(page).not.toMatch(/filterCount:\s*panel\.activeFilters/);
       });
 
       /**
@@ -87,6 +117,23 @@ describe("las dos pantallas de resultados y la barra del producto", () => {
         expect(page).toContain("homeSearchForm(");
         expect(page).toMatch(/action:\s*searchForm\.action/);
         expect(page).toMatch(/name:\s*searchForm\.name/);
+      });
+
+      /**
+       * **El vocabulario acotado de las sugerencias sale del dominio** (14.51).
+       *
+       * «Sólo las zonas con avisos activos» es una regla de producto: decide
+       * qué se le ofrece a quien escribe, y sugerir una zona vacía manda a una
+       * pantalla sin salida (regla transversal 4). Escrita como un `.filter()`
+       * en la página quedaría fuera del suelo de cobertura del 90 %, que es la
+       * regla permanente del fundador con su razón mecánica.
+       *
+       * **La negativa es la mitad que importa**: el cableado correcto y un
+       * recorte escrito a mano al lado se dibujan idénticos.
+       */
+      it("arma las sugerencias con el dominio y no con un recorte propio", () => {
+        expect(page).toContain("boundedVocabulary(cities, zones, counts.byZone)");
+        expect(page).not.toMatch(/zones\.filter\(|byZone\[/);
       });
 
       /** Sin JavaScript de cliente: sigue siendo el camino de lectura (D13). */

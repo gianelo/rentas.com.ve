@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { contactDoorFor, DOOR_QUERY_NAME } from "@/modules/contact-reveal/domain/sign-in-door";
+import { boundedVocabulary } from "@/modules/listing-catalogue/domain/bounded-vocabulary";
 import {
   draftListingOf,
   isStepComplete,
@@ -22,6 +23,7 @@ import { ActionButton, NeutralButton, SelectionButton } from "../../components/a
 import { ListingMeta } from "../../components/atoms/ListingMeta";
 import { ListingTitle } from "../../components/atoms/ListingTitle";
 import { Price } from "../../components/atoms/Price";
+import { PublisherBadge } from "../../components/atoms/PublisherBadge";
 import { Container } from "../../components/layout/Container";
 import { DetailSplit } from "../../components/layout/DetailSplit";
 import { FormShell } from "../../components/layout/FormShell";
@@ -98,6 +100,44 @@ export default async function MeasureHarnessPage({
             placeholder: "¿En qué zona buscás?",
             submitLabel: "Buscar",
             state: { kind: "empty" },
+            // **El vocabulario acotado de la 14.51, armado por la MISMA función
+            // que usan las dos pantallas de resultados** — no una lista escrita
+            // a mano que se parezca. `Chacao` va con conteo cero a propósito:
+            // es la zona que el dominio tiene que dejar afuera, y sin ella esa
+            // medición no tendría qué mirar (una mutación contra una entrada
+            // que la fixture nunca produce no mide nada).
+            suggestions: boundedVocabulary(
+              SUGERENCIAS_CIUDADES,
+              SUGERENCIAS_ZONAS,
+              SUGERENCIAS_CONTEOS,
+            ),
+          }}
+        />
+      </div>
+
+      {/* **La barra con sesión, para medir el menú de cuenta** (14.48). El
+          arnés de arriba es anónimo, así que las iniciales del avatar no se
+          dibujaban en ninguna parte medible — y ahí vivía un token que el
+          conjunto declara para el teléfono y que la hoja nunca leía. */}
+      <div data-testid="nav-harness-cuenta">
+        <Nav
+          account={{
+            kind: "authenticated",
+            displayName: "María Fernández",
+            email: "maria@example.com",
+            initials: "MF",
+            imageUrl: null,
+            canImportListings: false,
+          }}
+          publish={{ bar: { label: "Publicar", emphasis: "accent" }, menu: null }}
+          signInHref="/signin"
+          pill={{
+            action: "/",
+            name: "q",
+            value: "",
+            placeholder: "¿En qué zona buscás?",
+            submitLabel: "Buscar",
+            state: { kind: "empty" },
           }}
         />
       </div>
@@ -108,6 +148,22 @@ export default async function MeasureHarnessPage({
           publish={{ bar: { label: "Publicar gratis", emphasis: "accent" }, menu: null }}
           signInHref="/signin"
           back={{ href: "/alquiler/distrito-capital/altamira", label: "← Resultados" }}
+          publisher="owner"
+        />
+      </div>
+
+      {/* **La misma barra con la palabra LARGA** (14.43). «Inmobiliaria» tiene
+          el doble de ancho que «Dueño», y el encabezado de la ficha a 360 px ya
+          lleva la vuelta, «Publicar gratis» y «Entrar». Medir sólo el caso corto
+          sería medir el que entra: un arnés que no produce la entrada difícil no
+          mide nada. */}
+      <div data-testid="nav-harness-ficha-inmobiliaria">
+        <Nav
+          account={{ kind: "anonymous" }}
+          publish={{ bar: { label: "Publicar gratis", emphasis: "accent" }, menu: null }}
+          signInHref="/signin"
+          back={{ href: "/alquiler/distrito-capital/altamira", label: "← Resultados" }}
+          publisher="broker"
         />
       </div>
 
@@ -225,6 +281,39 @@ export default async function MeasureHarnessPage({
           </ListingGrid>
         </div>
 
+        {/* **La placa del publicador encima de una foto clara y una oscura**
+            (14.53, 22.10). La 14.25 exige que dueño e inmobiliaria se
+            distingan **en escala de grises**, y encima de una portada esa
+            garantía no se hereda: la foto la sube quien publica y puede ser
+            cualquier cosa. Se dibujan las cuatro combinaciones para poder
+            medirlas —dueño e inmobiliaria, sobre claro y sobre oscuro— en
+            `tests/measure/layout.spec.ts`.
+
+            Las dos portadas son PNG de un píxel en línea, no descargas: el
+            navegador tiene que poder leer sus píxeles desde un `<canvas>` para
+            que «clara» y «oscura» sean una medida y no una palabra, y una
+            imagen de otro origen contamina el lienzo y no se deja leer. */}
+        <div data-testid="placa-sobre-foto">
+          <ListingGrid>
+            {PORTADAS.map(({ nombre, url }) =>
+              (["owner", "broker"] as const).map((quien) => (
+                <li key={`${nombre}-${quien}`} data-portada={nombre} data-publica={quien}>
+                  <ListingCard
+                    href={`/alquiler/distrito-capital/chacao/placa-${nombre}-${quien}`}
+                    priceUsd={450}
+                    title="Apartamento 2 hab con puesto"
+                    zone="Chacao"
+                    rooms={2}
+                    areaM2={78}
+                    publisherType={quien}
+                    photo={{ thumbUrl: url, cardUrl: url, alt: `Portada ${nombre}` }}
+                  />
+                </li>
+              )),
+            )}
+          </ListingGrid>
+        </div>
+
         {/* **La fila de `/mis-avisos`, al lado de la tarjeta y a propósito.**
             Las dos dibujan el mismo aviso con la misma anatomía —precio,
             título de lista, metadatos— y hasta la 22.3/22.4 lo hacían con
@@ -338,7 +427,21 @@ export default async function MeasureHarnessPage({
             }
             data={
               <>
-                <div className={fichaStyles.summary}>
+                <div className={fichaStyles.summary} data-testid="ficha-summary">
+                  {/* **La placa de la columna de datos** (14.43). Montada con su
+                      envoltorio real para que la medición lea la geometría
+                      dibujada: a 360 la esconde esta hoja y la lleva el
+                      encabezado, a 1280 al revés. Sin las dos en el arnés no se
+                      puede afirmar que se vea EXACTAMENTE una. */}
+                  <span className={fichaStyles.summaryPublisher}>
+                    <PublisherBadge publisherType="owner" />
+                  </span>
+                  <span
+                    className={fichaStyles.summaryPublisher}
+                    data-testid="ficha-summary-inmobiliaria"
+                  >
+                    <PublisherBadge publisherType="broker" />
+                  </span>
                   <p className={fichaStyles.price} data-testid="ficha-price">
                     $450
                     <span className={fichaStyles.perMonth}> / mes</span>
@@ -462,6 +565,32 @@ function stepHarness(
   );
 }
 
+/**
+ * **El vocabulario acotado de la 14.51, con las dos trampas del dominio
+ * adentro**: un nombre repetido entre ciudades (`Centro`, la regla de la 14.18)
+ * y una zona **sin avisos activos** (`Chacao`, en cero), que es justo la que el
+ * dominio tiene que dejar afuera. Una fixture que no produjera esa entrada
+ * dejaría a la medición del recorte sin nada que mirar.
+ */
+const SUGERENCIAS_CIUDADES = [
+  { id: "dc", name: "Distrito Capital" },
+  { id: "mcbo", name: "Maracaibo" },
+];
+
+const SUGERENCIAS_ZONAS = [
+  { id: "z-altamira", name: "Altamira", cityId: "dc", parentName: "Chacao" },
+  { id: "z-chacao", name: "Chacao", cityId: "dc", parentName: "Chacao" },
+  { id: "z-centro-dc", name: "Centro", cityId: "dc", parentName: "Catedral" },
+  { id: "z-centro-mcbo", name: "Centro", cityId: "mcbo", parentName: "Coquivacoa" },
+];
+
+const SUGERENCIAS_CONTEOS = {
+  "z-altamira": 9,
+  "z-chacao": 0,
+  "z-centro-dc": 4,
+  "z-centro-mcbo": 2,
+};
+
 /** Zonas curadas de mentira, para que el validador tenga contra qué contestar. */
 const HARNESS_ZONES: readonly CuratedZone[] = [{ id: "altamira", cityId: "dc" }];
 const HARNESS_ZONE_NAME = "Altamira";
@@ -498,8 +627,7 @@ function harnessPanel() {
     cityPath: "/alquiler/distrito-capital",
     // `filtros=todos`: el panel es un estado de la dirección (14.33).
     query: { filtros: "todos" },
-    cityId: "dc",
-    cities: [{ id: "dc", name: "Distrito Capital", path: "/alquiler/distrito-capital", count: 47 }],
+    cityName: "Distrito Capital",
     zones: [
       { id: "chacao", name: "Chacao", slug: "chacao", path: "/alquiler/distrito-capital/chacao" },
     ],
@@ -545,3 +673,20 @@ function harnessPanel() {
     criteria: {},
   });
 }
+
+/**
+ * Las dos portadas del arnés de la placa: un PNG de un píxel casi blanco y
+ * otro casi negro, en línea. El `object-fit: cover` de la tarjeta los estira
+ * a la portada entera, así que cada foto es un plano de un solo tono — que es
+ * lo que hace falta para que «clara» y «oscura» se puedan medir con un número.
+ */
+const PORTADAS = [
+  {
+    nombre: "clara",
+    url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR42mP49OUrAAW3Atyfuv3kAAAAAElFTkSuQmCC",
+  },
+  {
+    nombre: "oscura",
+    url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR42mMQEBYBAABuADjKuEn2AAAAAElFTkSuQmCC",
+  },
+] as const;

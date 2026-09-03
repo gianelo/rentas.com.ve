@@ -10,11 +10,11 @@ import { Nav } from "@/../components/organisms/Nav";
 import { SearchOutcome } from "@/../components/organisms/SearchOutcome";
 import { SearchPanel } from "@/../components/organisms/SearchPanel";
 import { resolveNavAccount, resolveNavPublish } from "@/modules/identity/domain/nav-account";
+import { boundedVocabulary } from "@/modules/listing-catalogue/domain/bounded-vocabulary";
 import { homeSearchForm } from "@/modules/listing-catalogue/domain/search-destination";
 import { resolveSearchPill } from "@/modules/listing-catalogue/domain/search-pill";
 import { DrizzleCatalogue } from "@/modules/listing-catalogue/infrastructure/drizzle-catalogue";
 import { buildListingGrid } from "@/modules/listing-discovery/domain/listing-grid";
-import { slugify } from "@/modules/listing-discovery/domain/listing-url";
 import {
   isFilteredZoneRoute,
   resolveCityRoute,
@@ -178,16 +178,12 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
   // El panel va después de las filas por la misma razón que en la página de
   // zona: el atajo de F7 —con un solo resultado el botón lleva a la ficha—
   // necesita la dirección de esa ficha, y la arma `buildListingGrid`.
-  const { panel, counts, outcome } = await buildFilterPanel(new DrizzleFacetedSearch(db), {
+  const facets = new DrizzleFacetedSearch(db);
+  const { panel, counts, outcome, priceNotices } = await buildFilterPanel(facets, {
     basePath: cityPath,
     cityPath,
     query,
-    cityId: city.id,
-    cities: cities.map((candidate) => ({
-      id: candidate.id,
-      name: candidate.name,
-      path: `/alquiler/${slugify(candidate.name)}`,
-    })),
+    cityName: city.name,
     // El recorte por ciudad y la ruta canónica de cada zona los arma el
     // dominio sobre el mismo slug que viaja en `?zona=`: dos derivaciones
     // distintas del nombre es cómo la query deja de nombrar lo que nombra la
@@ -218,10 +214,13 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
   // dice dónde se está buscando —las zonas elegidas, o la ciudad cuando no hay
   // ninguna— y `resolveSearchPill` traduce eso a un estado.
   //
-  // El conteo de filtros es `pillFilters` y **no** `activeFilters`: son dos
-  // números distintos y sólo uno abre lo que la pastilla abre. El engranaje del
-  // acordeón contaba la zona; el filtro de la pastilla no la incluye, porque
-  // "ciudad y zona no están ahí: eso lo resuelve el texto" (14i).
+  // El conteo de filtros es `pillFilters`, y **la zona no cuenta**: el filtro de
+  // la pastilla abre precio, tamaño, quién publica y atributos, porque "ciudad
+  // y zona no están ahí: eso lo resuelve el texto" (14i). Hasta la 14.49 el
+  // modelo llevaba además `activeFilters` —el número del engranaje de la barra
+  // resumen, que sí contaba la zona—, y elegir el equivocado dibujaba un «4
+  // filtros» sobre un panel que abre tres sin poner nada en rojo. Ese campo ya
+  // no existe, así que hoy el error no compila.
   const searchForm = homeSearchForm(panel.headline);
   const pill: SearchPillProps = {
     action: searchForm.action,
@@ -238,6 +237,13 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
     // abierto desde el servidor. Sin el ancla, el panel queda debajo de la
     // cuadrícula y fuera de vista.
     filtersHref: `${buildSearchHref(cityPath, query, { step: PANEL_OPEN_TOKEN })}#filtros`,
+    // **El vocabulario acotado de las sugerencias, sin un byte de datos
+    // nuevos** (14.51). `counts.byZone` ya vino en la MISMA consulta que las
+    // filas y las facetas (14.11), y el nombre y la parroquia de cada zona ya
+    // están en el catálogo que esta página leyó para resolver la ruta. Cuáles
+    // entran —sólo las que tienen avisos— lo decide el dominio: acá no hay un
+    // `.filter()`, que es la regla permanente del fundador.
+    suggestions: boundedVocabulary(cities, zones, counts.byZone),
   };
 
   const pagination = resolvePagination(criteria.page, total);
@@ -316,6 +322,16 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
           {total === 1 ? "1 propiedad activa" : `${total} propiedades activas`}
           {pagination.count > 1 ? ` — página ${pagination.current} de ${pagination.count}` : ""}
         </p>
+
+        {/* **Lo que se le corrigió al precio, dicho** (14.13, F5). El criterio
+            ya intercambiaba un rango invertido, y callarlo dejaba a alguien
+            mirando los resultados de un rango que no escribió. La frase la
+            escribe el dominio. */}
+        {priceNotices.map((notice) => (
+          <p key={notice} className={styles.alsoIn} role="status">
+            {notice}
+          </p>
+        ))}
 
         {/* **Los filtros puestos, quitables de a uno** (lámina 7c). Reemplazan a
             lo que la barra lateral mostraba de un vistazo: cuáles están puestos

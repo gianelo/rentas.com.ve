@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { resolveAccountMenuItems } from "@/modules/identity/domain/nav-account";
 import type { AccountMenuProps } from "./AccountMenu";
-import { Nav, type NavBackAction, type NavProps, type NavWithReturn } from "./Nav";
+import { Nav, type NavBackAction, type NavProps, type NavWithListing } from "./Nav";
 
 /**
  * Las filas viven detrás del estado `open` de `AccountMenu`, así que el HTML
@@ -170,13 +170,16 @@ describe("Nav — con sesión", () => {
 });
 
 describe("Nav — la ficha, según sus dos láminas", () => {
-  // `NavWithReturn` y no `NavProps`: esparcir la unión en JSX la ensancha a
-  // algo que podría traer `pill`, y el tipo dejaría de decir lo que dice.
-  const ficha: NavWithReturn = {
+  // `NavWithListing` y no `NavProps`: esparcir la unión en JSX la ensancha a
+  // algo que podría traer `pill`, y el tipo dejaría de decir lo que dice. Y es
+  // `WithListing` y no `WithReturn` porque `/reportar` también vuelve y NO lleva
+  // placa — la tercera forma que la 14.43 había previsto y que `tsc` confirmó.
+  const ficha: NavWithListing = {
     account: { kind: "anonymous" },
     publish: { bar: { label: "Publicar gratis", emphasis: "accent" }, menu: null },
     signInHref: "/signin",
     back: { href: "/alquiler/maracaibo", label: "← Resultados" },
+    publisher: "owner",
   };
 
   function draw(back: NavBackAction = ficha.back) {
@@ -274,9 +277,73 @@ describe("Nav — la ficha, según sus dos láminas", () => {
    * fallaría. Es la misma forma de garantía que `ListingSearchPort` ya usa —
    * «no hay `searchAll` ni un valor comodín».
    */
+  /**
+   * **La placa del publicador, en el encabezado de 56 px** (tasks.md 14.43;
+   * `Rentas - Ficha - Mobile.dc.html` líneas 93-95). La lámina de móvil dibuja
+   * ese encabezado con dos hijos —`← Resultados` y la placa `Dueño`, con
+   * `background: var(--ink)` y `color: var(--surface)`, que es exactamente
+   * `.owner` de `PublisherBadge`— y **nadie lo había construido**.
+   *
+   * Es el MISMO átomo que la ficha ya dibuja en su columna de datos, no una
+   * segunda placa: la garantía de la 14.25 —dueño con relleno, inmobiliaria con
+   * borde, distinguibles en escala de grises— es del átomo y sigue siendo suya.
+   */
+  it("dibuja la placa del publicador que le pasan, y con las dos palabras", () => {
+    expect(draw()).toContain(">Dueño<");
+    expect(renderToStaticMarkup(<Nav {...ficha} publisher="broker" />)).toContain(">Inmobiliaria<");
+  });
+
+  /**
+   * **No es «dibujarla también arriba»: se MUEVE, y el ancho lo decide la hoja
+   * de estilos porque el servidor no lo sabe.**
+   *
+   * Cada lámina dibuja la placa una sola vez — a 360 en el encabezado, a 1280 en
+   * la columna de datos. No hay ancho de pantalla en una petición HTTP:
+   * decidirlo en el servidor pediría husmear el `User-Agent` —poco fiable, y
+   * rompe una sola respuesta cacheable para todos los anchos— o decidirlo en el
+   * cliente, que contradice el piso de AGENTS.md §2. Es el mismo argumento con
+   * el que la 14.53 resolvió las fichas quitables, y la 14.43 lo hereda escrito.
+   *
+   * Acá sólo se comprueba la mitad del encabezado; la otra —que la ficha esconda
+   * la suya en el ancho base— vive en `ficha-servida.test.tsx`, y que **sólo una
+   * se vea a cada ancho** lo mide `tests/measure/ficha.spec.ts` en un navegador.
+   */
+  it("la placa del encabezado se ve en móvil y desaparece en escritorio", () => {
+    expect(rule(MOBILE_CSS, "publisher")).not.toMatch(/display:\s*none/);
+    expect(rule(DESKTOP_CSS, "publisher")).toMatch(/display:\s*none/);
+  });
+
   it("el tipo prohíbe pastilla y vuelta a la vez", () => {
     // @ts-expect-error — `pill` y `back` se excluyen (láminas 10 y 11: la ficha no lleva pastilla)
     const imposible: NavProps = { ...ficha, pill: PILL };
+
+    expect(imposible).toBeDefined();
+  });
+
+  /**
+   * **La placa es un dato de UNA pantalla, y el tipo lo dice.**
+   *
+   * El `Nav` lo comparten cinco pantallas. Un `publisher` opcional en la forma
+   * de la pastilla le agregaría a la barra del inicio y a la de `/mis-avisos` un
+   * campo que ahí no significa nada — y el día que alguien se lo pase, la
+   * portada dibujaría la placa de ningún aviso en particular sin que nada se
+   * ponga rojo. Va en `NavWithReturn`, que es la forma de la ficha, y es
+   * **obligatorio** ahí: una ficha sin publicador es la mitad de la lámina.
+   *
+   * Lo comprueba `tsc` y no el runtime: si `NavProps` volviera a admitirlo junto
+   * con `pill`, este `@ts-expect-error` quedaría sin usar y `pnpm typecheck`
+   * fallaría.
+   */
+  it("el tipo prohíbe la placa en la barra que lleva pastilla", () => {
+    const conPastilla = {
+      account: { kind: "anonymous" as const },
+      publish: { bar: { label: "Publicar gratis", emphasis: "accent" as const }, menu: null },
+      signInHref: "/signin",
+      pill: PILL,
+    };
+
+    // @ts-expect-error — el publicador es de la ficha; la barra con pastilla no lo lleva
+    const imposible: NavProps = { ...conPastilla, publisher: "owner" };
 
     expect(imposible).toBeDefined();
   });

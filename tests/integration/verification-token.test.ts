@@ -7,6 +7,10 @@ import {
   isVerificationLinkExpired,
   MAGIC_LINK_MAX_AGE_SECONDS,
 } from "../../src/modules/identity/domain/magic-link";
+import {
+  DrizzlePendingMagicLinks,
+  fingerprintOfMagicLink,
+} from "../../src/modules/identity/infrastructure/drizzle-pending-magic-link";
 import * as schema from "../../src/shared/db/schema";
 import { accounts, sessions, users, verificationTokens } from "../../src/shared/db/schema";
 
@@ -164,5 +168,95 @@ describe("quince minutos (F17, tasks.md 15.5)", () => {
     const persistedExpiry = readStoredUtcTimestamp(row.rows[0].expires as string);
 
     expect(isVerificationLinkExpired(persistedExpiry, now)).toBe(false);
+  });
+});
+
+/**
+ * **La señal del sondeo, contra Postgres de verdad** (tasks.md 15.14).
+ *
+ * El sondeo no pregunta «¿entró esta persona?» sino «¿sigue vivo MI enlace?»,
+ * y toda esa afirmación se apoya en un hecho de la librería que sólo la base
+ * puede confirmar: canjear el enlace BORRA la fila. Probarlo con un doble
+ * sería probar el doble.
+ */
+describe("las huellas de los enlaces vivos (tasks.md 15.14)", () => {
+  const pendientes = new DrizzlePendingMagicLinks(db);
+
+  it("devuelve la huella y nunca el token: quien la tenga no puede entrar con ella", async () => {
+    const identifier = `tenant-${randomUUID()}@ejemplo.com`;
+    const token = randomUUID();
+    await adapter.createVerificationToken?.({
+      identifier,
+      token,
+      expires: new Date(Date.now() + MAGIC_LINK_MAX_AGE_SECONDS * 1000),
+    });
+
+    const huellas = await pendientes.findPendingFingerprints({ identifier, now: new Date() });
+
+    expect(huellas).toEqual([fingerprintOfMagicLink(token)]);
+    expect(huellas[0]).not.toContain(token);
+  });
+
+  /**
+   * **La más nueva primero**, que es la que la acción se guarda: un reenvío
+   * deja dos enlaces vivos y el comprobante tiene que apuntar al último.
+   */
+  it("las ordena de la más nueva a la más vieja, y deja fuera la vencida", async () => {
+    const identifier = `tenant-${randomUUID()}@ejemplo.com`;
+    const vieja = randomUUID();
+    const nueva = randomUUID();
+    const vencida = randomUUID();
+    const ahora = Date.now();
+
+    await adapter.createVerificationToken?.({
+      identifier,
+      token: vieja,
+      expires: new Date(ahora + 60_000),
+    });
+    await adapter.createVerificationToken?.({
+      identifier,
+      token: nueva,
+      expires: new Date(ahora + 900_000),
+    });
+    await adapter.createVerificationToken?.({
+      identifier,
+      token: vencida,
+      expires: new Date(ahora - 1_000),
+    });
+
+    expect(await pendientes.findPendingFingerprints({ identifier, now: new Date() })).toEqual([
+      fingerprintOfMagicLink(nueva),
+      fingerprintOfMagicLink(vieja),
+    ]);
+  });
+
+  /** El hecho del que cuelga el sondeo entero: usar el enlace borra la fila. */
+  it("canjear el enlace hace desaparecer su huella, que es la señal de que entró", async () => {
+    const identifier = `tenant-${randomUUID()}@ejemplo.com`;
+    const token = randomUUID();
+    await adapter.createVerificationToken?.({
+      identifier,
+      token,
+      expires: new Date(Date.now() + MAGIC_LINK_MAX_AGE_SECONDS * 1000),
+    });
+
+    await adapter.useVerificationToken?.({ identifier, token });
+
+    expect(await pendientes.findPendingFingerprints({ identifier, now: new Date() })).toEqual([]);
+  });
+
+  /** Y el buzón de al lado no se entera de nada. */
+  it("no mezcla buzones: cada dirección ve sólo sus enlaces", async () => {
+    const mío = `tenant-${randomUUID()}@ejemplo.com`;
+    const ajeno = `tenant-${randomUUID()}@ejemplo.com`;
+    await adapter.createVerificationToken?.({
+      identifier: ajeno,
+      token: randomUUID(),
+      expires: new Date(Date.now() + MAGIC_LINK_MAX_AGE_SECONDS * 1000),
+    });
+
+    expect(await pendientes.findPendingFingerprints({ identifier: mío, now: new Date() })).toEqual(
+      [],
+    );
   });
 });

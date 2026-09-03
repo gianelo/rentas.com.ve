@@ -2,7 +2,6 @@ import type { PriceBucketTally } from "./price-histogram";
 import { buildPriceHistogramView, type PriceHistogramView } from "./price-histogram-panel";
 import type { RoomStep } from "./room-steps";
 import {
-  countActiveFilters,
   countPillFilters,
   describeFilter,
   resolveFilterPanel,
@@ -32,7 +31,6 @@ import { type PreviewChange, previewConfirmLabel } from "./search-preview";
 import {
   buildSearchHref,
   clearAllHref,
-  planCityChange,
   SEARCH_QUERY_NAMES,
   type SearchQuery,
   toggleZone,
@@ -81,15 +79,6 @@ export interface PanelCounts {
   readonly byPriceBucket: readonly PriceBucketTally[];
   /** La ciudad sin un solo filtro del panel: el número de «Limpiar todo». */
   readonly cityTotal: number;
-}
-
-export interface PanelCity {
-  readonly id: string;
-  readonly name: string;
-  /** Su ruta: `/alquiler/maracaibo`. La ciudad vive en el camino, no en la query. */
-  readonly path: string;
-  /** Su conteo real. F3 lo pide, y la regla transversal 3 lo hace obligatorio. */
-  readonly count: number;
 }
 
 export interface PanelZone {
@@ -141,8 +130,15 @@ export interface SearchPanelInput {
   /** La ruta de la ciudad sola. Es adónde vuelve «Limpiar todo». */
   readonly cityPath: string;
   readonly query: SearchQuery;
-  readonly cityId: string;
-  readonly cities: readonly PanelCity[];
+  /**
+   * **El nombre de la ciudad que se está mirando, y nada más** (14.50).
+   *
+   * Antes acá entraba el catálogo entero de ciudades con su conteo, y de todo
+   * eso el panel leía exactamente un dato: este nombre, para encabezar la
+   * búsqueda. Llevar la lista completa para sacarle un nombre es lo que hacía
+   * expresable el abanico de una consulta por ciudad que nadie dibujaba.
+   */
+  readonly cityName: string;
   readonly zones: readonly PanelZone[];
   /** Las zonas elegidas, en el orden en que se eligieron. */
   readonly chosenZoneIds: readonly string[];
@@ -255,16 +251,6 @@ export function reliefHref(
   return buildSearchHref(place.basePath, place.query, { [filter]: null });
 }
 
-export interface CityChoice {
-  readonly id: string;
-  readonly name: string;
-  readonly count: number;
-  readonly chosen: boolean;
-  readonly href: string;
-  /** Lo que hay que decir antes de tocarla, o `null`. */
-  readonly warning: string | null;
-}
-
 export type ZoneChoice = ZoneOption & { readonly href: string };
 
 /**
@@ -341,7 +327,6 @@ export interface SearchPanelModel {
   readonly closeHref: string;
   /** Las fichas quitables de la lámina 7c, en el orden en que se leen. */
   readonly chips: readonly FilterChip[];
-  readonly cities: readonly CityChoice[];
   readonly zones: readonly ZoneChoice[];
   readonly price: PriceForm;
   readonly rooms: readonly RoomChoice[];
@@ -353,8 +338,6 @@ export interface SearchPanelModel {
   readonly confirm: SearchConfirm;
   /** «Chacao, Altamira», o la ciudad si no hay zonas. */
   readonly headline: string;
-  /** El número al lado del engranaje. La ciudad no cuenta. */
-  readonly activeFilters: number;
   /**
    * El número que dice la pastilla («3 filtros», 14i). **La zona tampoco
    * cuenta acá**: el filtro de la pastilla abre precio, tamaño, quién publica
@@ -368,13 +351,12 @@ export interface SearchPanelModel {
 export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
   const { basePath, cityPath, query, counts, criteria } = input;
 
-  const city = input.cities.find((candidate) => candidate.id === input.cityId);
   const chosenZones = input.chosenZoneIds
     .map((id) => input.zones.find((zone) => zone.id === id))
     .filter((zone): zone is PanelZone => zone !== undefined);
 
   const selection: SearchSelection = toSearchSelection(
-    city?.name ?? "",
+    input.cityName,
     chosenZones.map((zone) => zone.name),
     criteria,
   );
@@ -404,7 +386,6 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
     openNotice: panel.notice,
     closeHref,
     chips: filterChips(input, selection),
-    cities: input.cities.map((candidate) => toCityChoice(candidate, input, selection)),
     zones: zoneOptions.map((option) => ({
       ...option,
       href: zoneHref(input, option.id),
@@ -471,7 +452,6 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
       relief: input.relief ?? null,
     }),
     headline: searchHeadline(selection),
-    activeFilters: countActiveFilters(selection),
     pillFilters: countPillFilters(selection),
   };
 }
@@ -510,29 +490,6 @@ function filterChips(input: SearchPanelInput, selection: SearchSelection): reado
 
 function chip(label: string, removeHref: string): FilterChip {
   return { label, removeHref, removeLabel: `Quitar ${label}` };
-}
-
-function toCityChoice(
-  candidate: PanelCity,
-  input: SearchPanelInput,
-  selection: SearchSelection,
-): CityChoice {
-  const chosen = candidate.id === input.cityId;
-  // Quedarse donde se está no pierde nada, así que no hay nada que avisar.
-  const plan = planCityChange(
-    { path: candidate.path, name: candidate.name },
-    input.query,
-    chosen ? [] : selection.zoneNames,
-  );
-
-  return {
-    id: candidate.id,
-    name: candidate.name,
-    count: candidate.count,
-    chosen,
-    href: plan.href,
-    warning: plan.warning,
-  };
 }
 
 /**

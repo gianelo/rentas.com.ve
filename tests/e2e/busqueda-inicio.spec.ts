@@ -51,6 +51,11 @@ test.beforeEach(() => {
 test("buscar desde el inicio es un GET del navegador, sin JavaScript", async ({ page }) => {
   await page.goto("/");
 
+  // **Antes de escribir no hay panel ninguno** (14.52). La mejora no ocupa la
+  // pantalla de nadie, y en `crawlability` no puede existir en absoluto — el
+  // vocabulario viaja en el marcado, pero quien lo dibuja es una isla.
+  await expect(page.getByRole("list", { name: "Sugerencias" })).toHaveCount(0);
+
   // La caja es un campo real con etiqueta asociada, no un disparador de panel.
   const box = page.getByRole("searchbox");
   await expect(box).toBeVisible();
@@ -72,4 +77,39 @@ test("lo que no se reconoce contesta «no entendí», nunca «no hay avisos»", 
   // El texto lo compone el dominio (`noMatchMessage`). Acá se comprueba que la
   // rama siga dibujándose, que es lo que el cambio de encabezado podía romper.
   await expect(page.getByText(/No reconocimos/)).toBeVisible();
+});
+
+/**
+ * **La mejora que la 14.52 trae a la portada, medida contra datos de verdad.**
+ *
+ * Con el script cargado, escribir en la pastilla de `/` ofrece las zonas que
+ * tienen avisos, con su conteo — el vocabulario acotado que hasta la 14.51 sólo
+ * vivía en las dos rutas de búsqueda, porque en `/` no hay ciudad elegida ni
+ * facetas de dónde sacarlo.
+ *
+ * **El número es la aserción entera, y por eso son 2 y no 3.** La siembra de
+ * `scripts/seed-e2e.ts` pone tres avisos en Tierra Negra y uno de ellos está
+ * **vencido**: un puerto que contara sin mirar el estado diría «3» y esta prueba
+ * lo vería. La regla transversal 3 es esa — si una etiqueta dice 2, hay 2 en la
+ * pantalla a la que lleva.
+ *
+ * Sólo en `chromium`: la isla es la mejora, y con el script apagado la ausencia
+ * del panel es lo que se afirma arriba.
+ */
+test("con el script cargado, el inicio ofrece las zonas con avisos y su conteo", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name === "crawlability", "la lista es la mejora, no el piso");
+
+  await page.goto("/");
+  await page.getByRole("searchbox").fill("tierra");
+
+  const opcion = page.getByRole("list", { name: "Sugerencias" }).getByRole("listitem").first();
+  await expect(opcion).toContainText("Tierra Negra");
+  // El vencido de la misma zona no cuenta: son 2 y no 3.
+  await expect(opcion).toContainText("2");
+
+  // Y la sugerencia lleva a la búsqueda de ese lugar, no a un texto libre.
+  await opcion.getByRole("link").click();
+  await expect(page).toHaveURL(/\/alquiler\/[^/]+\/tierra-negra/);
 });

@@ -905,3 +905,362 @@ test.describe("los átomos de la lista y la ficha de selección (22.2-22.5)", ()
     });
   });
 });
+
+/**
+ * **El fondo del modal de filtros, en un navegador de verdad (14.46).**
+ *
+ * `lint:tokens` no puede ver este defecto y ya lo demostró: `.panel` tapaba el
+ * viewport con `background: var(--surface)` —un token, gate en verde— y lo que
+ * se dibujaba era una pantalla opaca donde la 14.33 dice modal. Un token no
+ * tiene comportamiento, así que lo que se mide acá es lo que produce: el color
+ * que sale del compositor, su alfa, y si la hoja deja ver el velo a los lados.
+ *
+ * Se toma del árbol (`data-testid` + primer hijo) y nunca de un nombre de
+ * clase: los de CSS Modules son hashes de compilación.
+ */
+test.describe("el fondo del modal de filtros (14.46)", () => {
+  async function backdrop(page: import("@playwright/test").Page) {
+    return page.evaluate(() => {
+      const panel = document.querySelector('[data-testid="search-panel"]') as HTMLElement | null;
+      const sheet = panel?.firstElementChild as HTMLElement | null;
+      if (!panel || !sheet) throw new Error("el panel de filtros no se dibujó");
+      const alpha = (colour: string) => {
+        const parts = colour.match(/^rgba?\(([^)]*)\)$/)?.[1]?.split(",") ?? [];
+        return parts[3] === undefined ? 1 : Number.parseFloat(parts[3]);
+      };
+      return {
+        panelBg: getComputedStyle(panel).backgroundColor,
+        panelAlpha: alpha(getComputedStyle(panel).backgroundColor),
+        sheetAlpha: alpha(getComputedStyle(sheet).backgroundColor),
+        surface: getComputedStyle(document.documentElement).getPropertyValue("--surface").trim(),
+        sheetBg: getComputedStyle(sheet).backgroundColor,
+        panelWidth: Math.round(panel.getBoundingClientRect().width),
+        sheetWidth: Math.round(sheet.getBoundingClientRect().width),
+        panelTop: Math.round(panel.getBoundingClientRect().top),
+        sheetTop: Math.round(sheet.getBoundingClientRect().top),
+      };
+    });
+  }
+
+  test("14.46: a 1280 el velo deja pasar la lista y la hoja no lo tapa entero", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    await page.goto("/measure");
+
+    const seen = await backdrop(page);
+    console.log(`[14.46] 1280px: ${JSON.stringify(seen)}`);
+
+    // La guarda: sin esto, un panel que no se dibujara pasaría las de abajo por
+    // no dibujar nada.
+    expect(seen.panelWidth).toBeGreaterThan(0);
+    expect(seen.panelAlpha).toBeGreaterThan(0);
+    expect(seen.panelAlpha).toBeLessThan(1);
+    // Y lo que se lee sigue apoyado en una lámina opaca.
+    expect(seen.sheetAlpha).toBe(1);
+    // «El modal sobre la lista»: si la hoja ocupara el ancho del panel, el velo
+    // existiría en la hoja de estilos y no en la pantalla.
+    expect(seen.sheetWidth).toBeLessThan(seen.panelWidth);
+    // Y tampoco pegada al borde de arriba: una hoja que arranca en el filo del
+    // panel deja el velo en dos franjas laterales, que es media tarjeta.
+    expect(seen.sheetTop).toBeGreaterThan(seen.panelTop);
+  });
+
+  test("14.46: el velo se repinta con el tema — el par claro/oscuro es real", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    await page.goto("/measure");
+
+    const claro = await backdrop(page);
+    await page.evaluate(() => {
+      document.documentElement.dataset.theme = "oscuro";
+    });
+    const oscuro = await backdrop(page);
+    console.log(`[14.46] velo claro=${claro.panelBg} oscuro=${oscuro.panelBg}`);
+
+    expect(oscuro.panelBg).not.toBe(claro.panelBg);
+    // Los dos siguen siendo velo: un par que repintara a opaco cumpliría la
+    // aserción de arriba y rompería la pantalla.
+    expect(oscuro.panelAlpha).toBeGreaterThan(0);
+    expect(oscuro.panelAlpha).toBeLessThan(1);
+    // Y la lámina de abajo también se repinta, que es la mitad que el velo no
+    // hace: el fondo velado no separa nada por sí solo.
+    expect(oscuro.sheetBg).not.toBe(claro.sheetBg);
+  });
+
+  test("14.46: a 360 la hoja ocupa el ancho entero — la lámina 6b dibuja pantalla, no tarjeta", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 900 });
+    await page.goto("/measure");
+
+    const seen = await backdrop(page);
+    console.log(`[14.46] 360px: ${JSON.stringify(seen)}`);
+
+    expect(seen.panelWidth).toBe(360);
+    expect(seen.sheetWidth).toBe(seen.panelWidth);
+    expect(seen.sheetTop).toBe(seen.panelTop);
+  });
+});
+
+/**
+ * **14.48 — los dos tamaños que el conjunto declara por ancho, dibujados.**
+ *
+ * Los destapó el gate de usos de `lint:tokens`: `--pill-text-fs-desktop` y
+ * `--nav-avatar-fs` estaban declarados y ninguna hoja los leía, así que de cada
+ * par se pintaba una sola mitad — la pastilla a 13,5 en todos los anchos y las
+ * iniciales a 11,5 en todos. **`lint:tokens` no puede probar esto**: verifica
+ * que un valor SEA una propiedad personalizada, nunca qué píxel sale. Lo que
+ * sigue lee `getComputedStyle` en un navegador de verdad, que es la única forma
+ * de contestar «¿cuál de los dos números se dibujó?».
+ */
+test.describe("los pares de tamaño por ancho (14.48)", () => {
+  async function fontSizeOf(locator: import("@playwright/test").Locator) {
+    return locator.evaluate((element) => getComputedStyle(element).fontSize);
+  }
+
+  test("14.48: el texto de la pastilla es 13,5 en el teléfono y 14 en escritorio", async ({
+    page,
+  }) => {
+    await page.goto("/measure");
+    const input = page.getByTestId("nav-harness-busqueda").locator('input[type="search"]');
+
+    await page.setViewportSize({ width: 360, height: 800 });
+    const movil = await fontSizeOf(input);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const escritorio = await fontSizeOf(input);
+
+    console.log(`[14.48] pastilla: 360px=${movil} 1280px=${escritorio}`);
+    expect(movil).toBe("13.5px");
+    expect(escritorio).toBe("14px");
+    // Y el par es real: un solo token en las dos ramas daba el mismo número en
+    // los dos anchos, que es exactamente lo que había.
+    expect(movil).not.toBe(escritorio);
+  });
+
+  test("14.48: las iniciales del avatar son 13 en el teléfono y 11,5 en escritorio", async ({
+    page,
+  }) => {
+    await page.goto("/measure");
+    const initials = page.getByTestId("nav-harness-cuenta").getByText("MF", { exact: true });
+
+    await page.setViewportSize({ width: 360, height: 800 });
+    const movil = await fontSizeOf(initials);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const escritorio = await fontSizeOf(initials);
+
+    console.log(`[14.48] iniciales: 360px=${movil} 1280px=${escritorio}`);
+    expect(movil).toBe("13px");
+    expect(escritorio).toBe("11.5px");
+    expect(movil).not.toBe(escritorio);
+  });
+});
+
+/**
+ * **La placa del publicador encima de la portada, medida sobre una foto clara y
+ * una oscura** (14.53, 22.10; la garantía es de la 14.25).
+ *
+ * La 14.25 exige que dueño e inmobiliaria se distingan **en escala de grises**
+ * —relleno contra borde, nunca el acento—, y `design-contract.test.tsx` lo fija
+ * sobre el átomo, contra `--surface`. Al subir la placa a la foto esa garantía
+ * deja de heredarse sola: la portada la sube quien publica, puede ser clara u
+ * oscura, y un borde sin relleno sobre una foto oscura no se ve.
+ *
+ * **La cadena que se mide, eslabón por eslabón, y ninguno se afirma:**
+ * 1. la portada clara es de verdad clara y la oscura de verdad oscura — leído
+ *    del `<canvas>`, o sea los píxeles que el navegador pintó;
+ * 2. la placa se dibuja DENTRO de la caja de la portada (es «encima de la
+ *    foto» y no debajo de ella);
+ * 3. su piso es **opaco** — alfa 1 — así que ningún píxel de la foto llega
+ *    hasta la placa;
+ * 4. el piso mide lo mismo con la foto clara y con la oscura, que es la
+ *    consecuencia de 3 escrita como comparación;
+ * 5. la placa cabe entera dentro de ese piso, así que no hay un borde suyo
+ *    colgando sobre la imagen;
+ * 6. y con ese fondo, dueño e inmobiliaria quedan **separados en luminancia** y
+ *    los dos textos pasan 4,5:1 — el mismo umbral que la 1b.7 usa.
+ */
+test.describe("la placa encima de la portada (14.53, garantía de la 14.25)", () => {
+  /** WCAG 2.x: el canal lineal de un componente sRGB. */
+  const canal = (v: number) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+  const luminancia = ([r, g, b]: readonly number[]) =>
+    0.2126 * canal((r ?? 0) / 255) +
+    0.7152 * canal((g ?? 0) / 255) +
+    0.0722 * canal((b ?? 0) / 255);
+  const contraste = (a: readonly number[], b: readonly number[]) => {
+    const [alto, bajo] = [luminancia(a), luminancia(b)].sort((x, y) => y - x);
+    return ((alto ?? 0) + 0.05) / ((bajo ?? 0) + 0.05);
+  };
+  const canal255 = (color: string): readonly number[] =>
+    (color.match(/^rgba?\(([^)]*)\)$/)?.[1] ?? "")
+      .split(",")
+      .map((parte) => Number.parseFloat(parte.trim()));
+  const alfa = (color: string) => canal255(color)[3] ?? 1;
+
+  /**
+   * Lo que el navegador dibujó para una celda del arnés: la luminancia real de
+   * la portada leída de un lienzo, los colores calculados de la placa y su
+   * piso, y las tres cajas.
+   */
+  async function leerCelda(page: import("@playwright/test").Page, portada: string, quien: string) {
+    return page
+      .getByTestId("placa-sobre-foto")
+      .locator(`li[data-portada="${portada}"][data-publica="${quien}"]`)
+      .evaluate((celda) => {
+        const foto = celda.querySelector("img");
+        const placa = celda.querySelector("span span");
+        const piso = placa?.parentElement;
+        if (!(foto instanceof HTMLImageElement) || !(placa instanceof HTMLElement) || !piso) {
+          throw new Error("el arnés no dibujó la portada, la placa y su piso");
+        }
+
+        // Los píxeles de verdad. La portada es un PNG en línea, así que el
+        // lienzo no queda contaminado y se deja leer.
+        const lienzo = document.createElement("canvas");
+        lienzo.width = 1;
+        lienzo.height = 1;
+        const pincel = lienzo.getContext("2d");
+        if (!pincel) throw new Error("sin contexto 2d");
+        pincel.drawImage(foto, 0, 0, 1, 1);
+        const [r, g, b] = pincel.getImageData(0, 0, 1, 1).data;
+
+        const caja = (nodo: Element) => {
+          const { top, left, right, bottom } = nodo.getBoundingClientRect();
+          return { top, left, right, bottom };
+        };
+
+        return {
+          pixelPortada: [r ?? 0, g ?? 0, b ?? 0],
+          fondoPiso: getComputedStyle(piso).backgroundColor,
+          fondoPlaca: getComputedStyle(placa).backgroundColor,
+          textoPlaca: getComputedStyle(placa).color,
+          bordePlaca: getComputedStyle(placa).borderTopColor,
+          anchoBorde: getComputedStyle(placa).borderTopWidth,
+          cajaFoto: caja(foto),
+          cajaPiso: caja(piso),
+          cajaPlaca: caja(placa),
+        };
+      });
+  }
+
+  const dentroDe = (
+    interior: { top: number; left: number; right: number; bottom: number },
+    exterior: { top: number; left: number; right: number; bottom: number },
+  ) =>
+    interior.top >= exterior.top - 0.5 &&
+    interior.left >= exterior.left - 0.5 &&
+    interior.right <= exterior.right + 0.5 &&
+    interior.bottom <= exterior.bottom + 0.5;
+
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/measure");
+    // Las portadas van `loading="lazy"` y este arnés es largo: sin traerlas a
+    // la vista el lienzo leería una imagen sin píxeles.
+    await page.getByTestId("placa-sobre-foto").scrollIntoViewIfNeeded();
+    await page
+      .getByTestId("placa-sobre-foto")
+      .locator("img")
+      .first()
+      .evaluate((img) =>
+        (img as HTMLImageElement).complete
+          ? undefined
+          : new Promise((listo) => img.addEventListener("load", () => listo(null), { once: true })),
+      );
+  });
+
+  test("las dos portadas son de verdad una clara y una oscura", async ({ page }) => {
+    const clara = await leerCelda(page, "clara", "owner");
+    const oscura = await leerCelda(page, "oscura", "owner");
+
+    const lClara = luminancia(clara.pixelPortada);
+    const lOscura = luminancia(oscura.pixelPortada);
+    console.log(
+      `[14.53] portadas: clara=${clara.pixelPortada} L=${lClara.toFixed(3)} · oscura=${oscura.pixelPortada} L=${lOscura.toFixed(3)}`,
+    );
+
+    // Sin esta prueba, las tres de abajo estarían midiendo la placa sobre dos
+    // fotos que podrían ser iguales — una medición sobre una entrada que el
+    // arnés nunca produce no mide nada.
+    expect(lClara).toBeGreaterThan(0.8);
+    expect(lOscura).toBeLessThan(0.05);
+  });
+
+  for (const quien of ["owner", "broker"] as const) {
+    test(`${quien}: el piso es opaco y la placa cabe entera adentro, sobre las dos portadas`, async ({
+      page,
+    }) => {
+      const clara = await leerCelda(page, "clara", quien);
+      const oscura = await leerCelda(page, "oscura", quien);
+
+      for (const [nombre, celda] of [
+        ["clara", clara],
+        ["oscura", oscura],
+      ] as const) {
+        console.log(
+          `[14.53] ${quien}/${nombre}: piso=${celda.fondoPiso} (alfa ${alfa(celda.fondoPiso)}) placa=${celda.fondoPlaca} texto=${celda.textoPlaca}`,
+        );
+
+        // 3 — el piso no deja pasar nada de la foto.
+        expect(alfa(celda.fondoPiso)).toBe(1);
+        // 2 — está encima de la portada y no debajo.
+        expect(dentroDe(celda.cajaPiso, celda.cajaFoto)).toBe(true);
+        // 5 — y la placa entera cae sobre el piso.
+        expect(dentroDe(celda.cajaPlaca, celda.cajaPiso)).toBe(true);
+      }
+
+      // 4 — la foto no participa: el mismo fondo con una portada y con la otra.
+      expect(oscura.fondoPiso).toBe(clara.fondoPiso);
+      expect(oscura.fondoPlaca).toBe(clara.fondoPlaca);
+      expect(oscura.textoPlaca).toBe(clara.textoPlaca);
+    });
+  }
+
+  /**
+   * **El paso 6, que es la garantía de la 14.25 escrita en números.**
+   *
+   * El fondo efectivo de cada placa es el suyo cuando es opaco —dueño, relleno
+   * de `--ink`— y el del piso cuando no lo es —inmobiliaria, sin relleno—. Con
+   * ésos se mide lo mismo que mide `design-contract.test.tsx`, pero sobre lo
+   * DIBUJADO y encima de una foto: separación de luminancia entre los dos
+   * fondos, y 4,5:1 para cada texto.
+   */
+  for (const portada of ["clara", "oscura"] as const) {
+    test(`sobre la portada ${portada}, dueño e inmobiliaria siguen separados en escala de grises`, async ({
+      page,
+    }) => {
+      const dueno = await leerCelda(page, portada, "owner");
+      const inmobiliaria = await leerCelda(page, portada, "broker");
+
+      const fondoEfectivo = (celda: Awaited<ReturnType<typeof leerCelda>>) =>
+        alfa(celda.fondoPlaca) === 1 ? canal255(celda.fondoPlaca) : canal255(celda.fondoPiso);
+
+      const fondoDueno = fondoEfectivo(dueno);
+      const fondoInmobiliaria = fondoEfectivo(inmobiliaria);
+      const separacion = Math.abs(luminancia(fondoDueno) - luminancia(fondoInmobiliaria));
+
+      console.log(
+        `[14.53] ${portada}: fondo dueño=${fondoDueno} L=${luminancia(fondoDueno).toFixed(3)} · fondo inmobiliaria=${fondoInmobiliaria} L=${luminancia(fondoInmobiliaria).toFixed(3)} · separación=${separacion.toFixed(3)}`,
+      );
+
+      // La distinción es relleno contra borde: uno pinta y el otro no, y eso
+      // en escala de grises son dos luminancias distintas (1b.7 usa 0,3).
+      expect(alfa(dueno.fondoPlaca)).toBe(1);
+      expect(alfa(inmobiliaria.fondoPlaca)).toBe(0);
+      expect(separacion).toBeGreaterThan(0.3);
+
+      // Y las dos se leen: el texto sobre su propio fondo, y el borde de la
+      // inmobiliaria —que es la mitad de su señal— contra el piso.
+      const cDueno = contraste(canal255(dueno.textoPlaca), fondoDueno);
+      const cInmobiliaria = contraste(canal255(inmobiliaria.textoPlaca), fondoInmobiliaria);
+      const cBorde = contraste(canal255(inmobiliaria.bordePlaca), fondoInmobiliaria);
+      console.log(
+        `[14.53] ${portada}: contraste dueño=${cDueno.toFixed(2)} inmobiliaria=${cInmobiliaria.toFixed(2)} borde=${cBorde.toFixed(2)} (${inmobiliaria.anchoBorde})`,
+      );
+
+      expect(cDueno).toBeGreaterThanOrEqual(4.5);
+      expect(cInmobiliaria).toBeGreaterThanOrEqual(4.5);
+      expect(cBorde).toBeGreaterThanOrEqual(3);
+      expect(Number.parseFloat(inmobiliaria.anchoBorde)).toBeGreaterThan(0);
+    });
+  }
+});

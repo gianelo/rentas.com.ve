@@ -256,3 +256,42 @@ describe("la búsqueda sin JavaScript", () => {
     expect(volver).toBe("/alquiler/distrito-capital?max=500&pag=2");
   });
 });
+
+/**
+ * **La búsqueda dice qué le corrigió al precio** (14.13, F5).
+ *
+ * El dominio ya intercambiaba un rango invertido desde la 14.6, y callado. Se
+ * lee sobre el cuerpo servido porque **decidir la frase y dibujarla son dos
+ * afirmaciones distintas**, y sólo la segunda la ve un render — que es cómo la
+ * 16.9 estuvo abierta con todo su dominio escrito y probado.
+ */
+describe("lo que la búsqueda le corrigió al precio, dicho (14.13)", () => {
+  it("dice que intercambió los dos extremos, con los números que se pidieron", async () => {
+    const html = await servedBody({ min: "900", max: "300" });
+
+    expect(html).toContain("Pediste de $900 a $300");
+    // Y muestra los resultados del rango corregido: el aviso de $450 entra, y
+    // con el rango tal cual se pidió no habría entrado nunca.
+    expect(search).toHaveBeenCalledWith(
+      expect.objectContaining({ minPriceUsd: 300, maxPriceUsd: 900 }),
+    );
+  });
+
+  it("nombra el precio real cuando el mínimo pedido no lo alcanza ninguno", async () => {
+    // $5000 en Distrito Capital: la lista vuelve vacía y la causa es invisible.
+    // El más caro cuesta $1200, y sale de los cubos que la MISMA consulta trajo.
+    const html = await servedBody({ min: "5000" });
+
+    expect(html).toContain("Ningún alquiler llega a $5000");
+    expect(html).toContain("$1200");
+  });
+
+  it("una búsqueda que no se corrigió no dice nada", async () => {
+    // El otro lado: una frase que saliera siempre pasaría las dos de arriba.
+    const html = await servedBody({ min: "450", max: "1200" });
+
+    expect(html).not.toContain("Pediste de");
+    expect(html).not.toContain("se ajustó");
+    expect(html).not.toContain("Ningún alquiler");
+  });
+});

@@ -103,7 +103,7 @@ Dos puertas, mismo mecanismo, distinta presentación.
 **F17 · Entrar con enlace por correo.** El usuario escribe su correo y recibe un enlace que lo deja entrar. Sin contraseña.
 - El enlace sirve **una sola vez**.
 - Vence en **15 minutos**.
-- Debe abrirse en el mismo dispositivo. Si se abre en otro, se pide el correo de nuevo.
+- ~~Debe abrirse en el mismo dispositivo. Si se abre en otro, se pide el correo de nuevo.~~ **Regla quitada por el fundador el 2026-08-21** (tasks.md 15.6). En escritorio el correo se lee en el teléfono, así que el enlace se abre en otro dispositivo **en el caso normal y no en el borde**: aplicada tal como estaba escrita, entrar por correo desde una computadora no podría funcionar nunca — y es la contradicción que la propia «Decisión pendiente» de más abajo ya señalaba. Lo que la regla compraba —un enlace reenviado, un buzón compartido, un escáner de correo que lo pre-abre— lo cubren el uso único y los quince minutos. Queda tachada y no borrada para que nadie la vuelva a derivar de acá como endurecimiento (2026-09-02, tasks.md 15.15).
 
 **F18 · Pantalla de espera.** El enlace por correo obliga a una pantalla intermedia: el usuario sale del sitio y vuelve, y sin explicación parece que se rompió. Muestra:
 - el correo escrito en pantalla, para detectar un error de tipeo sin volver atrás;

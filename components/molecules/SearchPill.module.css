@@ -34,7 +34,12 @@
   background: transparent;
   color: var(--ink);
   font-family: var(--sans);
-  font-size: var(--pill-text-fs);
+  /* El par de escritorio en la base y el del teléfono en el `@media`, igual que
+     `.filter` doce líneas más abajo. **Acá decía `--pill-text-fs` en los dos
+     lados** —o sea 13,5 en todos los anchos y una declaración que no hacía
+     nada— así que el 14 de escritorio que el conjunto declara no se dibujaba en
+     ninguna parte (14.48: lo destapó el gate al empezar a contar usos). */
+  font-size: var(--pill-text-fs-desktop);
   font-weight: 600;
   line-height: 1.3;
   overflow: hidden;

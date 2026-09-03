@@ -1,4 +1,4 @@
-import type { ContactPresentation } from "./revealable-contact";
+import type { ContactMethod, ContactPresentation } from "./revealable-contact";
 import { contactChannelNoun } from "./revealable-contact";
 
 /**
@@ -63,6 +63,34 @@ export function contactDoorFor(
     closeLabel: "Cerrar sin entrar",
     assurance: "Volvés a este mismo aviso al terminar.",
   };
+}
+
+/**
+ * **Lo que se lee al lado del número tapado** (F20, tasks.md 15.11, láminas
+ * Ficha 8b/9b y el bloque de contacto de la ficha).
+ *
+ * F20 no es «hay una salida» a secas: es *«entrar no es un muro: el contenido
+ * del aviso es público y solo el teléfono está detrás de la cuenta»*. La
+ * salida la dibujan las tres puertas; **esta frase es la otra mitad** — la que
+ * dice QUÉ falta y POR QUÉ, justo donde falta.
+ *
+ * **Vive acá y no en `ContactBlock`, que es de donde se la trajo.** Estaba
+ * escrita a mano adentro del componente: una razón de producto en un sitio al
+ * que el suelo del 90 % no llega, y sin una sola prueba que la nombrara. La
+ * misma afirmación que `contactDoorFor` ya decía desde el dominio, escrita dos
+ * veces en dos capas distintas.
+ *
+ * **Dos frases y no una, porque las láminas dibujan dos.** La puerta la dice
+ * entera y con punto; el bloque la encadena con dos puntos a qué falta para
+ * ver el número. Se conservan las dos como están dibujadas: unificarlas sería
+ * inventar una tercera. Lo que NO puede pasar es que se separen, y de eso se
+ * encarga la prueba que las pinea por valor.
+ */
+export function lockedContactNotice(method: ContactMethod): string {
+  return (
+    `Mostramos el ${contactChannelNoun(method)} a usuarios registrados. ` +
+    "Pedimos la cuenta para frenar avisos falsos: es gratis y es un toque."
+  );
 }
 
 /**

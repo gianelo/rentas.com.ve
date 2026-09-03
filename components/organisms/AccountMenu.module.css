@@ -43,8 +43,19 @@
   background: var(--accent);
   color: var(--accent-ink);
   font-family: var(--meta);
-  font-size: var(--nav-avatar-fs-desktop);
+  /* **Acá decía `--nav-avatar-fs-desktop` sin ningún `@media`**, o sea 11,5 en
+     todos los anchos: el 13 que el conjunto declara para el teléfono no se
+     dibujaba nunca (14.48, destapado por el gate de usos). El teléfono va en la
+     base y escritorio en el bloque de 768, que es el punto de quiebre que
+     `Nav.module.css` ya usa para esta misma barra. */
+  font-size: var(--nav-avatar-fs);
   font-weight: 700;
+}
+
+@media (min-width: 768px) {
+  .avatarInitials {
+    font-size: var(--nav-avatar-fs-desktop);
+  }
 }
 
 .avatar {

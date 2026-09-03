@@ -34,8 +34,8 @@ const EMPTY: FacetCounts = {
 /**
  * Un puerto falso que **registra cada llamada**. Lo que se prueba acá no es que
  * los números salgan bien —eso lo prueba el adaptador contra Postgres real—
- * sino a QUIÉN se le pregunta qué: que el conteo de cada ciudad sea el de esa
- * ciudad, y que no se pida un conteo por un filtro que nadie puso.
+ * sino a QUIÉN se le pregunta qué: **cuántas preguntas salen** (14.50) y que no
+ * se pida un conteo por un filtro que nadie puso.
  */
 function fakeFacets(byCity: Readonly<Record<string, Partial<FacetCounts>>>) {
   const calls: {
@@ -61,11 +61,7 @@ function fakeFacets(byCity: Readonly<Record<string, Partial<FacetCounts>>>) {
 const PLACE = {
   basePath: "/alquiler/distrito-capital",
   cityPath: "/alquiler/distrito-capital",
-  cityId: "dc",
-  cities: [
-    { id: "dc", name: "Distrito Capital", path: "/alquiler/distrito-capital" },
-    { id: "mcbo", name: "Maracaibo", path: "/alquiler/maracaibo" },
-  ],
+  cityName: "Distrito Capital",
   zones: [
     { id: "chacao", name: "Chacao", slug: "chacao", path: "/alquiler/distrito-capital/chacao" },
     {
@@ -84,44 +80,40 @@ const PLACE = {
 };
 
 describe("buildFilterPanel", () => {
-  it("pregunta el conteo de cada ciudad por separado (F3)", async () => {
-    const { port, calls } = fakeFacets({
-      dc: { total: 47, byZone: { chacao: 12 } },
-      mcbo: { total: 23 },
-    });
+  /**
+   * **Una pregunta, y una sola** (14.50). Hasta el 2026-09-02 salía además una
+   * por cada OTRA ciudad del catálogo, para llenar un conteo por ciudad que
+   * ninguna pantalla dibuja desde la 14.36. Acá se cuenta contra un doble, que
+   * es rápido y corre en cada `pnpm test:unit`; contra Postgres real lo cuenta
+   * `tests/integration/faceted-search.test.ts`, que es donde se ve el viaje.
+   *
+   * `cities` ya no es un campo de la petición, así que este número no puede
+   * volver a crecer con el catálogo por accidente — pero podría crecer por otro
+   * motivo, y por eso la cota se afirma y no se supone.
+   */
+  it("le hace UNA sola pregunta al puerto, y es la de la ciudad que se mira", async () => {
+    const { port, calls } = fakeFacets({ dc: { total: 47, byZone: { chacao: 12 } } });
 
-    const { panel } = await buildFilterPanel(port, {
+    const { counts, panel } = await buildFilterPanel(port, {
       ...PLACE,
       query: {},
       chosenZoneIds: [],
       criteria: { cityId: "dc" },
     });
 
-    expect(panel.cities.map((city) => city.count)).toEqual([47, 23]);
-    expect(calls.map((call) => call.criteria.cityId).sort()).toEqual(["dc", "mcbo"]);
-  });
-
-  it("el conteo de la otra ciudad no arrastra las zonas de ésta", async () => {
-    // Una zona de Caracas dentro de un conteo de Maracaibo da cero, y el
-    // visitante vería «Maracaibo 0» sobre una ciudad llena de avisos.
-    const { port, calls } = fakeFacets({ dc: { total: 9 }, mcbo: { total: 23 } });
-
-    await buildFilterPanel(port, {
-      ...PLACE,
-      query: {},
-      chosenZoneIds: ["chacao"],
-      criteria: { cityId: "dc", zoneIds: ["chacao"] },
-    });
-
-    const other = calls.find((call) => call.criteria.cityId === "mcbo");
-
-    expect(other?.criteria.zoneIds).toBeUndefined();
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.criteria.cityId).toBe("dc");
+    // Y el nombre que la petición trae es el que encabeza la búsqueda: es el
+    // ÚNICO dato que el panel leía del catálogo de ciudades que ya no viaja.
+    expect(panel.headline).toBe("Distrito Capital");
+    // Y la respuesta de esa única pregunta es la que viaja: sin esto, no
+    // preguntar nada también daría uno... o cero, sin que nadie lo note.
+    expect(counts.total).toBe(47);
   });
 
   it("ofrece las zonas que el conteo devolvió, en el orden del catálogo", async () => {
     const { port } = fakeFacets({
       dc: { total: 16, byZone: { rosal: 0, altamira: 9, chacao: 12 } },
-      mcbo: {},
     });
 
     const { panel } = await buildFilterPanel(port, {
@@ -137,7 +129,6 @@ describe("buildFilterPanel", () => {
   it("no ofrece una zona que el catálogo de esta ciudad no tiene", async () => {
     const { port } = fakeFacets({
       dc: { total: 16, byZone: { chacao: 12, "zona-de-maracaibo": 4 } },
-      mcbo: {},
     });
 
     const { panel } = await buildFilterPanel(port, {
@@ -150,14 +141,13 @@ describe("buildFilterPanel", () => {
     expect(panel.zones.map((zone) => zone.id)).toEqual(["chacao"]);
   });
 
-  it("las salidas no cuestan una consulta: una por ciudad, con vacío o sin él", async () => {
+  it("las salidas no cuestan una consulta: sigue siendo una, con vacío o sin él", async () => {
     // **Es la restricción que decide todo el diseño.** Preguntar "¿cuántos
     // habría sin el precio?" de a un filtro eran nueve viajes de red sobre
     // Neon, y con el cierre de la lista harían falta en TODA búsqueda, no sólo
     // en el vacío. Los nueve números vienen ahora en la misma consulta.
     const { port, calls } = fakeFacets({
       dc: { total: 0, withoutFilter: { ...EMPTY.withoutFilter, price: 14 } },
-      mcbo: { total: 23 },
     });
 
     await buildFilterPanel(port, {
@@ -167,11 +157,11 @@ describe("buildFilterPanel", () => {
       criteria: { cityId: "dc", minPriceUsd: 250, minRooms: 2 },
     });
 
-    expect(calls).toHaveLength(2);
+    expect(calls).toHaveLength(1);
   });
 
   it("el escalón siguiente de precio viaja en la misma pregunta", async () => {
-    const { port, calls } = fakeFacets({ dc: { total: 3 }, mcbo: {} });
+    const { port, calls } = fakeFacets({ dc: { total: 3 } });
 
     await buildFilterPanel(port, {
       ...PLACE,
@@ -189,7 +179,6 @@ describe("buildFilterPanel", () => {
     const { port } = fakeFacets({
       // Sin el precio hay 14; sin las habitaciones, 3.
       dc: { total: 0, withoutFilter: { ...EMPTY.withoutFilter, price: 14, rooms: 3 } },
-      mcbo: { total: 23 },
     });
 
     const { panel, outcome } = await buildFilterPanel(port, {
@@ -210,7 +199,7 @@ describe("buildFilterPanel", () => {
   });
 
   it("con cero resultados y ningún filtro puesto no inventa una salida", async () => {
-    const { port, calls } = fakeFacets({ dc: { total: 0 }, mcbo: { total: 23 } });
+    const { port, calls } = fakeFacets({ dc: { total: 0 } });
 
     const { panel } = await buildFilterPanel(port, {
       ...PLACE,
@@ -221,7 +210,7 @@ describe("buildFilterPanel", () => {
 
     expect(panel.confirm.kind).toBe("empty");
     expect(panel.confirm.kind === "empty" && panel.confirm.relief).toBeNull();
-    expect(calls).toHaveLength(2);
+    expect(calls).toHaveLength(1);
   });
 
   it("con todos los avisos en pantalla, la lista cierra con el cambio que más suma (F10)", async () => {
@@ -232,7 +221,6 @@ describe("buildFilterPanel", () => {
         withoutFilter: { ...EMPTY.withoutFilter, price: 12, rooms: 11 },
         withWidenedPrice: 14,
       },
-      mcbo: {},
     });
 
     const { outcome } = await buildFilterPanel(port, {
@@ -248,7 +236,7 @@ describe("buildFilterPanel", () => {
   });
 
   it("devuelve los conteos crudos, para que la pantalla no vuelva a pedirlos", async () => {
-    const { port } = fakeFacets({ dc: { total: 16 }, mcbo: {} });
+    const { port } = fakeFacets({ dc: { total: 16 } });
 
     const { counts } = await buildFilterPanel(port, {
       ...PLACE,
@@ -264,7 +252,7 @@ describe("buildFilterPanel", () => {
     // La ficha la trae la pantalla, porque sale de las filas y no del conteo.
     // Que llegue hasta el botón es lo que evita una pantalla intermedia que
     // ya no informa nada: quien la abre acaba de leer que hay uno.
-    const { port } = fakeFacets({ dc: { total: 1 }, mcbo: {} });
+    const { port } = fakeFacets({ dc: { total: 1 } });
 
     const { panel } = await buildFilterPanel(port, {
       ...PLACE,
@@ -282,7 +270,7 @@ describe("buildFilterPanel", () => {
     // Es el caso real de F9: el único resultado no tiene portada, así que no
     // entra en la cuadrícula y la pantalla no tiene una dirección que pasar.
     // Una pantalla de más es mejor que un botón que no lleva a ninguna parte.
-    const { port } = fakeFacets({ dc: { total: 1 }, mcbo: {} });
+    const { port } = fakeFacets({ dc: { total: 1 } });
 
     const { panel } = await buildFilterPanel(port, {
       ...PLACE,
@@ -293,5 +281,40 @@ describe("buildFilterPanel", () => {
 
     expect(panel.confirm.kind).toBe("results");
     expect(panel.confirm).toMatchObject({ label: "Ver 1 aviso" });
+  });
+});
+
+/**
+ * **Lo que se le corrigió al precio sale de la MISMA respuesta** (14.13).
+ *
+ * Los extremos reales viven en `byPriceBucket`, que ya viaja en la única
+ * consulta; preguntarlos aparte sería el segundo viaje de red que la 14.11 se
+ * ganó y la 14.50 volvió a perder una vez. Qué dice la frase lo afirma el
+ * dominio; lo que sólo se ve acá es que sale de la respuesta que ya estaba.
+ */
+describe("la corrección del precio se dice, y no cuesta una pregunta más (14.13)", () => {
+  it("dice lo que corrigió con los cubos que ya volvieron, sin preguntar de nuevo", async () => {
+    const { port, calls } = fakeFacets({
+      dc: {
+        total: 5,
+        byPriceBucket: [
+          { count: 2, lowestUsd: 200, highestUsd: 280 },
+          ...Array.from({ length: 6 }, () => ({ count: 0 })),
+          { count: 3, lowestUsd: 850, highestUsd: 900 },
+        ],
+      },
+    });
+
+    const { priceNotices } = await buildFilterPanel(port, {
+      ...PLACE,
+      query: { min: "900", max: "5000" },
+      chosenZoneIds: [],
+      criteria: { cityId: "dc" },
+    });
+
+    // El $900 no sale de la query: es el aviso más caro que devolvieron los
+    // cubos, y es contra él que se ajustó el máximo de $5000.
+    expect(priceNotices).toEqual(["El máximo de $5000 se ajustó a $900: no hay nada más caro."]);
+    expect(calls).toHaveLength(1);
   });
 });

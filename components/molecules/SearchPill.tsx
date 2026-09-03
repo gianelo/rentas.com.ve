@@ -2,8 +2,17 @@ import {
   formatListingCount,
   type SearchPillState,
 } from "@/modules/listing-catalogue/domain/search-pill";
+import type { SuggestionVocabulary } from "@/modules/listing-catalogue/domain/suggest-filters";
 import { AppLink } from "../atoms/AppLink";
 import { FilterIcon, MagnifierIcon } from "../atoms/icons";
+// **Importado derecho, y `next/dynamic` está medido y descartado.** Esta isla
+// entra en el primer paquete de toda ruta que dibuja el `Nav` —la ficha
+// incluida, que ni siquiera lleva pastilla—: +2,5 KB gzip en ocho rutas.
+// Partirla con `next/dynamic` para que sólo la pidan las pantallas que traen
+// vocabulario **sube el número en vez de bajarlo**: medido ruta por ruta, +0,5
+// KB MÁS en las trece, porque el cargador perezoso pesa más que lo que evita y
+// se cuela en el trozo compartido de todas. Se paga el costo simple.
+import { SearchSuggestions } from "../client/SearchSuggestions";
 import styles from "./SearchPill.module.css";
 
 const FIELD_ID = "pastilla-de-busqueda";
@@ -25,6 +34,16 @@ export interface SearchPillProps {
    * es `"selected"` — sin zona no hay filtro que enlazar.
    */
   readonly filtersHref?: string;
+  /**
+   * **El vocabulario acotado de esta pantalla, si la pantalla lo tiene**
+   * (14.51): las zonas con avisos activos y su conteo, que en las dos rutas de
+   * búsqueda ya viajaron con la página dentro de la consulta de las facetas.
+   *
+   * Opcional porque el inicio todavía no tiene de dónde sacarlo —no hay ciudad
+   * elegida y no hay conteo por zona ahí— y ésa es la 14.52. Sin él la pastilla
+   * queda exactamente como estaba: un `<form method="get">` y nada más.
+   */
+  readonly suggestions?: SuggestionVocabulary;
 }
 
 /**
@@ -40,9 +59,10 @@ export interface SearchPillProps {
  * **Sin JavaScript es un `<form method="get">`.** El texto es un
  * `input name="zona"`, la lupa su `button type="submit"`, y el filtro un
  * enlace real — no un botón que sólo abre un panel con un script. Con
- * JavaScript, encima: sugerencias mientras se escribe, navegación sin
- * recargar. Ninguna de las dos mejoras vive en este archivo todavía —
- * ver el reporte de aplicación de este trabajo para el porqué.
+ * JavaScript, encima: **las sugerencias mientras se escribe** (14.51), que
+ * cuelgan del campo en `SearchSuggestions` y sólo aparecen cuando la pantalla
+ * trae su vocabulario acotado. Nada de eso reemplaza una pieza: quitá el script
+ * y queda el mismo `<form method="get">` que había antes de que existieran.
  *
  * **Ni una regla de producto acá.** Si el filtro aparece, qué dice y de qué
  * color: todo llega ya resuelto de `resolveSearchPill` (AGENTS.md §1). Este
@@ -56,6 +76,7 @@ export function SearchPill({
   submitLabel,
   state,
   filtersHref,
+  suggestions,
 }: SearchPillProps) {
   return (
     // `<search>` y no `role="search"`, mismo motivo que `SearchBar`: es el
@@ -79,6 +100,13 @@ export function SearchPill({
           {state.kind === "selected" ? (
             <span className={styles.count}>{formatListingCount(state.count)}</span>
           ) : null}
+
+          {/* **La mejora, colgada del campo y nunca en su lugar** (14.51).
+              Va DENTRO de la columna del texto y justo después del campo para
+              que el orden de tabulación sea el que se lee: se escribe, y lo
+              siguiente que se alcanza son las sugerencias — no el filtro ni la
+              lupa. Sin vocabulario no se dibuja ni el ancla. */}
+          {suggestions === undefined ? null : <SearchSuggestions vocabulary={suggestions} />}
         </span>
 
         {state.kind === "selected" ? (
@@ -94,7 +122,11 @@ export function SearchPill({
               {state.filterLabel}
             </span>
             {state.filterCount > 0 ? (
-              <span className={styles.filterCount} aria-hidden="true">
+              <span
+                className={styles.filterCount}
+                data-testid="pill-filter-count"
+                aria-hidden="true"
+              >
                 {state.filterCount}
               </span>
             ) : null}

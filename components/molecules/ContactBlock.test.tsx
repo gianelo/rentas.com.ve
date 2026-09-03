@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { ContactPresentation } from "@/modules/contact-reveal/domain/revealable-contact";
+import { lockedContactNotice } from "@/modules/contact-reveal/domain/sign-in-door";
 import { ContactBlock, type ContactBlockProps } from "./ContactBlock";
 
 const css = readFileSync("components/molecules/ContactBlock.module.css", "utf-8");
@@ -134,6 +135,20 @@ describe("sin cuenta", () => {
    * dominio; lo que se prueba acá es que la frase lo use en vez de escribir
    * un canal a mano.
    */
+  /**
+   * **La frase que la F20 pide, en el sitio donde se lee** (tasks.md 15.11).
+   * Que `lockedContactNotice` conteste bien y que el bloque la dibuje son dos
+   * afirmaciones distintas, y hasta ahora no existía ninguna de las dos: la
+   * frase estaba escrita a mano en este componente y no la nombraba ninguna
+   * prueba.
+   */
+  it("dice qué falta para ver el número y que la cuenta no cuesta nada", () => {
+    const html = render(LOCKED);
+
+    expect(html).toContain(lockedContactNotice("whatsapp"));
+    expect(html).toContain("Pedimos la cuenta para frenar avisos falsos");
+  });
+
   it("nombra el canal que el aviso realmente guarda", () => {
     expect(render(LOCKED)).toContain("WhatsApp");
     expect(render({ state: "locked", method: "email" })).toContain("email");

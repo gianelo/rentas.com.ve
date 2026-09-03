@@ -25,6 +25,19 @@ export interface SuggestionVocabulary {
     cityId: string;
     /** La parroquia o el municipio. Es lo que desambigua un nombre repetido. */
     parentName: string | null;
+    /**
+     * Cuántos avisos activos tiene, **cuando quien armó el vocabulario lo
+     * sabía** (14.51).
+     *
+     * Opcional y no obligatorio porque los dos vocabularios del producto son
+     * distintos por diseño y ninguno es el degradado del otro:
+     * `DrizzleSearchVocabulary` estrecha la taxonomía con `ILIKE` y **no cuenta
+     * nada** —contar por zona ahí sería una consulta más en cada tecleo—,
+     * mientras que el acotado de la pantalla de resultados sale de un conteo
+     * que ya viajó con la página. Obligarlo llevaría a que el adaptador del
+     * servidor escribiera un `0`, que es peor que no saber: un cero es un dato.
+     */
+    count?: number;
   }>;
   /**
    * Los alias del «Índice de topónimos». Son 3.547 en el corpus real, y son lo

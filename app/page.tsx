@@ -5,6 +5,7 @@ import type { SearchPillProps } from "@/../components/molecules/SearchPill";
 import { Nav } from "@/../components/organisms/Nav";
 import { resolveNavAccount, resolveNavPublish } from "@/modules/identity/domain/nav-account";
 import { nextAuthSessionPort } from "@/modules/identity/infrastructure/session-port";
+import { boundedVocabularyOf } from "@/modules/listing-catalogue/domain/bounded-vocabulary";
 import {
   HOME_SEARCH_PARAM,
   HOME_SEARCH_RESULTS_LABEL,
@@ -22,6 +23,7 @@ import {
   homeCollections,
   resolveHomeCity,
 } from "@/modules/listing-discovery/domain/home-collections";
+import { DrizzleActiveZones } from "@/modules/listing-discovery/infrastructure/drizzle-active-zones";
 import { DrizzleHomeCollections } from "@/modules/listing-discovery/infrastructure/drizzle-home-collections";
 import { DrizzleListingPhotos } from "@/modules/listing-discovery/infrastructure/drizzle-listing-photos";
 import { readPhotoPublicBaseUrl } from "@/modules/listing-discovery/infrastructure/photo-public-base-url";
@@ -75,7 +77,7 @@ interface InicioProps {
  * búsqueda, a dónde apunta y qué frase de conteo lleva cada tira: **todo** eso
  * vive en `listing-discovery/domain/home-collections.ts`, con su suelo de
  * cobertura del 90 % encima. Acá no hay un `.filter()`, ni un umbral, ni un
- * número escrito — esta página traduce una petición a tres llamadas y dibuja lo
+ * número escrito — esta página traduce una petición a cuatro llamadas y dibuja lo
  * que le devuelven.
  *
  * **El aislamiento de ciudad se cumple en el dominio y no acá.** Con una ciudad
@@ -84,19 +86,22 @@ interface InicioProps {
  * no filtra nada, sólo dibuja lo que el adaptador trajo con los criterios que
  * el dominio compuso.
  *
- * **Tres consultas, y ninguna crece con el catálogo**: el catálogo de ciudades,
- * las filas de todas las colecciones con el total de cada una, y las portadas de
- * todas las tarjetas de todas las tiras. Neon es HTTP, así que cada consulta es
- * un viaje de red — una quinta ciudad agrega una tira sin agregar un viaje.
+ * **Cuatro consultas en TRES tandas, y ninguna crece con el catálogo**: el
+ * catálogo de ciudades y las zonas con avisos activos —juntas, en la misma
+ * espera—, después las filas de todas las colecciones con el total de cada una,
+ * y por último las portadas de todas las tarjetas de todas las tiras. Neon es
+ * HTTP, así que lo que se paga es el viaje de red: una quinta ciudad agrega una
+ * tira sin agregar un viaje, y la consulta que la 14.52 trae no agrega una
+ * tanda porque no depende de nada.
  *
- * Con `?q=` hay una cuarta, la del vocabulario, y va **antes** que las otras
- * tres: cuando lo escrito nombra un solo lugar la respuesta es una redirección
+ * Con `?q=` hay una quinta, la del vocabulario del servidor, y va **antes** que
+ * todas: cuando lo escrito nombra un solo lugar la respuesta es una redirección
  * y todo lo demás se descartaría sin dibujarse.
  *
- * Son tres y no dos porque las colecciones dependen del catálogo: qué tiras hay
- * sale de las ciudades, así que esa lectura no puede ir en paralelo con la que
- * la usa. Las otras dos tampoco: las portadas se piden por los ids que devuelve
- * la consulta anterior.
+ * Son tres tandas y no dos porque las colecciones dependen del catálogo: qué
+ * tiras hay sale de las ciudades, así que esa lectura no puede ir en paralelo
+ * con la que la usa. Las portadas tampoco: se piden por los ids que devuelve la
+ * consulta anterior.
  *
  * **Sin sesión y sin JavaScript de cliente.** Es el camino de lectura del D13:
  * un rastreador ve exactamente lo mismo que un visitante, y la tira se arrastra
@@ -111,8 +116,9 @@ export default async function InicioPage({ searchParams }: InicioProps) {
   // lugar se redirige y nadie ve esta página; con varios se dibujan los
   // enlaces más abajo. Ninguna de las dos ramas necesita JavaScript (F14).
   //
-  // Va ANTES del catálogo y de las tres consultas de las tiras: en el camino
-  // de redirección todo eso se descarta, y son cuatro viajes de red a Neon.
+  // Va ANTES del catálogo, del vocabulario acotado y de las dos consultas de
+  // las tiras: en el camino de redirección todo eso se descarta, y son cuatro
+  // viajes de red a Neon.
   const typed = (query[HOME_SEARCH_PARAM] ?? "").trim();
   let searched: SearchDestination | null = null;
   if (typed !== "") {
@@ -122,7 +128,21 @@ export default async function InicioPage({ searchParams }: InicioProps) {
     if (searched.kind === "route") redirect(searched.href);
   }
 
-  const cities = await new DrizzleCatalogue(db).listCities();
+  // **Las dos lecturas que no dependen una de otra, en la misma espera.** El
+  // catálogo decide qué tiras hay; las zonas con avisos son el vocabulario
+  // acotado de la pastilla (14.52). Ninguna necesita a la otra, y Neon es HTTP:
+  // con dos `await` seguidos el inicio pagaría un viaje entero de latencia de
+  // más sin que nada se ponga rojo.
+  //
+  // **Un puerto de lectura al lado del que ya existe** (AGENTS.md §3), y no un
+  // `HomeCollectionsPort` ensanchado: aquél contesta colecciones —cuatro tiras
+  // con su total— y esto es otra pregunta. Va sin ciudad a propósito: en `/` no
+  // hay ninguna elegida, y las dos del producto conviven en la misma lista con
+  // su ámbito puesto por el dominio.
+  const [cities, activeZones] = await Promise.all([
+    new DrizzleCatalogue(db).listCities(),
+    new DrizzleActiveZones(db).listActiveZones(),
+  ]);
 
   // Qué ciudad nombra `?ciudad=maracaibo` lo traduce el dominio, contra el
   // catálogo. `null` es "ninguna", nunca la primera: una desconocida deja el
@@ -184,6 +204,15 @@ export default async function InicioPage({ searchParams }: InicioProps) {
     placeholder: searchForm.label,
     submitLabel: searchForm.submitLabel,
     state: { kind: "empty" },
+    // **El vocabulario acotado, que es lo que la 14.51 no pudo traer a la
+    // portada** (14.52). Cuáles zonas entran y con qué campos viajan lo decide
+    // el dominio: acá no hay un `.filter()` ni un `Record` compuesto a mano, que
+    // es la regla permanente del fundador.
+    //
+    // El JavaScript ya está pago desde la 14.51 —el `Nav` importa la isla, +2,5
+    // KB gzip en ocho rutas—, así que lo único nuevo que `/` paga son estos
+    // datos en el marcado servido.
+    suggestions: boundedVocabularyOf(cities, activeZones),
   };
 
   return (
