@@ -30,7 +30,31 @@ describe("resolveNavAccount", () => {
       initials: "MF",
       imageUrl: null,
       canImportListings: false,
+      hasListings: false,
     });
+  });
+
+  /**
+   * tasks.md 14.56 — «Mis avisos» sólo se dice si de verdad hay avisos.
+   *
+   * **Falla cerrada** (AGENTS.md §7): una pantalla que no consultó la cartera
+   * no afirma nada, y lo que no se afirma no se promete. Prometerle «Mis
+   * avisos» a quien acaba de crear la cuenta lo manda a una página vacía.
+   */
+  it("sin banderas, no se afirma que haya avisos", () => {
+    const account = resolveNavAccount({ name: "Recién llegada", email: "r@x.com" });
+
+    expect(account.kind === "authenticated" && account.hasListings).toBe(false);
+  });
+
+  it("con la cartera consultada, `hasListings` viaja tal cual llegó", () => {
+    const session: NavSession = { name: "María", email: "m@x.com" };
+
+    const sin = resolveNavAccount(session, { hasListings: false });
+    const con = resolveNavAccount(session, { hasListings: true });
+
+    expect(sin.kind === "authenticated" && sin.hasListings).toBe(false);
+    expect(con.kind === "authenticated" && con.hasListings).toBe(true);
   });
 
   it("sin nombre (cuenta de enlace mágico), el nombre visible degrada al correo", () => {
@@ -93,6 +117,7 @@ describe("resolveNavPublish", () => {
       initials: "MA",
       imageUrl: null,
       canImportListings: false,
+      hasListings: false,
     });
 
     expect(publish.bar).toEqual({ label: "Publicar", emphasis: "outline" });
@@ -126,6 +151,7 @@ describe("resolveAccountMenuItems", () => {
       initials: "IC",
       imageUrl: null,
       canImportListings,
+      hasListings: true,
     };
   }
 

@@ -60,6 +60,16 @@ vi.mock("@/modules/identity/infrastructure/drizzle-verified-contact", () => ({
     findEvidence = findEvidence;
   },
 }));
+/**
+ * tasks.md 14.56 — la barra pregunta si esta cuenta publicó algo. Doblado acá
+ * porque esta prueba mide otra cosa; que la consulta sea correcta lo afirma
+ * `tests/integration/publisher-has-listings.test.ts` contra Postgres real.
+ */
+vi.mock("@/modules/listing-publication/infrastructure/drizzle-publisher-has-listings", () => ({
+  DrizzlePublisherHasListings: class {
+    hasAnyListing = async () => false;
+  },
+}));
 vi.mock("@/modules/listing-discovery/infrastructure/drizzle-listing-detail", () => ({
   DrizzleListingDetail: class {
     findForDetail = findForDetail;

@@ -8,6 +8,7 @@ const menuSource = readFileSync("components/organisms/AccountMenu.tsx", "utf-8")
 const BASE = {
   href: "/mis-avisos",
   triggerLabel: "Mis avisos",
+  triggerLabelVisible: true,
   initials: "MF",
   imageUrl: null,
   panelTitle: "María Fernández",
@@ -57,6 +58,32 @@ describe("AccountMenu — el piso, antes de cualquier mejora", () => {
 
     expect(html).toContain('src="https://lh3.googleusercontent.com/x"');
     expect(html).not.toContain(">MF<");
+  });
+
+  /**
+   * tasks.md 14.56 — «Mis avisos» sólo se dice si de verdad hay avisos.
+   *
+   * **La decisión llega tomada** (`resolveNavAccount` -> `hasListings`): acá
+   * no hay un `if` sobre datos, sólo una prop que dice si esas palabras se
+   * dibujan. **Y el nombre accesible no se pierde nunca**: sin palabras
+   * visibles sigue habiendo `aria-label`, así que el control se sigue
+   * anunciando «Mis avisos» a un lector de pantalla y sigue siendo el mismo
+   * enlace real a `/mis-avisos`.
+   */
+  it("sin palabras visibles, queda el círculo — y el nombre accesible sigue ahí", () => {
+    const html = renderToStaticMarkup(<AccountMenu {...BASE} triggerLabelVisible={false} />);
+
+    expect(html).not.toMatch(/>Mis avisos</);
+    expect(html).toContain('aria-label="Mis avisos"');
+    expect(html).toMatch(/<a[^>]*href="\/mis-avisos"/);
+    expect(html).toContain("MF");
+  });
+
+  it("con palabras visibles, el nombre accesible es el MISMO texto y no una segunda copia", () => {
+    const html = renderToStaticMarkup(<AccountMenu {...BASE} />);
+
+    expect(html).toMatch(/>Mis avisos</);
+    expect(html).toContain('aria-label="Mis avisos"');
   });
 
   it("es un componente de cliente — la mejora vive encima del enlace, nunca lo reemplaza", () => {

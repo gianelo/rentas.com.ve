@@ -159,9 +159,17 @@ export default async function EditarAvisoPage({
    */
   const fotosBaseUrl = readPhotoPublicBaseUrl();
 
+  // **Y acá tampoco se paga** (14.56): esta pantalla edita un aviso PROPIO y
+  // `loadListingForEdit` ya contestó `notFound()` para un id ajeno o
+  // inexistente, así que haber llegado hasta esta línea es la respuesta del
+  // `EXISTS` — con la fila delante. Preguntarlo de nuevo sería un viaje para
+  // confirmar lo que el `notFound()` de arriba ya garantizó.
   const account = resolveNavAccount(
     { name: session.name, email: session.email },
-    bulkImportAccount ? { bulkImportEnabled: bulkImportAccount.bulkImportEnabled } : undefined,
+    {
+      bulkImportEnabled: bulkImportAccount?.bulkImportEnabled ?? false,
+      hasListings: true,
+    },
   );
   const form = homeSearchForm();
   const pill: SearchPillProps = {

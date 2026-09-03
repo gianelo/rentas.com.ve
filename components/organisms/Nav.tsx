@@ -105,6 +105,12 @@ export function Nav({ account, publish, pill, signInHref }: NavProps) {
             <AccountMenu
               href="/mis-avisos"
               triggerLabel="Mis avisos"
+              // **Ya decidido** (`resolveNavAccount` -> `hasListings`, 14.56):
+              // acá no hay un `if` sobre datos, se pasa el estado tal cual.
+              // Prometerle «Mis avisos» a quien no publicó ninguno lo manda a
+              // una página vacía; el nombre accesible no se pierde, y el enlace
+              // a `/mis-avisos` tampoco.
+              triggerLabelVisible={account.hasListings}
               initials={account.initials}
               imageUrl={account.imageUrl}
               panelTitle={account.displayName}

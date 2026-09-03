@@ -705,7 +705,11 @@ Se rehace la capa de entrega, que es cerca de un tercio del código. Se conserva
 - [x] 14.1 `listing.property_type`, `NOT NULL` with **no default** — following `publisher_type`'s precedent in the schema, where the note records that a default is the silent failure mode. Taxonomy fixed by the founder (2026-08-21): `apartamento`, `casa`, `quinta`, `anexo`, `habitacion`. **`local comercial` was proposed and withdrawn**, and the withdrawal is load-bearing: it keeps the product residential, keeps `listing.rooms` `NOT NULL` without forcing a meaningless number onto a commercial unit, and keeps the detail page's four-cell stat strip (whose schema comment says it "draws four identical cells and has no empty state for one of them"). Do not re-add it without re-opening all three. **This is the THIRD instance of the same recurring gap** — `habitaciones`/`metros²`, then `baños`/`puesto` (3.15), now this — and the first one caught before building rather than after. **Hecho, migración `0008`.**
 - [x] 14.2 Migration for 14.1 in three steps, because live rows exist and "no podemos borrar data real" is a gate (`scripts/deploy-migrate.mjs`, 11b.6): add nullable → backfill → set `NOT NULL`. **Hecho.** Tres pasos: nullable → backfill → `NOT NULL`, escrito a mano porque la salida de drizzle-kit habría fallado
 - [x] 14.3 The six attributes of F6 — planta eléctrica, agua regular, amoblado, vigilancia 24 h, línea blanca (puesto de estacionamiento already ships as `parking_spots`). **As six boolean columns, not an attribute table**, and the reason is F6's own wording: attributes combine with AND ("piden todos, no cualquiera") and each must report how many of the current results have it. Six columns make that `COUNT(*) FILTER (WHERE amoblado)` — one pass, indexable. An attribute table makes it `GROUP BY … HAVING COUNT(*) = N` on every search: complexity paid on every query to save a migration done once a year. **Hecho.** Cinco columnas booleanas; `parking_spots` ya existía
-- [ ] 14.4 A `pending_moderation` listing status. F1 excludes it from every collection; the enum today is only `active | expired | hidden`
+- [x] 14.4 **DECIDIDA Y MOVIDA A LA FASE 25 el 2026-09-03: sale de la fase 14, que es la cuadrícula y el filtro, y no tenía nada que ver.** El texto original decía: *«A `pending_moderation` listing status. F1 excludes it from every collection; the enum today is only `active | expired | hidden`»* — y **ya estaba desactualizado**: el enum tiene CUATRO estados (`active | expired | hidden | draft`), no tres.
+
+  **La decisión del fundador, y es al revés de lo que la tarea suponía.** La tarea daba a entender moderación previa para todos. **No**: los avisos se publican **en automático**. `pending_moderation` sólo alcanza a los avisos de un publicador **ya marcado**, y lo que marca a un publicador es que **le hayan ocultado un aviso por el umbral de tres reportantes distintos** (`AUTO_HIDE_REPORT_THRESHOLD`), no un reporte suelto.
+
+  **Por qué tres y no uno, que fue la corrección del día.** El fundador lo planteó como «si un aviso es reportado». Con un solo reporte, **cualquiera hunde a un competidor con un clic**: `listing_report` garantiza un reporte por persona por aviso, así que nadie reporta dos veces — pero una cuenta nueva es gratis, y una inmobiliaria podía dejar a la de al lado con todas sus publicaciones futuras en una cola. Con el umbral de tres, la señal es «a esta persona le tumbaron un aviso», que es la misma que el sistema ya considera suficiente para ocultar, y no le regala a nadie un botón para hundir al vecino.
 - [x] 14.5 **Cover photo in search results.** Today the search query never touches `listing_photo` and `ResultRow` renders a CSS placeholder — there is not a single real photograph anywhere in the results. F9 also requires that a listing with no photo never reaches the grid; the publish form already refuses one, but the broker bulk import (Phase 9) does not. **Hecho, PR #77/#83.** `coversFor` (plural, sin singular al lado) + `buildListingGrid`, en la zona, la ciudad y el inicio
 
 ### 14b. The search engine
@@ -1130,7 +1134,17 @@ Del proyecto de diseño `Rentas - Lista y Filtros - Desktop/Mobile.dc.html`, cru
   **`design/reference/sistema/tokens.css` NO se tocó, y es a propósito.** Ese archivo es el prototipo de 9 paletas × 4 estructuras, y no lleva ni `--viewer-scrim` ni llevaba `--door-veil`: meter un velo ahí obliga a inventarle un valor a siete paletas que nadie dibujó. Se registra donde el conjunto registra este tipo de extensión, que es `SISTEMA.md` — el mismo lugar y el mismo criterio que usó la 15.8.
 
   **Destapado de paso y NO corregido acá: `.sheet` lee mal la lámina.** `max-inline-size: 800px` cita *«el panel entero entra en 800 px» (lámina 7b)*, pero el 800 de la lámina es el **pliegue**: es un `<div class="fold">` con `top:800px`, la misma línea horizontal que la nota de la 7c llama «sobre el pliegue» al contar 8 avisos. El panel de la lámina mide **1100 de ancho**, que es el contenedor. O sea la hoja está midiendo un alto como si fuera un ancho. No se cambia acá porque mover el ancho del panel mueve las tres columnas de la 14.32 y sus mediciones, y eso es otra tarea
-- [ ] 14.47 **«Recientes ▾», el orden de la lista.** La lámina 7c lo dibuja al lado del conteo —«9 avisos en Chacao y Altamira · Recientes ▾»— y **ninguna tarea lo nombraba**; se destapó leyendo la lámina para la 14.33. Hoy el orden lo fija `DrizzleListingSearch` y no se puede cambiar desde la pantalla. Qué opciones hay es una decisión de producto (¿precio? ¿superficie?), y cuál es la de por defecto también — con la salvedad de que el orden es parte de la dirección o no se puede compartir, y si es parte de la dirección entra en `FILTER_KEYS`, porque la misma lista en otro orden es la misma página
+- [ ] 14.47 **DECIDIDA POR EL FUNDADOR EL 2026-09-03, falta construirla. «Recientes ▾», el orden de la lista.** La lámina 7c lo dibuja al lado del conteo —«9 avisos en Chacao y Altamira · Recientes ▾»— y **ninguna tarea lo nombraba**; se destapó leyendo la lámina para la 14.33. Hoy el orden lo fija `DrizzleListingSearch` y no se puede cambiar desde la pantalla. Qué opciones hay es una decisión de producto (¿precio? ¿superficie?), y cuál es la de por defecto también — con la salvedad de que el orden es parte de la dirección o no se puede compartir, y si es parte de la dirección entra en `FILTER_KEYS`, porque la misma lista en otro orden es la misma página
+
+  **LA DECISIÓN, 2026-09-03.** Tres opciones y ni una más: **Recientes** (la de por defecto), **Precio: menor a mayor** y **Precio: mayor a menor**.
+
+  **Por qué «Recientes» sigue de por defecto, dicho como decisión y no como inercia.** Hoy `DrizzleListingSearch` ordena `ORDER BY published_at DESC, id ASC` y no es una elección: es lo que quedó. Ahora sí lo es, y la razón es del catálogo — un aviso viejo en un mercado de alquileres suele estar tomado, así que el más nuevo arriba es el que tiene más chance de existir todavía.
+
+  **Por qué NO se ofrece orden por superficie, que era la otra candidata obvia.** `area_m2` no tiene control ni conteo en el filtro (ésa es la 14.45) y **una parte de los avisos puede no declararla**. Ordenar por un campo que falta ordena mal y **en silencio**: los avisos sin metros se van todos juntos a una punta de la lista sin que nadie pueda ver por qué. Un orden que miente es peor que un orden que no existe. Si la 14.45 se construye y el dato pasa a ser obligatorio, esta decisión se puede reabrir con el número de avisos sin metros a la vista.
+
+  **El segundo criterio de desempate no se toca.** `asc(listings.id)` está ahí por una razón escrita arriba —sin un orden total, dos páginas de la misma búsqueda repiten un aviso y se saltan otro porque `OFFSET` corta sobre el orden que Postgres haya elegido esta vez—, así que los dos órdenes de precio lo conservan: `ORDER BY price_usd ASC|DESC, id ASC`.
+
+  **Lo que queda para quien la construya, y es sólo técnico:** (a) el orden va en la dirección o no se puede compartir un enlace; (b) yendo en la dirección entra en `FILTER_KEYS` (`src/modules/listing-search/domain/search-query.ts`), y ahí está la trampa — **la misma lista en otro orden es la MISMA página para Google**, así que `?orden=…` no puede indexarse aparte o se publica el catálogo entero tres veces como contenido duplicado; (c) la lámina lo dibuja **sólo en escritorio**, y qué pasa en móvil es una pregunta que el tablero no contesta.
 
   **No se tomó el 2026-09-02, y la razón no es el techo de líneas.** El enunciado mismo dice que **qué opciones hay y cuál es la de por defecto son decisiones de producto**, y no hay lámina que las fije: la 7c dibuja la etiqueta «Recientes ▾» y nada más — ni el desplegable abierto, ni las otras opciones. Construirlo obliga a inventar el vocabulario, que es exactamente lo que la 14.32 se negó a hacer con baños. Tres cosas más, medidas mientras se descartaba, para que quien la tome no las vuelva a derivar:
 
@@ -1295,7 +1309,7 @@ O sea: **la ruta de zona rechaza el parámetro `zona`, y la de ciudad es la úni
 
   **Si alguna vez se reabre**, lo que hay que resolver primero es de dónde sale el camino a `/` en la ficha en móvil, y no cuántos píxeles gana la pastilla.
 
-- [ ] 14.56 **«Mis avisos» sólo se dice si de verdad hay avisos; si no, sólo el ícono del perfil.** (nueva — regla del fundador el 2026-09-03, con la salida 1 elegida por él después de ver el costo.) Prometerle «Mis avisos» a quien acaba de crear la cuenta lo manda a una página vacía, y ésa es la casilla que miente de §5.
+- [x] 14.56 **«Mis avisos» sólo se dice si de verdad hay avisos; si no, sólo el ícono del perfil.** (nueva — regla del fundador el 2026-09-03, con la salida 1 elegida por él después de ver el costo.) Prometerle «Mis avisos» a quien acaba de crear la cuenta lo manda a una página vacía, y ésa es la casilla que miente de §5.
 
   **Va al dominio y no al componente**, con la forma que `canImportListings` ya dejó: `NavAccountAuthenticated` gana `hasListings: boolean`, resuelto afuera y sólo leído por la barra. Un `if` sobre datos en el componente sería una regla de negocio en el frente, que es la regla permanente del fundador.
 
@@ -1308,6 +1322,38 @@ O sea: **la ruta de zona rechaza el parámetro `zona`, y la de ciudad es la úni
   **El fundador eligió la 1 el 2026-09-03**, con la razón dicha: el viaje extra lo paga sólo quien tiene sesión, y en la ficha y en `/` ésa es la minoría porque el inquilino navega anónimo; la 2 cambia una mentira chica por una intermitente, que es peor de depurar. **Queda pedido explícitamente dejar el número medido**, antes y después, y no declararlo.
 
   **Es `EXISTS` y no `COUNT`**: la pregunta es si hay al menos uno, y contar todos para comparar contra cero paga filas que nadie mira. El puerto va **al lado** del que ya existe (`PublisherListingsPort` en `listing-publication` lista, no cuenta) y no se ensancha, que es AGENTS.md §3.
+
+  **Hecho 2026-09-03, con el número medido y no declarado.**
+
+  **En el dominio, con la forma que `canImportListings` dejó.** `src/modules/identity/domain/nav-account.ts`: `NavAccountFlags` gana `hasListings`, `NavAccountAuthenticated` lo expone y `resolveNavAccount` lo copia con `?? false`. Dos casos nuevos en `nav-account.test.ts` — «sin banderas, no se afirma que haya avisos» y «con la cartera consultada, `hasListings` viaja tal cual llegó».
+
+  **Las dos banderas quedaron OPCIONALES, y es una corrección con razón** (AGENTS.md §5). El texto de la tarea sólo pedía sumar un campo; `bulkImportEnabled` pasó de requerido a opcional porque **ninguna pantalla paga las dos consultas**: `/` y la ficha ahora consultan la cartera y NO la columna del importador, y obligarlas a escribir `bulkImportEnabled: false` sería hacerles afirmar algo que no consultaron. Ausente se resuelve a `false`, o sea al estado que no promete nada (AGENTS.md §7).
+
+  **El puerto nuevo, al lado y no adentro.** `PublisherHasListingsPort.hasAnyListing(publisherId)` (`listing-publication/application/ports/publisher-has-listings.port.ts`) con `DrizzlePublisherHasListings` y cinco casos de integración contra Postgres real (`tests/integration/publisher-has-listings.test.ts`), incluido «un borrador sin fotos cuenta igual que un aviso activo» — la cartera importada nace en `draft` (9.15) y es la cuenta que MÁS necesita el enlace.
+
+  **Desvío anotado: se emite `select 1 … limit 1`, no `select exists (…)`.** Es el plan al que Postgres compila `EXISTS` —un `Limit`, sin nodo `Aggregate`— y evita `db.execute`, cuyo envoltorio difiere entre el driver de Neon (producción) y `pg` (la prueba), que es justo la diferencia que la prueba no podría atrapar. Lo afirma «le pide a Postgres UNA fila como mucho, nunca un conteo», midiendo el SQL que el adaptador MANDA por el registro de Drizzle y no una sentencia reescrita a mano.
+
+  **La barra lo lee, no lo decide.** `AccountMenu` gana `triggerLabelVisible` y un `aria-label={triggerLabel}` que **siempre** viaja: sin palabras visibles el control se sigue anunciando «Mis avisos» y sigue siendo el mismo `<a href="/mis-avisos">`. `Nav.tsx` pasa `account.hasListings` tal cual — no hay un `if` sobre datos en el componente.
+
+  **DISCREPANCIA ENCONTRADA MIDIENDO, no supuesta.** La tarea decía «sólo tiene efecto en escritorio, porque en móvil la lámina ya es sólo el círculo». **La lámina sí; el código no**: `.triggerLabel` no tiene ningún `@media` en `AccountMenu.module.css`, así que hoy las palabras se dibujan también a 360. O sea que este cambio tiene efecto en los dos anchos. **No se resolvió acá** —esconderlas en móvil es geometría y merece su propia casilla— y queda anotado en vez de cerrarse en silencio.
+
+  **Los viajes, medidos con el arnés de la 11.22 —cada `POST /sql` es un viaje— contra la aplicación compilada y la semilla de e2e:**
+
+  | Pantalla | Antes | Después |
+  |---|---|---|
+  | `/` sin sesión | **4** | **4** |
+  | `/` con sesión | **5** | **6** |
+  | ficha sin sesión | **2** | **2** |
+  | ficha con sesión | **4** | **5** |
+  | `/alquiler/[ciudad]` sin sesión | **5** | **5** |
+  | `/alquiler/[ciudad]` con sesión | **6** | **7** |
+  | `/mis-avisos` | **4** | **4** |
+  | `/mis-avisos/[id]/editar` | **9** | **9** |
+  | `/importar` | **2** | **3** |
+
+  Es exactamente lo que el fundador aceptó: **+1 sólo con sesión, 0 sin ella**, y el visitante anónimo —casi todo el tráfico de `/`, resultados y ficha— no paga nada. **Y las dos pantallas que ya consultaban no pagan nada tampoco**, aunque no por donde la tarea suponía: en `/mis-avisos` la respuesta ya está en memoria (`board.total > 0`, y ese total cuenta el tablero entero, nunca lo filtrado), y en `/editar` haber pasado el `notFound()` de `loadListingForEdit` **es** la respuesta del `EXISTS` — con la fila delante. En ninguna de las dos hizo falta plegar nada dentro de `findAccount`, que habría sido ensanchar un puerto de otro módulo para que leyera `listing`.
+
+  **Mutaciones: 8, cada una dos veces.** Con las pruebas nuevas en el árbol las 8 ponen roja la prueba que les corresponde; con esas pruebas aparcadas fuera, **7 de 8 pasan en verde** — o sea que lo que protege esta conducta son las pruebas nuevas y nada más. La excepción es M1 (`hasListings: true` siempre), que también rompe la aserción de forma que ya existía en `nav-account.test.ts`.
 
 ## Phase 15: Entrar — the two doors, and the magic link (founder, 2026-08-21)
 
@@ -2038,3 +2084,25 @@ El fundador trajo hoy una lámina que nunca había estado en el repositorio: `de
 **Decisiones del fundador que faltan antes de escribir una línea**: con qué frecuencia corre (¿diario? ¿al instante?), cuántas búsquedas puede guardar una persona, qué pasa con una búsqueda cuyo catálogo quedó vacío tres meses, y si esto es del MVP o de después. **Ninguna es técnica.**
 
 - [ ] 24.1 **La decisión de si esto entra al MVP.** Es la primera y bloquea las otras cuatro. Si la respuesta es que no, la fase queda escrita y no se toca — que ya es más de lo que la 14.16 daba.
+
+## Fase 25 — El administrador, que hoy es un `curl` (2026-09-03)
+
+**Por qué existe.** El fundador la pidió por nombre —*«hay que agregar esto a la fase del admin que tenemos que crear sí o sí»*— al decidir la 14.4. No existía ninguna fase de administración y **el trabajo de operador ya está repartido en el proyecto sin dueño**: la fase 8 lo llama «operator restore», la 9 «operator-gated CSV import», y la 14.4 le acaba de agregar una cola de aprobación.
+
+**Lo que HAY hoy, verificado.** Una sola ruta: `app/api/operator/restore-listing/route.ts`, autorizada con un secreto compartido en la cabecera `Authorization` (`isAuthorizedOperatorRequest` + `readOperatorSecret`, responde 401 sin él — **no está abierta**). `listing_report(listing_id, reporter_id, reported_at)` con unicidad por par, y `moderation_action(listing_id, action, created_at)` donde `action` **sólo conoce el valor `"restore"`**.
+
+**Lo que NO hay.** Una pantalla. `app/` tiene ficha, publicar, mis avisos, importar y renovar, y nada más. Administrar hoy es armar un `curl` a mano con el secreto en la cabecera — sirve para una emergencia y no para un trabajo diario.
+
+**La tensión que esta fase tiene que resolver antes de escribir código**: un secreto compartido en una cabecera es la autorización correcta para una ruta que se llama desde una terminal, y es la incorrecta para una pantalla con sesión. `bulkImportEnabled` (columna por usuario, `src/shared/db/schema.ts:82`) ya es el molde de un permiso por cuenta. **Que convivan dos formas de decir «sos operador» es la clase de duplicación que este proyecto viene cazando**, así que la fase empieza eligiendo una.
+
+- [ ] 25.1 **Quién es operador, y en una sola forma.** Hoy son dos caminos posibles y hay que quedarse con uno: el secreto de cabecera (que ya existe y sirve para `curl`) o un permiso por cuenta con el molde de `bulkImportEnabled` (que es lo que una pantalla con sesión necesita). Si sobreviven los dos, decir por escrito cuál gobierna qué y por qué — un `curl` de emergencia que siga funcionando cuando la pantalla esté rota es un argumento válido, pero tiene que ser un argumento y no un accidente. **Bloquea a las otras cinco.**
+
+- [ ] 25.2 **`pending_moderation` como quinto estado, y su exclusión de TODAS las colecciones.** No basta agregarlo al enum: hay que probar que no aparece en la búsqueda, ni en las facetas, ni en el sitemap, ni en las tiras del inicio, ni en el revelado de contacto. La fase 21 ya dejó el molde exacto para esto — una prueba que recorre `src/` y declara quiénes filtran, y se pone roja cuando aparece un lector nuevo.
+
+- [ ] 25.3 **El publicador marcado, con el umbral de tres.** Un aviso entra a `pending_moderation` al publicarse **sólo si su publicador tiene al menos un aviso ocultado por reportes**. El dato existe (`listing_report` → `listing` → `publisher_id`); la regla es de dominio y va al lado de `report-threshold.ts`, que ya es donde vive el umbral.
+
+- [ ] 25.4 **La SALIDA, que sin ella la regla es una condena.** Decisión del fundador pendiente: si se restaura un aviso porque el reporte era falso, ¿el publicador queda limpio, o sigue en revisión? ¿Para siempre, o vence? Hoy `moderation_action` sólo sabe `"restore"`, así que cualquiera que sea la respuesta agrega al menos un valor a esa columna — y ahí conviene decidir de una si `action` pasa a ser un enum con su migración.
+
+- [ ] 25.5 **La cola y su pantalla.** Qué se ve de un aviso en espera, en qué orden salen, y qué se puede hacer con cada uno. Es la primera pantalla del producto que **no** es para un inquilino ni para un publicador, así que ninguna lámina la dibuja: es diseño nuevo, no lectura de tablero.
+
+- [ ] 25.6 **Quién aprobó qué.** `moderation_action` no guarda actor: tiene `listing_id`, `action` y `created_at`. Con una sola persona operando da igual; con dos, la primera pregunta después de un error es quién lo hizo. Decidir si se agrega ahora o se anota la deuda con su razón.

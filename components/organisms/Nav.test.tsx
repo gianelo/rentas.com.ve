@@ -115,11 +115,51 @@ describe("Nav — con sesión", () => {
     initials: "MF",
     imageUrl: null,
     canImportListings: false,
+    hasListings: true,
   };
   const publish = {
     bar: { label: "Publicar", emphasis: "outline" as const },
     menu: { label: "Publicar una propiedad", emphasis: "accent" as const },
   };
+
+  /**
+   * tasks.md 14.56 — **la barra no decide esto, lo lee.** `hasListings` lo
+   * resuelve `resolveNavAccount` con lo que el `EXISTS` del puerto contestó;
+   * acá sólo se comprueba que el estado llega hasta el marcado sin que este
+   * componente escriba un `if` sobre datos (AGENTS.md §1).
+   *
+   * **Y sigue habiendo por dónde entrar**: el enlace real a `/mis-avisos` no
+   * se toca —quien no publicó igual puede llegar y ver la pantalla vacía si
+   * quiere—, lo que se va es la PROMESA escrita en la barra.
+   */
+  it("sin avisos, el disparador se queda sin palabras y conserva su nombre accesible", () => {
+    const sinAvisos = { ...account, hasListings: false };
+
+    const html = renderToStaticMarkup(
+      <Nav account={sinAvisos} publish={publish} pill={PILL} signInHref="/signin" />,
+    );
+
+    expect(html).not.toMatch(/>Mis avisos</);
+    expect(html).toContain('aria-label="Mis avisos"');
+    expect(html).toMatch(/<a[^>]*href="\/mis-avisos"/);
+  });
+
+  it("con avisos, las palabras vuelven — y es el ÚNICO cambio entre los dos estados", () => {
+    const conAvisos = renderToStaticMarkup(
+      <Nav account={account} publish={publish} pill={PILL} signInHref="/signin" />,
+    );
+    const sinAvisos = renderToStaticMarkup(
+      <Nav
+        account={{ ...account, hasListings: false }}
+        publish={publish}
+        pill={PILL}
+        signInHref="/signin"
+      />,
+    );
+
+    expect(conAvisos).toMatch(/>Mis avisos</);
+    expect(conAvisos).not.toBe(sinAvisos);
+  });
 
   it("Publicar queda neutro (contorno) y el control de cuenta lleva a /mis-avisos", () => {
     const html = renderToStaticMarkup(
