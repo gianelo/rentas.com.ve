@@ -116,6 +116,17 @@ export const FILTER_KEYS = [
   // dos direcciones para una página es contenido duplicado.
   "filtros",
   "busca",
+  // **Y el orden de la lista** (14.47), por exactamente la misma razón dicha
+  // una línea más arriba y llevada un paso más lejos: `?orden=` devuelve los
+  // MISMOS avisos, sólo que en otra fila. Indexar los tres órdenes publicaría
+  // el catálogo entero tres veces como contenido duplicado.
+  //
+  // La otra mitad de la regla no está acá sino en `SEARCH_ORDER_TOKENS`: el
+  // orden por defecto viaja como **ausencia** del parámetro, así que la
+  // dirección canónica de la zona —la que la pantalla enlaza y la que Google
+  // ya tiene— se sigue indexando. Con un `?orden=recientes` explícito esta
+  // línea habría sacado del índice la página en el orden por defecto.
+  "orden",
 ] as const;
 
 /**

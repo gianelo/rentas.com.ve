@@ -244,4 +244,56 @@ test.describe("el camino de lectura con el script apagado (11.16)", () => {
     await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === busqueda);
     await expect(page.getByTestId("result-count")).toHaveText("2 propiedades activas");
   });
+
+  /**
+   * **El orden de la lista, en los DOS proyectos** (14.47).
+   *
+   * Lo que ninguna prueba determinista alcanza es que las tres opciones
+   * **naveguen**: un `<select onchange>` se dibuja igual, pasa cualquier prueba
+   * de marcado y no hace nada con el script apagado — y ahí es donde vive el
+   * navegador dentro de WhatsApp, por donde circulan los avisos.
+   *
+   * **Corre en `chromium` además de en `crawlability`, y no acotarla fue lo
+   * correcto: ahí apareció un defecto que la otra mitad no podía ver.** `open`
+   * es estado del DOM y no de React; sin script cada elección recarga el
+   * documento y el desplegable vuelve cerrado solo, así que `crawlability`
+   * pasaba en verde mientras con JavaScript el menú quedaba abierto sobre la
+   * lista después de elegir. Es el reparto que este archivo entero ya usa —
+   * `crawlability` prueba que el piso existe, `chromium` que la mejora no lo
+   * rompe (D13)— y por eso las dos afirmaciones de abajo valen en los dos.
+   */
+  test("cambiar el orden de la lista es un enlace, y el menú se cierra al elegir", async ({
+    page,
+  }) => {
+    await page.goto(CIUDAD_MARACAIBO);
+
+    const menu = page.getByTestId("order-menu");
+    const primera = page.getByTestId("listing-card").first();
+    // Cerrado, la etiqueta es el orden puesto: el de por defecto.
+    await expect(menu).toContainText("Recientes");
+
+    /** Abrir es del navegador: `<details>` no necesita un script para desplegarse. */
+    const elegir = async (etiqueta: string) => {
+      await menu.locator("summary").click();
+      await page.getByRole("link", { name: etiqueta, exact: true }).click();
+    };
+
+    await elegir("Precio: mayor a menor");
+    // 900, 480 y 250 son los tres activos de Maracaibo que siembra el arnés.
+    await expect(primera).toContainText(tituloDe(ID.mcboTierraNegra2));
+    await expect(page).toHaveURL((url) => url.search === "?orden=precio-desc");
+    // **Y el menú vuelve cerrado**, que es la mitad que sólo `chromium` mide:
+    // elegir es lo último que se hace, y un panel colgado sobre la lista tapa
+    // justo los avisos que la persona acaba de pedir.
+    await expect(menu.locator("ul")).toBeHidden();
+
+    await elegir("Precio: menor a mayor");
+    await expect(primera).toContainText(tituloDe(ID.mcboBellaVista));
+
+    // **Y la vuelta deja la dirección canónica, sin `?orden=`.** Es la mitad
+    // que decide lo de Google: si «Recientes» escribiera su token, la única
+    // página indexable de la ciudad sería la que nadie enlaza.
+    await elegir("Recientes");
+    await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === CIUDAD_MARACAIBO);
+  });
 });

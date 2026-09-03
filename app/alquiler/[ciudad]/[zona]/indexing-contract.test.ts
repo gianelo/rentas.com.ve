@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { FILTER_KEYS } from "@/modules/listing-discovery/domain/zone-route";
+import { FILTER_KEYS, isFilteredZoneRoute } from "@/modules/listing-discovery/domain/zone-route";
+import { SEARCH_ORDER_TOKENS } from "@/modules/listing-search/domain/search-order";
 import { SEARCH_QUERY_NAMES } from "@/modules/listing-search/domain/search-query";
 
 /**
@@ -50,6 +51,19 @@ describe("el contrato de indexación de la ruta de zona", () => {
   it("el estado del acordeón también, aunque no filtre ningún aviso", () => {
     expect(FILTER_KEYS as readonly string[]).toContain(SEARCH_QUERY_NAMES.step);
     expect(FILTER_KEYS as readonly string[]).toContain(SEARCH_QUERY_NAMES.zoneSearch);
+  });
+
+  it("el orden de la lista también, y ésa es la trampa de la 14.47", () => {
+    // **La misma lista en otro orden es la MISMA página.** Publicar las tres
+    // sería el catálogo entero tres veces como contenido duplicado, así que
+    // `?orden=` sale del índice — el mismo trato que `filtros` y `busca`.
+    expect(FILTER_KEYS as readonly string[]).toContain(SEARCH_QUERY_NAMES.order);
+    // Y la otra mitad, que es la que se podía equivocar en silencio: el orden
+    // por defecto **no escribe el parámetro**, así que la dirección canónica de
+    // la zona sigue siendo indexable y sigue siendo la que la pantalla enlaza.
+    expect(SEARCH_ORDER_TOKENS.recent).toBeNull();
+    expect(isFilteredZoneRoute({})).toBe(false);
+    expect(isFilteredZoneRoute({ orden: "precio-asc" })).toBe(true);
   });
 
   it("la ciudad NO está en la tabla: es el contexto, y la afirma la ruta", () => {

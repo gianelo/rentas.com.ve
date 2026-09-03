@@ -36,7 +36,8 @@ export type SearchQueryField =
   | ListingAttribute
   | "page"
   | "step"
-  | "zoneSearch";
+  | "zoneSearch"
+  | "order";
 
 /**
  * Los nombres cortos del fundador (F12), en un solo lugar.
@@ -69,6 +70,10 @@ export const SEARCH_QUERY_NAMES: Readonly<Record<SearchQueryField, string>> = {
   page: "pag",
   step: "filtros",
   zoneSearch: "busca",
+  // **El orden de la lista** (14.47). Va último a propósito: los campos se
+  // agregan a la dirección en el orden de esta tabla, y el orden es lo que
+  // menos define una búsqueda — la cola es su sitio.
+  order: "orden",
 };
 
 /** La query tal como la entrega el marco: nombres cortos y texto crudo. */
@@ -78,9 +83,15 @@ export type SearchQuery = Readonly<Record<string, string | undefined>>;
 export type SearchQueryChanges = Readonly<Partial<Record<SearchQueryField, string | null>>>;
 
 /**
- * Los tres campos que NO son filtros, y por lo tanto no reinician la
+ * Los cuatro campos que NO son filtros, y por lo tanto no reinician la
  * paginación ni los borra «Limpiar todo». Todo lo demás sí — ver
  * `buildSearchHref` y `clearAllHref`.
+ *
+ * `orden` es el que llegó con la 14.47, y no filtra por definición: **no saca
+ * ni agrega un solo aviso**, sólo cambia en qué fila sale cada uno. Por eso
+ * «Limpiar todo» no lo toca —limpiar filtros no es volver al orden por
+ * defecto, igual que no es cerrar el panel— y por eso el reinicio de página lo
+ * pide `buildOrderMenu` explícito en vez de salir de acá.
  *
  * `busca` es el texto del buscador de zonas del paso 2. **No filtra
  * resultados**: achica la lista de zonas que se ofrece, y las zonas que
@@ -88,7 +99,7 @@ export type SearchQueryChanges = Readonly<Partial<Record<SearchQueryField, strin
  * página 1 por escribir una letra, y lo borraría «Limpiar todo» dejando el
  * campo vacío sin que nadie lo pidiera.
  */
-const NON_FILTER_FIELDS: readonly SearchQueryField[] = ["page", "step", "zoneSearch"];
+const NON_FILTER_FIELDS: readonly SearchQueryField[] = ["page", "step", "zoneSearch", "order"];
 
 const FIELD_ORDER = Object.keys(SEARCH_QUERY_NAMES) as readonly SearchQueryField[];
 

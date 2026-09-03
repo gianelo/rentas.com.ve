@@ -66,6 +66,17 @@
 
 /* El gris es --soft y nunca `opacity`: atenuar con opacidad se lleva puesto
    también el fondo y deja el contraste fuera de control. */
+/* El conteo y el orden en la misma fila (14.47, lámina 7c). `flex-wrap` y no
+   un ancho fijo: «Precio: mayor a menor» es la etiqueta más larga y a 360 px
+   baja de línea en vez de empujar el conteo fuera de la pantalla. */
+.countRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
 .count {
   margin: 6px 0 14px;
   font-family: var(--sans);

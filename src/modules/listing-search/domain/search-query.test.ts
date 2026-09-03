@@ -33,11 +33,11 @@ describe("los nombres de la dirección", () => {
    * **La afirmación es sobre el conjunto entero, no sobre la referencia.** Una
    * prueba que dijera «`SEARCH_QUERY_NAMES` no tiene `reference`» sólo cazaría
    * a quien eligiera ESE nombre; ésta cae con cualquier parámetro nuevo,
-   * incluido uno llamado `cerca`. Y los catorce nombres van escritos por valor
+   * incluido uno llamado `cerca`. Y los quince nombres van escritos por valor
    * en vez de derivados de la constante: derivarlos afirmaría que la constante
    * es igual a sí misma.
    */
-  it("son catorce y ninguno más: un filtro nuevo tiene que pasar por acá", () => {
+  it("son quince y ninguno más: un filtro nuevo tiene que pasar por acá", () => {
     expect(Object.values(SEARCH_QUERY_NAMES).sort()).toEqual(
       [
         "zona",
@@ -54,6 +54,8 @@ describe("los nombres de la dirección", () => {
         "pag",
         "filtros",
         "busca",
+        // El orden de la lista (14.47).
+        "orden",
       ].sort(),
     );
   });

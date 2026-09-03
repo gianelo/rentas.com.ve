@@ -1,4 +1,5 @@
 import { readPage } from "./pagination";
+import { readSearchOrder, type SearchOrder } from "./search-order";
 import { zoneMatchesToken } from "./zone-catalogue";
 
 /**
@@ -78,6 +79,8 @@ export interface RawSearchParams {
   readonly hasSecurity?: string | null;
   readonly hasAppliances?: string | null;
   readonly page?: string | null;
+  /** El token de `?orden=` — ver `search-order.ts` (14.47). */
+  readonly order?: string | null;
 }
 
 /**
@@ -119,6 +122,15 @@ export interface SearchCriteria {
    * que es donde vive el tamaño de página y la aritmética entera.
    */
   readonly page?: number;
+  /**
+   * **En qué orden sale la lista** (14.47). Ausente es «Recientes», igual que
+   * `page` ausente es la primera: el orden por defecto no se representa, así
+   * que no hay dos formas de pedirlo ni una búsqueda vieja que cambie de forma.
+   *
+   * El orden NO filtra —no saca ni agrega un aviso— y por eso no participa de
+   * ningún conteo: las facetas devuelven lo mismo con cualquiera de los tres.
+   */
+  readonly order?: SearchOrder;
 }
 
 /**
@@ -285,6 +297,7 @@ export function buildSearchCriteria(
     ...maybe("publisherType", readChoice(raw.publisherType, PUBLISHER_TYPES)),
     ...maybe("attributes", readAttributes(raw)),
     ...maybe("page", readPage(raw.page)),
+    ...maybe("order", omitDefaultOrder(readSearchOrder(raw.order))),
   };
 }
 
@@ -310,6 +323,15 @@ function orderPrices(
   // eso es un precio exacto, no un error.
   if (min === undefined || max === undefined || min <= max) return [min, max];
   return [max, min];
+}
+
+/**
+ * «Recientes» se representa como ausencia, tanto acá como en la dirección
+ * (`SEARCH_ORDER_TOKENS`). Las dos ausencias son la misma decisión mirada de
+ * los dos lados: una sola forma de decir el orden por defecto.
+ */
+function omitDefaultOrder(order: SearchOrder): SearchOrder | undefined {
+  return order === "recent" ? undefined : order;
 }
 
 /** Keeps absent filters absent instead of present-and-undefined. */

@@ -1,0 +1,72 @@
+/* «Recientes ▾» (14.47, lámina 7c). El desplegable es un `<details>` nativo:
+   acá sólo se le saca el triángulo del navegador, porque el sistema ya tiene su
+   propio glifo «▾» y dos flechas serían dos. */
+.menu {
+  position: relative;
+}
+
+.current {
+  display: inline-flex;
+  align-items: center;
+  /* El alto de toque del sistema. La lámina dibuja 40 px, pero la dibuja sólo
+     en escritorio y acá el control existe también en el teléfono: por debajo
+     de `--target-min` sería un blanco que el sistema declara insuficiente, y
+     extender el conjunto por 4 px no es una decisión de esta pantalla. */
+  min-height: var(--target-min);
+  font-family: var(--meta);
+  /* La lámina dice 11,5 px y el sistema no lo declara: el tamaño chico de meta
+     es `--meta-fs-sm` (11), y el único 11,5 que existe es
+     `--nav-avatar-fs-desktop`, cuyo significado son las iniciales del avatar.
+     Inventar un token para medio píxel es un cambio al conjunto, y lo decide el
+     fundador (SISTEMA.md). */
+  font-size: var(--meta-fs-sm);
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  list-style: none;
+}
+
+.current::-webkit-details-marker {
+  display: none;
+}
+
+/* Abierto, las tres opciones flotan sobre la lista. `position: absolute` y no
+   un desplazamiento en el flujo: abrirlo no puede empujar la cuadrícula hacia
+   abajo mientras se elige. */
+.options {
+  position: absolute;
+  right: 0;
+  z-index: 2;
+  margin: 4px 0 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-raised);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  min-height: var(--target-min);
+  padding: 0 12px;
+  white-space: nowrap;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  color: var(--ink);
+  text-decoration: none;
+  border-radius: var(--r);
+}
+
+/* El puesto se marca con el atributo que ya lo anuncia, no con una clase: la
+   hoja y el lector de pantalla leen el mismo dato o se separan. */
+.option[aria-current="true"] {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.option:hover,
+.option:focus-visible {
+  background: var(--bg);
+}
