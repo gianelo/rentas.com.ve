@@ -140,6 +140,58 @@ describe("el inicio y el dominio que lo decide", () => {
     expect(PAGE).not.toContain("bulk-import");
   });
 
+  /**
+   * **El vocabulario acotado del inicio** (14.52).
+   *
+   * `/` no tiene ciudad elegida ni facetas, así que sus zonas con avisos y sus
+   * conteos vienen de `ActiveZonesPort` — un puerto de lectura al lado del que
+   * ya existe (AGENTS.md §3), nunca un `HomeCollectionsPort` ensanchado. Sin
+   * esta línea la portada dibuja la isla de sugerencias sin un solo dato: el
+   * `Nav` ya la importa desde la 14.51 y **el bundle ya está pago**, así que la
+   * regresión sería invisible — mismo peso, misma pastilla, cero sugerencias.
+   */
+  it("le pide al puerto de lectura las zonas con avisos de las dos ciudades", () => {
+    expect(PAGE).toContain("new DrizzleActiveZones(db).listActiveZones()");
+    // Sin ciudad: en `/` no hay ninguna elegida, y pasarle una acá sería
+    // inventar el aislamiento de ciudad justo donde el producto no lo tiene.
+    expect(PAGE).not.toMatch(/listActiveZones\([^)]/);
+  });
+
+  /**
+   * **Quién entra al vocabulario lo decide el dominio.** Un `.filter()` o un
+   * `Object.fromEntries` acá sería la traducción entre las dos formas del
+   * vocabulario escrita en `app/`, fuera del suelo de cobertura del 90 %: la
+   * pantalla de resultados llega con un `Record` de facetas y el inicio con las
+   * zonas ya contadas, y las dos tienen que contestar lo mismo.
+   */
+  it("arma el vocabulario en el dominio y no compone el conteo acá", () => {
+    expect(PAGE).toMatch(/boundedVocabularyOf\(\s*cities\s*,\s*activeZones\s*\)/);
+    expect(CODE).not.toContain("Object.fromEntries");
+  });
+
+  /**
+   * **La consulta nueva NO agrega una vuelta de red, y eso se pierde solo.**
+   *
+   * Neon es HTTP: cada consulta es un viaje. El catálogo y las zonas con avisos
+   * no dependen uno del otro, así que van en la MISMA espera — cuatro consultas
+   * en las mismas tres tandas que antes. Escrito con dos `await` seguidos el
+   * inicio pagaría un viaje entero de latencia más sin que nada se ponga rojo,
+   * que es exactamente la clase de costo que la 14.22 existe para no pagar.
+   */
+  it("pide el catálogo y las zonas con avisos en la misma espera", () => {
+    expect(PAGE).toMatch(/Promise\.all\(\[[\s\S]*listActiveZones\(\)[\s\S]*\]\)/);
+  });
+
+  /**
+   * **Y va DESPUÉS de la redirección.** Con `?q=` que nombra un solo lugar la
+   * respuesta es un `redirect` y todo lo demás se descarta sin dibujarse: pedir
+   * el vocabulario antes sería un viaje de red pagado para tirarlo. Es la misma
+   * razón que la página ya tiene escrita para el catálogo y las tres tiras.
+   */
+  it("no pide el vocabulario en el camino de redirección", () => {
+    expect(PAGE.indexOf("redirect(searched.href)")).toBeLessThan(PAGE.indexOf("listActiveZones()"));
+  });
+
   it("dibuja las fichas de ciudad antes de las tiras", () => {
     expect(PAGE.indexOf("cityChips.map")).toBeLessThan(PAGE.indexOf("home.strips.map"));
   });
