@@ -19,8 +19,21 @@ export interface NavSession {
   readonly imageUrl?: string | null;
 }
 
+/**
+ * Lo que la pantalla **consultó**, no lo que supone. Los dos campos son
+ * opcionales y por la misma razón (AGENTS.md §7): ninguna pantalla paga las
+ * dos consultas, y la que no pagó una no tiene nada que afirmar sobre ella.
+ * Ausente se resuelve a `false`, o sea al estado que no promete nada.
+ */
 export interface NavAccountFlags {
-  readonly bulkImportEnabled: boolean;
+  readonly bulkImportEnabled?: boolean;
+  /**
+   * tasks.md 14.56 — ¿esta cuenta tiene al menos un aviso publicado? Lo
+   * contesta `PublisherHasListingsPort` con un `EXISTS`, afuera; acá sólo se
+   * copia al estado de la barra para que el disparador de cuenta lo lea sin
+   * decidir nada.
+   */
+  readonly hasListings?: boolean;
 }
 
 interface NavAccountAnonymous {
@@ -35,6 +48,17 @@ export interface NavAccountAuthenticated {
   readonly imageUrl: string | null;
   /** Sólo importa al menú de cuenta (14b), nunca a la barra. */
   readonly canImportListings: boolean;
+  /**
+   * **Si es `false`, el disparador de cuenta se queda sin palabras** y sólo
+   * dibuja el círculo del perfil (14.56) — el nombre accesible sigue estando,
+   * en un `aria-label`. Prometerle «Mis avisos» a quien no publicó ninguno lo
+   * manda a una página vacía, que es la casilla que miente de §5.
+   *
+   * **No se resuelve con CSS**, y ésa es toda la diferencia con «Publicar»:
+   * dónde cabe una palabra es geometría y la decide una hoja; si alguien
+   * publicó es un dato, y una hoja no puede consultarlo.
+   */
+  readonly hasListings: boolean;
 }
 
 export type NavAccount = NavAccountAnonymous | NavAccountAuthenticated;
@@ -54,6 +78,7 @@ export function resolveNavAccount(session: NavSession | null, flags?: NavAccount
     initials: initialsFrom(name, email),
     imageUrl: session.imageUrl ?? null,
     canImportListings: flags?.bulkImportEnabled ?? false,
+    hasListings: flags?.hasListings ?? false,
   };
 }
 
