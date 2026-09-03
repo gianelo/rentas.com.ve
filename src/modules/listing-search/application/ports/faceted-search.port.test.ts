@@ -17,7 +17,7 @@ const VACIO: FacetCounts = {
   total: 0,
   byZone: {},
   byMinRooms: { 1: 0, 2: 0, 3: 0, 4: 0 },
-  byMinBathrooms: { 1: 16, 2: 7, 3: 0 },
+  byMinBathrooms: { 1: 0, 2: 0, 3: 0 },
   byAttribute: {
     hasPowerPlant: 0,
     hasRegularWater: 0,

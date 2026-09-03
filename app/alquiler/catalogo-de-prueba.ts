@@ -118,7 +118,10 @@ export function facetsFor(
     total: rows.length,
     byZone,
     byMinRooms: { 1: rows.length, 2: rows.length, 3: 0, 4: 0 },
-    byMinBathrooms: { 1: 16, 2: 7, 3: 0 },
+    // Los cuatro avisos falsos tienen dos baños, igual que tienen dos
+    // habitaciones: los conteos salen de `rows` y no de un número escrito a
+    // mano, que es la regla que este archivo se puso arriba.
+    byMinBathrooms: { 1: rows.length, 2: rows.length, 3: 0 },
     byAttribute: {
       hasPowerPlant: 0,
       hasRegularWater: 0,

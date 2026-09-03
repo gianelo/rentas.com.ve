@@ -584,9 +584,9 @@ describe("una faceta no se filtra a sí misma (task 14.11)", () => {
   /**
    * **Los baños, y su «3+»** (14.45). Es la misma regla, y la prueba está acá
    * porque el número que la distingue es el del último escalón: `3` cuenta los
-   * de tres baños **o más**, no los de exactamente tres. A5 tiene tres; si la
-   * faceta contara exactos, el filtro y su etiqueta empezarían a discrepar en
-   * cuanto alguien publique uno de cuatro.
+   * de tres baños **o más**, no los de exactamente tres. **A5 tiene cuatro, y
+   * por eso esto mide algo**: con el más alto en exactamente tres, contar
+   * `>= 3` y contar `= 3` dan el mismo número y la diferencia queda sin medir.
    */
   it("el conteo de baños ignora el filtro de baños, y el último escalón es «o más»", async () => {
     const counts = await facets.countFacets(
