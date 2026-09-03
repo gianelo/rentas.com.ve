@@ -59,6 +59,53 @@ export function boundedVocabulary(
   /** Avisos activos por zona. Es `counts.byZone`, tal como llega de la consulta. */
   byZone: Readonly<Record<string, number>>,
 ): SuggestionVocabulary {
+  // **El conteo se busca acá y la decisión se toma una sola vez, más abajo.**
+  // Las dos pantallas con vocabulario llegan con formas distintas —la de
+  // resultados con la taxonomía y un `Record`, el inicio con las zonas ya
+  // contadas por su puerto (14.52)— y la que se separa siempre es la segunda.
+  // Escrito así, «qué zona entra y con qué campos» tiene un solo sitio.
+  //
+  // **Campo por campo y nunca `...zone`**, y eso no es higiene: el catálogo trae
+  // además `kind` y `category` —«elemento», «urbanizacion»— que ninguna
+  // sugerencia mira. Se descubrió leyendo el marcado servido con la aplicación
+  // compilada, no revisando el código: el tipo no alcanza, `CatalogueZoneName`
+  // declara cuatro campos y TypeScript acepta de más en tiempo de ejecución.
+  return boundedVocabularyOf(
+    cities,
+    zones.map((zone) => ({
+      id: zone.id,
+      name: zone.name,
+      cityId: zone.cityId,
+      parentName: zone.parentName,
+      count: byZone[zone.id] ?? 0,
+    })),
+  );
+}
+
+/** Una zona que ya llegó con su conteo puesto, que es como la trae `ActiveZonesPort`. */
+export interface CountedZoneName extends CatalogueZoneName {
+  readonly count: number;
+}
+
+/**
+ * El mismo vocabulario acotado, **para quien ya contó** (14.52).
+ *
+ * El inicio no tiene `counts.byZone`: en `/` no hay ciudad elegida ni facetas,
+ * así que sus zonas con avisos llegan de un puerto de lectura propio que ya
+ * devolvió el conteo de cada una — y de las DOS ciudades, que es la diferencia
+ * entera con la pantalla de resultados. Componer un `Record` en la página para
+ * volver a entrar por `boundedVocabulary` sería escribir la traducción entre
+ * las dos formas justo donde no puede vivir (AGENTS.md §1).
+ *
+ * **El aislamiento de ciudad no se decide acá, y en `/` ni siquiera existe**:
+ * lo que entra es lo que el conteo nombra. Allá el conteo pertenece a la ciudad
+ * del criterio; acá no hay criterio, y las dos ciudades conviven con su ámbito
+ * puesto por `searchChoices` (14.18).
+ */
+export function boundedVocabularyOf(
+  cities: readonly { readonly id: string; readonly name: string }[],
+  zones: readonly CountedZoneName[],
+): SuggestionVocabulary {
   return {
     // **Las dos ciudades del producto van siempre**, aunque ninguna tenga
     // conteo: son dos filas, y son lo que el dominio ofrece cuando alguien
@@ -66,38 +113,29 @@ export function boundedVocabulary(
     // esa rama de `searchChoices` deja de existir. Es la misma decisión que
     // `DrizzleSearchVocabulary` ya tomó del lado del servidor.
     cities,
-    // **El aislamiento de ciudad no se vuelve a decidir acá** (D5/F2). Entra lo
-    // que el conteo nombra, y el conteo pertenece a la ciudad del criterio —
-    // una segunda regla de ciudad escrita en esta función sería una segunda
-    // oportunidad de escribirla mal, y las dos tendrían que coincidir para
-    // siempre.
+    // **Una zona en cero no se ofrece, y no es un recorte de tamaño**: sugerirla
+    // manda a una pantalla sin salida (regla transversal 4), así que la
+    // sugerencia que se pierde es justo la que no debía ofrecerse. La regla vive
+    // acá y no en cada llamador — un `GROUP BY` no produce ceros, pero un
+    // `Record` de facetas sí, y las dos entradas no pueden contestar distinto.
     //
     // `flatMap` y no `filter` + `map`: con los dos, la condición se escribe una
     // vez y el conteo se vuelve a buscar en la otra, y esa segunda búsqueda
     // arrastra un `?? 0` que ya no puede pasar — una rama que ninguna prueba
     // puede poner en rojo porque es inalcanzable.
-    //
-    // **Campo por campo y nunca `...zone`**, y eso no es higiene. Este objeto se
-    // serializa entero hacia el navegador: el catálogo trae además `kind` y
-    // `category` —«elemento», «urbanizacion»— que ninguna sugerencia mira, y un
-    // `spread` los mandaba en CADA zona. Se descubrió leyendo el marcado
-    // servido de `/alquiler/distrito-capital` con la aplicación compilada, no
-    // revisando el código. El tipo no alcanzaba: `CatalogueZoneName` declara
-    // cuatro campos y TypeScript acepta de más en tiempo de ejecución.
-    zones: zones.flatMap((zone) => {
-      const count = byZone[zone.id] ?? 0;
-      if (count === 0) return [];
-
-      return [
-        {
-          id: zone.id,
-          name: zone.name,
-          cityId: zone.cityId,
-          parentName: zone.parentName,
-          count,
-        },
-      ];
-    }),
+    zones: zones.flatMap((zone) =>
+      zone.count === 0
+        ? []
+        : [
+            {
+              id: zone.id,
+              name: zone.name,
+              cityId: zone.cityId,
+              parentName: zone.parentName,
+              count: zone.count,
+            },
+          ],
+    ),
     aliases: [],
   };
 }

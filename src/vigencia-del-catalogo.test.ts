@@ -96,9 +96,26 @@ function lectores(): readonly string[] {
  * Cinco copias de una línea valen menos que el límite entre capacidades, que
  * es el mismo criterio con el que se dejó cerrada la zona. El día que esta
  * lista tenga que crecer, la decisión se reabre — no se agrega un renglón.
+ *
+ * **SEXTO LECTOR, 2026-09-02 (14.52), y esta prueba hizo exactamente lo que
+ * existe para hacer: se puso roja sola.** `drizzle-active-zones.ts` es el
+ * vocabulario acotado del inicio, y filtra por el reloj porque **su destino es
+ * una búsqueda**: la sugerencia dice «9» y lleva a `/alquiler/<ciudad>/<zona>`,
+ * que cuenta con ese mismo predicado. Sin el reloj, la portada ofrecería una
+ * zona cuyos únicos avisos caducaron esta madrugada — la regla transversal 3
+ * rota desde el único lugar donde nadie la mira.
+ *
+ * **No se unificó, y el criterio es el que el fundador ya fijó**: el ayudante
+ * compartido cruzaría el límite entre capacidades —`listing-discovery` no
+ * depende de `listing-search`, ni al revés— y el predicado sigue siendo de una
+ * línea. Lo que cambia respecto de la anotación de arriba es sólo el número, y
+ * queda dicho acá para que el séptimo vuelva a doler igual. **La decisión de si
+ * seis ya son demasiadas es del fundador y este renglón no la toma**: la
+ * reporta.
  */
 const DECLARADOS: readonly string[] = [
   "modules/contact-reveal/infrastructure/drizzle-contact-reveal.ts",
+  "modules/listing-discovery/infrastructure/drizzle-active-zones.ts",
   "modules/listing-discovery/infrastructure/drizzle-home-collections.ts",
   "modules/listing-discovery/infrastructure/drizzle-sitemap.ts",
   "modules/listing-search/infrastructure/drizzle-faceted-search.ts",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boundedVocabulary } from "./bounded-vocabulary";
+import { boundedVocabulary, boundedVocabularyOf } from "./bounded-vocabulary";
 import { searchChoices } from "./search-destination";
 
 const CITIES = [
@@ -108,5 +108,98 @@ describe("boundedVocabulary", () => {
    */
   it("las dos ciudades del producto van siempre", () => {
     expect(boundedVocabulary(CITIES, ZONES, {}).cities).toEqual(CITIES);
+  });
+});
+
+/**
+ * **La otra mitad del vocabulario acotado: la que ya viene contada** (14.52).
+ *
+ * El inicio no tiene `counts.byZone` — no hay ciudad elegida ni facetas en `/`,
+ * así que su conteo llega de un puerto de lectura propio que ya devolvió las
+ * zonas con avisos y cuántos tiene cada una. Componer ahí un `Record` para
+ * volver a pasar por `boundedVocabulary` sería escribir en `app/` la traducción
+ * entre las dos formas, que es exactamente donde no puede vivir.
+ *
+ * **Las dos entradas terminan en la MISMA función**, y ésa es toda la razón de
+ * que esta exista: qué zona entra, con qué campos y con qué conteo se decide
+ * una sola vez. `boundedVocabulary` es hoy esta función con el conteo buscado
+ * en un `Record`.
+ */
+describe("boundedVocabularyOf — el vocabulario de las zonas ya contadas", () => {
+  const CONTADAS = [
+    { id: "z-altamira", name: "Altamira", cityId: "area-ccs", parentName: "Chacao", count: 9 },
+    {
+      id: "z-centro-mcbo",
+      name: "Centro",
+      cityId: "area-mcbo",
+      parentName: "Coquivacoa",
+      count: 2,
+    },
+  ];
+
+  it("ofrece las zonas contadas con su conteo, sin volver a filtrar por ciudad", () => {
+    const vocabulary = boundedVocabularyOf(CITIES, CONTADAS);
+
+    expect(vocabulary.zones.map((zone) => `${zone.name} ${zone.count}`)).toEqual([
+      "Altamira 9",
+      "Centro 2",
+    ]);
+  });
+
+  /**
+   * **La negativa, y su positiva al lado.** Una zona con cero avisos manda a una
+   * pantalla sin salida (regla transversal 4) y por eso no se ofrece — pero una
+   * prueba que sólo mirara la ausencia pasaría igual con la función devolviendo
+   * la lista vacía siempre.
+   */
+  it("una zona en cero no se ofrece, y la que sí tiene avisos sigue ofreciéndose", () => {
+    const vocabulary = boundedVocabularyOf(CITIES, [
+      ...CONTADAS,
+      { id: "z-vacia", name: "Vacía", cityId: "area-ccs", parentName: "Chacao", count: 0 },
+    ]);
+
+    expect(vocabulary.zones.map((zone) => zone.name)).toEqual(["Altamira", "Centro"]);
+  });
+
+  /** El mismo campo por campo que la 14.51 tuvo que corregir midiendo el marcado. */
+  it("no le manda al navegador un solo campo que las sugerencias no usen", () => {
+    const conBasura = CONTADAS.map((zone) => ({
+      ...zone,
+      kind: "elemento",
+      category: "urbanizacion",
+    }));
+
+    expect(Object.keys(boundedVocabularyOf(CITIES, conBasura).zones[0] ?? {})).toEqual([
+      "id",
+      "name",
+      "cityId",
+      "parentName",
+      "count",
+    ]);
+  });
+
+  /**
+   * **En `/` el vocabulario cruza las DOS ciudades**, que es la diferencia
+   * entera con la pantalla de resultados: allá el conteo pertenece a la ciudad
+   * del criterio, acá no hay criterio. Escribir «Centro» tiene que ofrecer las
+   * dos, cada una con su ámbito — la regla de la 14.18 vista desde el inicio.
+   */
+  it("cruza las dos ciudades: «centro» ofrece una opción por ciudad", () => {
+    const vocabulary = boundedVocabularyOf(CITIES, [
+      { id: "z-centro-ccs", name: "Centro", cityId: "area-ccs", parentName: "Catedral", count: 4 },
+      ...CONTADAS.slice(1),
+    ]);
+
+    expect(
+      searchChoices("centro", vocabulary).map((choice) => `${choice.scope} ${choice.countLabel}`),
+    ).toEqual(["Catedral · Distrito Capital 4", "Coquivacoa · Maracaibo 2"]);
+  });
+
+  it("las dos ciudades del producto van siempre, aunque ninguna zona esté contada", () => {
+    expect(boundedVocabularyOf(CITIES, []).cities).toEqual(CITIES);
+  });
+
+  it("no lleva alias: el servidor los sigue encontrando al enviar", () => {
+    expect(boundedVocabularyOf(CITIES, CONTADAS).aliases).toEqual([]);
   });
 });
