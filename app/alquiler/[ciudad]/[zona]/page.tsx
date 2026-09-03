@@ -5,6 +5,7 @@ import { AppLink } from "@/../components/atoms/AppLink";
 import { Container } from "@/../components/layout/Container";
 import { FilterChips } from "@/../components/molecules/FilterChips";
 import { ListingCard, ListingGrid } from "@/../components/molecules/ListingCard";
+import { OrderMenu } from "@/../components/molecules/OrderMenu";
 import type { SearchPillProps } from "@/../components/molecules/SearchPill";
 import { Nav } from "@/../components/organisms/Nav";
 import { SearchOutcome } from "@/../components/organisms/SearchOutcome";
@@ -26,6 +27,7 @@ import { resolvePagination } from "@/modules/listing-search/domain/pagination";
 import { PANEL_OPEN_TOKEN } from "@/modules/listing-search/domain/search-accordion";
 import { buildSearchCriteria } from "@/modules/listing-search/domain/search-criteria";
 import { resolveSearchLocation } from "@/modules/listing-search/domain/search-location";
+import { buildOrderMenu } from "@/modules/listing-search/domain/search-order";
 import { toPanelZones } from "@/modules/listing-search/domain/search-panel";
 import {
   buildSearchHref,
@@ -153,6 +155,7 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
       hasSecurity: query[SEARCH_QUERY_NAMES.hasSecurity],
       hasAppliances: query[SEARCH_QUERY_NAMES.hasAppliances],
       page: query[SEARCH_QUERY_NAMES.page],
+      order: query[SEARCH_QUERY_NAMES.order],
     },
     searchZones,
   ) ?? { cityId: place.city.id };
@@ -352,10 +355,17 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
             mayor que la cantidad de tarjetas. La respuesta correcta es que la
             consulta no traiga los avisos sin portada, y eso es una tarea aparte
             — no un número maquillado acá. */}
-        <p className={styles.count} data-testid="result-count">
-          {total === 1 ? "1 propiedad activa" : `${total} propiedades activas`}
-          {pagination.count > 1 ? ` — página ${pagination.current} de ${pagination.count}` : ""}
-        </p>
+        {/* **El conteo y el orden, en la misma fila** (14.47, lámina 7c:
+            «70 avisos ······ Recientes ▾»). Cuáles son los tres órdenes y cuál
+            está puesto lo decide `buildOrderMenu`, no esta página. */}
+        <div className={styles.countRow}>
+          <p className={styles.count} data-testid="result-count">
+            {total === 1 ? "1 propiedad activa" : `${total} propiedades activas`}
+            {pagination.count > 1 ? ` — página ${pagination.current} de ${pagination.count}` : ""}
+          </p>
+
+          <OrderMenu model={buildOrderMenu(basePath, query)} />
+        </div>
 
         {/* **Lo que se le corrigió al precio, dicho** (14.13, F5). Misma razón
             que el aviso de arriba: una corrección callada es una pantalla

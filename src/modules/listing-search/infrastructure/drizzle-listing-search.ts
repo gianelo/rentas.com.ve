@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, lte, type SQL, sql } from "drizzle-orm";
 import type { PgColumn, PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import { listings } from "../../../shared/db/schema";
@@ -8,6 +8,7 @@ import type {
 } from "../application/ports/listing-search.port";
 import { pageWindow } from "../domain/pagination";
 import type { ListingAttribute, SearchCriteria } from "../domain/search-criteria";
+import type { SearchOrder } from "../domain/search-order";
 
 /**
  * The catalogue read, run where the rows are (task 5.4/5.6).
@@ -63,6 +64,35 @@ const ATTRIBUTE_COLUMNS: Readonly<Record<ListingAttribute, PgColumn>> = {
   hasSecurity: listings.hasSecurity,
   hasAppliances: listings.hasAppliances,
 };
+
+/**
+ * El `ORDER BY` de cada orden ofrecido (task 14.47), **y el desempate por `id`
+ * en los tres**.
+ *
+ * Ese `asc(listings.id)` no es cosmético y no se toca: sin un orden total, dos
+ * páginas de la misma búsqueda repiten un aviso y se saltan otro, porque
+ * `OFFSET` corta sobre el orden que Postgres haya elegido esta vez. Con precio
+ * el riesgo es mayor que con fecha — dos avisos con el mismo alquiler son de lo
+ * más común, mientras que dos publicados en el mismo instante casi no pasan.
+ *
+ * Anotado como `Record` completo a propósito, igual que `ATTRIBUTE_COLUMNS`: un
+ * cuarto orden en el dominio rompe la compilación acá en vez de quedar como una
+ * opción que la pantalla ofrece y la consulta ignora en silencio.
+ *
+ * **No se ofrece orden por superficie**, y la razón la decidió el fundador:
+ * `area_m2` puede faltar, y ordenar por un campo ausente ordena mal y en
+ * silencio — los avisos sin metros se irían todos juntos a una punta.
+ */
+const ORDER_BY: Readonly<Record<SearchOrder, () => readonly SQL[]>> = {
+  recent: () => [desc(listings.publishedAt), asc(listings.id)],
+  priceAsc: () => [asc(listings.priceUsd), asc(listings.id)],
+  priceDesc: () => [desc(listings.priceUsd), asc(listings.id)],
+};
+
+/** Ausente es «Recientes», que es como el criterio representa el por defecto. */
+function orderBy(order: SearchOrder | undefined): readonly SQL[] {
+  return ORDER_BY[order ?? "recent"]();
+}
 
 export class DrizzleListingSearch implements ListingSearchPort {
   constructor(private readonly db: SearchDatabase) {}
@@ -132,16 +162,9 @@ export class DrizzleListingSearch implements ListingSearchPort {
         })
         .from(listings)
         .where(and(...filters))
-        // Newest first, id as the tiebreak. Fixtures published inside the same
-        // transaction share a `now()`, and an unordered query would then return
-        // whichever row Postgres reached first — a test that passes on ordering
-        // luck is the failure this project keeps finding.
-        //
-        // **Con paginación el desempate deja de ser cosmético.** Sin un orden
-        // total, dos páginas de la misma búsqueda pueden repetir un aviso y
-        // saltarse otro, porque `OFFSET` corta sobre el orden que Postgres
-        // haya elegido esta vez.
-        .orderBy(desc(listings.publishedAt), asc(listings.id))
+        // Cuál de los tres, y su desempate, en `ORDER_BY` — que es donde
+        // quedó escrito por qué el `id` no es cosmético.
+        .orderBy(...orderBy(criteria.order))
         .limit(limit)
         .offset(offset)
     );

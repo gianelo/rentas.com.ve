@@ -244,4 +244,42 @@ test.describe("el camino de lectura con el script apagado (11.16)", () => {
     await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === busqueda);
     await expect(page.getByTestId("result-count")).toHaveText("2 propiedades activas");
   });
+
+  /**
+   * **El orden de la lista, con el script apagado** (14.47).
+   *
+   * Es lo único que este control puede romper solo y lo que ninguna prueba
+   * determinista alcanza: que las tres opciones **naveguen**. Un
+   * `<select onchange>` se dibuja igual, pasa cualquier prueba de marcado y no
+   * hace nada acá — y acá es el navegador dentro de WhatsApp, por donde
+   * circulan los avisos.
+   */
+  test("cambiar el orden de la lista funciona sin una línea de JavaScript", async ({ page }) => {
+    await page.goto(CIUDAD_MARACAIBO);
+
+    const menu = page.getByTestId("order-menu");
+    const primera = page.getByTestId("listing-card").first();
+    // Cerrado, la etiqueta es el orden puesto: el de por defecto.
+    await expect(menu).toContainText("Recientes");
+
+    /** Abrir es del navegador: `<details>` no necesita un script para desplegarse. */
+    const elegir = async (etiqueta: string) => {
+      await menu.locator("summary").click();
+      await page.getByRole("link", { name: etiqueta, exact: true }).click();
+    };
+
+    await elegir("Precio: mayor a menor");
+    // 900, 480 y 250 son los tres activos de Maracaibo que siembra el arnés.
+    await expect(primera).toContainText(tituloDe(ID.mcboTierraNegra2));
+    await expect(page).toHaveURL((url) => url.search === "?orden=precio-desc");
+
+    await elegir("Precio: menor a mayor");
+    await expect(primera).toContainText(tituloDe(ID.mcboBellaVista));
+
+    // **Y la vuelta deja la dirección canónica, sin `?orden=`.** Es la mitad
+    // que decide lo de Google: si «Recientes» escribiera su token, la única
+    // página indexable de la ciudad sería la que nadie enlaza.
+    await elegir("Recientes");
+    await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === CIUDAD_MARACAIBO);
+  });
 });

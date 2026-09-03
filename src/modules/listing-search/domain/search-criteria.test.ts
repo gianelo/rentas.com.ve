@@ -454,3 +454,26 @@ describe("buildSearchCriteria — todo junto", () => {
     });
   });
 });
+
+describe("el orden de la lista (14.47)", () => {
+  it("el de por defecto se OMITE, así que el criterio de siempre no cambia", () => {
+    // Ausente = «Recientes», igual que `page` ausente es la primera. Que no
+    // aparezca es lo que deja intacto el criterio de todas las búsquedas que
+    // ya existían.
+    expect(buildSearchCriteria({ city: MARACAIBO }, ZONES)).toEqual({ cityId: MARACAIBO });
+    expect(buildSearchCriteria({ city: MARACAIBO, order: "recientes" }, ZONES)).toEqual({
+      cityId: MARACAIBO,
+    });
+  });
+
+  it("los dos órdenes de precio sí llegan al criterio", () => {
+    expect(buildSearchCriteria({ city: MARACAIBO, order: "precio-asc" }, ZONES)).toEqual({
+      cityId: MARACAIBO,
+      order: "priceAsc",
+    });
+    expect(buildSearchCriteria({ city: MARACAIBO, order: "precio-desc" }, ZONES)).toEqual({
+      cityId: MARACAIBO,
+      order: "priceDesc",
+    });
+  });
+});
