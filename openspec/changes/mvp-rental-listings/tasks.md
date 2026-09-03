@@ -933,6 +933,8 @@ Del proyecto de diseño `Rentas - Lista y Filtros - Desktop/Mobile.dc.html`, cru
 
   **Costo en el paquete**: `pnpm budget:bundle` antes → después, la ficha **109.27 → 109.31 KB** gzip y `/` 108.11 → 108.14; son las reglas de las dos hojas y nada más. La peor ruta sigue siendo `/importar` con 110.60 contra un tope de 130.
 
+  **DECISIÓN DEL FUNDADOR, 2026-09-03: la tarea se resuelve borrando su premisa, y pasa a la 14.54.** No se eligió ninguna de las tres salidas. El fundador preguntó si la ficha ya decía adentro lo de dueño o inmobiliaria — **lo dice**: `ContactBlock.tsx:149` dibuja «publica como dueño» / «publica como inmobiliaria» al lado del nombre, construido y sirviéndose. Y la lámina móvil dibuja las **dos**, arriba la placa y abajo las palabras, así que la repetición era del diseño. La decisión se queda con la de abajo y **la placa sale del encabezado**, que era lo único que necesitaba los 11 px. La mudanza construida acá se revierte con la 14.54; lo que NO se revierte y queda como saldo es el hallazgo medido —el encabezado de la ficha llevaba 203 px de acciones que ninguna lámina móvil pide— y la tercera forma de `NavProps`, que la 14.54 borra junto con la segunda.
+
 - [x] 14.42 **Borrar `SearchBar` y `SearchSummaryBar` cuando dejen de tener quien las dibuje.** Las dos quedan huérfanas al terminar la 14.39 y la 14.41 — con su hoja de estilos y su archivo de pruebas, o sea con un gate en verde que no protege nada que se sirva. **No va en el mismo PR a propósito**: son ~380 líneas de borrado y el presupuesto de revisión son 400 sobre código revisable, así que meterlas adentro empujaría fuera del techo el cableado que sí hay que leer con cuidado. `design-contract.test.tsx` lee `SearchBar.module.css` y hay que actualizarlo en el mismo movimiento
 
   **Hecho.** Seis archivos borrados enteros: `components/molecules/SearchBar.{tsx,module.css,test.tsx}` (320 líneas) y `components/organisms/SearchSummaryBar.{tsx,module.css,test.tsx}` (197). Más `panel.summary`, que era la segunda línea de esa barra.
@@ -1244,6 +1246,44 @@ O sea: **la ruta de zona rechaza el parámetro `zona`, y la de ciudad es la úni
 - **`zone_aliases` y `suggestFilters` ya resuelven el topónimo compuesto.** `schema.ts` lo dice: sin los alias, *"Bella Vista encuentra dos de sus siete apariciones reales"*. Y `suggestFilters` ya emite sugerencias `city` y `zone` con su alcance. Nada de eso hacía falta construir.
 
 **Desvío de forma, y es del texto de la resolución.** La resolución escribe `?zona=a&zona=b` (parámetro repetido); el código usa **`?zona=a,b`** (lista separada por comas), que es lo que `readZoneList` lee, lo que `zoneParam` escribe y lo que la F12 fijó — *"`?zona=chacao,altamira` y no dos hashes de treinta y seis caracteres"*. Se conservó la coma: la diferencia no es de producto, y cambiarla tocaría `buildSearchHref`, `resolveZoneTokens` y el tipo `searchParams` de las dos páginas, que colapsa los repetidos a uno solo. **Requerida la confirmación del fundador**, aunque lo que la tabla decide —cuál forma de ruta y cuál se indexa— vale igual con las dos grafías.
+
+- [ ] 14.54 **El encabezado queda con UNA sola forma, y la vuelta se va adentro del contenido.** (nueva — decisión del fundador el 2026-09-03, tomada sobre las láminas y no sobre la 14.43.) La 14.43 buscaba 11 px para que «Inmobiliaria» entrara en una barra de cuatro hijos. La decisión los borra: **la barra deja de tener cuatro hijos.**
+
+  **Lo que la decisión fija, en las dos anchuras:**
+
+  ```
+  móvil 360      [ ¿En qué zona buscás?  🔍 ]  Entrar   /   (MF)
+  escritorio     rentas.  [ pastilla 420 ]  Publicar gratis  Entrar
+                 rentas.  [ pastilla 420 ]  Publicar  Mis avisos (MF)
+  ```
+
+  **La placa del publicador sale del encabezado, y el dato NO se pierde.** Lo destapó el fundador preguntando si la ficha ya lo decía adentro: **sí lo dice**, `components/molecules/ContactBlock.tsx:149` dibuja «publica como dueño» / «publica como inmobiliaria» al lado del nombre y del teléfono, construido y sirviéndose hoy. **La lámina móvil dibuja las DOS** —placa arriba, palabras abajo— así que la repetición era del diseño y no un descuido; lo que la decisión elige es quedarse con la de abajo, que es la que el inquilino lee justo antes de escribir. Lo que se pierde es verlo sin bajar; en la cuadrícula esa señal se queda (14.53 la subió a la portada), así que sólo cambia dentro de la ficha. **Esto revierte lo que el PR #218 construyó anteayer**: `NavProps` pierde su tercera forma `NavWithListing`, y con ella se van las dos reglas de hoja que apagaban una placa a cada ancho y la medición que las contaba.
+
+  **La vuelta se va del encabezado y entra al contenido, y arregla una torcedura que ya existía.** Verificado: `/alquiler/[ciudad]` y `/alquiler/[ciudad]/[zona]` dibujan `<nav aria-label="Miga de pan">` dentro del contenido; **la ficha es la única del camino de lectura donde la vuelta vive en la barra**. Y hay un dato que lo empuja más fuerte: ese enlace **no siempre dice «← Resultados»**. `resultsLink` (`src/modules/listing-discovery/domain/return-to-results.ts:145`) es una regla de dominio — con origen dice «← Resultados», sin origen dice «Ver avisos en Chacao», que es una etiqueta de veinte caracteres. Eso no entra en una barra de 60 px y sí entra en una fila de miga de pan. **La regla no se mueve**: sigue en el dominio, se mueve el marcado.
+
+  **`/reportar` se lleva la vuelta adentro también** (decisión del fundador en la misma conversación). Son las dos únicas pantallas que le pasan `back` al `Nav` —`app/alquiler/[ciudad]/[zona]/[slug]/page.tsx:302` y `.../reportar/page.tsx:86`—, así que con las dos adentro **`NavProps` queda con una sola forma** y se borran `NavWithReturn` y `NavWithListing`. Si sólo se moviera la ficha, `NavWithReturn` sobreviviría para una pantalla y el encabezado no quedaría uniforme, que es justo lo que la decisión compra.
+
+  **Presupuesto y rebanadas** (el techo de 400 líneas revisables de AGENTS.md §6 no admite esto en un PR): (a) la vuelta sale del encabezado y entra a la ficha y a reportar, `NavProps` colapsa a una forma; (b) el logo en móvil, que es la 14.55; (c) `hasListings`, que es la 14.56.
+
+- [ ] 14.55 **El logo se esconde en móvil, y es un desvío de lámina decidido, no una lectura de ella.** (nueva — decisión del fundador el 2026-09-03.) Se anota con la misma forma que la 20.4 y la 14.36 porque **la lámina vigente sí lo dibuja**: `Rentas - Cuenta e Importar.dc.html` (25 ago) pone `rentas.` + pastilla + Entrar/avatar en los dos estados de 360, tres hijos. Esconderlo es del fundador y la razón es de espacio: la pastilla gana unos 70 px, que a 360 se notan.
+
+  **No se deja de dibujar, se esconde con CSS**, por el argumento que la 14.53 dejó escrito y la 14.43 volvió a usar: **el servidor no sabe el ancho de la pantalla**. No hay ancho en una petición HTTP; husmear el `User-Agent` rompe una sola respuesta cacheable para todos los anchos, y decidirlo en el cliente contradice el piso de AGENTS.md §2. `display: none` y no una atenuación, para que no quede una parada invisible al tabular.
+
+  **Lo que hay que comprobar antes de darla por hecha**: en móvil el logo era el único camino al inicio desde la ficha, y con la vuelta ya mudada al contenido (14.54) hay que decir por dónde se llega a `/`. La miga de pan de la ficha arranca en «Inicio», así que probablemente ya esté cubierto — pero se afirma midiendo los bytes servidos, no suponiendo.
+
+- [ ] 14.56 **«Mis avisos» sólo se dice si de verdad hay avisos; si no, sólo el ícono del perfil.** (nueva — regla del fundador el 2026-09-03, con la salida 1 elegida por él después de ver el costo.) Prometerle «Mis avisos» a quien acaba de crear la cuenta lo manda a una página vacía, y ésa es la casilla que miente de §5.
+
+  **Va al dominio y no al componente**, con la forma que `canImportListings` ya dejó: `NavAccountAuthenticated` gana `hasListings: boolean`, resuelto afuera y sólo leído por la barra. Un `if` sobre datos en el componente sería una regla de negocio en el frente, que es la regla permanente del fundador.
+
+  **Sólo tiene efecto en escritorio.** En móvil la lámina ya es **sólo el círculo de 44 px** con `aria-label="Mis avisos"`, sin palabras; las palabras existen únicamente a 1280. **Y no se resuelve con CSS**: esto no es «dónde cabe», que es geometría — es una afirmación sobre datos, y una hoja de estilos no puede saber si alguien publicó.
+
+  **El costo, medido antes de elegir, y no es la base sino el viaje.** `bulkImportEnabled` es **una columna de `user`** (`src/shared/db/schema.ts:82`) y viaja con la fila. `hasListings` no existe como columna: hay que preguntarle a `listing` por publicador. Y **la mayoría de las pantallas hoy no consultan nada** — `app/page.tsx:190` llama `resolveNavAccount(session)` sin banderas, con la sesión saliendo de la cookie y cero viajes. O sea que esto agrega **un viaje donde hoy hay ninguno** en `/`, resultados y ficha, y este proyecto midió 6→5 viajes como una victoria. `/mis-avisos` y `/editar` ya pagan una consulta de usuario (`DrizzleBulkImportAccounts.findAccount`), así que ahí el `EXISTS` se pliega en la misma sentencia y no cuesta nada.
+
+  **Las tres salidas, con lo que cada una contradice** (misma forma que la 14.53 y la 14.43): (1) **`EXISTS` por carga** — nunca miente, +1 viaje para quien tiene sesión; (2) **en el token de sesión** — cero viajes, pero se queda viejo: quien publica su primer aviso sigue viendo sólo el ícono hasta que el token se renueve; (3) **no validar** — cero costo y la promesa falsa se queda.
+
+  **El fundador eligió la 1 el 2026-09-03**, con la razón dicha: el viaje extra lo paga sólo quien tiene sesión, y en la ficha y en `/` ésa es la minoría porque el inquilino navega anónimo; la 2 cambia una mentira chica por una intermitente, que es peor de depurar. **Queda pedido explícitamente dejar el número medido**, antes y después, y no declararlo.
+
+  **Es `EXISTS` y no `COUNT`**: la pregunta es si hay al menos uno, y contar todos para comparar contra cero paga filas que nadie mira. El puerto va **al lado** del que ya existe (`PublisherListingsPort` en `listing-publication` lista, no cuenta) y no se ensancha, que es AGENTS.md §3.
 
 ## Phase 15: Entrar — the two doors, and the magic link (founder, 2026-08-21)
 
