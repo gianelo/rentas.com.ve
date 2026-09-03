@@ -23,6 +23,7 @@ import { ActionButton, NeutralButton, SelectionButton } from "../../components/a
 import { ListingMeta } from "../../components/atoms/ListingMeta";
 import { ListingTitle } from "../../components/atoms/ListingTitle";
 import { Price } from "../../components/atoms/Price";
+import { PublisherBadge } from "../../components/atoms/PublisherBadge";
 import { Container } from "../../components/layout/Container";
 import { DetailSplit } from "../../components/layout/DetailSplit";
 import { FormShell } from "../../components/layout/FormShell";
@@ -147,6 +148,22 @@ export default async function MeasureHarnessPage({
           publish={{ bar: { label: "Publicar gratis", emphasis: "accent" }, menu: null }}
           signInHref="/signin"
           back={{ href: "/alquiler/distrito-capital/altamira", label: "← Resultados" }}
+          publisher="owner"
+        />
+      </div>
+
+      {/* **La misma barra con la palabra LARGA** (14.43). «Inmobiliaria» tiene
+          el doble de ancho que «Dueño», y el encabezado de la ficha a 360 px ya
+          lleva la vuelta, «Publicar gratis» y «Entrar». Medir sólo el caso corto
+          sería medir el que entra: un arnés que no produce la entrada difícil no
+          mide nada. */}
+      <div data-testid="nav-harness-ficha-inmobiliaria">
+        <Nav
+          account={{ kind: "anonymous" }}
+          publish={{ bar: { label: "Publicar gratis", emphasis: "accent" }, menu: null }}
+          signInHref="/signin"
+          back={{ href: "/alquiler/distrito-capital/altamira", label: "← Resultados" }}
+          publisher="broker"
         />
       </div>
 
@@ -410,7 +427,21 @@ export default async function MeasureHarnessPage({
             }
             data={
               <>
-                <div className={fichaStyles.summary}>
+                <div className={fichaStyles.summary} data-testid="ficha-summary">
+                  {/* **La placa de la columna de datos** (14.43). Montada con su
+                      envoltorio real para que la medición lea la geometría
+                      dibujada: a 360 la esconde esta hoja y la lleva el
+                      encabezado, a 1280 al revés. Sin las dos en el arnés no se
+                      puede afirmar que se vea EXACTAMENTE una. */}
+                  <span className={fichaStyles.summaryPublisher}>
+                    <PublisherBadge publisherType="owner" />
+                  </span>
+                  <span
+                    className={fichaStyles.summaryPublisher}
+                    data-testid="ficha-summary-inmobiliaria"
+                  >
+                    <PublisherBadge publisherType="broker" />
+                  </span>
                   <p className={fichaStyles.price} data-testid="ficha-price">
                     $450
                     <span className={fichaStyles.perMonth}> / mes</span>

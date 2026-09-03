@@ -28,6 +28,20 @@
    también se dice con la distancia: la lámina los separa 14, 12 y 6, no 10 y
    10 y 10. Un `gap` uniforme deja los tres a la misma distancia y aplana
    justamente la jerarquía que esta columna existe para mostrar. */
+/* **La placa del publicador de la columna de datos, y por qué no se ve a 360**
+   (14.43). La lámina de escritorio la dibuja encabezando esta columna; la de
+   móvil la dibuja en el encabezado de 56 px del `Nav`. Es el MISMO elemento
+   cambiando de sitio con el ancho, y el ancho lo deciden estas dos hojas porque
+   el servidor no lo sabe: no hay ancho en una petición HTTP (AGENTS.md §2).
+
+   `display: none` y no una atenuación: además de esconderla, la saca del árbol
+   de accesibilidad y del orden de tabulación, así que un lector de pantalla no
+   anuncia «Dueño» dos veces en la misma página. Lo que se sigue pagando son sus
+   bytes, y ése es el precio elegido. */
+.summaryPublisher {
+  display: none;
+}
+
 .summary {
   order: 2;
   display: flex;
@@ -169,6 +183,12 @@
 }
 
 @media (min-width: 768px) {
+  /* Acá SÍ: es la lámina 11, la placa encabezando la columna de datos — y es
+     el mismo ancho en el que la del encabezado se apaga. */
+  .summaryPublisher {
+    display: block;
+  }
+
   .bar {
     min-height: var(--brandbar-h-desktop);
     margin-bottom: 24px;
