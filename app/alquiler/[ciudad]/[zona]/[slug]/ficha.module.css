@@ -28,18 +28,40 @@
    también se dice con la distancia: la lámina los separa 14, 12 y 6, no 10 y
    10 y 10. Un `gap` uniforme deja los tres a la misma distancia y aplana
    justamente la jerarquía que esta columna existe para mostrar. */
-/* **La placa del publicador de la columna de datos, y por qué no se ve a 360**
-   (14.43). La lámina de escritorio la dibuja encabezando esta columna; la de
-   móvil la dibuja en el encabezado de 56 px del `Nav`. Es el MISMO elemento
-   cambiando de sitio con el ancho, y el ancho lo deciden estas dos hojas porque
-   el servidor no lo sabe: no hay ancho en una petición HTTP (AGENTS.md §2).
+/* **La vuelta a los resultados, arriba del contenido** (14.54).
 
-   `display: none` y no una atenuación: además de esconderla, la saca del árbol
-   de accesibilidad y del orden de tabulación, así que un lector de pantalla no
-   anuncia «Dueño» dos veces en la misma página. Lo que se sigue pagando son sus
-   bytes, y ése es el precio elegido. */
-.summaryPublisher {
-  display: none;
+   Los mismos valores que la miga de pan de `/alquiler/[ciudad]/[zona]` —la
+   familia de meta, el tamaño chico, el acento del enlace y el piso de 44 px de
+   área táctil—, porque es la misma fila del mismo camino y no una pieza nueva:
+   el visitante que baja de la zona a la ficha ve la fila de vuelta donde ya
+   estaba mirando.
+
+   No se comparte la hoja de la zona ni se abstrae a un componente: los módulos
+   CSS son por pantalla acá, y una tercera pieza para dos enlaces sería más
+   cableado que valor. Lo que se comparte son los TOKENS, que es lo que
+   SISTEMA.md pide compartir.
+
+   `inline-flex` y no `block`: el área táctil tiene que ser la del texto, no la
+   de la línea entera — un rectángulo de 1100 px de ancho que navega al tocarlo
+   es una trampa en un teléfono. */
+.volver {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+  padding-inline-end: 4px;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.volver:hover {
+  text-decoration: underline;
+}
+
+.volver:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .summary {
@@ -183,10 +205,10 @@
 }
 
 @media (min-width: 768px) {
-  /* Acá SÍ: es la lámina 11, la placa encabezando la columna de datos — y es
-     el mismo ancho en el que la del encabezado se apaga. */
-  .summaryPublisher {
-    display: block;
+  /* El mismo paso que la miga de pan de la zona: el piso táctil de escritorio
+     es menor que el del teléfono. */
+  .volver {
+    min-block-size: var(--target-min-desktop);
   }
 
   .bar {

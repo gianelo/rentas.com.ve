@@ -131,6 +131,35 @@ describe("el formulario", () => {
   });
 });
 
+/**
+ * tasks.md 14.54 — **la vuelta se dibuja adentro, no en la barra.**
+ *
+ * Ésta y la ficha eran las dos únicas pantallas que le pasaban `back` al `Nav`,
+ * y con las dos adentro el encabezado queda con una sola forma. La razón no es
+ * de simetría: `/importar` y `/mis-avisos/[id]/editar` ya dibujan su «← Mis
+ * avisos» arriba del contenido, así que ésta es la forma que el producto ya
+ * tiene y la barra era la excepción.
+ */
+describe("la vuelta al aviso vive dentro del contenido (14.54)", () => {
+  it("se dibuja después del encabezado y dentro del <main>", async () => {
+    const markup = renderToStaticMarkup(await open());
+
+    const header = markup.indexOf("</header>");
+    const main = markup.indexOf("<main");
+    const vuelta = markup.indexOf("← Volver al aviso");
+
+    expect(header).toBeGreaterThanOrEqual(0);
+    expect(vuelta).toBeGreaterThan(main);
+    expect(main).toBeGreaterThan(header);
+  });
+
+  it("el encabezado no lleva ninguna vuelta", async () => {
+    const markup = renderToStaticMarkup(await open());
+
+    expect(markup.slice(0, markup.indexOf("</header>"))).not.toContain("Volver al aviso");
+  });
+});
+
 describe("el acuse", () => {
   it("no vuelve a ofrecer el formulario", async () => {
     const acuse = await open({ [REPORT_SENT_PARAM]: "" });

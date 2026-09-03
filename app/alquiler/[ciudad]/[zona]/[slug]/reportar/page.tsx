@@ -83,11 +83,22 @@ export default async function ReportarPage({ params, searchParams }: ReportarPro
         // reportar. Es el mismo destino que la acción arma cuando el POST llega
         // sin sesión.
         signInHref={`/signin?callbackUrl=${encodeURIComponent(reportPath)}`}
-        back={{ href: listingPath, label: VOLVER }}
       />
 
       <main className={styles.page}>
         <Container>
+          {/* **La vuelta, adentro del contenido** (14.54). Estaba en la barra, y
+              con la ficha era una de las dos únicas pantallas que le pasaban
+              `back` al `Nav`; con las dos adentro el encabezado quedó con una
+              sola forma. No es un sitio nuevo: `/importar` y
+              `/mis-avisos/[id]/editar` ya dibujan su «← Mis avisos» acá arriba.
+
+              Es la única salida de esta pantalla —un desvío sin retorno propio—,
+              así que va antes del formulario y no debajo de él. */}
+          <AppLink className={styles.volver} href={listingPath}>
+            {VOLVER}
+          </AppLink>
+
           <FormShell>
             <h1 className={styles.title}>{screen.heading}</h1>
             <p className={styles.text}>{screen.body}</p>

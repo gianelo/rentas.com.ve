@@ -40,6 +40,31 @@
   margin: 0;
 }
 
+/* **La vuelta al aviso, arriba del contenido** (14.54). Los mismos valores que
+   la fila de vuelta de la ficha, que a su vez son los de la miga de pan de la
+   zona: es la misma fila del mismo camino. Se comparten los tokens y no la
+   hoja — los módulos CSS son por pantalla acá — y el área táctil es la del
+   texto, no la de la línea entera. */
+.volver {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+  padding-inline-end: 4px;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.volver:hover {
+  text-decoration: underline;
+}
+
+.volver:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* La vuelta al aviso desde el acuse. Discreta, como el enlace del pie de la
    ficha del que se llegó. */
 .back {
@@ -52,6 +77,11 @@
 }
 
 @media (min-width: 768px) {
+  /* El mismo paso que la miga de pan de la zona. */
+  .volver {
+    min-block-size: var(--target-min-desktop);
+  }
+
   .title {
     font-size: var(--ficha-title-fs-desktop);
   }
