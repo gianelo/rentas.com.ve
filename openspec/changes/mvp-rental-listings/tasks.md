@@ -1295,7 +1295,7 @@ O sea: **la ruta de zona rechaza el parámetro `zona`, y la de ciudad es la úni
 
   **Si alguna vez se reabre**, lo que hay que resolver primero es de dónde sale el camino a `/` en la ficha en móvil, y no cuántos píxeles gana la pastilla.
 
-- [ ] 14.56 **«Mis avisos» sólo se dice si de verdad hay avisos; si no, sólo el ícono del perfil.** (nueva — regla del fundador el 2026-09-03, con la salida 1 elegida por él después de ver el costo.) Prometerle «Mis avisos» a quien acaba de crear la cuenta lo manda a una página vacía, y ésa es la casilla que miente de §5.
+- [x] 14.56 **«Mis avisos» sólo se dice si de verdad hay avisos; si no, sólo el ícono del perfil.** (nueva — regla del fundador el 2026-09-03, con la salida 1 elegida por él después de ver el costo.) Prometerle «Mis avisos» a quien acaba de crear la cuenta lo manda a una página vacía, y ésa es la casilla que miente de §5.
 
   **Va al dominio y no al componente**, con la forma que `canImportListings` ya dejó: `NavAccountAuthenticated` gana `hasListings: boolean`, resuelto afuera y sólo leído por la barra. Un `if` sobre datos en el componente sería una regla de negocio en el frente, que es la regla permanente del fundador.
 
@@ -1308,6 +1308,38 @@ O sea: **la ruta de zona rechaza el parámetro `zona`, y la de ciudad es la úni
   **El fundador eligió la 1 el 2026-09-03**, con la razón dicha: el viaje extra lo paga sólo quien tiene sesión, y en la ficha y en `/` ésa es la minoría porque el inquilino navega anónimo; la 2 cambia una mentira chica por una intermitente, que es peor de depurar. **Queda pedido explícitamente dejar el número medido**, antes y después, y no declararlo.
 
   **Es `EXISTS` y no `COUNT`**: la pregunta es si hay al menos uno, y contar todos para comparar contra cero paga filas que nadie mira. El puerto va **al lado** del que ya existe (`PublisherListingsPort` en `listing-publication` lista, no cuenta) y no se ensancha, que es AGENTS.md §3.
+
+  **Hecho 2026-09-03, con el número medido y no declarado.**
+
+  **En el dominio, con la forma que `canImportListings` dejó.** `src/modules/identity/domain/nav-account.ts`: `NavAccountFlags` gana `hasListings`, `NavAccountAuthenticated` lo expone y `resolveNavAccount` lo copia con `?? false`. Dos casos nuevos en `nav-account.test.ts` — «sin banderas, no se afirma que haya avisos» y «con la cartera consultada, `hasListings` viaja tal cual llegó».
+
+  **Las dos banderas quedaron OPCIONALES, y es una corrección con razón** (AGENTS.md §5). El texto de la tarea sólo pedía sumar un campo; `bulkImportEnabled` pasó de requerido a opcional porque **ninguna pantalla paga las dos consultas**: `/` y la ficha ahora consultan la cartera y NO la columna del importador, y obligarlas a escribir `bulkImportEnabled: false` sería hacerles afirmar algo que no consultaron. Ausente se resuelve a `false`, o sea al estado que no promete nada (AGENTS.md §7).
+
+  **El puerto nuevo, al lado y no adentro.** `PublisherHasListingsPort.hasAnyListing(publisherId)` (`listing-publication/application/ports/publisher-has-listings.port.ts`) con `DrizzlePublisherHasListings` y cinco casos de integración contra Postgres real (`tests/integration/publisher-has-listings.test.ts`), incluido «un borrador sin fotos cuenta igual que un aviso activo» — la cartera importada nace en `draft` (9.15) y es la cuenta que MÁS necesita el enlace.
+
+  **Desvío anotado: se emite `select 1 … limit 1`, no `select exists (…)`.** Es el plan al que Postgres compila `EXISTS` —un `Limit`, sin nodo `Aggregate`— y evita `db.execute`, cuyo envoltorio difiere entre el driver de Neon (producción) y `pg` (la prueba), que es justo la diferencia que la prueba no podría atrapar. Lo afirma «le pide a Postgres UNA fila como mucho, nunca un conteo», midiendo el SQL que el adaptador MANDA por el registro de Drizzle y no una sentencia reescrita a mano.
+
+  **La barra lo lee, no lo decide.** `AccountMenu` gana `triggerLabelVisible` y un `aria-label={triggerLabel}` que **siempre** viaja: sin palabras visibles el control se sigue anunciando «Mis avisos» y sigue siendo el mismo `<a href="/mis-avisos">`. `Nav.tsx` pasa `account.hasListings` tal cual — no hay un `if` sobre datos en el componente.
+
+  **DISCREPANCIA ENCONTRADA MIDIENDO, no supuesta.** La tarea decía «sólo tiene efecto en escritorio, porque en móvil la lámina ya es sólo el círculo». **La lámina sí; el código no**: `.triggerLabel` no tiene ningún `@media` en `AccountMenu.module.css`, así que hoy las palabras se dibujan también a 360. O sea que este cambio tiene efecto en los dos anchos. **No se resolvió acá** —esconderlas en móvil es geometría y merece su propia casilla— y queda anotado en vez de cerrarse en silencio.
+
+  **Los viajes, medidos con el arnés de la 11.22 —cada `POST /sql` es un viaje— contra la aplicación compilada y la semilla de e2e:**
+
+  | Pantalla | Antes | Después |
+  |---|---|---|
+  | `/` sin sesión | **4** | **4** |
+  | `/` con sesión | **5** | **6** |
+  | ficha sin sesión | **2** | **2** |
+  | ficha con sesión | **4** | **5** |
+  | `/alquiler/[ciudad]` sin sesión | **5** | **5** |
+  | `/alquiler/[ciudad]` con sesión | **6** | **7** |
+  | `/mis-avisos` | **4** | **4** |
+  | `/mis-avisos/[id]/editar` | **9** | **9** |
+  | `/importar` | **2** | **3** |
+
+  Es exactamente lo que el fundador aceptó: **+1 sólo con sesión, 0 sin ella**, y el visitante anónimo —casi todo el tráfico de `/`, resultados y ficha— no paga nada. **Y las dos pantallas que ya consultaban no pagan nada tampoco**, aunque no por donde la tarea suponía: en `/mis-avisos` la respuesta ya está en memoria (`board.total > 0`, y ese total cuenta el tablero entero, nunca lo filtrado), y en `/editar` haber pasado el `notFound()` de `loadListingForEdit` **es** la respuesta del `EXISTS` — con la fila delante. En ninguna de las dos hizo falta plegar nada dentro de `findAccount`, que habría sido ensanchar un puerto de otro módulo para que leyera `listing`.
+
+  **Mutaciones: 8, cada una dos veces.** Con las pruebas nuevas en el árbol las 8 ponen roja la prueba que les corresponde; con esas pruebas aparcadas fuera, **7 de 8 pasan en verde** — o sea que lo que protege esta conducta son las pruebas nuevas y nada más. La excepción es M1 (`hasListings: true` siempre), que también rompe la aserción de forma que ya existía en `nav-account.test.ts`.
 
 ## Phase 15: Entrar — the two doors, and the magic link (founder, 2026-08-21)
 
