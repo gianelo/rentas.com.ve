@@ -127,6 +127,7 @@ export default async function MeasureHarnessPage({
             initials: "MF",
             imageUrl: null,
             canImportListings: false,
+            hasListings: true,
           }}
           publish={{ bar: { label: "Publicar", emphasis: "accent" }, menu: null }}
           signInHref="/signin"

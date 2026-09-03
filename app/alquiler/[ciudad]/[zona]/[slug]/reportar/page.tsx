@@ -11,6 +11,7 @@ import {
   REPORT_SENT_PARAM,
   resolveReportScreen,
 } from "@/modules/listing-trust/domain/report-screen";
+import { readNavAccountFlags } from "../../../../../_lib/nav-account";
 import { readSession } from "../../../../../_lib/session";
 import { reportarAviso } from "./actions";
 import styles from "./reportar.module.css";
@@ -71,7 +72,11 @@ export default async function ReportarPage({ params, searchParams }: ReportarPro
   const screen = resolveReportScreen(query[REPORT_SENT_PARAM]);
 
   const session = await readSession();
-  const account = resolveNavAccount(session);
+  // **El viaje que la 14.56 agrega, y sólo para quien tiene sesión**: si esta
+  // cuenta publicó algo se le pregunta a `listing` con un `EXISTS`. Sin cookie
+  // no hay sesión y no hay consulta, que es casi todo el tráfico de esta
+  // pantalla.
+  const account = resolveNavAccount(session, await readNavAccountFlags(session));
   const publish = resolveNavPublish(account);
 
   return (

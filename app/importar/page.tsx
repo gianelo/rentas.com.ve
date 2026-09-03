@@ -12,6 +12,7 @@ import {
 } from "../../src/modules/identity/domain/nav-account";
 import { homeSearchForm } from "../../src/modules/listing-catalogue/domain/search-destination";
 import { db } from "../../src/shared/db/client";
+import { readNavAccountFlags } from "../_lib/nav-account";
 import { requireSession } from "../_lib/require-session";
 import { ImportarCartera } from "./ImportarCartera";
 import styles from "./importar.module.css";
@@ -58,9 +59,14 @@ export default async function ImportarPage() {
   const bulkImportAccount = await new DrizzleBulkImportAccounts(db).findAccount(session.userId);
   if (!isBulkImportAuthorized(bulkImportAccount)) notFound();
 
+  // **Acá sí se pregunta** (14.56), y es la pantalla donde más importa: una
+  // inmobiliaria autorizada a importar puede no haber importado todavía nada,
+  // que es exactamente la cuenta a la que la barra no debe prometerle «Mis
+  // avisos». La cartera del importador ya se leyó arriba; esto es el segundo
+  // viaje, y lo paga una pantalla que ya está detrás de una sesión.
   const account = resolveNavAccount(
     { name: session.name, email: session.email },
-    { bulkImportEnabled: true },
+    { bulkImportEnabled: true, ...(await readNavAccountFlags(session)) },
   );
   const publish = resolveNavPublish(account);
 

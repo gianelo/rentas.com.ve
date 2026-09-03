@@ -50,6 +50,7 @@ import { readSiteBaseUrl } from "@/modules/listing-discovery/infrastructure/site
 import { DrizzleListingSearch } from "@/modules/listing-search/infrastructure/drizzle-listing-search";
 import { db } from "@/shared/db/client";
 import { shortSpanishDate } from "@/shared/format/spanish-date";
+import { readNavAccountFlags } from "../../../../_lib/nav-account";
 import { readSession, requestSessionPort } from "../../../../_lib/session";
 import styles from "./ficha.module.css";
 import { continueWithGoogle, revealListingContact } from "./reveal-actions";
@@ -206,7 +207,11 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
   // acaba de usar el bloque de contacto, así que esto no agrega una consulta:
   // dentro de una petición es la misma lectura. Y sin cookie no hubo ninguna.
   const session = await readSession();
-  const account = resolveNavAccount(session);
+  // **El viaje que la 14.56 agrega, y sólo para quien tiene sesión**: si esta
+  // cuenta publicó algo se le pregunta a `listing` con un `EXISTS`. Sin cookie
+  // no hay sesión y no hay consulta, que es casi todo el tráfico de esta
+  // pantalla.
+  const account = resolveNavAccount(session, await readNavAccountFlags(session));
   const publish = resolveNavPublish(account);
 
   // Se lee al servir y no al importar el módulo: `next build` evalúa el módulo

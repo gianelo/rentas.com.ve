@@ -30,9 +30,21 @@ const { notFound, reportarAviso, getSession } = vi.hoisted(() => {
 });
 
 vi.mock("next/navigation", () => ({ notFound }));
+// El cliente de Neon se construye al importar y esta prueba no habla con la base.
+vi.mock("@/shared/db/client", () => ({ db: {} }));
 vi.mock("./actions", () => ({ reportarAviso }));
 // Arrastra Auth.js entero y no participa de lo que se prueba. La barra sí se
 // dibuja, con la sesión que este doble entregue.
+/**
+ * tasks.md 14.56 — la barra pregunta si esta cuenta publicó algo. Doblado acá
+ * porque esta prueba mide otra cosa; que la consulta sea correcta lo afirma
+ * `tests/integration/publisher-has-listings.test.ts` contra Postgres real.
+ */
+vi.mock("@/modules/listing-publication/infrastructure/drizzle-publisher-has-listings", () => ({
+  DrizzlePublisherHasListings: class {
+    hasAnyListing = async () => false;
+  },
+}));
 vi.mock("@/modules/identity/infrastructure/session-port", () => ({
   nextAuthSessionPort: { getSession },
 }));

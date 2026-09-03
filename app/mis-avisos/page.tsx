@@ -74,9 +74,18 @@ export default async function MisAvisosPage({
     ),
   ]);
 
+  // **Acá el `EXISTS` de la 14.56 no se paga: la respuesta ya está en memoria.**
+  // `listPublisherListings` acaba de traer la cartera entera y `board.total`
+  // cuenta el tablero completo, nunca lo filtrado por la ficha elegida — o sea
+  // que preguntarle a `listing` otra vez sería un viaje para saber algo que
+  // esta pantalla ya sabe. La decisión la sigue tomando el dominio: acá sólo se
+  // le entrega el hecho.
   const account = resolveNavAccount(
     { name: session.name, email: session.email },
-    bulkImportAccount ? { bulkImportEnabled: bulkImportAccount.bulkImportEnabled } : undefined,
+    {
+      bulkImportEnabled: bulkImportAccount?.bulkImportEnabled ?? false,
+      hasListings: board.total > 0,
+    },
   );
   const publish = resolveNavPublish(account);
 

@@ -37,6 +37,7 @@ import { resolveZoneTokens, toSearchZones } from "@/modules/listing-search/domai
 import { DrizzleFacetedSearch } from "@/modules/listing-search/infrastructure/drizzle-faceted-search";
 import { DrizzleListingSearch } from "@/modules/listing-search/infrastructure/drizzle-listing-search";
 import { db } from "@/shared/db/client";
+import { readNavAccountFlags } from "../../../_lib/nav-account";
 import { readSession } from "../../../_lib/session";
 import styles from "./zona.module.css";
 
@@ -222,7 +223,11 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
   // que `/mis-avisos` consulta: la barra no la mira. El modo de render no
   // cambia — la página ya se servía por petición, porque lee `searchParams`.
   const session = await readSession();
-  const account = resolveNavAccount(session);
+  // **El viaje que la 14.56 agrega, y sólo para quien tiene sesión**: si esta
+  // cuenta publicó algo se le pregunta a `listing` con un `EXISTS`. Sin cookie
+  // no hay sesión y no hay consulta, que es casi todo el tráfico de esta
+  // pantalla.
+  const account = resolveNavAccount(session, await readNavAccountFlags(session));
   const publish = resolveNavPublish(account);
 
   // **Ni el texto ni el número de la pastilla se deciden acá.** `panel.headline`
