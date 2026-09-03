@@ -4,6 +4,7 @@ import type * as schema from "../../../shared/db/schema";
 import type { PropertyType } from "../../../shared/db/schema";
 import { listings } from "../../../shared/db/schema";
 import type {
+  BathroomStep,
   FacetCounts,
   FacetedSearchPort,
   ListingAttribute,
@@ -59,7 +60,7 @@ export type FacetedSearchDatabase = PgDatabase<PgQueryResultHKT, typeof schema>;
  * toda faceta que no sea la del precio lo sigue respetando, porque `others`
  * sólo apaga el eje que se le nombra.
  */
-type FacetAxis = "zone" | "rooms" | "type" | "publisher" | "price" | ListingAttribute;
+type FacetAxis = "zone" | "rooms" | "bathrooms" | "type" | "publisher" | "price" | ListingAttribute;
 
 /** Cada atributo con su columna, igual que en `DrizzleListingSearch`. */
 const ATTRIBUTE_COLUMNS: Readonly<Record<ListingAttribute, PgColumn>> = {
@@ -145,6 +146,10 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       criteria.zoneIds === undefined ? undefined : inArray(listings.zoneId, [...criteria.zoneIds]);
     const byRoomsFilter =
       criteria.minRooms === undefined ? undefined : gte(listings.rooms, criteria.minRooms);
+    const byBathroomsFilter =
+      criteria.minBathrooms === undefined
+        ? undefined
+        : gte(listings.bathrooms, criteria.minBathrooms);
     const byTypeFilter =
       criteria.propertyType === undefined
         ? undefined
@@ -168,6 +173,7 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
     const others = (except?: FacetAxis): (SQL | undefined)[] => [
       except === "zone" ? undefined : byZoneFilter,
       except === "rooms" ? undefined : byRoomsFilter,
+      except === "bathrooms" ? undefined : byBathroomsFilter,
       except === "type" ? undefined : byTypeFilter,
       except === "publisher" ? undefined : byPublisherFilter,
       except === "price" ? undefined : priceFilter,
@@ -274,6 +280,14 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
         rooms2: countWhere(...others("rooms"), gte(listings.rooms, 2)),
         rooms3: countWhere(...others("rooms"), gte(listings.rooms, 3)),
         rooms4: countWhere(...others("rooms"), gte(listings.rooms, 4)),
+        // **Tres columnas más en el MISMO `select`, no una consulta aparte**
+        // (14.45): el costo de este archivo son los viajes de red, y una
+        // segunda pasada por las mismas filas para tres números los duplica.
+        // El `>=` es la mitad que decide: el escalón «3+» significa tres baños
+        // o más, igual que el criterio, porque es el mismo filtro.
+        bathrooms1: countWhere(...others("bathrooms"), gte(listings.bathrooms, 1)),
+        bathrooms2: countWhere(...others("bathrooms"), gte(listings.bathrooms, 2)),
+        bathrooms3: countWhere(...others("bathrooms"), gte(listings.bathrooms, 3)),
         hasPowerPlant: countWhere(...others("hasPowerPlant"), eq(listings.hasPowerPlant, true)),
         hasRegularWater: countWhere(
           ...others("hasRegularWater"),
@@ -293,6 +307,7 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
         withoutZone: without("zone"),
         withoutPrice: without("price"),
         withoutRooms: without("rooms"),
+        withoutBathrooms: without("bathrooms"),
         withoutPublisher: without("publisher"),
         withoutPowerPlant: without("hasPowerPlant"),
         withoutRegularWater: without("hasRegularWater"),
@@ -325,6 +340,7 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       withoutZone: 0,
       withoutPrice: 0,
       withoutRooms: 0,
+      withoutBathrooms: 0,
       withoutPublisher: 0,
       withoutPowerPlant: 0,
       withoutRegularWater: 0,
@@ -337,6 +353,9 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       rooms2: 0,
       rooms3: 0,
       rooms4: 0,
+      bathrooms1: 0,
+      bathrooms2: 0,
+      bathrooms3: 0,
       hasPowerPlant: 0,
       hasRegularWater: 0,
       isFurnished: 0,
@@ -375,6 +394,13 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       3: sums.rooms3,
       4: sums.rooms4,
     };
+    // Mismo chequeo que el de abajo: un cuarto escalón de baños en el dominio
+    // rompe la compilación acá en vez de dejar un botón que nadie cuenta.
+    const byMinBathrooms: Record<BathroomStep, number> = {
+      1: sums.bathrooms1,
+      2: sums.bathrooms2,
+      3: sums.bathrooms3,
+    };
     const byAttribute: Record<ListingAttribute, number> = {
       hasPowerPlant: sums.hasPowerPlant,
       hasRegularWater: sums.hasRegularWater,
@@ -401,6 +427,7 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       zone: sums.withoutZone,
       price: sums.withoutPrice,
       rooms: sums.withoutRooms,
+      bathrooms: sums.withoutBathrooms,
       publisherType: sums.withoutPublisher,
       hasPowerPlant: sums.withoutPowerPlant,
       hasRegularWater: sums.withoutRegularWater,
@@ -413,6 +440,7 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       total: sums.total,
       byZone,
       byMinRooms,
+      byMinBathrooms,
       byAttribute,
       byPropertyType,
       byPublisherType,

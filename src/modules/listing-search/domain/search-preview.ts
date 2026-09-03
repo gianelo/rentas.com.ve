@@ -1,3 +1,4 @@
+import type { BathroomStep } from "./bathroom-steps";
 import type { RoomStep } from "./room-steps";
 import { confirmCountLabel, type RelaxableFilter } from "./search-confirm";
 import type { ListingAttribute, PublisherType } from "./search-criteria";
@@ -45,6 +46,7 @@ import type { ListingAttribute, PublisherType } from "./search-criteria";
 /** Los conteos que ya viajaron con la página, y que alcanzan para adelantarse. */
 export interface PreviewCounts {
   readonly byMinRooms: Readonly<Record<RoomStep, number>>;
+  readonly byMinBathrooms: Readonly<Record<BathroomStep, number>>;
   readonly byAttribute: Readonly<Record<ListingAttribute, number>>;
   readonly byPublisherType: Readonly<Record<PublisherType, number>>;
   /** Cuántos quedarían soltando ese filtro y ningún otro (F10 y F11). */
@@ -68,6 +70,7 @@ export interface PreviewCounts {
  */
 export type PreviewChange =
   | { readonly kind: "rooms"; readonly step: RoomStep | null }
+  | { readonly kind: "bathrooms"; readonly step: BathroomStep | null }
   | { readonly kind: "publisher"; readonly value: PublisherType | null }
   | { readonly kind: "attribute"; readonly attribute: ListingAttribute; readonly add: boolean }
   | { readonly kind: "clearAll" };
@@ -82,6 +85,11 @@ function totalAfter(counts: PreviewCounts, change: PreviewChange): number | unde
   if (change.kind === "clearAll") return counts.cityTotal;
   if (change.kind === "rooms") {
     return change.step === null ? counts.withoutFilter?.rooms : counts.byMinRooms?.[change.step];
+  }
+  if (change.kind === "bathrooms") {
+    return change.step === null
+      ? counts.withoutFilter?.bathrooms
+      : counts.byMinBathrooms?.[change.step];
   }
   if (change.kind === "publisher") {
     return change.value === null

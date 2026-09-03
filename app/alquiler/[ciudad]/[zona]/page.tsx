@@ -147,6 +147,7 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
       minPrice: query[SEARCH_QUERY_NAMES.minPrice],
       maxPrice: query[SEARCH_QUERY_NAMES.maxPrice],
       minRooms: query[SEARCH_QUERY_NAMES.minRooms],
+      minBathrooms: query[SEARCH_QUERY_NAMES.minBathrooms],
       propertyType: query[SEARCH_QUERY_NAMES.propertyType],
       publisherType: query[SEARCH_QUERY_NAMES.publisherType],
       hasPowerPlant: query[SEARCH_QUERY_NAMES.hasPowerPlant],

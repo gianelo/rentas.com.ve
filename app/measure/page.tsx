@@ -608,6 +608,7 @@ function harnessPanel() {
       total: 16,
       byZone: { chacao: 12 },
       byMinRooms: { 1: 16, 2: 9, 3: 4, 4: 0 },
+      byMinBathrooms: { 1: 16, 2: 7, 3: 0 },
       byAttribute: {
         hasPowerPlant: 9,
         hasRegularWater: 12,
@@ -623,6 +624,7 @@ function harnessPanel() {
         zone: 40,
         price: 22,
         rooms: 31,
+        bathrooms: 31,
         publisherType: 25,
         hasPowerPlant: 18,
         hasRegularWater: 19,

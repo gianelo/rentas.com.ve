@@ -1,3 +1,4 @@
+import { bathroomStepLabel, isBathroomStep } from "./bathroom-steps";
 import { isRoomStep, roomStepLabel } from "./room-steps";
 import type { RelaxableFilter } from "./search-confirm";
 import type { ListingAttribute, PublisherType, SearchCriteria } from "./search-criteria";
@@ -92,6 +93,7 @@ export interface SearchSelection {
   readonly minPriceUsd?: number;
   readonly maxPriceUsd?: number;
   readonly minRooms?: number;
+  readonly minBathrooms?: number;
   readonly attributes?: readonly ListingAttribute[];
   readonly publisherType?: PublisherType;
 }
@@ -186,8 +188,8 @@ export function resolveSearchSteps(
       answered: selection.minPriceUsd !== undefined || selection.maxPriceUsd !== undefined,
     },
     habitaciones: {
-      summary: roomsSummary(selection.minRooms),
-      answered: selection.minRooms !== undefined,
+      summary: sizeSummary(selection),
+      answered: selection.minRooms !== undefined || selection.minBathrooms !== undefined,
     },
     publica: {
       summary: publisherSummary(selection.publisherType),
@@ -238,6 +240,36 @@ function priceSummary(selection: SearchSelection): string {
 function roomsSummary(minRooms: number | undefined): string {
   if (minRooms === undefined) return "Cualquiera";
   return isRoomStep(minRooms) ? `${roomStepLabel(minRooms)} hab` : `${minRooms}+ hab`;
+}
+
+/**
+ * Los baños, con la misma regla y la misma trampa: el «+» del último escalón
+ * sale de `bathroom-steps.ts`, y un `?banos=5` escrito a mano se dice tal cual
+ * porque el criterio lo admite aunque el control no tenga botón para pedirlo.
+ *
+ * El singular no es cosmético: «1 baños» en el renglón del acordeón se lee como
+ * un texto sin terminar, y este renglón es lo único que se ve del grupo cerrado.
+ */
+function bathroomsSummary(minBathrooms: number | undefined): string {
+  if (minBathrooms === undefined) return "Cualquiera";
+  const label = isBathroomStep(minBathrooms) ? bathroomStepLabel(minBathrooms) : `${minBathrooms}+`;
+  return `${label} ${minBathrooms === 1 ? "baño" : "baños"}`;
+}
+
+/**
+ * **El grupo que el fundador llamó «tamaño», resumido entero** (14.45).
+ *
+ * Habitaciones y baños comparten grupo porque la lámina 7b los dibuja en la
+ * misma columna, uno debajo del otro. El renglón cerrado del acordeón es lo
+ * único que se ve de ese grupo en el teléfono, así que nombrar sólo la mitad
+ * escondería justo el filtro que alguien acaba de poner.
+ */
+function sizeSummary(selection: SearchSelection): string {
+  const parts = [
+    ...(selection.minRooms === undefined ? [] : [roomsSummary(selection.minRooms)]),
+    ...(selection.minBathrooms === undefined ? [] : [bathroomsSummary(selection.minBathrooms)]),
+  ];
+  return parts.length === 0 ? "Cualquiera" : parts.join(" · ");
 }
 
 /**
@@ -315,6 +347,7 @@ export function describeFilter(selection: SearchSelection, filter: RelaxableFilt
   if (filter === "zone") return selection.zoneNames.join(", ");
   if (filter === "price") return priceSummary(selection);
   if (filter === "rooms") return roomsSummary(selection.minRooms);
+  if (filter === "bathrooms") return bathroomsSummary(selection.minBathrooms);
   if (filter === "publisherType") {
     return selection.publisherType === undefined ? "" : PUBLISHER_SUMMARY[selection.publisherType];
   }
@@ -333,7 +366,7 @@ export function toSearchSelection(
   zoneNames: readonly string[],
   criteria: Pick<
     SearchCriteria,
-    "minPriceUsd" | "maxPriceUsd" | "minRooms" | "publisherType" | "attributes"
+    "minPriceUsd" | "maxPriceUsd" | "minRooms" | "minBathrooms" | "publisherType" | "attributes"
   >,
 ): SearchSelection {
   return {
@@ -342,6 +375,7 @@ export function toSearchSelection(
     ...(criteria.minPriceUsd === undefined ? {} : { minPriceUsd: criteria.minPriceUsd }),
     ...(criteria.maxPriceUsd === undefined ? {} : { maxPriceUsd: criteria.maxPriceUsd }),
     ...(criteria.minRooms === undefined ? {} : { minRooms: criteria.minRooms }),
+    ...(criteria.minBathrooms === undefined ? {} : { minBathrooms: criteria.minBathrooms }),
     ...(criteria.publisherType === undefined ? {} : { publisherType: criteria.publisherType }),
     ...(criteria.attributes === undefined ? {} : { attributes: criteria.attributes }),
   };
@@ -372,6 +406,7 @@ export function countPillFilters(selection: SearchSelection): number {
   let count = selection.attributes?.length ?? 0;
   if (selection.minPriceUsd !== undefined || selection.maxPriceUsd !== undefined) count += 1;
   if (selection.minRooms !== undefined) count += 1;
+  if (selection.minBathrooms !== undefined) count += 1;
   if (selection.publisherType !== undefined) count += 1;
   return count;
 }

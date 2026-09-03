@@ -118,6 +118,7 @@ export function facetsFor(
     total: rows.length,
     byZone,
     byMinRooms: { 1: rows.length, 2: rows.length, 3: 0, 4: 0 },
+    byMinBathrooms: { 1: 16, 2: 7, 3: 0 },
     byAttribute: {
       hasPowerPlant: 0,
       hasRegularWater: 0,
@@ -151,6 +152,7 @@ export function facetsFor(
       zone: cityTotal,
       price: cityTotal,
       rooms: rows.length,
+      bathrooms: rows.length,
       publisherType: rows.length,
       hasPowerPlant: rows.length,
       hasRegularWater: rows.length,
