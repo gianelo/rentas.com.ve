@@ -130,8 +130,9 @@ test("los baños se eligen desde la dirección, con su conteo al lado", async ({
  * `parking_spots > 0` y no de una columna booleana. Lo que se mide acá es que
  * eso no se note desde afuera — mismo enlace `GET`, mismo «n de m» al lado,
  * misma dirección compartible. Y que el número **no sea el total**: la siembra
- * de Distrito Capital tiene seis avisos y uno sin puesto, así que un conteo que
- * dijera «6 de 6» sería la derivación sin aplicar.
+ * de Distrito Capital tiene dos avisos y uno sin puesto, así que un conteo que
+ * dijera «2 de 2» sería la derivación sin aplicar el umbral. Ese cero está en
+ * `scripts/seed-e2e.ts` a propósito y con la razón escrita al lado.
  */
 test("el puesto es la sexta opción, con su conteo derivado del número", async ({ page }) => {
   await page.goto("/alquiler/distrito-capital?filtros=atributos");
@@ -143,7 +144,7 @@ test("el puesto es la sexta opción, con su conteo derivado del número", async 
   const puesto = opciones.getByRole("listitem").filter({ hasText: "Puesto de estacionamiento" });
   await expect(puesto).toHaveCount(1);
   // El «n de m» con n < m: el aviso sin puesto queda afuera del conteo.
-  await expect(puesto).toContainText("5 de 6");
+  await expect(puesto).toContainText("1 de 2");
 
   await puesto.getByRole("link").click();
 
