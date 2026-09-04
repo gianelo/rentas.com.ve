@@ -148,15 +148,32 @@ describe("los atributos declarados (F6)", () => {
     hasPowerPlant: 9,
     hasRegularWater: 12,
     isFurnished: 4,
+    hasParking: 7,
     hasSecurity: 0,
     hasAppliances: 3,
   };
 
-  it("son los cinco del dominio, con su etiqueta legible", () => {
+  it("son los seis del dominio, con su etiqueta legible", () => {
     const options = resolveAttributeOptions(BY_ATTRIBUTE, 16, []);
 
-    expect(options).toHaveLength(5);
+    expect(options).toHaveLength(6);
     expect(options[0]?.label).toBe("Planta eléctrica");
+  });
+
+  /**
+   * **El puesto es una opción más y se ofrece exactamente igual que las otras
+   * cinco** (14.45 rebanada C). Que su número salga de `parking_spots > 0` en
+   * vez de una columna booleana es asunto del adaptador; de este lado no hay
+   * ninguna diferencia que una persona pueda ver, y ésa es la prueba de que la
+   * derivación quedó donde tenía que quedar.
+   */
+  it("el puesto de estacionamiento es el cuarto, con el rótulo del fundador", () => {
+    const options = resolveAttributeOptions(BY_ATTRIBUTE, 16, []);
+
+    expect(options[3]?.attribute).toBe("hasParking");
+    expect(options[3]?.label).toBe("Puesto de estacionamiento");
+    expect(options[3]?.note).toBe("7 de 16");
+    expect(options[3]?.disabled).toBe(false);
   });
 
   it("cada uno dice cuántos lo cumplen sobre el total", () => {

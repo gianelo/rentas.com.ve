@@ -121,3 +121,35 @@ test("los baños se eligen desde la dirección, con su conteo al lado", async ({
   // habitaciones.
   await expect(grupo.getByRole("heading").first()).toContainText("2 baños");
 });
+
+/**
+ * **El puesto de estacionamiento, sin una línea de JavaScript** (14.45
+ * rebanada C).
+ *
+ * Es la sexta opción del grupo y **la única derivada**: su número sale de
+ * `parking_spots > 0` y no de una columna booleana. Lo que se mide acá es que
+ * eso no se note desde afuera — mismo enlace `GET`, mismo «n de m» al lado,
+ * misma dirección compartible. Y que el número **no sea el total**: la siembra
+ * de Distrito Capital tiene dos avisos y uno sin puesto, así que un conteo que
+ * dijera «2 de 2» sería la derivación sin aplicar el umbral. Ese cero está en
+ * `scripts/seed-e2e.ts` a propósito y con la razón escrita al lado.
+ */
+test("el puesto es la sexta opción, con su conteo derivado del número", async ({ page }) => {
+  await page.goto("/alquiler/distrito-capital?filtros=atributos");
+
+  const grupo = page.locator("#filtros-atributos");
+  const opciones = grupo.locator("ul").first();
+  await expect(opciones.getByRole("listitem")).toHaveCount(6);
+
+  const puesto = opciones.getByRole("listitem").filter({ hasText: "Puesto de estacionamiento" });
+  await expect(puesto).toHaveCount(1);
+  // El «n de m» con n < m: el aviso sin puesto queda afuera del conteo.
+  await expect(puesto).toContainText("1 de 2");
+
+  await puesto.getByRole("link").click();
+
+  await expect(page).toHaveURL(/puesto=1/);
+  // El renglón cerrado del grupo lo nombra: en el teléfono el acordeón lo
+  // esconde, y un resumen que lo omitiera dejaría el filtro puesto e invisible.
+  await expect(grupo.getByRole("heading").first()).toContainText("puesto");
+});

@@ -126,6 +126,11 @@ export function facetsFor(
       hasPowerPlant: 0,
       hasRegularWater: 0,
       isFurnished: 0,
+      // **Cero, y por la misma regla que los otros cinco**: ninguno de los
+      // cuatro avisos falsos declara nada, así que un número acá sería un
+      // conteo que contradice al catálogo que este mismo archivo dibuja
+      // (14.45 rebanada C — tres falsos mentían así al cerrar la rebanada A).
+      hasParking: 0,
       hasSecurity: 0,
       hasAppliances: 0,
     },
@@ -160,6 +165,7 @@ export function facetsFor(
       hasPowerPlant: rows.length,
       hasRegularWater: rows.length,
       isFurnished: rows.length,
+      hasParking: rows.length,
       hasSecurity: rows.length,
       hasAppliances: rows.length,
     },

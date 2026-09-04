@@ -121,6 +121,14 @@ interface Fixture {
    * faceta mira declaran el suyo.
    */
   readonly bathrooms?: number;
+  /**
+   * **Por defecto 1, que es lo que el arnés escribía a mano antes de la 14.45
+   * rebanada C.** Se vuelve campo para que la faceta derivada tenga algo que
+   * medir: con TODOS los avisos en uno, `parking_spots > 0`, `>= 0` y `true`
+   * devuelven el mismo número y la derivación queda sin una sola prueba que la
+   * pueda poner en rojo.
+   */
+  readonly parkingSpots?: number;
   readonly areaM2: number;
   readonly propertyType: string;
   readonly publisherType: string;
@@ -147,9 +155,9 @@ async function insertListing(fixture: Fixture) {
        description, price_usd, rooms, area_m2, bathrooms, parking_spots,
        has_power_plant, has_regular_water, is_furnished, has_security, has_appliances,
        contact_method, contact_value, status, published_at, expires_at)
-     VALUES ($1,$2,$3,$4,$5,$6,'Apartamento','x',$7,$8,$9,$10,1,
-       $11,$12,$13,$14,$15,
-       'whatsapp','04121234567',$16,now(),now() + make_interval(mins => $17::int))`,
+     VALUES ($1,$2,$3,$4,$5,$6,'Apartamento','x',$7,$8,$9,$10,$11,
+       $12,$13,$14,$15,$16,
+       'whatsapp','04121234567',$17,now(),now() + make_interval(mins => $18::int))`,
     [
       fixture.id,
       ANA,
@@ -161,6 +169,7 @@ async function insertListing(fixture: Fixture) {
       fixture.rooms,
       fixture.areaM2,
       fixture.bathrooms ?? 2,
+      fixture.parkingSpots ?? 1,
       fixture.hasPowerPlant ?? false,
       fixture.hasRegularWater ?? false,
       fixture.isFurnished ?? false,
@@ -198,6 +207,10 @@ beforeAll(async () => {
   await insertListing({
     id: A1,
     bathrooms: 1,
+    // **A1 y A3 sin puesto** (14.45 rebanada C): son los que hacen que la
+    // faceta derivada diga un número distinto del total. Con los cinco en uno,
+    // `parking_spots > 0` no se distingue de `count(*)`.
+    parkingSpots: 0,
     zoneId: MCBO_CENTRO,
     cityId: MARACAIBO,
     priceUsd: 200,
@@ -224,6 +237,7 @@ beforeAll(async () => {
   await insertListing({
     id: A3,
     bathrooms: 2,
+    parkingSpots: 0,
     zoneId: MCBO_CENTRO,
     cityId: MARACAIBO,
     priceUsd: 500,
@@ -649,7 +663,7 @@ describe("una faceta no se filtra a sí misma (task 14.11)", () => {
   });
 });
 
-describe("las cinco facetas de atributo, tipo y publicador (F6)", () => {
+describe("las seis facetas de atributo, tipo y publicador (F6)", () => {
   it("cuenta cada atributo declarado sobre el resultado filtrado", async () => {
     const counts = await facets.countFacets({ cityId: MARACAIBO }, ZONAS_OFRECIDAS);
 
@@ -657,6 +671,10 @@ describe("las cinco facetas de atributo, tipo y publicador (F6)", () => {
       hasPowerPlant: 2, // A2, A4
       hasRegularWater: 1, // A4
       isFurnished: 2, // A2, A3
+      // **Derivado de `parking_spots > 0`, no de una columna booleana** (14.45
+      // rebanada C): A2, A4 y A5 tienen uno; A1 y A3 tienen cero. Que sean
+      // tres y no cinco es toda la prueba de que el umbral se aplica.
+      hasParking: 3, // A2, A4, A5
       hasSecurity: 1, // A5
       hasAppliances: 1, // A5
     });
@@ -675,6 +693,48 @@ describe("las cinco facetas de atributo, tipo y publicador (F6)", () => {
     expect(counts.byPublisherType).toEqual({ owner: 3, broker: 2 });
   });
 
+  /**
+   * **La faceta derivada NO se cuenta contra sí misma**, que es el defecto que
+   * la rebanada A tuvo que arreglar en los baños y el que hace usable el
+   * filtro entero: con «Puesto» ya puesto, su propio número tiene que seguir
+   * diciendo cuántos hay con puesto — si se contara contra sí mismo diría lo
+   * mismo que el total y desmarcarlo parecería no cambiar nada.
+   */
+  it("el conteo del puesto ignora el filtro del puesto y respeta todo lo demás", async () => {
+    const counts = await facets.countFacets(
+      { cityId: MARACAIBO, attributes: ["hasParking"] },
+      ZONAS_OFRECIDAS,
+    );
+
+    expect(counts.total).toBe(3); // A2, A4, A5
+    // Su propia faceta sigue en tres, no en el total de la búsqueda ya
+    // filtrada; las demás sí lo respetan (A3 amoblado queda afuera).
+    expect(counts.byAttribute.hasParking).toBe(3);
+    expect(counts.byAttribute.isFurnished).toBe(1); // A2; A3 no tiene puesto
+    expect(counts.byMinRooms).toEqual({ 1: 3, 2: 3, 3: 1, 4: 1 });
+  });
+
+  it("el filtro del puesto recorta la lista igual que recorta el total", async () => {
+    // La regla transversal 3 medida donde importa: el número del botón contra
+    // las filas que el motor de la lista realmente devuelve. Las dos consultas
+    // tienen que derivar `parking_spots > 0` igual, o el botón miente.
+    const criteria: SearchCriteria = { cityId: MARACAIBO, attributes: ["hasParking"] };
+    const counts = await facets.countFacets(criteria, ZONAS_OFRECIDAS);
+    const rows = await search.search(criteria);
+
+    expect(counts.total).toBe(rows.length);
+    expect(rows.map((row) => row.id).sort()).toEqual([A2, A4, A5].sort());
+  });
+
+  it("soltar el puesto promete lo que soltarlo de verdad devuelve", async () => {
+    const criteria: SearchCriteria = { cityId: MARACAIBO, attributes: ["hasParking"] };
+    const counts = await facets.countFacets(criteria, ZONAS_OFRECIDAS);
+    const soltado = await facets.countFacets(withoutFilter(criteria, "hasParking"), []);
+
+    expect(counts.withoutFilter.hasParking).toBe(soltado.total);
+    expect(counts.withoutFilter.hasParking).toBe(5);
+  });
+
   it("estrecha esos conteos con el resto de los filtros", async () => {
     const counts = await facets.countFacets(
       { cityId: MARACAIBO, zoneIds: [MCBO_NORTE] },
@@ -685,6 +745,7 @@ describe("las cinco facetas de atributo, tipo y publicador (F6)", () => {
       hasPowerPlant: 1, // A4
       hasRegularWater: 1, // A4
       isFurnished: 0, // A2 y A3 son de Centro
+      hasParking: 2, // A4, A5
       hasSecurity: 1, // A5
       hasAppliances: 1, // A5
     });
@@ -1099,6 +1160,8 @@ describe("los criterios nuevos también son facetas (tasks 14.6 a 14.9)", () => 
     expect(counts.total).toBe(2); // A2 y A4 declaran planta
     expect(counts.byAttribute).toEqual({
       hasPowerPlant: 2,
+      // A2 y A4 declaran planta y los dos tienen puesto.
+      hasParking: 2,
       hasRegularWater: 1, // sólo A4 declara las dos
       isFurnished: 1, // sólo A2 declara planta y amoblado
       hasSecurity: 0,

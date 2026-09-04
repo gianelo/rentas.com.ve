@@ -50,6 +50,9 @@ const RELAXATION_ORDER: readonly RelaxableFilter[] = [
   "hasPowerPlant",
   "hasRegularWater",
   "isFurnished",
+  // El puesto queda entre los atributos y en el lugar que el diseño le da en
+  // la lista, no al final por ser el último construido (14.45 rebanada C).
+  "hasParking",
   "hasSecurity",
   "hasAppliances",
 ];
@@ -64,6 +67,7 @@ const RELAXATION_NAMES: Readonly<Record<RelaxableFilter, string>> = {
   hasPowerPlant: "planta eléctrica",
   hasRegularWater: "agua regular",
   isFurnished: "amoblado",
+  hasParking: "el puesto de estacionamiento",
   hasSecurity: "vigilancia 24 h",
   hasAppliances: "línea blanca",
 };

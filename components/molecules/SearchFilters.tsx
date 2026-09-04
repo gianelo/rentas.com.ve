@@ -117,6 +117,7 @@ const DEFAULT_NAMES: Readonly<Record<SearchFilterField, string>> = {
   hasPowerPlant: "hasPowerPlant",
   hasRegularWater: "hasRegularWater",
   isFurnished: "isFurnished",
+  hasParking: "hasParking",
   hasSecurity: "hasSecurity",
   hasAppliances: "hasAppliances",
 };
@@ -141,6 +142,9 @@ const ATTRIBUTE_LABELS: Readonly<Record<ListingAttribute, string>> = {
   hasPowerPlant: "Planta eléctrica",
   hasRegularWater: "Agua regular",
   isFurnished: "Amoblado",
+  // Corto como los demás rótulos de este formulario, que abrevia «Vigilancia
+  // 24 h» a «Vigilancia»: en este mercado «puesto» ya significa esto.
+  hasParking: "Puesto",
   hasSecurity: "Vigilancia",
   hasAppliances: "Línea blanca",
 };

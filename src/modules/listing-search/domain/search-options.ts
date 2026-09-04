@@ -164,6 +164,10 @@ const ATTRIBUTE_LABELS: Readonly<Record<ListingAttribute, string>> = {
   hasPowerPlant: "Planta eléctrica",
   hasRegularWater: "Agua regular",
   isFurnished: "Amoblado",
+  // El rótulo del fundador, entero. «Puesto» solo es lo que dice la tira de
+  // datos de la ficha, donde al lado hay un número; acá es una casilla y tiene
+  // que decir de qué.
+  hasParking: "Puesto de estacionamiento",
   hasSecurity: "Vigilancia 24 h",
   hasAppliances: "Línea blanca",
 };
@@ -188,8 +192,14 @@ export interface AttributeOption {
 }
 
 /**
- * Los cinco atributos con su conteo. **Se combinan con Y** (F6): marcar dos
+ * Los seis atributos con su conteo. **Se combinan con Y** (F6): marcar dos
  * pide los dos, así que marcar uno nuevo nunca desmarca al anterior.
+ *
+ * **El sexto es derivado y acá no se nota, que es el punto** (14.45 rebanada
+ * C): «Puesto de estacionamiento» sale de `parking_spots > 0` y el resto de
+ * los cinco de una columna booleana, pero las dos cosas llegan como un número
+ * en `byAttribute` y se ofrecen con la misma regla. Una rama acá para el
+ * derivado sería la derivación escrita dos veces.
  */
 export function resolveAttributeOptions(
   byAttribute: Readonly<Record<ListingAttribute, number>>,

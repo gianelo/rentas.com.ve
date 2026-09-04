@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { SEARCH_QUERY_NAMES } from "@/modules/listing-search/domain/search-query";
 
 /**
  * **Los filtros viven sólo en el modal, y la ubicación sólo en la ruta** —
@@ -67,6 +68,37 @@ describe("los filtros salen de la barra lateral y entran en el modal (14.33)", (
         // ese grupo ya no existe.
         expect(page).not.toMatch(/step:\s*"(ciudad|zona|precio|habitaciones)"/);
       });
+    });
+  }
+});
+
+/**
+ * **Un campo que el dominio nombra y la página no lee es un filtro inalcanzable
+ * desde una pantalla** (14.45 rebanada C).
+ *
+ * Es la clase entera, no el caso: `RawSearchParams` tiene todos sus campos
+ * **opcionales** —tiene que tenerlos, porque una dirección puede no traer
+ * ninguno—, así que olvidarse de pasar uno **compila, pasa el `typecheck` y
+ * deja el filtro muerto**. Ya pasó y está anotado: la 14.45 midió que
+ * `minAreaM2` existe en el criterio, se parsea y se aplica en las dos
+ * consultas, y ninguna de las dos páginas lo pasa — «criterio sin dirección».
+ * Con esta prueba, el próximo nombre corto que alguien agregue a
+ * `SEARCH_QUERY_NAMES` no puede quedarse a mitad de camino en silencio.
+ *
+ * `filtros` y `busca` quedan afuera con nombre propio: no son filtros del
+ * criterio, los lee el panel (`resolveFilterPanel`) y no `buildSearchCriteria`.
+ */
+describe("cada nombre corto llega al criterio desde las dos páginas", () => {
+  const NOT_CRITERIA = ["step", "zoneSearch"] as const;
+  const FIELDS = (Object.keys(SEARCH_QUERY_NAMES) as (keyof typeof SEARCH_QUERY_NAMES)[]).filter(
+    (field) => !NOT_CRITERIA.includes(field as (typeof NOT_CRITERIA)[number]),
+  );
+
+  for (const [name, page] of ENTRIES) {
+    it(`/alquiler/<ciudad>${name === "zona" ? "/<zona>" : ""} los lee todos, por la tabla del dominio`, () => {
+      const missing = FIELDS.filter((field) => !page.includes(`SEARCH_QUERY_NAMES.${field}`));
+
+      expect(missing).toEqual([]);
     });
   }
 });

@@ -51,6 +51,38 @@ describe("DeclaredFeatures", () => {
 
     expect(markup).not.toContain("Solo se lista lo declarado");
   });
+
+  /**
+   * **El puesto entra en la lista y sale del «no se declaró»** (14.45 rebanada
+   * C, decisión del fundador: «con su ✓ en el filtro y en la lista *La
+   * propiedad tiene*»).
+   *
+   * Las dos mitades tienen una sola razón y es la que separa este dato de los
+   * otros cinco: `parking_spots` es `NOT NULL DEFAULT 0` y **el paso 4 de
+   * publicar lo pide siempre** —«Puestos permite 0»—, así que el cero es un
+   * cero declarado, no un silencio. Nombrarlo entre lo no declarado diría que
+   * nadie contestó sobre una respuesta que sí existe, y encima la tira de
+   * datos de arriba ya la escribe como «0 Puestos». La regla de la sección
+   * —nunca afirmar una ausencia— se respeta igual: no se dibuja «Sin puesto».
+   */
+  it("lista el puesto cuando hay al menos uno", () => {
+    const markup = renderToStaticMarkup(<DeclaredFeatures {...NONE} parkingSpots={2} />);
+
+    expect(markup).toContain("Puesto de estacionamiento");
+  });
+
+  it("no nombra el puesto entre lo no declarado, porque el cero sí se declaró", () => {
+    const markup = renderToStaticMarkup(<DeclaredFeatures {...NONE} hasPowerPlant />);
+
+    expect(markup).toContain("Solo se lista lo declarado");
+    expect(markup.toLowerCase()).not.toContain("puesto");
+  });
+
+  it("un puesto solo no alcanza para dibujar la sección de nada más", () => {
+    // El cero no es «no lo declaró», así que sin ningún atributo y sin puesto
+    // la sección sigue sin dibujarse.
+    expect(renderToStaticMarkup(<DeclaredFeatures {...NONE} parkingSpots={0} />)).toBe("");
+  });
 });
 
 describe("StatStrip", () => {

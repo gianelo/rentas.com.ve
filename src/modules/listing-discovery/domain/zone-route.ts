@@ -100,10 +100,14 @@ export const FILTER_KEYS = [
   "zona",
   "tipo",
   "pub",
-  // Los cinco atributos, con los nombres cortos del fundador (F12).
+  // Los seis atributos, con los nombres cortos del fundador (F12). El puesto
+  // de estacionamiento (14.45 rebanada C) entra por la misma razón que los
+  // otros cinco: refina la lista, así que la dirección deja de ser la de la
+  // zona.
   "planta",
   "agua",
   "amoblado",
+  "puesto",
   "vigilancia",
   "electro",
   // **La paginación también.** La página 2 es contenido casi idéntico al de la

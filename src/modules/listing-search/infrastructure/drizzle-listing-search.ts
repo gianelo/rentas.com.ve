@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, gt, gte, inArray, lte, type SQL, sql } from "drizzle-orm";
-import type { PgColumn, PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import { listings } from "../../../shared/db/schema";
 import type {
@@ -7,8 +7,9 @@ import type {
   ListingSearchResult,
 } from "../application/ports/listing-search.port";
 import { pageWindow } from "../domain/pagination";
-import type { ListingAttribute, SearchCriteria } from "../domain/search-criteria";
+import type { SearchCriteria } from "../domain/search-criteria";
 import type { SearchOrder } from "../domain/search-order";
+import { attributeCondition } from "./listing-attribute-sql";
 
 /**
  * The catalogue read, run where the rows are (task 5.4/5.6).
@@ -49,21 +50,6 @@ import type { SearchOrder } from "../domain/search-order";
  * las dos.
  */
 export type SearchDatabase = PgDatabase<PgQueryResultHKT, typeof schema>;
-
-/**
- * Cada atributo declarado con su columna.
- *
- * Anotado como `Record` completo a propósito: un sexto atributo en el dominio
- * rompe la compilación acá en vez de quedar como un filtro que el criterio
- * puede pedir y la consulta ignora en silencio.
- */
-const ATTRIBUTE_COLUMNS: Readonly<Record<ListingAttribute, PgColumn>> = {
-  hasPowerPlant: listings.hasPowerPlant,
-  hasRegularWater: listings.hasRegularWater,
-  isFurnished: listings.isFurnished,
-  hasSecurity: listings.hasSecurity,
-  hasAppliances: listings.hasAppliances,
-};
 
 /**
  * El `ORDER BY` de cada orden ofrecido (task 14.47), **y el desempate por `id`
@@ -146,8 +132,13 @@ export class DrizzleListingSearch implements ListingSearchPort {
     // pedir las dos. Y sólo se compara contra `true`: en estas columnas
     // `false` significa "no lo declaró", no "no lo tiene", así que un
     // `= false` devolvería avisos que sí lo tienen y nunca lo anotaron.
+    //
+    // **El sexto sale de un número y la condición la escribe un solo archivo**
+    // (14.45 rebanada C): `attributeCondition` es el mismo que usa el conteo,
+    // porque el botón que promete 9 y la lista que trae 9 tienen que derivar
+    // «tiene puesto» igual.
     for (const attribute of criteria.attributes ?? []) {
-      filters.push(eq(ATTRIBUTE_COLUMNS[attribute], true));
+      filters.push(attributeCondition(attribute));
     }
 
     const { limit, offset } = pageWindow(criteria.page);

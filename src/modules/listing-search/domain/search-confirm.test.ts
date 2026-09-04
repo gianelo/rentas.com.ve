@@ -141,6 +141,25 @@ describe("cuál es el filtro más restrictivo", () => {
     expect(
       chooseRelief([{ filter: "hasPowerPlant", resultCount: 5, href: "/planta" }])?.label,
     ).toBe("Quitar planta eléctrica y ver 5");
+    // El puesto se suelta como cualquier otro filtro (14.45 rebanada C): que
+    // salga de un número y no de un booleano no cambia nada de este lado.
+    expect(chooseRelief([{ filter: "hasParking", resultCount: 8, href: "/pu" }])?.label).toBe(
+      "Quitar el puesto de estacionamiento y ver 8",
+    );
+  });
+
+  /**
+   * **Los atributos se sueltan antes que el lugar y después del tamaño**, y el
+   * puesto no es la excepción: empatado con las zonas gana él, porque cambiar
+   * dónde busca alguien es lo último que hay que tocar.
+   */
+  it("empatado con las zonas, suelta el puesto y deja el lugar en paz", () => {
+    const relief = chooseRelief([
+      { filter: "zone", resultCount: 6, href: "/z" },
+      { filter: "hasParking", resultCount: 6, href: "/pu" },
+    ]);
+
+    expect(relief?.filter).toBe("hasParking");
   });
 
   it("sirve también con resultados, para el cierre de la lista (F10)", () => {

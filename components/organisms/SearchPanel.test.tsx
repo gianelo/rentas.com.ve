@@ -16,6 +16,7 @@ const COUNTS = {
     hasPowerPlant: 9,
     hasRegularWater: 12,
     isFurnished: 4,
+    hasParking: 11,
     hasSecurity: 0,
     hasAppliances: 3,
   },
@@ -29,6 +30,7 @@ const COUNTS = {
     hasPowerPlant: 18,
     hasRegularWater: 19,
     isFurnished: 20,
+    hasParking: 24,
     hasSecurity: 21,
     hasAppliances: 23,
   },
@@ -297,15 +299,16 @@ describe("el conteo en vivo se monta ENCIMA del piso, nunca en su lugar (14.34)"
     expect(markup).toContain('data-preview="Ver 70 avisos"');
   });
 
-  it("los adelantos son exactamente los once enlaces que se pueden tocar", () => {
+  it("los adelantos son exactamente los doce enlaces que se pueden tocar", () => {
     // Contarlos, y no buscar la ausencia de uno: un `not.toContain` sigue en
     // verde si el atributo desapareció de TODAS las opciones, que es la misma
-    // clase de defecto que la 20.x ya pagó dos veces. Once: tres escalones de
+    // clase de defecto que la 20.x ya pagó dos veces. Doce: tres escalones de
     // habitaciones (el cuarto cuenta 0 y llega apagado), **dos de baños** (el
-    // «3+» cuenta 0, 14.45), quién publica, cuatro atributos (vigilancia cuenta
-    // 0) y «Limpiar todo».
+    // «3+» cuenta 0, 14.45), quién publica, **cinco atributos** —los cuatro de
+    // antes más el puesto de estacionamiento de la rebanada C, y vigilancia
+    // cuenta 0— y «Limpiar todo».
     const markup = render();
-    expect(markup.split('data-preview="').length - 1).toBe(11);
+    expect(markup.split('data-preview="').length - 1).toBe(12);
 
     // Y las tres apagadas se dibujan como `<span aria-disabled>`, sin dirección
     // que tocar y por lo tanto sin número que adelantar.

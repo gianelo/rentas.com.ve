@@ -370,6 +370,31 @@ describe("buildSearchCriteria — atributos declarados (task 14.9, F6)", () => {
     });
   });
 
+  /**
+   * **La sexta opción no es una columna booleana, y por eso se prueba acá y
+   * con nombre propio** (14.45 rebanada C). `?puesto=1` pide
+   * `parking_spots > 0`; el criterio la lleva al lado de las otras cinco
+   * porque para quien busca es una opción más de «La propiedad tiene».
+   */
+  it("acepta el puesto de estacionamiento, que se deriva de un número y no de un booleano", () => {
+    expect(buildSearchCriteria({ city: MARACAIBO, hasParking: "1" }, ZONES)).toEqual({
+      cityId: MARACAIBO,
+      attributes: ["hasParking"],
+    });
+  });
+
+  it("pone el puesto en el orden de la lista, entre amoblado y vigilancia", () => {
+    const criteria = buildSearchCriteria(
+      { city: MARACAIBO, hasSecurity: "1", hasParking: "1", isFurnished: "1" },
+      ZONES,
+    );
+
+    expect(criteria).toEqual({
+      cityId: MARACAIBO,
+      attributes: ["isFurnished", "hasParking", "hasSecurity"],
+    });
+  });
+
   it("lee un atributo suelto sin arrastrar los otros cuatro", () => {
     expect(buildSearchCriteria({ city: MARACAIBO, isFurnished: "1" }, ZONES)).toEqual({
       cityId: MARACAIBO,

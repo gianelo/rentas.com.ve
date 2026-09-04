@@ -144,6 +144,7 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
       hasPowerPlant: query[SEARCH_QUERY_NAMES.hasPowerPlant],
       hasRegularWater: query[SEARCH_QUERY_NAMES.hasRegularWater],
       isFurnished: query[SEARCH_QUERY_NAMES.isFurnished],
+      hasParking: query[SEARCH_QUERY_NAMES.hasParking],
       hasSecurity: query[SEARCH_QUERY_NAMES.hasSecurity],
       hasAppliances: query[SEARCH_QUERY_NAMES.hasAppliances],
       page: query[SEARCH_QUERY_NAMES.page],
