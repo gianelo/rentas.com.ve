@@ -38,6 +38,30 @@ export interface ContactVerificationEvidencePort {
   findEvidence(query: ContactVerificationQuery): Promise<ContactVerificationEvidence | null>;
 }
 
+/**
+ * (tasks.md 22.32) El lado del estado BLOQUEADO: si ESTE aviso tiene un
+ * triple verificado, sin traer nunca `contact_method`/`contact_value` de
+ * vuelta al proceso de render. **El puerto de lectura nuevo, al lado del que
+ * ya hay** (AGENTS.md §3) — y no una ampliación de `ListingDetail`, que
+ * tiraría la garantía de la 11.11: el valor pasaría a viajar en la carga de
+ * todo render anónimo.
+ *
+ * **La pregunta entra por `listingId` y no por `(cuenta, método, valor)`.**
+ * `ContactVerificationEvidencePort.findEvidence` exige el triple, y el
+ * camino bloqueado no puede traerlo sin leer justo lo que existe para no
+ * leer. El `JOIN` contra `listing` corre entero en SQL — el adaptador nunca
+ * selecciona `contact_method` ni `contact_value` de vuelta a JavaScript.
+ *
+ * **Devuelve el INSTANTE crudo, no un booleano.** Si la fila sigue vigente lo
+ * decide `listingContactIsVerified`, con el mismo reloj que
+ * `resolveContactVerification` recibe como parámetro y nunca lee del sistema
+ * por su cuenta — la misma razón por la que la ventana de la 19.11 no vive en
+ * el `WHERE` de ningún puerto compartido.
+ */
+export interface ListingContactVerificationPort {
+  findVerifiedAt(listingId: string): Promise<Date | null>;
+}
+
 export interface NewVerifiedContact {
   readonly userId: string;
   readonly contact: ChosenContact;

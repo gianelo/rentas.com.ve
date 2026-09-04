@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   type ContactVerificationEvidence,
   decideContactVerification,
+  listingContactIsVerified,
 } from "./contact-verification";
 
 /**
@@ -229,5 +230,29 @@ describe("los doce meses de la 19.11", () => {
     );
 
     expect(decision).toEqual({ kind: "verified-by-account-email", verifiedAt: HACE_ONCE_MESES });
+  });
+});
+
+/**
+ * tasks.md 22.32 — el estado bloqueado necesita un sí/no, nunca un valor.
+ * `findVerifiedAt` (el puerto nuevo) sólo puede devolver el INSTANTE crudo o
+ * `null`, porque decidir vigencia exige el reloj y el puerto no tiene uno
+ * propio (la misma razón por la que la ventana de la 19.11 no vive en el
+ * `WHERE` de ningún puerto). Esta función es la mitad que falta: el mismo
+ * borde de doce meses que `contactVerificationIsLive` ya prueba, aceptando
+ * además la ausencia de fila como «no verificado» y no como un caso que el
+ * llamador tenga que resolver aparte.
+ */
+describe("listingContactIsVerified", () => {
+  it("sin instante no hay nada que envejecer: no verificado", () => {
+    expect(listingContactIsVerified(null, NOW)).toBe(false);
+  });
+
+  it("una fila de once meses todavía contesta que sí", () => {
+    expect(listingContactIsVerified(HACE_ONCE_MESES, NOW)).toBe(true);
+  });
+
+  it("una fila de trece meses ya no contesta que sí", () => {
+    expect(listingContactIsVerified(HACE_TRECE_MESES, NOW)).toBe(false);
   });
 });

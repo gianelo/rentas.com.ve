@@ -1,10 +1,11 @@
 import { and, eq } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
-import { users, verifiedContacts } from "../../../shared/db/schema";
+import { listings, users, verifiedContacts } from "../../../shared/db/schema";
 import type {
   ContactVerificationEvidencePort,
   ContactVerificationQuery,
+  ListingContactVerificationPort,
   NewVerifiedContact,
   VerifiedContactPort,
 } from "../application/ports/verified-contact.port";
@@ -57,6 +58,41 @@ export class DrizzleContactVerificationEvidence implements ContactVerificationEv
       .limit(1);
 
     return rows[0] ?? null;
+  }
+}
+
+/**
+ * (tasks.md 22.32) El lado del estado bloqueado, en UNA consulta que nunca
+ * trae `contact_method` ni `contact_value` de vuelta a JavaScript.
+ *
+ * **`INNER JOIN` y no `LEFT`, a propósito.** Sin fila viva de `verified_
+ * contact` no hay nada que contestar, y un `INNER` lo resuelve solo: cero
+ * filas es exactamente `null` (AGENTS.md §7), sin una rama que lo declare.
+ *
+ * **El `select` sólo nombra `verifiedAt`.** Es la garantía completa y no una
+ * promesa de comentario: el tipo de retorno es `Date | null`, así que no hay
+ * forma de que el valor del contacto cruce el límite del proceso de render
+ * desde este método — ni un `unknown` que alguien tenga que recordar no leer.
+ */
+export class DrizzleListingContactVerification implements ListingContactVerificationPort {
+  constructor(private readonly db: VerifiedContactDatabase) {}
+
+  async findVerifiedAt(listingId: string): Promise<Date | null> {
+    const rows = await this.db
+      .select({ verifiedAt: verifiedContacts.verifiedAt })
+      .from(listings)
+      .innerJoin(
+        verifiedContacts,
+        and(
+          eq(verifiedContacts.userId, listings.publisherId),
+          eq(verifiedContacts.method, listings.contactMethod),
+          eq(verifiedContacts.value, listings.contactValue),
+        ),
+      )
+      .where(eq(listings.id, listingId))
+      .limit(1);
+
+    return rows[0]?.verifiedAt ?? null;
   }
 }
 
