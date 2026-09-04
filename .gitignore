@@ -42,3 +42,6 @@
 /.lighthouseci
 
 # Local Postgres container data is disposable by design (docker-compose.yml)
+
+# Local MCP server wiring: it points at this machine, not at the product
+/.mcp.json

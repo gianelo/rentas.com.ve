@@ -104,6 +104,22 @@ export function contactVerificationIsLive(verifiedAt: Date, now: Date): boolean 
   return verifiedAt > desde;
 }
 
+/**
+ * tasks.md 22.32 — el sí/no que el estado bloqueado necesita, nunca el valor.
+ *
+ * **Existe porque el puerto nuevo (`ListingContactVerificationPort`) sólo
+ * puede devolver el instante crudo, no la decisión.** Vigencia exige un
+ * reloj, y el mismo motivo por el que la ventana de la 19.11 no vive en el
+ * `WHERE` de ningún puerto compartido se aplica acá: decidirla en SQL o en el
+ * adaptador la volvería invisible a esta prueba. `null` — sin fila de
+ * verificación — se lee como «no verificado», el mismo default en falso que
+ * el resto de este módulo usa (AGENTS.md §7): no hay instante que envejecer,
+ * así que no hay nada que declarar vigente.
+ */
+export function listingContactIsVerified(verifiedAt: Date | null, now: Date): boolean {
+  return verifiedAt !== null && contactVerificationIsLive(verifiedAt, now);
+}
+
 export function decideContactVerification(
   chosen: ChosenContact,
   evidence: ContactVerificationEvidence | null,
