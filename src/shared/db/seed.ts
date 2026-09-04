@@ -25,32 +25,6 @@ import type { db } from "./client";
 import { cities, listings, type PropertyType, users, zoneAliases, zones } from "./schema";
 
 /**
- * PROVISIONAL taxonomy (tasks.md 2.3). The founder has not supplied the
- * definitive city/zone list yet — this is a placeholder so the cascading
- * select (components/molecules/CityZoneSelect.tsx) and search have
- * something real to filter against.
- *
- * Replacing this list is a data edit to the array below, never a code or
- * schema change. Zones are a curated table with no free text (design.md
- * D5): a zone missing here is a publisher who cannot publish under it,
- * which is exactly why this list is flagged provisional rather than
- * quietly treated as final.
- */
-export const PROVISIONAL_TAXONOMY: ReadonlyArray<{
-  readonly city: string;
-  readonly zones: readonly string[];
-}> = [
-  {
-    city: "Distrito Capital",
-    zones: ["Chacao", "Altamira", "La Castellana", "Los Palos Grandes", "El Rosal", "Las Mercedes"],
-  },
-  {
-    city: "Maracaibo",
-    zones: ["Tierra Negra", "Bella Vista", "La Lago", "Indio Mara"],
-  },
-];
-
-/**
  * SEEDED LISTINGS — real rows in Postgres, not test fixtures and not a
  * mock. Search reads them through the same query a published listing will
  * use, so what a visitor sees on the preview is the real read path over
@@ -256,12 +230,16 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 /**
  * Idempotent by construction: every insert conflicts on the table's own
- * unique constraint (`city.name`, `zone(city_id, name)`, `user.email`,
- * `listing.id`) and resolves to a no-op update rather than a duplicate row
- * on a repeat run — no read-before-write, no delete-then-insert. This
- * matters more than usual here: the Vercel Preview environment's Neon branch
- * is schema-only, this script is the only thing that populates it, and it
- * runs on every preview deploy (tasks.md 2.3).
+ * unique constraint (`city.name`, `zone.id`, `zone_alias(zone_id, alias)`,
+ * `user.email`, `listing.id`) and resolves to a no-op update or a no-op
+ * skip rather than a duplicate row on a repeat run — no read-before-write,
+ * no delete-then-insert. `zone.id` carries the conflict target for zones
+ * because it is `territoryId(path)`-derived (tasks.md 17.10): the same path
+ * always produces the same id, so a second run's insert collides with the
+ * first run's row instead of tripping `zone_city_parent_category_name_unique`
+ * on distinct ids. This matters more than usual here: the Vercel Preview
+ * environment's Neon branch is schema-only, this script is the only thing
+ * that populates it, and it runs on every preview deploy (tasks.md 2.3).
  */
 export type SeedDatabase = Pick<typeof db, "insert" | "select">;
 
@@ -453,8 +431,9 @@ export async function seed(database?: SeedDatabase): Promise<void> {
 }
 
 // Runs only when invoked directly (`pnpm db:seed`), never on import — so
-// this module can also be imported for its data (PROVISIONAL_TAXONOMY)
-// without a side-effecting database call.
+// this module can also be imported by tests without a side-effecting
+// database call (e.g. `loadDotEnvWithoutOverriding`, exercised in
+// seed.test.ts).
 if (import.meta.url === `file://${process.argv[1]}`) {
   // `tsx` does not read `.env` — it only ever sees `process.env`. Without
   // this block `pnpm db:seed` could only work where DATABASE_URL already
