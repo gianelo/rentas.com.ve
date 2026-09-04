@@ -40,6 +40,14 @@ export function SignInDoor({ copy, stayHref, callbackUrl, signInAction }: SignIn
           </AppLink>
         </div>
         <p className={styles.reason}>{copy.reason}</p>
+        {/* tasks.md 22.39 — sólo cuando `isListingContactVerified` ya
+            contestó que sí: sin fila viva no hay nada que afirmar, el mismo
+            default en falso que el resto de este módulo usa. */}
+        {copy.verifiedNotice ? (
+          <p className={styles.verified} data-testid="puerta-verificado">
+            {copy.verifiedNotice}
+          </p>
+        ) : null}
         <form className={styles.form} action={signInAction}>
           <input type="hidden" name="callbackUrl" value={callbackUrl} />
           <ActionButton type="submit">Continuar con Google</ActionButton>

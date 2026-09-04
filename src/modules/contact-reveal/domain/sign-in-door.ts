@@ -26,6 +26,16 @@ export interface ContactDoorCopy {
   readonly stayLabel: string;
   readonly closeLabel: string;
   readonly assurance: string;
+  /**
+   * tasks.md 22.39 — «verificado por …», al lado del contacto tapado
+   * (láminas Ficha 8b/9b), o `null` cuando no hay nada que afirmar.
+   *
+   * **Nunca un instante, nunca un valor.** El llamador ya decidió el
+   * booleano con `isListingContactVerified` (`identity/application`) antes
+   * de llegar acá; esta función sólo elige la frase, con el mismo canal que
+   * `contactVerificationNotice` ya usa para el contacto revelado.
+   */
+  readonly verifiedNotice: string | null;
 }
 
 export interface DoorPublisher {
@@ -50,6 +60,14 @@ export function contactDoorFor(
   contact: ContactPresentation,
   publisher: DoorPublisher,
   raw: string | readonly string[] | undefined,
+  /**
+   * tasks.md 22.39 — el resultado de `isListingContactVerified`, ya
+   * decidido antes de llamar. Obligatorio y no opcional a propósito: un
+   * valor por omisión dejaría compilar un llamador que se olvidó de
+   * preguntar, y la puerta nunca diría nada mal — sólo callaría siempre,
+   * que es el mismo defecto que esta misma tarea encontró.
+   */
+  verified: boolean,
 ): ContactDoorCopy | null {
   if (raw !== DOOR_OPEN_TOKEN) return null;
   if (contact.state !== "locked") return null;
@@ -62,6 +80,7 @@ export function contactDoorFor(
     stayLabel: "Seguir mirando sin entrar",
     closeLabel: "Cerrar sin entrar",
     assurance: "Volvés a este mismo aviso al terminar.",
+    verifiedNotice: verified ? `verificado por ${noun}` : null,
   };
 }
 

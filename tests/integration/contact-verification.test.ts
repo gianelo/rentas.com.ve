@@ -9,6 +9,7 @@ import {
   type VerifiedContactDatabase,
 } from "../../src/modules/identity/infrastructure/drizzle-verified-contact";
 import * as schema from "../../src/shared/db/schema";
+import { withPoolCleanup } from "./support/pool-cleanup";
 
 /**
  * tasks.md 19.9 / 19.10 / 19.13 — contra Postgres de verdad, porque lo que
@@ -98,17 +99,21 @@ beforeAll(async () => {
   await insertUser(CON_FILA_VIEJA, `vieja-${CON_FILA_VIEJA}@example.com`, 10);
 });
 
-afterAll(async () => {
-  // `verified_contact` es `ON DELETE cascade` (a diferencia de
-  // `listing_report`, que es evidencia y es `restrict`), así que borrar las
-  // cuentas se lleva las filas. La base de prueba se comparte entre archivos
-  // dentro de una corrida: dejar cuentas atrás es cómo otra suite se
-  // encuentra con un correo que no esperaba.
-  await pool.query('DELETE FROM "user" WHERE id = ANY($1)', [
-    [MARIA, AGENCIA, SIN_CORREO_PROBADO, DOS_NUMEROS, CON_FILA_VIEJA],
-  ]);
-  await pool.end();
-});
+// tasks.md 22.35 — `withPoolCleanup` garantiza el `pool.end()` aunque el
+// `DELETE` reviente (hoy es uno solo, pero la disciplina es la misma que el
+// resto de las suites de integración: un `afterAll` no cierra por su cuenta).
+afterAll(() =>
+  withPoolCleanup(pool, async () => {
+    // `verified_contact` es `ON DELETE cascade` (a diferencia de
+    // `listing_report`, que es evidencia y es `restrict`), así que borrar las
+    // cuentas se lleva las filas. La base de prueba se comparte entre
+    // archivos dentro de una corrida: dejar cuentas atrás es cómo otra suite
+    // se encuentra con un correo que no esperaba.
+    await pool.query('DELETE FROM "user" WHERE id = ANY($1)', [
+      [MARIA, AGENCIA, SIN_CORREO_PROBADO, DOS_NUMEROS, CON_FILA_VIEJA],
+    ]);
+  }),
+);
 
 describe("verified_contact contra Postgres real", () => {
   it("la agencia que sube cincuenta avisos verifica una vez: una escritura, una fila, y cuarenta y nueve que no piden nada", async () => {

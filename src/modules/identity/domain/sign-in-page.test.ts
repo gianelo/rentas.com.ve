@@ -31,6 +31,7 @@ describe("la pantalla de entrar dice por qué puerta se entró (15.7)", () => {
       { state: "locked", method: "whatsapp" },
       { type: "owner", name: "María F." },
       "si",
+      false,
     );
     const pagina = signInPageFor(FICHA);
 
