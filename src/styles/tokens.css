@@ -178,15 +178,32 @@
      token propio para la ficha habría dejado a las otras siete dibujando un
      cuerpo más chico que el de la lámina sin que ninguna lámina lo pida.
 
-     **`--ficha-body-lh` se usa además en cinco declaraciones que NO llevan
-     `--ficha-body-fs`** (`ContactBlock`, `DeclaredFeatures`, `SignInDoor`):
-     ahí acompaña a `--meta-fs` o a `--control-fs` y no es el par del cuerpo,
-     así que NO crecen — crecerlas sería estirar un metadato que ninguna lámina
-     dibuja distinto. Queda anotado como tarea 16.42 en vez de decidido acá. */
+     **`--ficha-body-lh` se usaba además en declaraciones que NO llevan
+     `--ficha-body-fs`** (`ContactBlock`, `DeclaredFeatures`, `SignInDoor`,
+     `revisa-tu-correo`, `signin`, y `.textarea` de publicar): ahí acompañaba
+     a `--meta-fs` o a `--control-fs` y no era el par del cuerpo, así que NO
+     crecieron con el paso de escritorio — estirarlas habría sido mover un
+     metadato que ninguna lámina dibuja distinto. **Resuelto por el fundador
+     el 2026-09-04** (22.13-adyacente, tarea 22.33): esas ocho declaraciones
+     pasan a leer `--secondary-lh`, su propio token para «texto secundario
+     cómodo de leer», y el par cuerpo queda sin media pareja. */
   --ficha-body-fs: 15px;
   --ficha-body-fs-desktop: 16px;
   --ficha-body-lh: 1.6;
   --ficha-body-lh-desktop: 1.65;
+  /* «Texto secundario cómodo de leer» (tasks.md 22.33): el mismo interlineado
+     que el cuerpo (1.6), para texto que NO es el cuerpo — acompaña a
+     `--meta-fs` (12px) o a `--control-fs` (15px) según la hoja. Antes de esta
+     tarea esas ocho declaraciones leían `--ficha-body-lh`, un token con dos
+     significados, y la 16.38 le dio paso de escritorio al PAR del cuerpo sin
+     tocarlas a propósito — dejándolas media pareja: mismo interlineado, tamaño
+     ajeno. Nombre propio en vez de una excepción documentada: la 16.38 ya
+     dejó escrito que "un token con dos significados es cómo un cambio
+     silencioso estira lo que no debía", y una nota en SISTEMA.md diciendo que
+     el interlineado del cuerpo se comparte a propósito habría sido esa misma
+     forma. Sin paso de escritorio y a propósito: ninguna de las ocho hojas
+     dibuja un `@media` que las toque. */
+  --secondary-lh: 1.6;
   /* La cifra de la tira de cuatro celdas y el rótulo debajo. */
   --ficha-stat-fs: 17px;
   --ficha-stat-label-fs: 10px;
@@ -441,17 +458,34 @@
      equivocado — y ya pasó una vez acá: el `<h1>` del inicio agarró `--fpb`
      justamente porque estaba disponible y el número le quedaba plausible.
 
-     **`lint:tokens` no podía verlo, y ése es el punto que la retirada deja
-     escrito.** Ese gate verifica que un valor SEA una propiedad personalizada
-     y que los dos temas la declaren; nunca que alguien la USE. Un token
-     huérfano es invisible para él por construcción. Es la misma forma de
-     defecto que las tareas 14.48 (`--searchbar-h`/`--searchbar-fs`) y 22.13
-     (`--ft`/`--tclamp`) siguen abiertas por, y la causa común —el gate no
-     cuenta usos— sigue sin resolverse. */
+     **`lint:tokens` no podía verlo cuando esto se escribió.** Ese gate
+     verificaba que un valor SEA una propiedad personalizada y que los dos
+     temas la declaren; nunca que alguien la USE. Un token huérfano era
+     invisible para él por construcción — la misma forma de defecto que las
+     tareas 14.48 (`--searchbar-h`/`--searchbar-fs`) y 22.13 (`--ft`/
+     `--tclamp`) mostraron por separado. **La causa común ya está resuelta**:
+     desde la 14.48 el gate también cuenta usos, y las tres instancias
+     quedaron cerradas con la misma salida — retirar el token del
+     subconjunto que ship*a* cuando es del sistema. */
   --fpw: 700;
-  --ft: 13px;
+  /* **`--ft` y `--tclamp` («Título de aviso (lista)», 13px) NO se declaran
+     acá, y la ausencia es deliberada** (22.13, fundador 2026-09-04, misma
+     salida que la 16.37 tomó para `--fpb`).
+
+     Siguen siendo tokens DEL SISTEMA: `design/reference/sistema/tokens.css`
+     los declara para las cuatro estructuras y SISTEMA.md los nombra. Lo que
+     se retiró es su presencia en el subconjunto que este producto ship*a*,
+     porque el papel que nombran lo cumple `--card-title-fs` — la 22.4 mudó
+     el título de `ResultRow` al átomo y dejó `--ft`/`--tclamp` sin un solo
+     `var()` en app/, components/ ni src/. Un token del sistema sin uso
+     conviviendo con uno propio que hace su trabajo es la misma forma que
+     `--fpb` ya mostró: el `<h1>` del inicio lo agarró por error justamente
+     porque estaba disponible y el número le quedaba plausible.
+
+     `lint:tokens` cuenta usos desde la 14.48 y ya no necesita una excepción
+     nombrada para éstos: al no declararse acá, no hay huérfano que
+     exceptuar — la salida que la 16.37 dejó escrita como precedente. */
   --ftw: 400;
-  --tclamp: 36px;
   --disp: var(--mono);
   /* New in the 2026-08-18 design update. Metadata — counts, file sizes, step
      labels — is monospaced so numbers line up in a column. It is declared

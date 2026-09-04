@@ -120,16 +120,12 @@ const TOKEN_ALIASES = new Map([
  * gate falla igual — por la excepción vencida y no por el uso. Una lista de
  * perdones que nadie limpia es la forma en que un gate deja de significar algo.
  */
-const UNUSED_TOKENS_ALLOWED = new Map([
-  [
-    "--ft",
-    "token del sistema («Título de aviso (lista)», SISTEMA.md); retirarlo es un cambio al conjunto — tasks.md 22.13",
-  ],
-  [
-    "--tclamp",
-    "token del sistema («Título de aviso (lista)», SISTEMA.md); retirarlo es un cambio al conjunto — tasks.md 22.13",
-  ],
-]);
+// 22.13: `--ft` y `--tclamp` tenían acá su excepción nombrada. El fundador
+// eligió la misma salida que la 16.37 tomó para `--fpb` — retirarlos del
+// subconjunto que ship*a* en vez de exceptuarlos —, así que `src/styles/
+// tokens.css` ya no los declara y no queda huérfano que perdonar. Una
+// excepción para un token que ya no existe sería un perdón sin motivo vivo.
+const UNUSED_TOKENS_ALLOWED = new Map();
 
 /** Dónde se busca un `var(--x)`. `src/` entra porque `tokens.css` encadena. */
 const USAGE_ROOTS = ["app", "components", "src"];

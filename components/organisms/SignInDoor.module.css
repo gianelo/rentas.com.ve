@@ -52,7 +52,16 @@
 .reason {
   margin: 8px 0 0;
   font-size: var(--control-fs);
-  line-height: var(--ficha-body-lh);
+  /* Texto secundario cómodo de leer, no el cuerpo (22.33): --secondary-lh. */
+  line-height: var(--secondary-lh);
+  color: var(--soft);
+}
+/* tasks.md 22.39 — «verificado por …», al lado de la razón y no del botón:
+   es una afirmación sobre el contacto, no parte de la acción de entrar. */
+.verified {
+  margin: 6px 0 0;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
   color: var(--soft);
 }
 /* El botón ocupa el ancho: es la acción única del panel. */

@@ -18,15 +18,15 @@ describe("la puerta del contacto se abre por la dirección (15.8)", () => {
    */
   it("está cerrada mientras el parámetro no traiga el token exacto", () => {
     expect(DOOR_QUERY_NAME).toBe("entrar");
-    expect(contactDoorFor(CON_LLAVE, DUENO, undefined)).toBeNull();
-    expect(contactDoorFor(CON_LLAVE, DUENO, "")).toBeNull();
-    expect(contactDoorFor(CON_LLAVE, DUENO, "no")).toBeNull();
-    expect(contactDoorFor(CON_LLAVE, DUENO, `${DOOR_OPEN_TOKEN}x`)).toBeNull();
-    expect(contactDoorFor(CON_LLAVE, DUENO, [DOOR_OPEN_TOKEN, DOOR_OPEN_TOKEN])).toBeNull();
+    expect(contactDoorFor(CON_LLAVE, DUENO, undefined, false)).toBeNull();
+    expect(contactDoorFor(CON_LLAVE, DUENO, "", false)).toBeNull();
+    expect(contactDoorFor(CON_LLAVE, DUENO, "no", false)).toBeNull();
+    expect(contactDoorFor(CON_LLAVE, DUENO, `${DOOR_OPEN_TOKEN}x`, false)).toBeNull();
+    expect(contactDoorFor(CON_LLAVE, DUENO, [DOOR_OPEN_TOKEN, DOOR_OPEN_TOKEN], false)).toBeNull();
   });
 
   it("se abre con el token exacto y nombra a quien publica", () => {
-    const puerta = contactDoorFor(CON_LLAVE, DUENO, DOOR_OPEN_TOKEN);
+    const puerta = contactDoorFor(CON_LLAVE, DUENO, DOOR_OPEN_TOKEN, false);
 
     expect(puerta?.title).toBe("Entrá para ver el WhatsApp de María F.");
     expect(puerta?.stayLabel).toBe("Seguir mirando sin entrar");
@@ -39,9 +39,10 @@ describe("la puerta del contacto se abre por la dirección (15.8)", () => {
       { state: "locked", method: "telefono" },
       DUENO,
       DOOR_OPEN_TOKEN,
+      false,
     );
     const sinNombre = (type: "owner" | "broker") =>
-      contactDoorFor(CON_LLAVE, { type, name: null }, DOOR_OPEN_TOKEN)?.title;
+      contactDoorFor(CON_LLAVE, { type, name: null }, DOOR_OPEN_TOKEN, false)?.title;
 
     expect(porTelefono?.title).toBe("Entrá para ver el teléfono de María F.");
     // «de el dueño» no es una frase: la contracción va adentro de la regla.
@@ -57,8 +58,38 @@ describe("la puerta del contacto se abre por la dirección (15.8)", () => {
   it("no se abre sobre un contacto que ya no tiene llave", () => {
     const revelado = { state: "revealed" as const, method: "whatsapp" as const, value: "+58…" };
 
-    expect(contactDoorFor(revelado, DUENO, DOOR_OPEN_TOKEN)).toBeNull();
-    expect(contactDoorFor({ state: "expired" }, DUENO, DOOR_OPEN_TOKEN)).toBeNull();
+    expect(contactDoorFor(revelado, DUENO, DOOR_OPEN_TOKEN, false)).toBeNull();
+    expect(contactDoorFor({ state: "expired" }, DUENO, DOOR_OPEN_TOKEN, false)).toBeNull();
+  });
+
+  /**
+   * tasks.md 22.39 — la composición que la 22.32 dejó pendiente:
+   * `isListingContactVerified` (`identity/application`) le pasa a esta
+   * puerta el booleano ya decidido, nunca el instante ni el valor del
+   * contacto — la misma garantía del estado bloqueado que la 22.32 ya
+   * defendía del lado del puerto.
+   */
+  it("dice que el contacto está verificado cuando la respuesta ya viene en sí", () => {
+    const puerta = contactDoorFor(CON_LLAVE, DUENO, DOOR_OPEN_TOKEN, true);
+
+    expect(puerta?.verifiedNotice).toBe("verificado por WhatsApp");
+  });
+
+  it("nombra el canal del aviso y no siempre WhatsApp", () => {
+    const puerta = contactDoorFor(
+      { state: "locked", method: "email" },
+      DUENO,
+      DOOR_OPEN_TOKEN,
+      true,
+    );
+
+    expect(puerta?.verifiedNotice).toBe("verificado por email");
+  });
+
+  it("no afirma nada cuando la respuesta ya viene en no", () => {
+    const puerta = contactDoorFor(CON_LLAVE, DUENO, DOOR_OPEN_TOKEN, false);
+
+    expect(puerta?.verifiedNotice).toBeNull();
   });
 });
 
@@ -111,6 +142,7 @@ describe("lo que se lee al lado del número tapado (F20, 15.11)", () => {
       { state: "locked", method: "whatsapp" },
       { type: "owner", name: null },
       DOOR_OPEN_TOKEN,
+      false,
     );
 
     expect(hoja?.reason).toContain("Pedimos la cuenta para frenar avisos falsos");

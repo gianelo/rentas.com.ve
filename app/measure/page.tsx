@@ -77,6 +77,10 @@ export default async function MeasureHarnessPage({
     { state: "locked", method: "whatsapp" },
     { type: "owner", name: "María F." },
     (await searchParams)[DOOR_QUERY_NAME],
+    // tasks.md 22.39 — este arnés mide geometría estática, no corre contra
+    // Postgres: el mismo `false` de siempre mantiene la lámina medida como
+    // estaba, sin arrastrar una consulta que no puede resolver.
+    false,
   );
 
   return (

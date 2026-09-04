@@ -30,6 +30,7 @@ const {
   findForDetail,
   coversFor,
   allFor,
+  findVerifiedAt,
   notFound,
   permanentRedirect,
   redirect,
@@ -39,6 +40,10 @@ const {
   findForDetail: vi.fn(),
   coversFor: vi.fn(),
   allFor: vi.fn(),
+  // tasks.md 22.39 — la puerta ahora pregunta si el contacto está verificado
+  // antes de dibujarse; `null` es «sin fila», el mismo default en falso que
+  // el resto del módulo usa.
+  findVerifiedAt: vi.fn(async (): Promise<Date | null> => null),
   notFound: vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
   }),
@@ -89,6 +94,17 @@ vi.mock("@/modules/listing-catalogue/infrastructure/drizzle-catalogue", () => ({
   DrizzleCatalogue: class {
     listCities = async () => [];
     listZones = listZones;
+  },
+}));
+// tasks.md 22.39 — `DrizzleContactVerificationEvidence` sigue sin llamador en
+// estas pruebas (sólo corre en la rama revelada); `DrizzleListingContactVerification`
+// sí, desde la puerta abierta sobre un contacto tapado.
+vi.mock("@/modules/identity/infrastructure/drizzle-verified-contact", () => ({
+  DrizzleContactVerificationEvidence: class {
+    findEvidence = async () => null;
+  },
+  DrizzleListingContactVerification: class {
+    findVerifiedAt = findVerifiedAt;
   },
 }));
 // La acción de servidor arrastra `next/headers` y Auth.js; lo que se prueba acá
@@ -671,6 +687,28 @@ describe("la puerta del WhatsApp no saca al inquilino de la ficha (15.8)", () =>
     expect(html).toContain("Volvés a este mismo aviso al terminar.");
     // Fail closed: dibujar la puerta nunca destapa el número.
     expect(html).not.toContain(TELEFONO);
+    // Sin fila viva —el default de este archivo— no hay nada que afirmar.
+    expect(html).not.toContain("verificado por WhatsApp");
+  });
+
+  /**
+   * tasks.md 22.39 — la composición que la 22.32 dejó pendiente, exigida
+   * detrás de un llamador real: `isListingContactVerified` decide con el
+   * instante que trae el puerto, y la puerta lo dibuja sin nunca haber
+   * tocado el valor del contacto.
+   */
+  it("dice que el contacto está verificado cuando el puerto trae un instante vigente", async () => {
+    findVerifiedAt.mockResolvedValueOnce(new Date());
+
+    const html = await servedBody(VENCIDO_SLUG, { entrar: "si" });
+
+    expect(html).toContain("verificado por WhatsApp");
+  });
+
+  it("no pregunta por la verificación mientras la puerta está cerrada", async () => {
+    await servedBody(VENCIDO_SLUG, {});
+
+    expect(findVerifiedAt).not.toHaveBeenCalled();
   });
 
   /** Lo que la 15.8 pide: el aviso sigue en la respuesta, debajo de la puerta. */

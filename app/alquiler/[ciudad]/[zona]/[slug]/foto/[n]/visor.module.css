@@ -115,14 +115,14 @@
 /* El nombre del control, presente para un lector de pantalla y ausente del
    dibujo. Va como TEXTO dentro del enlace y no como `aria-label`: un enlace
    cuyo único contenido es un glifo decorativo se anuncia vacío en cuanto algo
-   ignora el atributo, y "‹" no es un nombre. */
+   ignora el atributo, y "‹" no es un nombre.
+
+   Compartida con las otras cuatro hojas que usan la misma utilidad — ver
+   src/styles/a11y.module.css (22.7). Esta hoja traía una copia divergida,
+   sin `margin`, `padding` ni `border`; unificar al cuerpo completo cierra
+   esa deriva. */
 .srOnly {
-  position: absolute;
-  inline-size: 1px;
-  block-size: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+  composes: srOnly from "../../../../../../../src/styles/a11y.module.css";
 }
 
 .arrow {

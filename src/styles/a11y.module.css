@@ -1,0 +1,30 @@
+/* Utilidad de accesibilidad compartida (tasks.md 22.7). Vivía declarada
+   cinco veces —cuatro con el mismo cuerpo y una, `visor.module.css`, ya
+   divergida (sin `margin`, `padding` ni `border`)— porque no había un
+   lugar compartido entre `app/` y `components/` para una sola clase. El
+   riesgo no era el peso: era la deriva. `clip-path: inset(50%)` en vez de
+   `display: none` es la razón de accesibilidad que las cinco copias
+   escribían por separado: sacar el elemento del árbol de accesibilidad
+   sería justo lo contrario de lo que la utilidad busca — la etiqueta
+   existe para quien no ve el control.
+
+   Vive en `src/styles/` porque es donde ya vive la infraestructura de
+   diseño compartida (`tokens.css`, `base.css`), no dentro de
+   `components/` ni de `app/`: ninguna de las dos áreas es dueña de esta
+   utilidad, las dos la consumen. Es un CSS Module y no una hoja global —
+   el repositorio entero es Módulos CSS y no declara `globals.css` en
+   ninguna parte — así que cada consumidor la trae con
+   `composes: srOnly from "…/src/styles/a11y.module.css";` en vez de una
+   clase global de fuga. */
+
+.srOnly {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

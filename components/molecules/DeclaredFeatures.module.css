@@ -48,6 +48,7 @@
   margin: 10px 0 0;
   font-family: var(--meta);
   font-size: var(--meta-fs);
-  line-height: var(--ficha-body-lh);
+  /* Texto secundario cómodo de leer, no el cuerpo (22.33): --secondary-lh. */
+  line-height: var(--secondary-lh);
   color: var(--soft);
 }
