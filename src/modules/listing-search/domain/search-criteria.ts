@@ -150,6 +150,22 @@ export interface SearchCriteria {
    * un filtro exacto escondería el aviso de tres baños de quien pidió dos.
    */
   readonly minBathrooms?: number;
+  /**
+   * **La superficie mínima en m², escrita a mano y no elegida de una lista**
+   * (14.45 rebanada B, decisión del fundador 2026-09-04: *«hay casas que tienen
+   * 72,5 o 84 y así no puede ser preseleccionado»*).
+   *
+   * Un escalón es una lista cerrada y la superficie es un continuo: cualquier
+   * corte deja a alguien afuera de su propia casa. Por eso este criterio —que
+   * existe desde hace tiempo— nunca tuvo escalones que resolver: la forma que
+   * siempre esperó es un mínimo suelto, «desde X m²».
+   *
+   * **Y por eso no tiene faceta.** Con un campo libre no hay opciones que
+   * contar, así que la regla transversal 3 («todo conteo es real») se cumple del
+   * otro lado: el número real es el total de resultados, que la pantalla ya
+   * muestra. Sí se puede contar cuántos habría al SOLTARLO, y eso es
+   * `withoutFilter.area`.
+   */
   readonly minAreaM2?: number;
   readonly propertyType?: SearchablePropertyType;
   readonly publisherType?: PublisherType;
@@ -207,6 +223,44 @@ function readCount(raw: string | null | undefined): number | undefined {
   if (raw === null || raw === undefined || raw.trim() === "") return undefined;
   const value = Number(raw);
   if (!Number.isInteger(value) || value < 0) return undefined;
+  return value;
+}
+
+/**
+ * **El techo de un `integer` de Postgres**, que es el tipo de `listing.area_m2`
+ * (`schema.ts`). No es un límite de producto inventado: por encima de esto el
+ * parámetro no entra en la columna y la consulta revienta, así que `?metros=1e21`
+ * sería un 500 en vez de una pantalla.
+ */
+const PG_INTEGER_MAX = 2147483647;
+
+/**
+ * **La superficie mínima, que es el único filtro que se ESCRIBE** (14.45
+ * rebanada B). Los otros números del panel salen de listas cerradas y sólo se
+ * ensucian editando la dirección; éste se teclea, así que se valida acá y no
+ * en el control — hay tres entradas (el campo, una dirección pegada de un chat
+ * y el formulario que la reenvía) y una regla escrita en el componente cubre
+ * una sola.
+ *
+ * Tres negativas y cada una tiene su motivo:
+ *
+ * - **Lo que no es un entero no negativo** se cae con `readCount`, igual que
+ *   todo lo demás. Los `72,5` del fundador entran ahí: la columna es `integer`
+ *   y un mínimo fraccionario no se puede devolver escrito en el campo, así que
+ *   se suelta el filtro en vez de redondear en silencio algo que nadie pidió.
+ * - **El cero**, porque `area_m2` es positivo en todo aviso publicable: «desde
+ *   0 m²» no saca a nadie y aun así dibujaría su ficha quitable y sumaría uno a
+ *   la pastilla. Un filtro presente que no filtra.
+ * - **Lo que no cabe en la columna**, que `readCount` deja pasar porque `1e21`
+ *   sí es un entero para JavaScript. Fallar cerrado es soltarlo (AGENTS.md §7).
+ *
+ * Un mínimo enorme que SÍ cabe se acepta: es una búsqueda vacía legítima, y el
+ * vacío ya tiene su salida contada —«Quitar los metros² y ver 23»— que es la
+ * respuesta honesta y la misma que el precio ya da.
+ */
+function readMinAreaM2(raw: string | null | undefined): number | undefined {
+  const value = readCount(raw);
+  if (value === undefined || value === 0 || value > PG_INTEGER_MAX) return undefined;
   return value;
 }
 
@@ -358,7 +412,7 @@ export function buildSearchCriteria(
     ...maybe("maxPriceUsd", maxPriceUsd),
     ...maybe("minRooms", readCount(raw.minRooms)),
     ...maybe("minBathrooms", readCount(raw.minBathrooms)),
-    ...maybe("minAreaM2", readCount(raw.minAreaM2)),
+    ...maybe("minAreaM2", readMinAreaM2(raw.minAreaM2)),
     ...maybe("propertyType", readChoice(raw.propertyType, PROPERTY_TYPES)),
     ...maybe("publisherType", readChoice(raw.publisherType, PUBLISHER_TYPES)),
     ...maybe("attributes", readAttributes(raw)),

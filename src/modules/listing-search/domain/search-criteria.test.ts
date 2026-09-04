@@ -224,6 +224,56 @@ describe("buildSearchCriteria — price and characteristics", () => {
   });
 
   /**
+   * **Los metros² son un CAMPO donde se escribe el número, no una lista de
+   * escalones** (14.45 rebanada B, decisión del fundador 2026-09-04: *«hay
+   * casas que tienen 72,5 o 84 y así no puede ser preseleccionado»*).
+   *
+   * Un campo libre trae la validación que los escalones no tenían: los otros
+   * mínimos del panel salen de listas cerradas y sólo se pueden ensuciar
+   * editando la dirección a mano, mientras que acá cualquiera escribe cualquier
+   * cosa en el propio control. Cada caso de abajo se cae **solo**, campo por
+   * campo, que es la regla que este archivo ya aplica al resto.
+   */
+  describe("los metros² son un mínimo escrito a mano (14.45 rebanada B)", () => {
+    const area = (raw: string) => buildSearchCriteria({ city: MARACAIBO, minAreaM2: raw }, ZONES);
+
+    it("acepta el número entero que alguien escribe en el campo", () => {
+      expect(area("72")).toEqual({ cityId: MARACAIBO, minAreaM2: 72 });
+    });
+
+    /**
+     * **El cero es un filtro presente que no filtra.** `area_m2` es positivo en
+     * todo aviso publicable (`publishable-listing.ts` rechaza el cero), así que
+     * «desde 0 m²» no saca a nadie — y sin embargo dibujaría su ficha quitable,
+     * sumaría uno a la pastilla y ofrecería «quitar los metros² y ver» el mismo
+     * número que ya hay. Se cae, como se cae un `?min=` vacío.
+     */
+    it("descarta el cero, que sería un filtro que no filtra", () => {
+      expect(area("0")).toEqual({ cityId: MARACAIBO });
+    });
+
+    it("descarta lo que no es un número entero positivo", () => {
+      for (const raw of ["-30", "setenta", "72,5", "72.5", " ", "NaN", "Infinity"]) {
+        expect(area(raw)).toEqual({ cityId: MARACAIBO });
+      }
+    });
+
+    /**
+     * **El techo no es inventado: es el de la columna.** `listing.area_m2` es
+     * `integer`, así que un mínimo por encima de 2 147 483 647 no es una
+     * búsqueda más estrecha — es un parámetro que Postgres no puede recibir, y
+     * `?metros=1e21` termina en un 500 en vez de en una pantalla. `1e21` pasa
+     * `Number.isInteger`, que es por lo que el lector de los otros números no
+     * alcanza acá. Fallar cerrado es soltar el filtro (AGENTS.md §7).
+     */
+    it("descarta el número que la columna no puede recibir", () => {
+      expect(area("2147483647")).toEqual({ cityId: MARACAIBO, minAreaM2: 2147483647 });
+      expect(area("2147483648")).toEqual({ cityId: MARACAIBO });
+      expect(area("1e21")).toEqual({ cityId: MARACAIBO });
+    });
+  });
+
+  /**
    * **Este test afirmaba lo contrario, y lo contrario era la decisión vieja.**
    *
    * Decía «keeps an inverted price range instead of silently widening it», con

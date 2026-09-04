@@ -95,6 +95,11 @@ export const FILTER_KEYS = [
   // Los baños (14.45), por la misma razón que `hab`: refina la lista, así que
   // la dirección deja de ser la de la zona y pasa a ser una combinación.
   "banos",
+  // Y la superficie mínima (14.45 rebanada B). Que sea un campo escrito y no
+  // una lista de escalones no cambia nada acá: refina igual, y encima es
+  // continua — indexar `?metros=71`, `72` y `73` publicaría tres direcciones
+  // casi idénticas por cada número que alguien escriba.
+  "metros",
   // Zonas EXTRA sobre la que ya afirma la ruta: la query sólo puede ensanchar
   // la búsqueda, y ensancharla la vuelve otra página.
   "zona",
