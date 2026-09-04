@@ -41,6 +41,36 @@ const REVEALED: ContactPresentation = {
   value: "+58 412 555 0134",
 };
 
+/**
+ * **Quién publica, dicho con palabras** (14.54).
+ *
+ * Esta línea no tenía una sola prueba, y la 14.54 la convirtió en la ÚNICA que
+ * lo dice dentro de la ficha: la decisión del fundador sacó la placa del
+ * encabezado —la mudanza que la 14.43 había construido— con el argumento de que
+ * «la ficha ya lo dice adentro». Sin esta prueba, ese argumento se apoyaba en
+ * un renglón que cualquiera podía borrar con todos los gates en verde; medido
+ * con una mutación antes de escribirla, y daba **cero rojos**.
+ *
+ * Se comprueba con las DOS palabras porque el ternario tiene dos ramas y la
+ * mitad de los avisos son de inmobiliaria: una sola rama deja la otra sin quien
+ * la mire.
+ */
+describe("quién publica se dice con palabras, no sólo con un tono (14.54)", () => {
+  it("dice «publica como dueño» y «publica como inmobiliaria»", () => {
+    expect(render(LOCKED)).toContain("publica como dueño");
+    expect(render(LOCKED, { publisherType: "broker" })).toContain("publica como inmobiliaria");
+  });
+
+  /**
+   * Sin nombre no hay a quién atribuirle nada, y un «publica como dueño» suelto
+   * describiría a nadie. Es la misma guarda que el marcado ya tiene, afirmada
+   * desde afuera para que sacarla se note.
+   */
+  it("un aviso sin nombre de publicante no dibuja la línea", () => {
+    expect(render(LOCKED, { publisherName: null })).not.toContain("publica como");
+  });
+});
+
 describe("sin cuenta", () => {
   /**
    * **La máscara es una cadena literal, dibujada sin mirar el valor

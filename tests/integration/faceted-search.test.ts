@@ -114,6 +114,21 @@ interface Fixture {
   readonly cityId: string;
   readonly priceUsd: number;
   readonly rooms: number;
+  /**
+   * **Por defecto 2, que es lo que la columna tenía escrito a mano antes de la
+   * 14.45.** Dejarlo como default y no como campo obligatorio mantiene intactos
+   * los conteos que las demás pruebas ya afirman: sólo los avisos que esta
+   * faceta mira declaran el suyo.
+   */
+  readonly bathrooms?: number;
+  /**
+   * **Por defecto 1, que es lo que el arnés escribía a mano antes de la 14.45
+   * rebanada C.** Se vuelve campo para que la faceta derivada tenga algo que
+   * medir: con TODOS los avisos en uno, `parking_spots > 0`, `>= 0` y `true`
+   * devuelven el mismo número y la derivación queda sin una sola prueba que la
+   * pueda poner en rojo.
+   */
+  readonly parkingSpots?: number;
   readonly areaM2: number;
   readonly propertyType: string;
   readonly publisherType: string;
@@ -140,9 +155,9 @@ async function insertListing(fixture: Fixture) {
        description, price_usd, rooms, area_m2, bathrooms, parking_spots,
        has_power_plant, has_regular_water, is_furnished, has_security, has_appliances,
        contact_method, contact_value, status, published_at, expires_at)
-     VALUES ($1,$2,$3,$4,$5,$6,'Apartamento','x',$7,$8,$9,2,1,
-       $10,$11,$12,$13,$14,
-       'whatsapp','04121234567',$15,now(),now() + make_interval(mins => $16::int))`,
+     VALUES ($1,$2,$3,$4,$5,$6,'Apartamento','x',$7,$8,$9,$10,$11,
+       $12,$13,$14,$15,$16,
+       'whatsapp','04121234567',$17,now(),now() + make_interval(mins => $18::int))`,
     [
       fixture.id,
       ANA,
@@ -153,6 +168,8 @@ async function insertListing(fixture: Fixture) {
       fixture.priceUsd,
       fixture.rooms,
       fixture.areaM2,
+      fixture.bathrooms ?? 2,
+      fixture.parkingSpots ?? 1,
       fixture.hasPowerPlant ?? false,
       fixture.hasRegularWater ?? false,
       fixture.isFurnished ?? false,
@@ -189,6 +206,11 @@ beforeAll(async () => {
 
   await insertListing({
     id: A1,
+    bathrooms: 1,
+    // **A1 y A3 sin puesto** (14.45 rebanada C): son los que hacen que la
+    // faceta derivada diga un número distinto del total. Con los cinco en uno,
+    // `parking_spots > 0` no se distingue de `count(*)`.
+    parkingSpots: 0,
     zoneId: MCBO_CENTRO,
     cityId: MARACAIBO,
     priceUsd: 200,
@@ -200,6 +222,7 @@ beforeAll(async () => {
   });
   await insertListing({
     id: A2,
+    bathrooms: 1,
     zoneId: MCBO_CENTRO,
     cityId: MARACAIBO,
     priceUsd: 300,
@@ -213,6 +236,8 @@ beforeAll(async () => {
   });
   await insertListing({
     id: A3,
+    bathrooms: 2,
+    parkingSpots: 0,
     zoneId: MCBO_CENTRO,
     cityId: MARACAIBO,
     priceUsd: 500,
@@ -225,6 +250,7 @@ beforeAll(async () => {
   });
   await insertListing({
     id: A4,
+    bathrooms: 2,
     zoneId: MCBO_NORTE,
     cityId: MARACAIBO,
     priceUsd: 400,
@@ -237,6 +263,11 @@ beforeAll(async () => {
     hasRegularWater: true,
   });
   await insertListing({
+    // **Cuatro baños, y son los que miden el «3+»** (14.45): con el más alto
+    // en exactamente tres, `bathrooms >= 3` y `bathrooms = 3` dan el mismo
+    // número y la diferencia entre «tres o más» y «exactamente tres» queda sin
+    // medir. Con cuatro, contar exactos manda este aviso a cero.
+    bathrooms: 4,
     id: A5,
     zoneId: MCBO_NORTE,
     cityId: MARACAIBO,
@@ -564,6 +595,111 @@ describe("una faceta no se filtra a sí misma (task 14.11)", () => {
     expect(counts.byMinRooms).toEqual({ 1: 2, 2: 2, 3: 1, 4: 1 });
   });
 
+  /**
+   * **Los baños, y su «3+»** (14.45). Es la misma regla, y la prueba está acá
+   * porque el número que la distingue es el del último escalón: `3` cuenta los
+   * de tres baños **o más**, no los de exactamente tres. **A5 tiene cuatro, y
+   * por eso esto mide algo**: con el más alto en exactamente tres, contar
+   * `>= 3` y contar `= 3` dan el mismo número y la diferencia queda sin medir.
+   */
+  it("el conteo de baños ignora el filtro de baños, y el último escalón es «o más»", async () => {
+    const counts = await facets.countFacets(
+      { cityId: MARACAIBO, minBathrooms: 3 },
+      ZONAS_OFRECIDAS,
+    );
+
+    expect(counts.total).toBe(1); // A5
+    // Los cinco activos tienen 1, 1, 2, 2 y **4** baños: el de cuatro entra en
+    // el «3+», que es lo que separa «tres o más» de «exactamente tres».
+    expect(counts.byMinBathrooms).toEqual({ 1: 5, 2: 3, 3: 1 });
+  });
+
+  it("el conteo de baños sí refleja el filtro de zona, y el de zona el de baños", async () => {
+    const counts = await facets.countFacets(
+      { cityId: MARACAIBO, zoneIds: [MCBO_NORTE], minBathrooms: 2 },
+      ZONAS_OFRECIDAS,
+    );
+
+    // Norte tiene A4 (2 baños) y A5 (4 baños); la faceta ignora `minBathrooms`.
+    expect(counts.byMinBathrooms).toEqual({ 1: 2, 2: 2, 3: 1 });
+    // La de zona ignora la zona y respeta los dos baños: A3, A4 y A5.
+    expect(counts.byZone).toEqual({
+      [MCBO_CENTRO]: 1,
+      [MCBO_NORTE]: 2,
+      [MCBO_VACIA]: 0,
+    });
+  });
+
+  it("el filtro de baños recorta la lista igual que recorta el total", async () => {
+    // La regla transversal 3 medida donde importa: el número del botón contra
+    // las filas que el motor de la lista realmente devuelve.
+    const criteria = { cityId: MARACAIBO, minBathrooms: 2 };
+    const counts = await facets.countFacets(criteria, ZONAS_OFRECIDAS);
+    const rows = await search.search(criteria);
+
+    expect(counts.total).toBe(rows.length);
+    expect(counts.total).toBe(3); // A3, A4 y A5
+  });
+
+  it("soltar los baños promete lo que soltarlos de verdad devuelve", async () => {
+    const criteria: SearchCriteria = { cityId: MARACAIBO, minRooms: 3, minBathrooms: 3 };
+    const counts = await facets.countFacets(criteria, ZONAS_OFRECIDAS);
+    const soltado = await facets.countFacets(withoutFilter(criteria, "bathrooms"), []);
+
+    expect(counts.withoutFilter.bathrooms).toBe(soltado.total);
+  });
+
+  /**
+   * **Los metros², que son un mínimo ESCRITO y no una lista de escalones**
+   * (14.45 rebanada B, decisión del fundador 2026-09-04). No tienen faceta —con
+   * un campo libre no hay opciones que contar— pero sí eje: hasta esta rebanada
+   * el área vivía en el `WHERE` compartido, y desde ahí **no se podía preguntar
+   * cuántos habría sin ella** ni podía el resto de las facetas verla como un
+   * filtro más. Es el mismo movimiento que el precio hizo con F10/F11.
+   *
+   * Las cinco filas activas de Maracaibo miden 40, 60, 90, 70 y 150 m², que es
+   * lo que hace que estos números distingan un `>=` de un `>` y de un `=`.
+   */
+  it("el filtro de metros² recorta la lista igual que recorta el total", async () => {
+    const criteria: SearchCriteria = { cityId: MARACAIBO, minAreaM2: 70 };
+    const counts = await facets.countFacets(criteria, ZONAS_OFRECIDAS);
+    const rows = await search.search(criteria);
+
+    expect(counts.total).toBe(rows.length);
+    expect(counts.total).toBe(3); // A3 (90), A4 (70) y A5 (150) — el 70 entra
+  });
+
+  it("las demás facetas respetan los metros², que ahora son un eje y no el `WHERE`", async () => {
+    const counts = await facets.countFacets({ cityId: MARACAIBO, minAreaM2: 70 }, ZONAS_OFRECIDAS);
+
+    // A3 tiene 3 habitaciones, A4 dos y A5 cinco: los tres que pasan el área.
+    expect(counts.byMinRooms).toEqual({ 1: 3, 2: 3, 3: 2, 4: 1 });
+    expect(counts.byZone).toEqual({ [MCBO_CENTRO]: 1, [MCBO_NORTE]: 2, [MCBO_VACIA]: 0 });
+  });
+
+  it("soltar los metros² promete lo que soltarlos de verdad devuelve", async () => {
+    const criteria: SearchCriteria = { cityId: MARACAIBO, minRooms: 2, minAreaM2: 150 };
+    const counts = await facets.countFacets(criteria, ZONAS_OFRECIDAS);
+    const soltado = await facets.countFacets(withoutFilter(criteria, "area"), []);
+
+    expect(counts.total).toBe(1); // sólo A5
+    expect(counts.withoutFilter.area).toBe(soltado.total);
+    expect(counts.withoutFilter.area).toBe(4); // A2, A3, A4 y A5 tienen 2 habitaciones o más
+  });
+
+  /**
+   * **«Limpiar todo» promete la ciudad entera, y con el área en el `WHERE`
+   * compartido prometía la ciudad ya recortada.** El defecto es de esta misma
+   * rebanada: mientras el área fue inalcanzable desde una pantalla nadie podía
+   * verlo, y en cuanto el campo existe se dibuja en cada búsqueda que lo use.
+   */
+  it("«Limpiar todo» no se queda con los metros² puestos", async () => {
+    const counts = await facets.countFacets({ cityId: MARACAIBO, minAreaM2: 150 }, ZONAS_OFRECIDAS);
+
+    expect(counts.total).toBe(1);
+    expect(counts.cityTotal).toBe(5);
+  });
+
   it("los dos filtros propios se ignoran a la vez, cada uno en su faceta", async () => {
     const counts = await facets.countFacets(
       { cityId: MARACAIBO, zoneIds: [MCBO_CENTRO], minRooms: 3 },
@@ -578,7 +714,7 @@ describe("una faceta no se filtra a sí misma (task 14.11)", () => {
   });
 });
 
-describe("las cinco facetas de atributo, tipo y publicador (F6)", () => {
+describe("las seis facetas de atributo, tipo y publicador (F6)", () => {
   it("cuenta cada atributo declarado sobre el resultado filtrado", async () => {
     const counts = await facets.countFacets({ cityId: MARACAIBO }, ZONAS_OFRECIDAS);
 
@@ -586,6 +722,10 @@ describe("las cinco facetas de atributo, tipo y publicador (F6)", () => {
       hasPowerPlant: 2, // A2, A4
       hasRegularWater: 1, // A4
       isFurnished: 2, // A2, A3
+      // **Derivado de `parking_spots > 0`, no de una columna booleana** (14.45
+      // rebanada C): A2, A4 y A5 tienen uno; A1 y A3 tienen cero. Que sean
+      // tres y no cinco es toda la prueba de que el umbral se aplica.
+      hasParking: 3, // A2, A4, A5
       hasSecurity: 1, // A5
       hasAppliances: 1, // A5
     });
@@ -604,6 +744,48 @@ describe("las cinco facetas de atributo, tipo y publicador (F6)", () => {
     expect(counts.byPublisherType).toEqual({ owner: 3, broker: 2 });
   });
 
+  /**
+   * **La faceta derivada NO se cuenta contra sí misma**, que es el defecto que
+   * la rebanada A tuvo que arreglar en los baños y el que hace usable el
+   * filtro entero: con «Puesto» ya puesto, su propio número tiene que seguir
+   * diciendo cuántos hay con puesto — si se contara contra sí mismo diría lo
+   * mismo que el total y desmarcarlo parecería no cambiar nada.
+   */
+  it("el conteo del puesto ignora el filtro del puesto y respeta todo lo demás", async () => {
+    const counts = await facets.countFacets(
+      { cityId: MARACAIBO, attributes: ["hasParking"] },
+      ZONAS_OFRECIDAS,
+    );
+
+    expect(counts.total).toBe(3); // A2, A4, A5
+    // Su propia faceta sigue en tres, no en el total de la búsqueda ya
+    // filtrada; las demás sí lo respetan (A3 amoblado queda afuera).
+    expect(counts.byAttribute.hasParking).toBe(3);
+    expect(counts.byAttribute.isFurnished).toBe(1); // A2; A3 no tiene puesto
+    expect(counts.byMinRooms).toEqual({ 1: 3, 2: 3, 3: 1, 4: 1 });
+  });
+
+  it("el filtro del puesto recorta la lista igual que recorta el total", async () => {
+    // La regla transversal 3 medida donde importa: el número del botón contra
+    // las filas que el motor de la lista realmente devuelve. Las dos consultas
+    // tienen que derivar `parking_spots > 0` igual, o el botón miente.
+    const criteria: SearchCriteria = { cityId: MARACAIBO, attributes: ["hasParking"] };
+    const counts = await facets.countFacets(criteria, ZONAS_OFRECIDAS);
+    const rows = await search.search(criteria);
+
+    expect(counts.total).toBe(rows.length);
+    expect(rows.map((row) => row.id).sort()).toEqual([A2, A4, A5].sort());
+  });
+
+  it("soltar el puesto promete lo que soltarlo de verdad devuelve", async () => {
+    const criteria: SearchCriteria = { cityId: MARACAIBO, attributes: ["hasParking"] };
+    const counts = await facets.countFacets(criteria, ZONAS_OFRECIDAS);
+    const soltado = await facets.countFacets(withoutFilter(criteria, "hasParking"), []);
+
+    expect(counts.withoutFilter.hasParking).toBe(soltado.total);
+    expect(counts.withoutFilter.hasParking).toBe(5);
+  });
+
   it("estrecha esos conteos con el resto de los filtros", async () => {
     const counts = await facets.countFacets(
       { cityId: MARACAIBO, zoneIds: [MCBO_NORTE] },
@@ -614,6 +796,7 @@ describe("las cinco facetas de atributo, tipo y publicador (F6)", () => {
       hasPowerPlant: 1, // A4
       hasRegularWater: 1, // A4
       isFurnished: 0, // A2 y A3 son de Centro
+      hasParking: 2, // A4, A5
       hasSecurity: 1, // A5
       hasAppliances: 1, // A5
     });
@@ -1028,6 +1211,8 @@ describe("los criterios nuevos también son facetas (tasks 14.6 a 14.9)", () => 
     expect(counts.total).toBe(2); // A2 y A4 declaran planta
     expect(counts.byAttribute).toEqual({
       hasPowerPlant: 2,
+      // A2 y A4 declaran planta y los dos tienen puesto.
+      hasParking: 2,
       hasRegularWater: 1, // sólo A4 declara las dos
       isFurnished: 1, // sólo A2 declara planta y amoblado
       hasSecurity: 0,

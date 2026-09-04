@@ -89,6 +89,19 @@ export const LISTING_ROWS = [
     title: "Estudio en Altamira con vigilancia",
     priceUsd: 320,
     status: "active",
+    // **El único sin puesto, y está para que el conteo se pueda medir** (14.45
+    // rebanada C). «Puesto de estacionamiento» es una opción DERIVADA de
+    // `parking_spots > 0`: con los seis avisos en uno, su número sería igual al
+    // total y `> 0` no se distinguiría de `count(*)` — la faceta pasaría en
+    // verde sin aplicar el umbral. Con éste en cero, Distrito Capital dice «1
+    // de 2» y el filtro tiene algo que separar.
+    parkingSpots: 0,
+    // **El único que no mide 80 m², y por la misma razón que el cero de
+    // arriba** (14.45 rebanada B): los metros² son un mínimo escrito a mano, y
+    // con los seis avisos en la misma superficie `>= 70`, `> 45` y `count(*)`
+    // devuelven el mismo número — el filtro pasaría en verde sin recortar
+    // nada. Con éste en 45, Distrito Capital tiene algo que separar.
+    areaM2: 45,
   },
   {
     id: ID.mcboTierraNegra1,
@@ -194,9 +207,9 @@ export async function seedE2e(): Promise<void> {
           "techado. Depósito de dos meses. Aviso sembrado para la suite de navegador.",
         priceUsd: listing.priceUsd,
         rooms: 2,
-        areaM2: 80,
+        areaM2: "areaM2" in listing ? listing.areaM2 : 80,
         bathrooms: 2,
-        parkingSpots: 1,
+        parkingSpots: "parkingSpots" in listing ? listing.parkingSpots : 1,
         contactMethod: "whatsapp" as const,
         // Inutilizable a propósito, igual que en la siembra de producción: un
         // número plausible metería en el producto un contacto de nadie.

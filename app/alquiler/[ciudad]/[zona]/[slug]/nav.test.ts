@@ -13,7 +13,7 @@ import { describe, expect, it } from "vitest";
  */
 const FICHA = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 
-describe("la ficha cede la marca al enlace de vuelta (14.38)", () => {
+describe("la barra de la ficha es la del resto del sitio (14.54)", () => {
   it("la guarda: el archivo que se está midiendo es la ficha", () => {
     // Sin esto, un `page.tsx` movido de lugar dejaría a toda la suite midiendo
     // una cadena vacía y pasando por eso — la peor forma de verde.
@@ -28,15 +28,18 @@ describe("la ficha cede la marca al enlace de vuelta (14.38)", () => {
   });
 
   /**
-   * **El `←` no se dibuja acá: llega dentro de la etiqueta que compone el
-   * dominio.** `resultsLink` devuelve «← Resultados» cuando hay una búsqueda a
-   * la que volver y «Ver avisos en Chacao» cuando no la hay, y esa diferencia
-   * es la regla entera (16.9). Una flecha clavada en esta página dibujaría las
-   * dos iguales y le prometería una vuelta a quien llegó desde Google.
+   * **La barra ya no lleva ni la vuelta ni la placa** (14.54). Las dos se
+   * fueron por razones distintas y las dos se comprueban acá porque las dos
+   * vuelven por el mismo camino: alguien le agrega una prop al `Nav`.
+   *
+   * El `←` sigue sin dibujarse en esta página: llega dentro de la etiqueta que
+   * compone `resultsLink` —«← Resultados» con origen, «Ver avisos en Chacao»
+   * sin él—, y esa diferencia es la regla entera (16.9). Dónde se dibuja ahora
+   * lo mide `ficha-servida.test.tsx` sobre los bytes servidos.
    */
-  it("le pasa al Nav el destino y el texto que decidió el dominio", () => {
-    expect(FICHA).toMatch(/back=\{\{[\s\S]*?href:\s*back\.href[\s\S]*?\}\}/);
-    expect(FICHA).toMatch(/back=\{\{[\s\S]*?label:\s*back\.label[\s\S]*?\}\}/);
+  it("no le pasa al Nav ni la vuelta ni el publicador", () => {
+    expect(FICHA).not.toMatch(/back=\{/);
+    expect(FICHA).not.toMatch(/publisher=\{/);
     // Ninguna flecha escrita en la página: la trae la etiqueta del dominio.
     expect(FICHA).not.toContain('"←"');
     expect(FICHA).not.toContain(">←<");
@@ -53,21 +56,6 @@ describe("la ficha cede la marca al enlace de vuelta (14.38)", () => {
    * `homeSearchForm` colgando sería trabajo muerto que el próximo arreglo
    * apurado vuelve a enchufar.
    */
-  /**
-   * **La placa del publicador, en el encabezado de móvil** (14.43; lámina
-   * `Rentas - Ficha - Mobile.dc.html`, líneas 93-95).
-   *
-   * El dato llega del aviso y no de esta página: escribir acá un `"owner"` o un
-   * ternario sería decidir quién publica en el frente, fuera del suelo de
-   * cobertura. Y `NavWithListing` lo hace obligatorio, así que una ficha sin
-   * publicador **no compila** — pero eso no protege que sea EL del aviso: un
-   * literal compilaría igual y dibujaría «Dueño» en toda ficha del sitio.
-   */
-  it("le pasa al Nav el publicador del aviso, no uno escrito acá", () => {
-    expect(FICHA).toContain("publisher={detail.publisherType}");
-    expect(FICHA).not.toMatch(/publisher=\{?["']/);
-  });
-
   it("no arma ninguna pastilla: la ficha no la lleva (láminas 10 y 11)", () => {
     expect(FICHA).not.toContain("homeSearchForm");
     expect(FICHA).not.toContain("SearchPillProps");

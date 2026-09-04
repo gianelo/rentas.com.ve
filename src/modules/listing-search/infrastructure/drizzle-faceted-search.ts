@@ -1,9 +1,10 @@
 import { and, eq, gt, gte, inArray, lte, type SQL, sql } from "drizzle-orm";
-import type { PgColumn, PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import type { PropertyType } from "../../../shared/db/schema";
 import { listings } from "../../../shared/db/schema";
 import type {
+  BathroomStep,
   FacetCounts,
   FacetedSearchPort,
   ListingAttribute,
@@ -15,6 +16,7 @@ import type {
 } from "../application/ports/faceted-search.port";
 import { PRICE_HISTOGRAM_BUCKETS } from "../domain/price-histogram";
 import { LISTING_ATTRIBUTES, type SearchCriteria } from "../domain/search-criteria";
+import { attributeCondition } from "./listing-attribute-sql";
 
 /**
  * Cada número que un filtro muestra, en UNA consulta (task 14.11).
@@ -59,16 +61,15 @@ export type FacetedSearchDatabase = PgDatabase<PgQueryResultHKT, typeof schema>;
  * toda faceta que no sea la del precio lo sigue respetando, porque `others`
  * sólo apaga el eje que se le nombra.
  */
-type FacetAxis = "zone" | "rooms" | "type" | "publisher" | "price" | ListingAttribute;
-
-/** Cada atributo con su columna, igual que en `DrizzleListingSearch`. */
-const ATTRIBUTE_COLUMNS: Readonly<Record<ListingAttribute, PgColumn>> = {
-  hasPowerPlant: listings.hasPowerPlant,
-  hasRegularWater: listings.hasRegularWater,
-  isFurnished: listings.isFurnished,
-  hasSecurity: listings.hasSecurity,
-  hasAppliances: listings.hasAppliances,
-};
+type FacetAxis =
+  | "zone"
+  | "rooms"
+  | "bathrooms"
+  | "type"
+  | "publisher"
+  | "price"
+  | "area"
+  | ListingAttribute;
 
 /**
  * `count(*) filter (where …)`, y `count(*)` pelado cuando no hay nada que
@@ -102,9 +103,14 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
   ): Promise<FacetCounts> {
     // Lo que TODA faceta comparte, y por eso va en el `WHERE` de afuera: la
     // ciudad y la frescura son incondicionales — `cityId` es obligatorio en el
-    // criterio y el estado no está en el criterio en absoluto (5.5/5.6) — y el
-    // área no es faceta de este puerto ni filtro que el panel pueda soltar, así
-    // que ninguna cuenta tiene motivo para ignorarla.
+    // criterio y el estado no está en el criterio en absoluto (5.5/5.6).
+    //
+    // **El área salió de acá con la 14.45 rebanada B**, por la misma razón por
+    // la que el precio había salido con F10/F11: desde el `WHERE` compartido un
+    // filtro no puede decir cuántos habría sin él, y encima se colaba en
+    // `cityTotal` — el número de «Limpiar todo» prometía la ciudad **ya
+    // recortada por los metros²**. Que no tenga faceta propia no lo saca del
+    // juego: no hay opciones que contar, pero sí una relajación que ofrecer.
     //
     // **La frescura son DOS condiciones y las dos van acá** (task 21.1). Que
     // vivan en el `WHERE` compartido es la parte que importa: es el mismo
@@ -122,13 +128,13 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       eq(listings.status, "active"),
       gt(listings.expiresAt, sql`now()`),
     ];
-    if (criteria.minAreaM2 !== undefined) {
-      shared.push(gte(listings.areaM2, criteria.minAreaM2));
-    }
 
     // El precio se salió del `WHERE` compartido: es soltable, y un filtro que
     // vive afuera no puede contar cuántos habría sin él.
     const priceFilter = priceWithin(criteria);
+    // La superficie mínima, por el mismo motivo y con la misma forma.
+    const areaFilter =
+      criteria.minAreaM2 === undefined ? undefined : gte(listings.areaM2, criteria.minAreaM2);
 
     // Los filtros que SÍ tienen faceta propia quedan fuera del `WHERE` y
     // entran columna por columna. Es la única forma de que la faceta de zona
@@ -145,6 +151,10 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       criteria.zoneIds === undefined ? undefined : inArray(listings.zoneId, [...criteria.zoneIds]);
     const byRoomsFilter =
       criteria.minRooms === undefined ? undefined : gte(listings.rooms, criteria.minRooms);
+    const byBathroomsFilter =
+      criteria.minBathrooms === undefined
+        ? undefined
+        : gte(listings.bathrooms, criteria.minBathrooms);
     const byTypeFilter =
       criteria.propertyType === undefined
         ? undefined
@@ -168,11 +178,13 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
     const others = (except?: FacetAxis): (SQL | undefined)[] => [
       except === "zone" ? undefined : byZoneFilter,
       except === "rooms" ? undefined : byRoomsFilter,
+      except === "bathrooms" ? undefined : byBathroomsFilter,
       except === "type" ? undefined : byTypeFilter,
       except === "publisher" ? undefined : byPublisherFilter,
       except === "price" ? undefined : priceFilter,
+      except === "area" ? undefined : areaFilter,
       ...LISTING_ATTRIBUTES.filter((attribute) => attribute !== except && asked.has(attribute)).map(
-        (attribute) => eq(ATTRIBUTE_COLUMNS[attribute], true),
+        attributeCondition,
       ),
     ];
 
@@ -274,12 +286,26 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
         rooms2: countWhere(...others("rooms"), gte(listings.rooms, 2)),
         rooms3: countWhere(...others("rooms"), gte(listings.rooms, 3)),
         rooms4: countWhere(...others("rooms"), gte(listings.rooms, 4)),
+        // **Tres columnas más en el MISMO `select`, no una consulta aparte**
+        // (14.45): el costo de este archivo son los viajes de red, y una
+        // segunda pasada por las mismas filas para tres números los duplica.
+        // El `>=` es la mitad que decide: el escalón «3+» significa tres baños
+        // o más, igual que el criterio, porque es el mismo filtro.
+        bathrooms1: countWhere(...others("bathrooms"), gte(listings.bathrooms, 1)),
+        bathrooms2: countWhere(...others("bathrooms"), gte(listings.bathrooms, 2)),
+        bathrooms3: countWhere(...others("bathrooms"), gte(listings.bathrooms, 3)),
         hasPowerPlant: countWhere(...others("hasPowerPlant"), eq(listings.hasPowerPlant, true)),
         hasRegularWater: countWhere(
           ...others("hasRegularWater"),
           eq(listings.hasRegularWater, true),
         ),
         isFurnished: countWhere(...others("isFurnished"), eq(listings.isFurnished, true)),
+        // **La sexta columna, y es DERIVADA** (14.45 rebanada C): sale de
+        // `parking_spots > 0`, no de un booleano. Va en el MISMO `select` que
+        // las otras cinco por la misma razón que los baños — el costo de este
+        // archivo son los viajes de red— y **con su propio filtro apagado**,
+        // que es lo que deja que su número diga cuántos habría si se cambiara.
+        hasParking: countWhere(...others("hasParking"), attributeCondition("hasParking")),
         hasSecurity: countWhere(...others("hasSecurity"), eq(listings.hasSecurity, true)),
         hasAppliances: countWhere(...others("hasAppliances"), eq(listings.hasAppliances, true)),
         apartamento: countWhere(...others("type"), eq(listings.propertyType, "apartamento")),
@@ -292,11 +318,18 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
         // Las nueve relajaciones, más el techo siguiente y la ciudad pelada.
         withoutZone: without("zone"),
         withoutPrice: without("price"),
+        // **Sin faceta pero con relajación** (14.45 rebanada B): un campo libre
+        // no tiene opciones que contar, y «cuántos habría sin los metros²» es
+        // un número como cualquier otro — el que la ficha quitable adelanta y
+        // el que la salida del vacío ofrece.
+        withoutArea: without("area"),
         withoutRooms: without("rooms"),
+        withoutBathrooms: without("bathrooms"),
         withoutPublisher: without("publisher"),
         withoutPowerPlant: without("hasPowerPlant"),
         withoutRegularWater: without("hasRegularWater"),
         withoutFurnished: without("isFurnished"),
+        withoutParking: without("hasParking"),
         withoutSecurity: without("hasSecurity"),
         withoutAppliances: without("hasAppliances"),
         // El precio ampliado un escalón: el resto de los filtros siguen. Sin
@@ -307,8 +340,9 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
         // **Sólo para decidir si esta zona se ofrece**, no para ofrecerla con
         // un número: una zona entra en `byZone` cuando tiene algún aviso
         // dentro del precio y el área, que es la fila que este `GROUP BY`
-        // devolvía cuando el precio todavía vivía en el `WHERE` de afuera.
-        withinPrice: countWhere(priceFilter),
+        // devolvía cuando los dos vivían en el `WHERE` de afuera. Los dos se
+        // nombran acá justamente porque ya no están ahí.
+        withinPrice: countWhere(priceFilter, areaFilter),
       })
       .from(listings)
       // El histograma entra ya agregado, y su subconsulta devuelve UNA fila
@@ -324,11 +358,14 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       total: 0,
       withoutZone: 0,
       withoutPrice: 0,
+      withoutArea: 0,
       withoutRooms: 0,
+      withoutBathrooms: 0,
       withoutPublisher: 0,
       withoutPowerPlant: 0,
       withoutRegularWater: 0,
       withoutFurnished: 0,
+      withoutParking: 0,
       withoutSecurity: 0,
       withoutAppliances: 0,
       widened: 0,
@@ -337,9 +374,13 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       rooms2: 0,
       rooms3: 0,
       rooms4: 0,
+      bathrooms1: 0,
+      bathrooms2: 0,
+      bathrooms3: 0,
       hasPowerPlant: 0,
       hasRegularWater: 0,
       isFurnished: 0,
+      hasParking: 0,
       hasSecurity: 0,
       hasAppliances: 0,
       apartamento: 0,
@@ -375,10 +416,18 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       3: sums.rooms3,
       4: sums.rooms4,
     };
+    // Mismo chequeo que el de abajo: un cuarto escalón de baños en el dominio
+    // rompe la compilación acá en vez de dejar un botón que nadie cuenta.
+    const byMinBathrooms: Record<BathroomStep, number> = {
+      1: sums.bathrooms1,
+      2: sums.bathrooms2,
+      3: sums.bathrooms3,
+    };
     const byAttribute: Record<ListingAttribute, number> = {
       hasPowerPlant: sums.hasPowerPlant,
       hasRegularWater: sums.hasRegularWater,
       isFurnished: sums.isFurnished,
+      hasParking: sums.hasParking,
       hasSecurity: sums.hasSecurity,
       hasAppliances: sums.hasAppliances,
     };
@@ -400,11 +449,14 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
     const withoutFilter: Record<RelaxableFilter, number> = {
       zone: sums.withoutZone,
       price: sums.withoutPrice,
+      area: sums.withoutArea,
       rooms: sums.withoutRooms,
+      bathrooms: sums.withoutBathrooms,
       publisherType: sums.withoutPublisher,
       hasPowerPlant: sums.withoutPowerPlant,
       hasRegularWater: sums.withoutRegularWater,
       isFurnished: sums.withoutFurnished,
+      hasParking: sums.withoutParking,
       hasSecurity: sums.withoutSecurity,
       hasAppliances: sums.withoutAppliances,
     };
@@ -413,6 +465,7 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       total: sums.total,
       byZone,
       byMinRooms,
+      byMinBathrooms,
       byAttribute,
       byPropertyType,
       byPublisherType,

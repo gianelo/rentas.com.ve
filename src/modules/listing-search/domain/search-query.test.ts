@@ -15,8 +15,29 @@ describe("los nombres de la dirección", () => {
     expect(SEARCH_QUERY_NAMES.minPrice).toBe("min");
     expect(SEARCH_QUERY_NAMES.maxPrice).toBe("max");
     expect(SEARCH_QUERY_NAMES.minRooms).toBe("hab");
+    // Sin «ñ» a propósito: `?baños=` viaja como `ba%C3%B1os` y deja de poder
+    // leerse en el chat donde se pega, que es la mitad de para qué existen los
+    // nombres cortos (F12).
+    expect(SEARCH_QUERY_NAMES.minBathrooms).toBe("banos");
+    // **`metros`, sin «²» ni abreviatura** (14.45 rebanada B): la misma regla
+    // que `banos` y `puesto` —el nombre viaja en un chat y tiene que poder
+    // leerse— llevada al carácter que la rompería acá, porque `m²` viaja `m%C2%B2`.
+    expect(SEARCH_QUERY_NAMES.minAreaM2).toBe("metros");
     expect(SEARCH_QUERY_NAMES.zone).toBe("zona");
     expect(SEARCH_QUERY_NAMES.page).toBe("pag");
+  });
+
+  /**
+   * **El puesto de estacionamiento, sin «ñ» y sin tilde** (14.45 rebanada C).
+   * Es la misma regla que dejó `banos` escrito así, y por la misma razón: un
+   * nombre con «ñ» viaja `%C3%B1` y deja de leerse en el chat donde se pega.
+   * `estacionamiento` no la tiene, pero es larga para un nombre corto de F12;
+   * `puesto` es la palabra que el diseño ya usa en la tira de datos de la
+   * ficha, así que no hay un segundo vocabulario que aprender.
+   */
+  it("el puesto se llama «puesto»: sin «ñ», sin tilde y con la palabra del diseño", () => {
+    expect(SEARCH_QUERY_NAMES.hasParking).toBe("puesto");
+    expect(Object.values(SEARCH_QUERY_NAMES).join("")).toMatch(/^[a-z]+$/u);
   });
 
   /**
@@ -33,17 +54,19 @@ describe("los nombres de la dirección", () => {
    * **La afirmación es sobre el conjunto entero, no sobre la referencia.** Una
    * prueba que dijera «`SEARCH_QUERY_NAMES` no tiene `reference`» sólo cazaría
    * a quien eligiera ESE nombre; ésta cae con cualquier parámetro nuevo,
-   * incluido uno llamado `cerca`. Y los catorce nombres van escritos por valor
+   * incluido uno llamado `cerca`. Y los quince nombres van escritos por valor
    * en vez de derivados de la constante: derivarlos afirmaría que la constante
    * es igual a sí misma.
    */
-  it("son catorce y ninguno más: un filtro nuevo tiene que pasar por acá", () => {
+  it("son dieciocho y ninguno más: un filtro nuevo tiene que pasar por acá", () => {
     expect(Object.values(SEARCH_QUERY_NAMES).sort()).toEqual(
       [
         "zona",
         "min",
         "max",
         "hab",
+        // Los baños (14.45).
+        "banos",
         "tipo",
         "pub",
         "planta",
@@ -51,9 +74,15 @@ describe("los nombres de la dirección", () => {
         "amoblado",
         "vigilancia",
         "electro",
+        // El puesto de estacionamiento (14.45 rebanada C).
+        "puesto",
+        // Los metros² como campo libre (14.45 rebanada B).
+        "metros",
         "pag",
         "filtros",
         "busca",
+        // El orden de la lista (14.47).
+        "orden",
       ].sort(),
     );
   });

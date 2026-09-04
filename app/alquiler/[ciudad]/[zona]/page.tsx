@@ -5,6 +5,7 @@ import { AppLink } from "@/../components/atoms/AppLink";
 import { Container } from "@/../components/layout/Container";
 import { FilterChips } from "@/../components/molecules/FilterChips";
 import { ListingCard, ListingGrid } from "@/../components/molecules/ListingCard";
+import { OrderMenu } from "@/../components/molecules/OrderMenu";
 import type { SearchPillProps } from "@/../components/molecules/SearchPill";
 import { Nav } from "@/../components/organisms/Nav";
 import { SearchOutcome } from "@/../components/organisms/SearchOutcome";
@@ -26,6 +27,7 @@ import { resolvePagination } from "@/modules/listing-search/domain/pagination";
 import { PANEL_OPEN_TOKEN } from "@/modules/listing-search/domain/search-accordion";
 import { buildSearchCriteria } from "@/modules/listing-search/domain/search-criteria";
 import { resolveSearchLocation } from "@/modules/listing-search/domain/search-location";
+import { buildOrderMenu } from "@/modules/listing-search/domain/search-order";
 import { toPanelZones } from "@/modules/listing-search/domain/search-panel";
 import {
   buildSearchHref,
@@ -37,6 +39,7 @@ import { resolveZoneTokens, toSearchZones } from "@/modules/listing-search/domai
 import { DrizzleFacetedSearch } from "@/modules/listing-search/infrastructure/drizzle-faceted-search";
 import { DrizzleListingSearch } from "@/modules/listing-search/infrastructure/drizzle-listing-search";
 import { db } from "@/shared/db/client";
+import { readNavAccountFlags } from "../../../_lib/nav-account";
 import { readSession } from "../../../_lib/session";
 import styles from "./zona.module.css";
 
@@ -144,14 +147,18 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
       minPrice: query[SEARCH_QUERY_NAMES.minPrice],
       maxPrice: query[SEARCH_QUERY_NAMES.maxPrice],
       minRooms: query[SEARCH_QUERY_NAMES.minRooms],
+      minBathrooms: query[SEARCH_QUERY_NAMES.minBathrooms],
+      minAreaM2: query[SEARCH_QUERY_NAMES.minAreaM2],
       propertyType: query[SEARCH_QUERY_NAMES.propertyType],
       publisherType: query[SEARCH_QUERY_NAMES.publisherType],
       hasPowerPlant: query[SEARCH_QUERY_NAMES.hasPowerPlant],
       hasRegularWater: query[SEARCH_QUERY_NAMES.hasRegularWater],
       isFurnished: query[SEARCH_QUERY_NAMES.isFurnished],
+      hasParking: query[SEARCH_QUERY_NAMES.hasParking],
       hasSecurity: query[SEARCH_QUERY_NAMES.hasSecurity],
       hasAppliances: query[SEARCH_QUERY_NAMES.hasAppliances],
       page: query[SEARCH_QUERY_NAMES.page],
+      order: query[SEARCH_QUERY_NAMES.order],
     },
     searchZones,
   ) ?? { cityId: place.city.id };
@@ -222,7 +229,11 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
   // que `/mis-avisos` consulta: la barra no la mira. El modo de render no
   // cambia — la página ya se servía por petición, porque lee `searchParams`.
   const session = await readSession();
-  const account = resolveNavAccount(session);
+  // **El viaje que la 14.56 agrega, y sólo para quien tiene sesión**: si esta
+  // cuenta publicó algo se le pregunta a `listing` con un `EXISTS`. Sin cookie
+  // no hay sesión y no hay consulta, que es casi todo el tráfico de esta
+  // pantalla.
+  const account = resolveNavAccount(session, await readNavAccountFlags(session));
   const publish = resolveNavPublish(account);
 
   // **Ni el texto ni el número de la pastilla se deciden acá.** `panel.headline`
@@ -347,10 +358,17 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
             mayor que la cantidad de tarjetas. La respuesta correcta es que la
             consulta no traiga los avisos sin portada, y eso es una tarea aparte
             — no un número maquillado acá. */}
-        <p className={styles.count} data-testid="result-count">
-          {total === 1 ? "1 propiedad activa" : `${total} propiedades activas`}
-          {pagination.count > 1 ? ` — página ${pagination.current} de ${pagination.count}` : ""}
-        </p>
+        {/* **El conteo y el orden, en la misma fila** (14.47, lámina 7c:
+            «70 avisos ······ Recientes ▾»). Cuáles son los tres órdenes y cuál
+            está puesto lo decide `buildOrderMenu`, no esta página. */}
+        <div className={styles.countRow}>
+          <p className={styles.count} data-testid="result-count">
+            {total === 1 ? "1 propiedad activa" : `${total} propiedades activas`}
+            {pagination.count > 1 ? ` — página ${pagination.current} de ${pagination.count}` : ""}
+          </p>
+
+          <OrderMenu model={buildOrderMenu(basePath, query)} />
+        </div>
 
         {/* **Lo que se le corrigió al precio, dicho** (14.13, F5). Misma razón
             que el aviso de arriba: una corrección callada es una pantalla

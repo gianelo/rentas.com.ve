@@ -541,32 +541,42 @@ test.describe("la barra del producto (14a, 14.41)", () => {
     expect(actions.left).toBeGreaterThan(pill.right);
   });
 
-  test("11: en la ficha a 1280 la marca no cede, se corre al centro", async ({ page }) => {
+  /**
+   * **14.54 — la ficha y la búsqueda dibujan la MISMA barra.**
+   *
+   * Antes no: la ficha ponía `← Resultados` en el primer slot y corría la marca
+   * al centro (`.brandCentre`), y a 360 no dibujaba marca ninguna. Con la vuelta
+   * mudada al contenido queda una sola disposición, y lo que lo demuestra es
+   * que la marca arranque en el MISMO píxel en las dos barras — una afirmación
+   * sobre la hoja no distingue «la regla se borró» de «la regla ya no aplica a
+   * esta barra».
+   */
+  test("14.54: la marca arranca en el mismo sitio con pastilla y sin ella", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/measure");
 
-    const back = await centres(page, "nav-harness-ficha", "a", "← Resultados");
-    const brand = await centres(page, "nav-harness-ficha", "a", "rentas.");
+    const busqueda = await centres(page, "nav-harness-busqueda", "a", "rentas.");
+    const ficha = await centres(page, "nav-harness-ficha", "a", "rentas.");
 
-    console.log(`[11] ← en ${back.left}, marca centrada en ${brand.centre} de ${brand.barCentre}`);
-    expect(back.visible).toBe(true);
-    expect(brand.visible).toBe(true);
-    // Los tres hijos de la lámina 11, en orden: ← Resultados · rentas · Publicar.
-    expect(back.right).toBeLessThan(brand.left);
-    expect(Math.abs(brand.centre - brand.barCentre)).toBeLessThanOrEqual(4);
+    console.log(`[14.54] marca de la búsqueda en ${busqueda.left}, de la ficha en ${ficha.left}`);
+    expect(ficha.visible).toBe(true);
+    expect(ficha.left).toBe(busqueda.left);
+    // Y no queda una segunda marca corrida al centro: la de la ficha es la
+    // misma del primer slot, así que no está centrada en la barra.
+    expect(Math.abs(ficha.centre - ficha.barCentre)).toBeGreaterThan(4);
   });
 
-  test("10: en la ficha a 360 la marca no se dibuja — el ← le tomó el lugar", async ({ page }) => {
+  test("14.54: a 360 la ficha dibuja la marca, porque la vuelta ya no le toma el lugar", async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 360, height: 900 });
     await page.goto("/measure");
 
-    const back = await centres(page, "nav-harness-ficha", "a", "← Resultados");
     const brand = await centres(page, "nav-harness-ficha", "a", "rentas.");
 
-    expect(back.visible).toBe(true);
-    // A 360 px no caben tres, y la lámina 10 dibuja dos. Declarado en la hoja
-    // no es renderizado: esto lo mide.
-    expect(brand.visible).toBe(false);
+    // La 14.55 decidirá esconderla en móvil; hoy es el único camino al inicio
+    // desde la ficha, y declarado en la hoja no es dibujado: esto lo mide.
+    expect(brand.visible).toBe(true);
   });
 });
 

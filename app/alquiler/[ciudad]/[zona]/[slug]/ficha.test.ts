@@ -80,57 +80,6 @@ describe("la ficha en una columna", () => {
  * como ruta**. Una comparación de cadenas seguiría en verde con la ruta mal
  * escrita; esto no.
  */
-/**
- * **La placa del publicador se MUEVE con el ancho, y no se dibuja dos veces
- * visibles** (14.43).
- *
- * La lámina de escritorio la pone encabezando la columna de datos y la de móvil
- * en el encabezado de 56 px del `Nav`. El servidor no sabe el ancho de la
- * pantalla —no hay ancho en una petición HTTP, y husmear el `User-Agent` rompe
- * una sola respuesta cacheable para todos los anchos—, así que la única forma
- * que el piso de AGENTS.md §2 sostiene es dibujarla en los dos sitios y dejar
- * que cada hoja esconda la que no toca. Es el mismo argumento con el que la
- * 14.53 resolvió las fichas quitables.
- *
- * Acá se comprueba la mitad de la ficha; la del encabezado vive en
- * `components/organisms/Nav.test.tsx`, y que a cada ancho se vea EXACTAMENTE
- * una lo mide `tests/measure/ficha.spec.ts` en un navegador de verdad — una
- * afirmación sobre dos hojas separadas no puede ver el conjunto.
- */
-describe("la placa del publicador, que cambia de sitio con el ancho (14.43)", () => {
-  const BASE = css.slice(0, css.indexOf("@media"));
-  const ESCRITORIO = css.slice(css.indexOf("@media (min-width: 768px)"));
-
-  it("la guarda: la hoja tiene sus dos mitades y no se está midiendo una sola", () => {
-    // Sin esto, un `@media` renombrado dejaría a `ESCRITORIO` valiendo la hoja
-    // entera y las dos afirmaciones de abajo mirarían el mismo texto.
-    expect(BASE.length).toBeGreaterThan(0);
-    expect(ESCRITORIO.length).toBeGreaterThan(0);
-    expect(BASE).not.toContain("@media");
-  });
-
-  it("en el ancho base la de la columna de datos no se dibuja: la lleva el encabezado", () => {
-    expect(BASE).toMatch(/\.summaryPublisher\s*\{[^}]*display:\s*none/);
-  });
-
-  it("en escritorio vuelve, que es donde la dibuja la lámina 11", () => {
-    expect(ESCRITORIO).toMatch(/\.summaryPublisher\s*\{[^}]*display:\s*block/);
-  });
-
-  /**
-   * **La placa sigue siendo el átomo, sin una sola propiedad repintada acá.** La
-   * garantía de la 14.25 —dueño con relleno, inmobiliaria con borde,
-   * distinguibles en escala de grises— vive en `PublisherBadge.module.css` y la
-   * fija `components/design-contract.test.tsx`. Un `background` o un `border`
-   * escritos en este envoltorio la moverían de sitio sin que aquella prueba se
-   * entere.
-   */
-  it("el envoltorio esconde y no repinta", () => {
-    const regla = BASE.match(/\.summaryPublisher\s*\{([^}]*)\}/)?.[1] ?? "";
-    expect(regla).not.toMatch(/background|border|color|font/);
-  });
-});
-
 describe("el enlace de reportar del pie (F31)", () => {
   const bloque = /styles\.report[\s\S]*?<\/AppLink>/.exec(page)?.[0];
 

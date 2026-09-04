@@ -50,6 +50,7 @@ import { readSiteBaseUrl } from "@/modules/listing-discovery/infrastructure/site
 import { DrizzleListingSearch } from "@/modules/listing-search/infrastructure/drizzle-listing-search";
 import { db } from "@/shared/db/client";
 import { shortSpanishDate } from "@/shared/format/spanish-date";
+import { readNavAccountFlags } from "../../../../_lib/nav-account";
 import { readSession, requestSessionPort } from "../../../../_lib/session";
 import styles from "./ficha.module.css";
 import { continueWithGoogle, revealListingContact } from "./reveal-actions";
@@ -206,7 +207,11 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
   // acaba de usar el bloque de contacto, así que esto no agrega una consulta:
   // dentro de una petición es la misma lectura. Y sin cookie no hubo ninguna.
   const session = await readSession();
-  const account = resolveNavAccount(session);
+  // **El viaje que la 14.56 agrega, y sólo para quien tiene sesión**: si esta
+  // cuenta publicó algo se le pregunta a `listing` con un `EXISTS`. Sin cookie
+  // no hay sesión y no hay consulta, que es casi todo el tráfico de esta
+  // pantalla.
+  const account = resolveNavAccount(session, await readNavAccountFlags(session));
   const publish = resolveNavPublish(account);
 
   // Se lee al servir y no al importar el módulo: `next build` evalúa el módulo
@@ -273,21 +278,14 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
 
   return (
     <>
-      {/* **El encabezado de la ficha, en la forma que fijan sus dos láminas**
-          (RESUELTO por el fundador: "seguí el diseño, que fue lo que se decidió
-          acá"). La 11 dibuja tres hijos a 1280 —`← Resultados` · `rentas` ·
-          `Publicar gratis`—, o sea que la marca NO cede: se corre al centro. La
-          10 dibuja dos a 360, sin marca, porque no caben tres. Las dos tienen
-          razón: describen anchos distintos, y eso lo resuelve la hoja de
-          estilos del `Nav`, no una segunda rama acá.
+      {/* **El encabezado del sitio, en la única forma que tiene** (14.54).
+          Antes era la excepción del camino de lectura: la ficha ponía
+          `← Resultados` en el primer slot y corría la marca al centro. Con la
+          vuelta mudada al contenido, esta barra dibuja lo mismo que la del
+          inicio y la de resultados, y `NavProps` dejó de ser una unión.
 
-          **Sin pastilla**, que es lo otro que las dos láminas dicen: una ficha
-          no es una búsqueda, y el slot del medio se lo lleva la marca. El tipo
-          lo hace inexpresable — `NavProps` no admite `pill` junto con `back`.
-
-          El destino y el texto de la vuelta llegan decididos por `resultsLink`:
-          con origen dice «← Resultados», sin origen dice «Ver avisos en
-          <zona>», y esa diferencia es la regla entera de la 16.9.
+          **Sin pastilla**, que es lo que dicen las dos láminas de la ficha: una
+          ficha no es una búsqueda. `pill` es opcional y esta página no lo pasa.
 
           `signInHref` vuelve a ESTA ficha, con el origen puesto (F19): pedirle
           una cuenta a alguien y devolverlo al inicio pierde el aviso que estaba
@@ -299,14 +297,6 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
         account={account}
         publish={publish}
         signInHref={`/signin?callbackUrl=${encodeURIComponent(listingHref)}`}
-        back={{ href: back.href, label: back.label }}
-        // **La placa del publicador, que a 360 px vive acá** (14.43; lámina de
-        // móvil, líneas 93-95). No es una segunda placa: es la MISMA que la
-        // columna de datos dibuja más abajo, y sólo una de las dos se ve a cada
-        // ancho. El servidor no sabe el ancho de la pantalla, así que la
-        // mudanza la resuelven las dos hojas de estilos y no una rama acá —el
-        // mismo argumento que la 14.53 dejó escrito— y el dato llega del aviso.
-        publisher={detail.publisherType}
       />
 
       <main className={styles.page}>
@@ -320,6 +310,33 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
           dangerouslySetInnerHTML={{ __html: serializeStructuredData(structuredData) }}
         />
         <Container>
+          {/* **La vuelta, adentro del contenido y con la forma de la miga de
+              pan** (14.54). Es el sitio que ya usan `/alquiler/[ciudad]` y
+              `/alquiler/[ciudad]/[zona]` con su miga, y `/importar` y
+              `/mis-avisos/[id]/editar` con su «← Mis avisos»: una fila discreta
+              arriba del título. En la barra no entraba — `resultsLink` compone
+              «Ver avisos en Chacao» cuando no hay origen, y eso son veinte
+              caracteres contra los 36 px libres que quedaban a 360.
+
+              **Es la fila de vuelta y NO la miga completa `Inicio › Ciudad ›
+              Zona › aviso`, y la razón es que no serían lo mismo.** Una miga
+              dice jerarquía: cada paso es un ancestro de esta página. El
+              destino de acá lo decide `resultsLink` y con origen es **la
+              búsqueda de la que se vino** —`/alquiler/maracaibo?min=200&hab=2`,
+              que no es ancestro de nada—, así que ponerlo como último paso de
+              una jerarquía diría algo falso justo en el caso que la 16.9
+              existe para distinguir. La miga completa además tendría que
+              componer las rutas de ciudad y zona en esta página, que es
+              exactamente la clase de regla que AGENTS.md §1 saca del frente, y
+              duplicaría la ruta de zona que `resultsLink` ya devuelve como
+              respaldo.
+
+              El destino y la etiqueta siguen saliendo del dominio: «←
+              Resultados» con origen, «Ver avisos en <zona>» sin él. */}
+          <AppLink className={styles.volver} href={back.href}>
+            {back.label}
+          </AppLink>
+
           <DetailSplit
             media={
               <>
@@ -347,6 +364,7 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
                     isFurnished={detail.isFurnished}
                     hasSecurity={detail.hasSecurity}
                     hasAppliances={detail.hasAppliances}
+                    parkingSpots={detail.parkingSpots}
                   />
 
                   <section className={styles.description}>
@@ -365,22 +383,15 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
                     tiene que sobrevivir a la escala de grises, y eso es
                     estructura y no color.
 
-                    **El comentario que estaba acá decía «va acá y no en la
-                    barra … dibujarlo dos veces sería tener dos fichas otra
-                    vez», y la 14.43 lo corrige con una razón medida.** La lámina
-                    de escritorio la dibuja encabezando esta columna y la de
-                    móvil, en el encabezado de 56 px: es el mismo elemento
-                    cambiando de sitio con el ancho. Y **el servidor no sabe el
-                    ancho de la pantalla** —no hay ancho en una petición HTTP, y
-                    husmear el `User-Agent` rompe una sola respuesta cacheable
-                    para todos los anchos—, así que la única forma que el piso de
-                    AGENTS.md §2 sostiene es dibujarla en los dos sitios y dejar
-                    que la hoja esconda la que no toca. No son dos fichas: es una
-                    con un punto de quiebre, y `tests/measure/ficha.spec.ts` mide
-                    que a cada ancho se vea EXACTAMENTE una. */}
-                  <span className={styles.summaryPublisher}>
-                    <PublisherBadge publisherType={detail.publisherType} />
-                  </span>
+                    **Va acá y en ningún otro sitio** (14.54, que revierte la
+                    14.43). Estuvo dos días dibujada también en el encabezado,
+                    escondida por ancho desde cada hoja; el fundador lo cerró al
+                    revés: la ficha ya dice quién publica adentro
+                    —`ContactBlock` dibuja «publica como dueño» al lado del
+                    nombre y del teléfono—, y la lámina de móvil dibujaba las
+                    dos. Se queda la de abajo, que es la que se lee justo antes
+                    de escribir. */}
+                  <PublisherBadge publisherType={detail.publisherType} />
 
                   <p className={styles.price}>
                     ${detail.priceUsd}

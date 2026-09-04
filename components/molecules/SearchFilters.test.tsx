@@ -146,7 +146,7 @@ describe("SearchFilters — los filtros nuevos (tasks 14.7 a 14.9)", () => {
     expect(markup).toContain("Sólo de dueños");
   });
 
-  it("ofrece los cinco atributos, y ninguno pide el «no»", () => {
+  it("ofrece los seis atributos, y ninguno pide el «no»", () => {
     const markup = renderToStaticMarkup(
       <SearchFilters cities={cities} zones={zones} controls={TODOS} />,
     );
@@ -155,6 +155,9 @@ describe("SearchFilters — los filtros nuevos (tasks 14.7 a 14.9)", () => {
       "hasPowerPlant",
       "hasRegularWater",
       "isFurnished",
+      // El puesto de estacionamiento (14.45 rebanada C): la casilla se ofrece
+      // igual que las otras cinco aunque su conteo salga de un número.
+      "hasParking",
       "hasSecurity",
       "hasAppliances",
     ]) {
@@ -163,7 +166,7 @@ describe("SearchFilters — los filtros nuevos (tasks 14.7 a 14.9)", () => {
     // Cada casilla manda "1" y nada más: no existe el valor que pediría los
     // avisos que declararon que NO, porque `false` significa "no lo declaró".
     const casillas = markup.match(/<input[^>]*type="checkbox"[^>]*>/g) ?? [];
-    expect(casillas).toHaveLength(6); // los cinco atributos y «sólo de dueños»
+    expect(casillas).toHaveLength(7); // los seis atributos y «sólo de dueños»
     expect(casillas.filter((tag) => /value="(0|false)"/.test(tag))).toHaveLength(0);
   });
 

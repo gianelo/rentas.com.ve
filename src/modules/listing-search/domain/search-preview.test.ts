@@ -9,10 +9,12 @@ import { type PreviewCounts, previewConfirmLabel } from "./search-preview";
  */
 const COUNTS: PreviewCounts = {
   byMinRooms: { 1: 16, 2: 9, 3: 4, 4: 0 },
+  byMinBathrooms: { 1: 16, 2: 7, 3: 0 },
   byAttribute: {
     hasPowerPlant: 9,
     hasRegularWater: 12,
     isFurnished: 4,
+    hasParking: 11,
     hasSecurity: 0,
     hasAppliances: 3,
   },
@@ -21,12 +23,15 @@ const COUNTS: PreviewCounts = {
     zone: 40,
     price: 22,
     rooms: 31,
+    bathrooms: 31,
     publisherType: 25,
     hasPowerPlant: 18,
     hasRegularWater: 19,
     isFurnished: 20,
+    hasParking: 24,
     hasSecurity: 21,
     hasAppliances: 23,
+    area: 27,
   },
   cityTotal: 70,
 };

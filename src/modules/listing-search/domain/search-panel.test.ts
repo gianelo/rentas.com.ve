@@ -13,10 +13,12 @@ const COUNTS = {
   total: 16,
   byZone: { chacao: 12, altamira: 9, castellana: 7, rosal: 0 },
   byMinRooms: { 1: 16, 2: 9, 3: 4, 4: 0 },
+  byMinBathrooms: { 1: 16, 2: 7, 3: 0 },
   byAttribute: {
     hasPowerPlant: 9,
     hasRegularWater: 12,
     isFurnished: 4,
+    hasParking: 11,
     hasSecurity: 0,
     hasAppliances: 3,
   },
@@ -29,12 +31,18 @@ const COUNTS = {
     zone: 40,
     price: 22,
     rooms: 31,
+    bathrooms: 29,
     publisherType: 25,
     hasPowerPlant: 18,
     hasRegularWater: 19,
     isFurnished: 20,
+    hasParking: 24,
     hasSecurity: 21,
     hasAppliances: 23,
+    // Los metros² también se pueden soltar (14.45 rebanada B), y esa relajación
+    // sí es contable aunque el filtro no tenga faceta: no hay opciones que
+    // contar, pero «cuántos habría sin él» es un número como cualquier otro.
+    area: 27,
   },
   byPriceBucket: [
     { count: 1, lowestUsd: 200, highestUsd: 240 },
@@ -333,6 +341,33 @@ describe("paso 4 · habitaciones y atributos (F6)", () => {
     expect(panel().rooms.find((room) => room.step === 4)?.disabled).toBe(true);
   });
 
+  /**
+   * **Los baños son la otra mitad del grupo «tamaño»** (14.45, lámina 7b), y lo
+   * que se mide acá es el conteo, no el botón: cada escalón llega con el número
+   * que la faceta contó sin su propio filtro, y el que da cero no se puede
+   * tocar — la regla transversal 4, «ninguna opción lleva a un vacío».
+   */
+  it("los tres escalones de baños con su conteo, y el «3+» del último", () => {
+    expect(panel().bathrooms.map((option) => option.label)).toEqual(["1", "2", "3+"]);
+    expect(panel().bathrooms.find((option) => option.step === 2)?.count).toBe(7);
+    expect(panel().bathrooms.find((option) => option.step === 3)?.disabled).toBe(true);
+  });
+
+  it("tocar un baño se queda en su grupo y no arrastra la página vieja", () => {
+    const dos = panel({ query: { pag: "3" } }).bathrooms.find((option) => option.step === 2);
+
+    expect(dos?.href).toBe("/alquiler/distrito-capital?banos=2&filtros=habitaciones");
+  });
+
+  it("volver a tocar el baño elegido lo suelta de la dirección", () => {
+    const elegido = panel({ criteria: { minBathrooms: 2 } }).bathrooms.find(
+      (option) => option.step === 2,
+    );
+
+    expect(elegido?.chosen).toBe(true);
+    expect(elegido?.href).not.toContain("banos=");
+  });
+
   it("los cinco atributos con su conteo sobre el total", () => {
     const planta = panel().attributes.find((a) => a.attribute === "hasPowerPlant");
 
@@ -369,6 +404,18 @@ describe("la salida del vacío (F7 · F11)", () => {
 
   it("el precio cuenta como uno solo, aunque sean dos números", () => {
     expect(relaxableFilters({ minPriceUsd: 250, maxPriceUsd: 700 }, [])).toEqual(["price"]);
+    expect(relaxableFilters({ minRooms: 2, minBathrooms: 2 }, [])).toEqual(["rooms", "bathrooms"]);
+  });
+
+  /**
+   * **Los metros² se pueden soltar como cualquier otro filtro** (14.45 rebanada
+   * B). Es lo que le da ficha quitable y salida del vacío: sin esto, un
+   * «desde 200 m²» tecleado de más deja la lista en cero sin que nada nombre al
+   * culpable ni ofrezca la salida — que es la regla transversal 5.
+   */
+  it("los metros² entran en lo que se puede soltar, y van con el tamaño", () => {
+    expect(relaxableFilters({ minAreaM2: 90 }, [])).toEqual(["area"]);
+    expect(relaxableFilters({ minRooms: 2, minAreaM2: 90 }, [])).toEqual(["rooms", "area"]);
   });
 
   it("cada salida es una dirección con ese filtro quitado y ningún otro", () => {
@@ -385,7 +432,13 @@ describe("la salida del vacío (F7 · F11)", () => {
     expect(reliefHref(place, "price")).not.toContain("min=");
     expect(reliefHref(place, "price")).toContain("hab=2");
     expect(reliefHref(place, "rooms")).not.toContain("hab=");
+    expect(
+      reliefHref({ ...place, query: { ...place.query, banos: "2" } }, "bathrooms"),
+    ).not.toContain("banos=");
     expect(reliefHref(place, "hasPowerPlant")).not.toContain("planta=");
+    expect(reliefHref({ ...place, query: { ...place.query, metros: "90" } }, "area")).not.toContain(
+      "metros=",
+    );
   });
 
   it("soltar «sólo de dueños» se queda en la misma ruta, porque no es un lugar", () => {
@@ -418,6 +471,15 @@ describe("la salida del vacío (F7 · F11)", () => {
     expect(withoutFilter(criteria, "price").minPriceUsd).toBeUndefined();
     expect(withoutFilter(criteria, "price").maxPriceUsd).toBeUndefined();
     expect(withoutFilter(criteria, "rooms").minRooms).toBeUndefined();
+    expect(
+      withoutFilter({ ...criteria, minBathrooms: 2 }, "bathrooms").minBathrooms,
+    ).toBeUndefined();
+    // Soltar los baños no toca las habitaciones: son dos filtros de un grupo.
+    expect(withoutFilter({ ...criteria, minBathrooms: 2 }, "bathrooms").minRooms).toBe(2);
+    expect(withoutFilter({ ...criteria, minAreaM2: 90 }, "area").minAreaM2).toBeUndefined();
+    // Soltarlos no toca el resto del grupo: son tres filtros, no uno.
+    expect(withoutFilter({ ...criteria, minAreaM2: 90 }, "area").minRooms).toBe(2);
+    expect(withoutFilter({ ...criteria, minAreaM2: 90 }, "rooms").minAreaM2).toBe(90);
     expect(withoutFilter(criteria, "publisherType").publisherType).toBeUndefined();
     // Un atributo se cae solo, y los otros siguen: se combinan con Y.
     expect(withoutFilter(criteria, "hasPowerPlant").attributes).toEqual(["hasRegularWater"]);
@@ -594,12 +656,62 @@ describe("las fichas quitables de los filtros puestos (14.33, lámina 7c)", () =
     expect(panel(CHOSEN).chips.map((chip) => chip.removeLabel)).toContain("Quitar 2 hab");
   });
 
+  /**
+   * **La ficha de los metros² dice el número que alguien escribió**, con el
+   * mismo vocabulario del renglón cerrado: un filtro que se llama distinto
+   * según dónde se lo mire obliga a adivinar de cuál habla cada pantalla.
+   */
+  it("los metros² tienen su ficha, con su número adentro", () => {
+    const chips = panel({ criteria: { minAreaM2: 90 }, query: { metros: "90" } }).chips;
+
+    expect(chips.map((chip) => chip.label)).toEqual(["Desde 90 m²"]);
+    expect(chips[0]?.removeHref).toBe("/alquiler/distrito-capital");
+    expect(chips[0]?.removeLabel).toBe("Quitar Desde 90 m²");
+  });
+
   it("cada atributo es su propia ficha: se combinan con Y", () => {
     const labels = panel({
       criteria: { attributes: ["hasPowerPlant", "hasRegularWater"] },
     }).chips.map((chip) => chip.label);
 
     expect(labels).toEqual(["planta", "agua"]);
+  });
+});
+
+/**
+ * **El control de los metros² es un CAMPO, no una tira de escalones** (14.45
+ * rebanada B, decisión del fundador 2026-09-04). Por eso es un `<form
+ * method="get">` con sus campos escondidos, igual que el precio, y no una lista
+ * de enlaces: un continuo no tiene opciones que enlazar, y sin JavaScript un
+ * campo sin formulario alrededor no puede enviar nada.
+ */
+describe("los metros², el campo del grupo del tamaño (14.45 rebanada B)", () => {
+  it("envía a la misma ruta con el nombre corto del dominio", () => {
+    expect(panel().area.action).toBe("/alquiler/distrito-capital");
+    expect(panel().area.name).toBe("metros");
+  });
+
+  it("vuelve escrito con lo que ya está puesto, y vacío cuando no hay nada", () => {
+    expect(panel().area.value).toBe("");
+    expect(panel({ criteria: { minAreaM2: 90 } }).area.value).toBe("90");
+  });
+
+  /**
+   * Un `<form method="get">` reemplaza la query entera por sus propios campos:
+   * sin esto, escribir los metros² borraría las zonas y el precio ya puestos. Y
+   * el suyo NO puede ir escondido además, o viajaría dos veces y ganaría el
+   * viejo.
+   */
+  it("se lleva el resto de la búsqueda escondido, menos el suyo y la página", () => {
+    const area = panel({ query: { min: "250", metros: "60", pag: "3", filtros: "precio" } }).area;
+    const names = area.hidden.map((field) => field.name);
+
+    expect(names).toContain("min");
+    expect(names).not.toContain("metros");
+    expect(names).not.toContain("pag");
+    // El acordeón queda en SU grupo después de enviar: sin JavaScript el
+    // navegador no puede recordar cuál estaba abierto.
+    expect(area.hidden).toContainEqual({ name: "filtros", value: "habitaciones" });
   });
 });
 

@@ -184,7 +184,14 @@ describe("buildSearchCriteria — `?zona=` escrita con slugs (F12)", () => {
 describe("buildSearchCriteria — price and characteristics", () => {
   it("reads the numeric filters a query string carries as text", () => {
     const criteria = buildSearchCriteria(
-      { city: MARACAIBO, minPrice: "200", maxPrice: "500", minRooms: "2", minAreaM2: "60" },
+      {
+        city: MARACAIBO,
+        minPrice: "200",
+        maxPrice: "500",
+        minRooms: "2",
+        minBathrooms: "3",
+        minAreaM2: "60",
+      },
       ZONES,
     );
 
@@ -193,17 +200,77 @@ describe("buildSearchCriteria — price and characteristics", () => {
       minPriceUsd: 200,
       maxPriceUsd: 500,
       minRooms: 2,
+      // **Un mínimo, igual que las habitaciones** (14.45): `3` en la dirección
+      // es "tres baños o más", que es lo que el botón «3+» promete.
+      minBathrooms: 3,
       minAreaM2: 60,
     });
   });
 
   it("drops values that are not whole non-negative numbers", () => {
     const criteria = buildSearchCriteria(
-      { city: MARACAIBO, minPrice: "abc", maxPrice: "-1", minRooms: "1.5", minAreaM2: "" },
+      {
+        city: MARACAIBO,
+        minPrice: "abc",
+        maxPrice: "-1",
+        minRooms: "1.5",
+        minBathrooms: "dos",
+        minAreaM2: "",
+      },
       ZONES,
     );
 
     expect(criteria).toEqual({ cityId: MARACAIBO });
+  });
+
+  /**
+   * **Los metros² son un CAMPO donde se escribe el número, no una lista de
+   * escalones** (14.45 rebanada B, decisión del fundador 2026-09-04: *«hay
+   * casas que tienen 72,5 o 84 y así no puede ser preseleccionado»*).
+   *
+   * Un campo libre trae la validación que los escalones no tenían: los otros
+   * mínimos del panel salen de listas cerradas y sólo se pueden ensuciar
+   * editando la dirección a mano, mientras que acá cualquiera escribe cualquier
+   * cosa en el propio control. Cada caso de abajo se cae **solo**, campo por
+   * campo, que es la regla que este archivo ya aplica al resto.
+   */
+  describe("los metros² son un mínimo escrito a mano (14.45 rebanada B)", () => {
+    const area = (raw: string) => buildSearchCriteria({ city: MARACAIBO, minAreaM2: raw }, ZONES);
+
+    it("acepta el número entero que alguien escribe en el campo", () => {
+      expect(area("72")).toEqual({ cityId: MARACAIBO, minAreaM2: 72 });
+    });
+
+    /**
+     * **El cero es un filtro presente que no filtra.** `area_m2` es positivo en
+     * todo aviso publicable (`publishable-listing.ts` rechaza el cero), así que
+     * «desde 0 m²» no saca a nadie — y sin embargo dibujaría su ficha quitable,
+     * sumaría uno a la pastilla y ofrecería «quitar los metros² y ver» el mismo
+     * número que ya hay. Se cae, como se cae un `?min=` vacío.
+     */
+    it("descarta el cero, que sería un filtro que no filtra", () => {
+      expect(area("0")).toEqual({ cityId: MARACAIBO });
+    });
+
+    it("descarta lo que no es un número entero positivo", () => {
+      for (const raw of ["-30", "setenta", "72,5", "72.5", " ", "NaN", "Infinity"]) {
+        expect(area(raw)).toEqual({ cityId: MARACAIBO });
+      }
+    });
+
+    /**
+     * **El techo no es inventado: es el de la columna.** `listing.area_m2` es
+     * `integer`, así que un mínimo por encima de 2 147 483 647 no es una
+     * búsqueda más estrecha — es un parámetro que Postgres no puede recibir, y
+     * `?metros=1e21` termina en un 500 en vez de en una pantalla. `1e21` pasa
+     * `Number.isInteger`, que es por lo que el lector de los otros números no
+     * alcanza acá. Fallar cerrado es soltar el filtro (AGENTS.md §7).
+     */
+    it("descarta el número que la columna no puede recibir", () => {
+      expect(area("2147483647")).toEqual({ cityId: MARACAIBO, minAreaM2: 2147483647 });
+      expect(area("2147483648")).toEqual({ cityId: MARACAIBO });
+      expect(area("1e21")).toEqual({ cityId: MARACAIBO });
+    });
   });
 
   /**
@@ -353,6 +420,31 @@ describe("buildSearchCriteria — atributos declarados (task 14.9, F6)", () => {
     });
   });
 
+  /**
+   * **La sexta opción no es una columna booleana, y por eso se prueba acá y
+   * con nombre propio** (14.45 rebanada C). `?puesto=1` pide
+   * `parking_spots > 0`; el criterio la lleva al lado de las otras cinco
+   * porque para quien busca es una opción más de «La propiedad tiene».
+   */
+  it("acepta el puesto de estacionamiento, que se deriva de un número y no de un booleano", () => {
+    expect(buildSearchCriteria({ city: MARACAIBO, hasParking: "1" }, ZONES)).toEqual({
+      cityId: MARACAIBO,
+      attributes: ["hasParking"],
+    });
+  });
+
+  it("pone el puesto en el orden de la lista, entre amoblado y vigilancia", () => {
+    const criteria = buildSearchCriteria(
+      { city: MARACAIBO, hasSecurity: "1", hasParking: "1", isFurnished: "1" },
+      ZONES,
+    );
+
+    expect(criteria).toEqual({
+      cityId: MARACAIBO,
+      attributes: ["isFurnished", "hasParking", "hasSecurity"],
+    });
+  });
+
   it("lee un atributo suelto sin arrastrar los otros cuatro", () => {
     expect(buildSearchCriteria({ city: MARACAIBO, isFurnished: "1" }, ZONES)).toEqual({
       cityId: MARACAIBO,
@@ -451,6 +543,29 @@ describe("buildSearchCriteria — todo junto", () => {
       publisherType: "owner",
       attributes: ["hasPowerPlant", "hasRegularWater"],
       page: 2,
+    });
+  });
+});
+
+describe("el orden de la lista (14.47)", () => {
+  it("el de por defecto se OMITE, así que el criterio de siempre no cambia", () => {
+    // Ausente = «Recientes», igual que `page` ausente es la primera. Que no
+    // aparezca es lo que deja intacto el criterio de todas las búsquedas que
+    // ya existían.
+    expect(buildSearchCriteria({ city: MARACAIBO }, ZONES)).toEqual({ cityId: MARACAIBO });
+    expect(buildSearchCriteria({ city: MARACAIBO, order: "recientes" }, ZONES)).toEqual({
+      cityId: MARACAIBO,
+    });
+  });
+
+  it("los dos órdenes de precio sí llegan al criterio", () => {
+    expect(buildSearchCriteria({ city: MARACAIBO, order: "precio-asc" }, ZONES)).toEqual({
+      cityId: MARACAIBO,
+      order: "priceAsc",
+    });
+    expect(buildSearchCriteria({ city: MARACAIBO, order: "precio-desc" }, ZONES)).toEqual({
+      cityId: MARACAIBO,
+      order: "priceDesc",
     });
   });
 });

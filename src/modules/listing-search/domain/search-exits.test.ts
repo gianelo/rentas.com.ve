@@ -12,12 +12,15 @@ const NOTHING: Readonly<Record<RelaxableFilter, number>> = {
   zone: 0,
   price: 0,
   rooms: 0,
+  bathrooms: 0,
   publisherType: 0,
   hasPowerPlant: 0,
   hasRegularWater: 0,
   isFurnished: 0,
+  hasParking: 0,
   hasSecurity: 0,
   hasAppliances: 0,
+  area: 0,
 };
 
 /**

@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { resolveAccountMenuItems } from "@/modules/identity/domain/nav-account";
 import type { AccountMenuProps } from "./AccountMenu";
-import { Nav, type NavBackAction, type NavProps, type NavWithListing } from "./Nav";
+import { Nav, type NavProps } from "./Nav";
 
 /**
  * Las filas viven detrás del estado `open` de `AccountMenu`, así que el HTML
@@ -115,11 +115,51 @@ describe("Nav — con sesión", () => {
     initials: "MF",
     imageUrl: null,
     canImportListings: false,
+    hasListings: true,
   };
   const publish = {
     bar: { label: "Publicar", emphasis: "outline" as const },
     menu: { label: "Publicar una propiedad", emphasis: "accent" as const },
   };
+
+  /**
+   * tasks.md 14.56 — **la barra no decide esto, lo lee.** `hasListings` lo
+   * resuelve `resolveNavAccount` con lo que el `EXISTS` del puerto contestó;
+   * acá sólo se comprueba que el estado llega hasta el marcado sin que este
+   * componente escriba un `if` sobre datos (AGENTS.md §1).
+   *
+   * **Y sigue habiendo por dónde entrar**: el enlace real a `/mis-avisos` no
+   * se toca —quien no publicó igual puede llegar y ver la pantalla vacía si
+   * quiere—, lo que se va es la PROMESA escrita en la barra.
+   */
+  it("sin avisos, el disparador se queda sin palabras y conserva su nombre accesible", () => {
+    const sinAvisos = { ...account, hasListings: false };
+
+    const html = renderToStaticMarkup(
+      <Nav account={sinAvisos} publish={publish} pill={PILL} signInHref="/signin" />,
+    );
+
+    expect(html).not.toMatch(/>Mis avisos</);
+    expect(html).toContain('aria-label="Mis avisos"');
+    expect(html).toMatch(/<a[^>]*href="\/mis-avisos"/);
+  });
+
+  it("con avisos, las palabras vuelven — y es el ÚNICO cambio entre los dos estados", () => {
+    const conAvisos = renderToStaticMarkup(
+      <Nav account={account} publish={publish} pill={PILL} signInHref="/signin" />,
+    );
+    const sinAvisos = renderToStaticMarkup(
+      <Nav
+        account={{ ...account, hasListings: false }}
+        publish={publish}
+        pill={PILL}
+        signInHref="/signin"
+      />,
+    );
+
+    expect(conAvisos).toMatch(/>Mis avisos</);
+    expect(conAvisos).not.toBe(sinAvisos);
+  });
 
   it("Publicar queda neutro (contorno) y el control de cuenta lleva a /mis-avisos", () => {
     const html = renderToStaticMarkup(
@@ -169,183 +209,73 @@ describe("Nav — con sesión", () => {
   });
 });
 
-describe("Nav — la ficha, según sus dos láminas", () => {
-  // `NavWithListing` y no `NavProps`: esparcir la unión en JSX la ensancha a
-  // algo que podría traer `pill`, y el tipo dejaría de decir lo que dice. Y es
-  // `WithListing` y no `WithReturn` porque `/reportar` también vuelve y NO lleva
-  // placa — la tercera forma que la 14.43 había previsto y que `tsc` confirmó.
-  const ficha: NavWithListing = {
+/**
+ * **El encabezado tiene UNA sola forma** (tasks.md 14.54).
+ *
+ * Tenía tres: la de la pastilla, la de la vuelta (`NavWithReturn`) y la del
+ * publicador (`NavWithListing`, que la 14.43 agregó y esta tarea revierte
+ * entera). La vuelta se fue al contenido —la ficha y `/reportar` la dibujan
+ * arriba del suyo, como `/importar` y `/mis-avisos/[id]/editar` ya hacían— y la
+ * placa se fue porque `ContactBlock` ya dice «publica como dueño» al lado del
+ * nombre y del teléfono, que es donde el inquilino la lee justo antes de
+ * escribir.
+ *
+ * Lo que queda es una interfaz y no una unión: los mismos campos en las cinco
+ * pantallas, con la pastilla opcional porque una ficha no es una búsqueda.
+ */
+describe("Nav — una sola forma (14.54)", () => {
+  const ficha: NavProps = {
     account: { kind: "anonymous" },
     publish: { bar: { label: "Publicar gratis", emphasis: "accent" }, menu: null },
     signInHref: "/signin",
-    back: { href: "/alquiler/maracaibo", label: "← Resultados" },
-    publisher: "owner",
   };
 
-  function draw(back: NavBackAction = ficha.back) {
-    return renderToStaticMarkup(<Nav {...ficha} back={back} />);
-  }
-
-  it("el enlace de vuelta es un enlace real, con el destino que le dan", () => {
-    // Dos aserciones separadas y no un único regex ordenado: el orden en que
-    // React serializa los atributos de un elemento es un detalle de
-    // implementación de `next/link`, no un contrato de este componente.
-    expect(draw()).toContain('href="/alquiler/maracaibo"');
-    expect(draw()).not.toContain('href="#"');
-  });
-
-  /**
-   * **El texto del enlace se DIBUJA, no se esconde detrás de un `aria-label`.**
-   *
-   * `resultsLink` (listing-discovery) devuelve dos etiquetas distintas para dos
-   * acciones distintas: «← Resultados» cuando hay una búsqueda a la que volver,
-   * y «Ver avisos en Chacao» cuando no la hay — y su propio comentario dice que
-   * en ese segundo caso «su texto no dice volver». Un `←` solo, con la etiqueta
-   * escondida, dibuja las dos iguales: le promete a quien llegó desde Google
-   * una vuelta que nunca existió.
-   *
-   * Las dos láminas de la ficha lo dibujan visible («← Resultados»), así que
-   * esto además es lo que el diseño pide.
-   */
-  it("dibuja el texto de la vuelta, que es el que decide el dominio", () => {
-    // `>texto<` y no `toContain(texto)`: la versión suelta también pasaba con
-    // el texto escondido dentro de un `aria-label`, que es justo lo que esta
-    // prueba tiene que poder distinguir. Mismo defecto que la prueba móvil de
-    // `SearchPill` ya corrigió una vez.
-    expect(draw()).toContain(">← Resultados<");
-    expect(draw({ href: "/alquiler/x/y", label: "Ver avisos en Chacao" })).toContain(
-      ">Ver avisos en Chacao<",
-    );
-  });
-
-  it("no duplica el nombre accesible en un aria-label", () => {
-    expect(draw()).not.toContain('aria-label="←');
-  });
-
-  /**
-   * **RESUELTO por el fundador: «seguí el diseño, que fue lo que se decidió
-   * acá».** La 14.38 escribía que «la marca cede su lugar al ←», y eso vale
-   * SÓLO en móvil: la lámina 11 (escritorio 1280) dibuja un encabezado de tres
-   * hijos —`← Resultados` · `rentas` · `Publicar gratis`— con la marca en el
-   * medio, y la lámina 10 (móvil 360) dibuja dos, sin marca, porque a 360 px no
-   * caben tres. Las dos láminas tienen razón: describen anchos distintos.
-   *
-   * Por eso la marca **está en el marcado** también en la ficha, y es el ancho
-   * el que decide si se ve — un solo componente con puntos de quiebre, nunca
-   * dos implementaciones (el mismo argumento que `SearchFilters` y
-   * `app/home.module.css` ya dejaron escrito acá).
-   */
-  it("la marca sigue en el marcado y sigue llevando al inicio", () => {
-    expect(draw()).toContain(">rentas.<");
-    expect(draw()).toMatch(/<a[^>]*href="\/"[^>]*>rentas\./);
-  });
-
-  it("en móvil la marca no se dibuja: el ← le tomó el lugar (lámina 10)", () => {
-    expect(rule(MOBILE_CSS, "brandCentre")).toMatch(/display:\s*none/);
-  });
-
-  it("en escritorio la marca vuelve, y va al centro (lámina 11)", () => {
-    expect(rule(DESKTOP_CSS, "brandCentre")).toMatch(/display:\s*flex/);
-    expect(rule(DESKTOP_CSS, "brandCentre")).toMatch(/justify-content:\s*center/);
-  });
-
-  /**
-   * **Ninguna de las dos láminas de la ficha dibuja la pastilla.** Eso acota la
-   * 14i —«la pastilla aparece en todas las páginas»— a «en todas menos la
-   * ficha»: una ficha no es una búsqueda, y el encabezado de la lámina 11 gasta
-   * su slot central en la marca.
-   */
-  it("sin pastilla no dibuja ningún formulario de búsqueda", () => {
-    const html = draw();
+  it("sin pastilla no dibuja ningún formulario de búsqueda: una ficha no es una búsqueda", () => {
+    const html = renderToStaticMarkup(<Nav {...ficha} />);
 
     expect(html).not.toContain("<form");
-    expect(html).not.toContain("<search>");
     expect(html).not.toContain('type="search"');
   });
 
   /**
-   * **El tipo hace inexpresable la combinación que el diseño no admite.**
-   *
-   * `back` ya estuvo mal una vez y sólo lo destapó su primer llamador real. La
-   * ficha es un segundo llamador con otro contrato —vuelta sí, pastilla no—, y
-   * dejar las dos opcionales admitiría en silencio una ficha con pastilla y una
-   * pantalla de resultados con flecha de vuelta, que es justo lo que el
-   * fundador acaba de decidir que no va.
-   *
-   * Lo comprueba `tsc`, no el runtime: si `NavProps` volviera a admitirlas
-   * juntas, este `@ts-expect-error` quedaría sin usar y `pnpm typecheck`
-   * fallaría. Es la misma forma de garantía que `ListingSearchPort` ya usa —
-   * «no hay `searchAll` ni un valor comodín».
+   * **La marca se dibuja UNA vez, y ahí está el defecto que esta forma borra.**
+   * Con `back` en el primer slot, la ficha dibujaba la marca en el del medio
+   * (`.brandCentre`); sin `back`, ese segundo `rentas.` sería una marca
+   * duplicada en toda pantalla sin pastilla. No lo ve `typecheck` ni una regla
+   * de hoja: la única forma de verlo es contarla.
    */
-  /**
-   * **La placa del publicador, en el encabezado de 56 px** (tasks.md 14.43;
-   * `Rentas - Ficha - Mobile.dc.html` líneas 93-95). La lámina de móvil dibuja
-   * ese encabezado con dos hijos —`← Resultados` y la placa `Dueño`, con
-   * `background: var(--ink)` y `color: var(--surface)`, que es exactamente
-   * `.owner` de `PublisherBadge`— y **nadie lo había construido**.
-   *
-   * Es el MISMO átomo que la ficha ya dibuja en su columna de datos, no una
-   * segunda placa: la garantía de la 14.25 —dueño con relleno, inmobiliaria con
-   * borde, distinguibles en escala de grises— es del átomo y sigue siendo suya.
-   */
-  it("dibuja la placa del publicador que le pasan, y con las dos palabras", () => {
-    expect(draw()).toContain(">Dueño<");
-    expect(renderToStaticMarkup(<Nav {...ficha} publisher="broker" />)).toContain(">Inmobiliaria<");
+  it("dibuja la marca una sola vez, con pastilla y sin ella", () => {
+    const conteo = (html: string) => html.split(">rentas.<").length - 1;
+
+    expect(conteo(renderToStaticMarkup(<Nav {...ficha} />))).toBe(1);
+    expect(conteo(renderToStaticMarkup(<Nav {...ficha} pill={PILL} />))).toBe(1);
   });
 
   /**
-   * **No es «dibujarla también arriba»: se MUEVE, y el ancho lo decide la hoja
-   * de estilos porque el servidor no lo sabe.**
-   *
-   * Cada lámina dibuja la placa una sola vez — a 360 en el encabezado, a 1280 en
-   * la columna de datos. No hay ancho de pantalla en una petición HTTP:
-   * decidirlo en el servidor pediría husmear el `User-Agent` —poco fiable, y
-   * rompe una sola respuesta cacheable para todos los anchos— o decidirlo en el
-   * cliente, que contradice el piso de AGENTS.md §2. Es el mismo argumento con
-   * el que la 14.53 resolvió las fichas quitables, y la 14.43 lo hereda escrito.
-   *
-   * Acá sólo se comprueba la mitad del encabezado; la otra —que la ficha esconda
-   * la suya en el ancho base— vive en `ficha-servida.test.tsx`, y que **sólo una
-   * se vea a cada ancho** lo mide `tests/measure/ficha.spec.ts` en un navegador.
+   * **Lo comprueba `tsc` y no el runtime**: si la unión volviera, estos dos
+   * `@ts-expect-error` quedarían sin usar y `pnpm typecheck` fallaría. Es la
+   * misma forma de garantía que `ListingSearchPort` ya usa acá — «no hay
+   * `searchAll` ni un valor comodín».
    */
-  it("la placa del encabezado se ve en móvil y desaparece en escritorio", () => {
-    expect(rule(MOBILE_CSS, "publisher")).not.toMatch(/display:\s*none/);
-    expect(rule(DESKTOP_CSS, "publisher")).toMatch(/display:\s*none/);
-  });
+  it("el tipo ya no admite ni vuelta ni publicador", () => {
+    // @ts-expect-error — la vuelta la dibuja el contenido, no la barra (14.54)
+    const conVuelta: NavProps = { ...ficha, back: { href: "/alquiler", label: "← Resultados" } };
+    // @ts-expect-error — el publicador lo dice `ContactBlock`, no el encabezado (14.54)
+    const conPlaca: NavProps = { ...ficha, publisher: "owner" };
 
-  it("el tipo prohíbe pastilla y vuelta a la vez", () => {
-    // @ts-expect-error — `pill` y `back` se excluyen (láminas 10 y 11: la ficha no lleva pastilla)
-    const imposible: NavProps = { ...ficha, pill: PILL };
-
-    expect(imposible).toBeDefined();
+    expect(conVuelta).toBeDefined();
+    expect(conPlaca).toBeDefined();
   });
 
   /**
-   * **La placa es un dato de UNA pantalla, y el tipo lo dice.**
-   *
-   * El `Nav` lo comparten cinco pantallas. Un `publisher` opcional en la forma
-   * de la pastilla le agregaría a la barra del inicio y a la de `/mis-avisos` un
-   * campo que ahí no significa nada — y el día que alguien se lo pase, la
-   * portada dibujaría la placa de ningún aviso en particular sin que nada se
-   * ponga rojo. Va en `NavWithReturn`, que es la forma de la ficha, y es
-   * **obligatorio** ahí: una ficha sin publicador es la mitad de la lámina.
-   *
-   * Lo comprueba `tsc` y no el runtime: si `NavProps` volviera a admitirlo junto
-   * con `pill`, este `@ts-expect-error` quedaría sin usar y `pnpm typecheck`
-   * fallaría.
+   * **La hoja se va con el marcado.** Una regla huérfana no pone nada en rojo
+   * —es el mismo hueco que la 14.42 dejó escrito con `--searchbar-h`— y acá
+   * además describiría una disposición que ya no existe.
    */
-  it("el tipo prohíbe la placa en la barra que lleva pastilla", () => {
-    const conPastilla = {
-      account: { kind: "anonymous" as const },
-      publish: { bar: { label: "Publicar gratis", emphasis: "accent" as const }, menu: null },
-      signInHref: "/signin",
-      pill: PILL,
-    };
-
-    // @ts-expect-error — el publicador es de la ficha; la barra con pastilla no lo lleva
-    const imposible: NavProps = { ...conPastilla, publisher: "owner" };
-
-    expect(imposible).toBeDefined();
+  it("la hoja no conserva las reglas de las formas que se fueron", () => {
+    expect(navCss).not.toContain(".back");
+    expect(navCss).not.toContain(".brandCentre");
+    expect(navCss).not.toContain(".publisher");
   });
 });
 

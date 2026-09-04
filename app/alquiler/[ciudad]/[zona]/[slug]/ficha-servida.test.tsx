@@ -1,6 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CatalogueZone } from "@/modules/listing-catalogue/domain/catalogue";
+// El nombre del parámetro lo pone el dominio, acá también: escrito a mano, un
+// renombre dejaría a esta prueba midiendo la ficha SIN origen y pasando por eso.
+import { RETURN_PARAM } from "@/modules/listing-discovery/domain/return-to-results";
 import type { ListingSearchResult } from "@/modules/listing-search/application/ports/listing-search.port";
 import type { SearchCriteria } from "@/modules/listing-search/domain/search-criteria";
 
@@ -228,6 +231,74 @@ function jsonLd(html: string): string {
 }
 
 /**
+ * tasks.md 14.54 — **la vuelta se va del encabezado y entra al contenido.**
+ *
+ * La ficha era la única pantalla del camino de lectura donde la vuelta vivía en
+ * la barra; `/alquiler/[ciudad]` y `/alquiler/[ciudad]/[zona]` la dibujan
+ * adentro desde siempre. Y el enlace **no siempre dice «← Resultados»**:
+ * `resultsLink` es una regla de dominio que devuelve «Ver avisos en Tierra
+ * Negra» cuando no hay origen, una etiqueta que no entra en una barra de 60 px
+ * y sí entra en una fila arriba del contenido.
+ *
+ * Se mide sobre los bytes servidos y no sobre el texto del archivo porque lo
+ * que cambió es **dónde** se dibuja: una afirmación sobre el fuente no
+ * distingue un enlace dentro del `<header>` de uno dentro del `<main>`.
+ */
+describe("la vuelta vive dentro del contenido, no en la barra (14.54)", () => {
+  /** El encabezado servido: todo lo que va antes de que cierre el `<header>`. */
+  function encabezado(html: string): string {
+    const fin = html.indexOf("</header>");
+    if (fin < 0) throw new Error("la ficha no sirvió ningún encabezado");
+    return html.slice(0, fin);
+  }
+
+  it("el encabezado no lleva ninguna vuelta: ni la etiqueta con origen ni la de sin él", async () => {
+    const conOrigen = encabezado(
+      await servedBody(VENCIDO_SLUG, { [RETURN_PARAM]: "/alquiler/maracaibo?min=200" }),
+    );
+    const sinOrigen = encabezado(await servedBody());
+
+    expect(conOrigen).not.toContain("Resultados");
+    expect(sinOrigen).not.toContain("Ver avisos en");
+  });
+
+  it("la dibuja dentro del <main>, arriba del contenido", async () => {
+    const html = await servedBody();
+
+    // Posiciones y no `toContain`: lo que esta prueba existe para ver es el
+    // SITIO, y «está en el documento» seguía en verde con el enlace en la barra.
+    const main = html.indexOf("<main");
+    const vuelta = html.indexOf("Ver avisos en Tierra Negra");
+    // El `<h1>` y no el texto del título: éste sale ANTES dentro del JSON-LD,
+    // que la ficha emite arriba del contenido. Buscar el texto medía el script.
+    const titulo = html.indexOf("<h1");
+
+    expect(main).toBeGreaterThanOrEqual(0);
+    expect(vuelta).toBeGreaterThan(main);
+    expect(vuelta).toBeLessThan(titulo);
+  });
+
+  /**
+   * **La regla no se movió, se movió el marcado.** `resultsLink` sigue
+   * decidiendo las dos cosas —a dónde va y qué dice—, y las dos respuestas se
+   * comprueban acá: un destino fijo con etiqueta variable, o al revés, es el
+   * defecto original de la 16.9 escrito de nuevo un nivel más abajo.
+   */
+  it("el destino y la etiqueta los sigue decidiendo el dominio", async () => {
+    const origen = "/alquiler/maracaibo?min=200";
+    const conOrigen = await servedBody(VENCIDO_SLUG, { [RETURN_PARAM]: origen });
+
+    expect(conOrigen).toContain(">← Resultados<");
+    expect(conOrigen).toContain(`href="${origen.replace("&", "&amp;")}"`);
+
+    const sinOrigen = await servedBody();
+
+    expect(sinOrigen).toContain(">Ver avisos en Tierra Negra<");
+    expect(sinOrigen).toContain('href="/alquiler/maracaibo/tierra-negra"');
+  });
+});
+
+/**
  * tasks.md 18.7 — **la referencia se muestra y no se indexa, y las dos mitades
  * se afirman sobre los MISMOS bytes.**
  *
@@ -238,6 +309,33 @@ function jsonLd(html: string): string {
  * entregaria a un buscador como un dato de ubicacion al lado de la zona — que
  * es una forma de indexarla, aunque no exista un filtro.
  */
+/**
+ * **El puesto llega a la lista «La propiedad tiene» desde la página** (14.45
+ * rebanada C). `DeclaredFeatures.parkingSpots` es opcional —una ficha vieja
+ * vale cero— así que olvidar la prop compila y borra el ✓ que el fundador
+ * pidió, sin que nada se ponga rojo. Se mide sobre los bytes servidos.
+ */
+describe("el puesto de estacionamiento en la ficha (14.45)", () => {
+  /**
+   * **Recortado a la sección, y no es celo**: la descripción del aviso falso
+   * dice «Puesto de estacionamiento techado», así que la misma afirmación
+   * sobre el HTML entero pasa en verde sin que la lista lo dibuje. Es el
+   * mismo falso positivo que la rebanada A encontró en tres fixtures.
+   */
+  function loQueTiene(html: string): string {
+    const desde = html.indexOf('data-testid="declared-features"');
+    if (desde < 0) throw new Error("la ficha no dibujó la lista de atributos");
+    return html.slice(desde, html.indexOf("</section>", desde));
+  }
+
+  it("aparece con su ✓ en la lista de lo que la propiedad tiene", async () => {
+    const bloque = loQueTiene(await servedBody());
+
+    expect(bloque).toContain("La propiedad tiene");
+    expect(bloque).toContain("Puesto de estacionamiento");
+  });
+});
+
 describe("la referencia se lee en la ficha y no se indexa (18.7)", () => {
   const SENA = "A dos calles de la plaza Altamira, edificio azul";
 

@@ -31,12 +31,15 @@ export type SearchQueryField =
   | "minPrice"
   | "maxPrice"
   | "minRooms"
+  | "minBathrooms"
+  | "minAreaM2"
   | "propertyType"
   | "publisherType"
   | ListingAttribute
   | "page"
   | "step"
-  | "zoneSearch";
+  | "zoneSearch"
+  | "order";
 
 /**
  * Los nombres cortos del fundador (F12), en un solo lugar.
@@ -59,16 +62,33 @@ export const SEARCH_QUERY_NAMES: Readonly<Record<SearchQueryField, string>> = {
   minPrice: "min",
   maxPrice: "max",
   minRooms: "hab",
+  // **`banos` y no `baños`** (14.45): con «ñ» la dirección viaja como
+  // `ba%C3%B1os` y deja de leerse en el chat donde se pega, que es la mitad de
+  // para qué existen los nombres cortos del fundador (F12).
+  minBathrooms: "banos",
+  // **`metros` y no `m2` ni `area`** (14.45 rebanada B): la misma regla que
+  // dejó `banos` sin «ñ», llevada al carácter que la rompería acá — `m²` viaja
+  // `m%C2%B2` y una dirección con eso adentro deja de leerse en el chat donde
+  // se pega. `metros` es la palabra entera, y es la que la ficha ya usa.
+  minAreaM2: "metros",
   propertyType: "tipo",
   publisherType: "pub",
   hasPowerPlant: "planta",
   hasRegularWater: "agua",
   isFurnished: "amoblado",
+  // **`puesto` y no `estacionamiento`** (14.45 rebanada C): es la palabra que
+  // la tira de datos de la ficha ya usa, y un nombre corto de F12 que hay que
+  // traducir mentalmente no es corto. Sin «ñ» ni tilde, igual que `banos`.
+  hasParking: "puesto",
   hasSecurity: "vigilancia",
   hasAppliances: "electro",
   page: "pag",
   step: "filtros",
   zoneSearch: "busca",
+  // **El orden de la lista** (14.47). Va último a propósito: los campos se
+  // agregan a la dirección en el orden de esta tabla, y el orden es lo que
+  // menos define una búsqueda — la cola es su sitio.
+  order: "orden",
 };
 
 /** La query tal como la entrega el marco: nombres cortos y texto crudo. */
@@ -78,9 +98,15 @@ export type SearchQuery = Readonly<Record<string, string | undefined>>;
 export type SearchQueryChanges = Readonly<Partial<Record<SearchQueryField, string | null>>>;
 
 /**
- * Los tres campos que NO son filtros, y por lo tanto no reinician la
+ * Los cuatro campos que NO son filtros, y por lo tanto no reinician la
  * paginación ni los borra «Limpiar todo». Todo lo demás sí — ver
  * `buildSearchHref` y `clearAllHref`.
+ *
+ * `orden` es el que llegó con la 14.47, y no filtra por definición: **no saca
+ * ni agrega un solo aviso**, sólo cambia en qué fila sale cada uno. Por eso
+ * «Limpiar todo» no lo toca —limpiar filtros no es volver al orden por
+ * defecto, igual que no es cerrar el panel— y por eso el reinicio de página lo
+ * pide `buildOrderMenu` explícito en vez de salir de acá.
  *
  * `busca` es el texto del buscador de zonas del paso 2. **No filtra
  * resultados**: achica la lista de zonas que se ofrece, y las zonas que
@@ -88,7 +114,7 @@ export type SearchQueryChanges = Readonly<Partial<Record<SearchQueryField, strin
  * página 1 por escribir una letra, y lo borraría «Limpiar todo» dejando el
  * campo vacío sin que nadie lo pidiera.
  */
-const NON_FILTER_FIELDS: readonly SearchQueryField[] = ["page", "step", "zoneSearch"];
+const NON_FILTER_FIELDS: readonly SearchQueryField[] = ["page", "step", "zoneSearch", "order"];
 
 const FIELD_ORDER = Object.keys(SEARCH_QUERY_NAMES) as readonly SearchQueryField[];
 

@@ -30,9 +30,21 @@ const { notFound, reportarAviso, getSession } = vi.hoisted(() => {
 });
 
 vi.mock("next/navigation", () => ({ notFound }));
+// El cliente de Neon se construye al importar y esta prueba no habla con la base.
+vi.mock("@/shared/db/client", () => ({ db: {} }));
 vi.mock("./actions", () => ({ reportarAviso }));
 // Arrastra Auth.js entero y no participa de lo que se prueba. La barra sí se
 // dibuja, con la sesión que este doble entregue.
+/**
+ * tasks.md 14.56 — la barra pregunta si esta cuenta publicó algo. Doblado acá
+ * porque esta prueba mide otra cosa; que la consulta sea correcta lo afirma
+ * `tests/integration/publisher-has-listings.test.ts` contra Postgres real.
+ */
+vi.mock("@/modules/listing-publication/infrastructure/drizzle-publisher-has-listings", () => ({
+  DrizzlePublisherHasListings: class {
+    hasAnyListing = async () => false;
+  },
+}));
 vi.mock("@/modules/identity/infrastructure/session-port", () => ({
   nextAuthSessionPort: { getSession },
 }));
@@ -128,6 +140,35 @@ describe("el formulario", () => {
     const markup = renderToStaticMarkup(await open());
 
     expect(markup).toContain("Enviar el reporte");
+  });
+});
+
+/**
+ * tasks.md 14.54 — **la vuelta se dibuja adentro, no en la barra.**
+ *
+ * Ésta y la ficha eran las dos únicas pantallas que le pasaban `back` al `Nav`,
+ * y con las dos adentro el encabezado queda con una sola forma. La razón no es
+ * de simetría: `/importar` y `/mis-avisos/[id]/editar` ya dibujan su «← Mis
+ * avisos» arriba del contenido, así que ésta es la forma que el producto ya
+ * tiene y la barra era la excepción.
+ */
+describe("la vuelta al aviso vive dentro del contenido (14.54)", () => {
+  it("se dibuja después del encabezado y dentro del <main>", async () => {
+    const markup = renderToStaticMarkup(await open());
+
+    const header = markup.indexOf("</header>");
+    const main = markup.indexOf("<main");
+    const vuelta = markup.indexOf("← Volver al aviso");
+
+    expect(header).toBeGreaterThanOrEqual(0);
+    expect(vuelta).toBeGreaterThan(main);
+    expect(main).toBeGreaterThan(header);
+  });
+
+  it("el encabezado no lleva ninguna vuelta", async () => {
+    const markup = renderToStaticMarkup(await open());
+
+    expect(markup.slice(0, markup.indexOf("</header>"))).not.toContain("Volver al aviso");
   });
 });
 

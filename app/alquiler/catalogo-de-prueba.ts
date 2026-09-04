@@ -92,7 +92,11 @@ export function matching(criteria: SearchCriteria): readonly ListingSearchResult
       row.cityId === criteria.cityId &&
       (criteria.zoneIds === undefined || criteria.zoneIds.includes(row.zoneId)) &&
       (criteria.minPriceUsd === undefined || row.priceUsd >= criteria.minPriceUsd) &&
-      (criteria.maxPriceUsd === undefined || row.priceUsd <= criteria.maxPriceUsd),
+      (criteria.maxPriceUsd === undefined || row.priceUsd <= criteria.maxPriceUsd) &&
+      // Los metros² también recortan acá (14.45 rebanada B). Un `matching` que
+      // ignorara un filtro del criterio daría conteos que su propio catálogo
+      // contradice, que es exactamente el falso verde que la rebanada C destapó.
+      (criteria.minAreaM2 === undefined || row.areaM2 >= criteria.minAreaM2),
   );
 }
 
@@ -109,6 +113,7 @@ export function facetsFor(
   // histograma, y de ellas salen los extremos reales del mercado.
   const { minPriceUsd: _min, maxPriceUsd: _max, ...withoutPrice } = criteria;
   const unpriced = matching(withoutPrice);
+  const { minAreaM2: _area, ...withoutArea } = criteria;
   const cityTotal = LISTINGS.filter((row) => row.cityId === criteria.cityId).length;
   const byZone: Record<string, number> = {};
   for (const id of offeredZoneIds) byZone[id] = 0;
@@ -118,10 +123,19 @@ export function facetsFor(
     total: rows.length,
     byZone,
     byMinRooms: { 1: rows.length, 2: rows.length, 3: 0, 4: 0 },
+    // Los cuatro avisos falsos tienen dos baños, igual que tienen dos
+    // habitaciones: los conteos salen de `rows` y no de un número escrito a
+    // mano, que es la regla que este archivo se puso arriba.
+    byMinBathrooms: { 1: rows.length, 2: rows.length, 3: 0 },
     byAttribute: {
       hasPowerPlant: 0,
       hasRegularWater: 0,
       isFurnished: 0,
+      // **Cero, y por la misma regla que los otros cinco**: ninguno de los
+      // cuatro avisos falsos declara nada, así que un número acá sería un
+      // conteo que contradice al catálogo que este mismo archivo dibuja
+      // (14.45 rebanada C — tres falsos mentían así al cerrar la rebanada A).
+      hasParking: 0,
       hasSecurity: 0,
       hasAppliances: 0,
     },
@@ -151,12 +165,17 @@ export function facetsFor(
       zone: cityTotal,
       price: cityTotal,
       rooms: rows.length,
+      bathrooms: rows.length,
       publisherType: rows.length,
       hasPowerPlant: rows.length,
       hasRegularWater: rows.length,
       isFurnished: rows.length,
+      hasParking: rows.length,
       hasSecurity: rows.length,
       hasAppliances: rows.length,
+      // Contado y no copiado: es el único filtro de este catálogo cuyas filas
+      // difieren de las de `rows` cuando está puesto.
+      area: matching(withoutArea).length,
     },
     cityTotal,
   };

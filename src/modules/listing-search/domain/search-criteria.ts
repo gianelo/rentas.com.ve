@@ -1,4 +1,5 @@
 import { readPage } from "./pagination";
+import { readSearchOrder, type SearchOrder } from "./search-order";
 import { zoneMatchesToken } from "./zone-catalogue";
 
 /**
@@ -28,13 +29,53 @@ import { zoneMatchesToken } from "./zone-catalogue";
  * ya no existe es una página vacía que nadie puede explicar.
  */
 
-/** The five declared attributes of F6, by the name the schema gives them. */
-export type ListingAttribute =
+/**
+ * **Las cinco columnas booleanas del aviso**, por el nombre que les da el
+ * esquema. Es el vocabulario de las COLUMNAS, no el de las opciones: `false`
+ * ahí significa "no lo declaró" y sólo un `boolean` puede decir eso.
+ *
+ * Se usa donde de verdad hace falta una columna booleana —los mapas
+ * `Record<DeclaredAttribute, PgColumn>` de los dos adaptadores— y en ningún
+ * otro lado. Ese `Record` es el que se rompería si alguien intentara meter
+ * una derivada adentro, que es exactamente lo que tiene que pasar.
+ */
+export type DeclaredAttribute =
   | "hasPowerPlant"
   | "hasRegularWater"
   | "isFurnished"
   | "hasSecurity"
   | "hasAppliances";
+
+/**
+ * **Una opción del grupo «La propiedad tiene» del filtro.** Son seis: las
+ * cinco columnas booleanas más el puesto de estacionamiento (14.45 rebanada
+ * C), que **no es una columna nueva** sino `listing.parking_spots > 0` leído
+ * como sí/no.
+ *
+ * **LA ELECCIÓN DE FORMA, ESCRITA CON SU RAZÓN.** `LISTING_ATTRIBUTES` era una
+ * lista de claves booleanas del aviso, y meterle una derivada obligaba a
+ * decidir entre dos formas: que la lista pase a ser de **opciones de filtro**,
+ * o que la derivada **viva al lado** de las cinco. Pasa a ser de opciones, y
+ * la razón es mecánica y no de gusto.
+ *
+ * Todo lo que este filtro necesita saber de sus opciones está escrito como
+ * `Record<ListingAttribute, …>`: la etiqueta (`search-options.ts`), el nombre
+ * corto de la dirección (`search-query.ts`), el nombre y el orden de la
+ * relajación (`search-confirm.ts`), el resumen del renglón cerrado
+ * (`search-accordion.ts`) y el conteo real (`FacetCounts.byAttribute`). A un
+ * `Record` completo le falta una clave y **no compila**. Con la sexta adentro
+ * del tipo, agregarla es imposible de dejar a medias: el compilador nombra los
+ * cinco lugares que faltan. Viviendo al lado, serían cinco agregados a mano
+ * que nada comprueba — la misma clase de hueco silencioso que la 14.48
+ * documenta en `lint:tokens` y que la 14.42 llama «un gate en verde que no
+ * protege nada».
+ *
+ * Lo que se pierde al ensanchar la lista —que cada clave tuviera su columna
+ * booleana— se recupera entero en `DeclaredAttribute`, que es lo que los
+ * adaptadores siguen exigiendo donde una columna es lo que de verdad hace
+ * falta. Las dos garantías quedan, cada una en el tipo que le corresponde.
+ */
+export type ListingAttribute = DeclaredAttribute | "hasParking";
 
 export type PublisherType = "owner" | "broker";
 
@@ -69,15 +110,19 @@ export interface RawSearchParams {
   readonly minPrice?: string | null;
   readonly maxPrice?: string | null;
   readonly minRooms?: string | null;
+  readonly minBathrooms?: string | null;
   readonly minAreaM2?: string | null;
   readonly propertyType?: string | null;
   readonly publisherType?: string | null;
   readonly hasPowerPlant?: string | null;
   readonly hasRegularWater?: string | null;
   readonly isFurnished?: string | null;
+  readonly hasParking?: string | null;
   readonly hasSecurity?: string | null;
   readonly hasAppliances?: string | null;
   readonly page?: string | null;
+  /** El token de `?orden=` — ver `search-order.ts` (14.47). */
+  readonly order?: string | null;
 }
 
 /**
@@ -97,12 +142,45 @@ export interface SearchCriteria {
   readonly minPriceUsd?: number;
   readonly maxPriceUsd?: number;
   readonly minRooms?: number;
+  /**
+   * **Un mínimo, y por eso el «3+» del control no es adorno** (14.45, lámina
+   * 7b). El escalón `3` pide tres baños o más, exactamente como `minRooms: 4`
+   * pide cuatro habitaciones o más. Escrito como mínimo y no como número
+   * exacto porque es lo que la gente busca —"que tenga al menos dos"— y porque
+   * un filtro exacto escondería el aviso de tres baños de quien pidió dos.
+   */
+  readonly minBathrooms?: number;
+  /**
+   * **La superficie mínima en m², escrita a mano y no elegida de una lista**
+   * (14.45 rebanada B, decisión del fundador 2026-09-04: *«hay casas que tienen
+   * 72,5 o 84 y así no puede ser preseleccionado»*).
+   *
+   * Un escalón es una lista cerrada y la superficie es un continuo: cualquier
+   * corte deja a alguien afuera de su propia casa. Por eso este criterio —que
+   * existe desde hace tiempo— nunca tuvo escalones que resolver: la forma que
+   * siempre esperó es un mínimo suelto, «desde X m²».
+   *
+   * **Y por eso no tiene faceta.** Con un campo libre no hay opciones que
+   * contar, así que la regla transversal 3 («todo conteo es real») se cumple del
+   * otro lado: el número real es el total de resultados, que la pantalla ya
+   * muestra. Sí se puede contar cuántos habría al SOLTARLO, y eso es
+   * `withoutFilter.area`.
+   */
   readonly minAreaM2?: number;
   readonly propertyType?: SearchablePropertyType;
   readonly publisherType?: PublisherType;
   /**
    * Los atributos declarados, **combinados con Y** (task 14.9): pedir planta
    * y agua es pedir los dos, no cualquiera de los dos.
+   *
+   * **La sexta, el puesto de estacionamiento, es DERIVADA y no un booleano
+   * más** (14.45 rebanada C, decisión del fundador): sale de
+   * `listing.parking_spots > 0`, una columna que ya existe y que el paso 4 de
+   * publicar ya escribe. Un `hasParking` booleano al lado guardaría el mismo
+   * hecho dos veces, y dos copias del mismo hecho se contradicen —
+   * `parking_spots = 0` con `hasParking = true` sería una fila que el esquema
+   * permitiría y nadie podría arbitrar. Es el argumento con el que la 14.36
+   * mató el paso de ciudad y la 14.50 el abanico de conteos.
    *
    * **Sólo se puede pedir el `true`, y eso es deliberado.** En el esquema
    * `false` significa "no lo declaró", nunca "no lo tiene": las cinco
@@ -119,6 +197,15 @@ export interface SearchCriteria {
    * que es donde vive el tamaño de página y la aritmética entera.
    */
   readonly page?: number;
+  /**
+   * **En qué orden sale la lista** (14.47). Ausente es «Recientes», igual que
+   * `page` ausente es la primera: el orden por defecto no se representa, así
+   * que no hay dos formas de pedirlo ni una búsqueda vieja que cambie de forma.
+   *
+   * El orden NO filtra —no saca ni agrega un aviso— y por eso no participa de
+   * ningún conteo: las facetas devuelven lo mismo con cualquiera de los tres.
+   */
+  readonly order?: SearchOrder;
 }
 
 /**
@@ -136,6 +223,44 @@ function readCount(raw: string | null | undefined): number | undefined {
   if (raw === null || raw === undefined || raw.trim() === "") return undefined;
   const value = Number(raw);
   if (!Number.isInteger(value) || value < 0) return undefined;
+  return value;
+}
+
+/**
+ * **El techo de un `integer` de Postgres**, que es el tipo de `listing.area_m2`
+ * (`schema.ts`). No es un límite de producto inventado: por encima de esto el
+ * parámetro no entra en la columna y la consulta revienta, así que `?metros=1e21`
+ * sería un 500 en vez de una pantalla.
+ */
+const PG_INTEGER_MAX = 2147483647;
+
+/**
+ * **La superficie mínima, que es el único filtro que se ESCRIBE** (14.45
+ * rebanada B). Los otros números del panel salen de listas cerradas y sólo se
+ * ensucian editando la dirección; éste se teclea, así que se valida acá y no
+ * en el control — hay tres entradas (el campo, una dirección pegada de un chat
+ * y el formulario que la reenvía) y una regla escrita en el componente cubre
+ * una sola.
+ *
+ * Tres negativas y cada una tiene su motivo:
+ *
+ * - **Lo que no es un entero no negativo** se cae con `readCount`, igual que
+ *   todo lo demás. Los `72,5` del fundador entran ahí: la columna es `integer`
+ *   y un mínimo fraccionario no se puede devolver escrito en el campo, así que
+ *   se suelta el filtro en vez de redondear en silencio algo que nadie pidió.
+ * - **El cero**, porque `area_m2` es positivo en todo aviso publicable: «desde
+ *   0 m²» no saca a nadie y aun así dibujaría su ficha quitable y sumaría uno a
+ *   la pastilla. Un filtro presente que no filtra.
+ * - **Lo que no cabe en la columna**, que `readCount` deja pasar porque `1e21`
+ *   sí es un entero para JavaScript. Fallar cerrado es soltarlo (AGENTS.md §7).
+ *
+ * Un mínimo enorme que SÍ cabe se acepta: es una búsqueda vacía legítima, y el
+ * vacío ya tiene su salida contada —«Quitar los metros² y ver 23»— que es la
+ * respuesta honesta y la misma que el precio ya da.
+ */
+function readMinAreaM2(raw: string | null | undefined): number | undefined {
+  const value = readCount(raw);
+  if (value === undefined || value === 0 || value > PG_INTEGER_MAX) return undefined;
   return value;
 }
 
@@ -175,6 +300,12 @@ export const LISTING_ATTRIBUTES: readonly ListingAttribute[] = [
   "hasPowerPlant",
   "hasRegularWater",
   "isFurnished",
+  // **El puesto va cuarto porque ahí lo pone el diseño**, no por orden de
+  // llegada: «Rentas - UX movil.md» F6 escribe los interruptores como planta
+  // eléctrica, agua regular, amoblado, puesto de estacionamiento, vigilancia
+  // 24 h, línea blanca. Ponerlo al final por ser el último construido sería
+  // inventar una pantalla (AGENTS.md §2).
+  "hasParking",
   "hasSecurity",
   "hasAppliances",
 ];
@@ -280,11 +411,13 @@ export function buildSearchCriteria(
     ...maybe("minPriceUsd", minPriceUsd),
     ...maybe("maxPriceUsd", maxPriceUsd),
     ...maybe("minRooms", readCount(raw.minRooms)),
-    ...maybe("minAreaM2", readCount(raw.minAreaM2)),
+    ...maybe("minBathrooms", readCount(raw.minBathrooms)),
+    ...maybe("minAreaM2", readMinAreaM2(raw.minAreaM2)),
     ...maybe("propertyType", readChoice(raw.propertyType, PROPERTY_TYPES)),
     ...maybe("publisherType", readChoice(raw.publisherType, PUBLISHER_TYPES)),
     ...maybe("attributes", readAttributes(raw)),
     ...maybe("page", readPage(raw.page)),
+    ...maybe("order", omitDefaultOrder(readSearchOrder(raw.order))),
   };
 }
 
@@ -310,6 +443,15 @@ function orderPrices(
   // eso es un precio exacto, no un error.
   if (min === undefined || max === undefined || min <= max) return [min, max];
   return [max, min];
+}
+
+/**
+ * «Recientes» se representa como ausencia, tanto acá como en la dirección
+ * (`SEARCH_ORDER_TOKENS`). Las dos ausencias son la misma decisión mirada de
+ * los dos lados: una sola forma de decir el orden por defecto.
+ */
+function omitDefaultOrder(order: SearchOrder): SearchOrder | undefined {
+  return order === "recent" ? undefined : order;
 }
 
 /** Keeps absent filters absent instead of present-and-undefined. */

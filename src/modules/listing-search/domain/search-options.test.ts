@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { resolveAttributeOptions, resolveRoomOptions, resolveZoneOptions } from "./search-options";
+import {
+  resolveAttributeOptions,
+  resolveBathroomOptions,
+  resolveRoomOptions,
+  resolveZoneOptions,
+} from "./search-options";
 
 const ZONES = [
   { id: "chacao", name: "Chacao" },
@@ -105,20 +110,70 @@ describe("los escalones de habitaciones (F6)", () => {
   });
 });
 
+describe("los escalones de baños (14.45, lámina 7b)", () => {
+  const BY_BATHROOMS = { 1: 16, 2: 9, 3: 0 } as const;
+
+  it("son los tres del dominio, con el «+» del último", () => {
+    expect(resolveBathroomOptions(BY_BATHROOMS, undefined).map((option) => option.label)).toEqual([
+      "1",
+      "2",
+      "3+",
+    ]);
+  });
+
+  it("cada uno dice cuántos habría SI se eligiera, contado sin su propio filtro", () => {
+    expect(resolveBathroomOptions(BY_BATHROOMS, 1).find((option) => option.step === 2)?.count).toBe(
+      9,
+    );
+  });
+
+  it("la selección es única y volver a tocar el elegido lo suelta", () => {
+    const options = resolveBathroomOptions(BY_BATHROOMS, 2);
+
+    expect(options.filter((option) => option.chosen).map((option) => option.step)).toEqual([2]);
+    expect(options.find((option) => option.step === 2)?.nextValue).toBeNull();
+    expect(options.find((option) => option.step === 1)?.nextValue).toBe("1");
+  });
+
+  it("un escalón sin resultados queda deshabilitado, y el elegido nunca", () => {
+    expect(
+      resolveBathroomOptions(BY_BATHROOMS, undefined).find((o) => o.step === 3)?.disabled,
+    ).toBe(true);
+    expect(resolveBathroomOptions(BY_BATHROOMS, 3).find((o) => o.step === 3)?.disabled).toBe(false);
+  });
+});
+
 describe("los atributos declarados (F6)", () => {
   const BY_ATTRIBUTE = {
     hasPowerPlant: 9,
     hasRegularWater: 12,
     isFurnished: 4,
+    hasParking: 7,
     hasSecurity: 0,
     hasAppliances: 3,
   };
 
-  it("son los cinco del dominio, con su etiqueta legible", () => {
+  it("son los seis del dominio, con su etiqueta legible", () => {
     const options = resolveAttributeOptions(BY_ATTRIBUTE, 16, []);
 
-    expect(options).toHaveLength(5);
+    expect(options).toHaveLength(6);
     expect(options[0]?.label).toBe("Planta eléctrica");
+  });
+
+  /**
+   * **El puesto es una opción más y se ofrece exactamente igual que las otras
+   * cinco** (14.45 rebanada C). Que su número salga de `parking_spots > 0` en
+   * vez de una columna booleana es asunto del adaptador; de este lado no hay
+   * ninguna diferencia que una persona pueda ver, y ésa es la prueba de que la
+   * derivación quedó donde tenía que quedar.
+   */
+  it("el puesto de estacionamiento es el cuarto, con el rótulo del fundador", () => {
+    const options = resolveAttributeOptions(BY_ATTRIBUTE, 16, []);
+
+    expect(options[3]?.attribute).toBe("hasParking");
+    expect(options[3]?.label).toBe("Puesto de estacionamiento");
+    expect(options[3]?.note).toBe("7 de 16");
+    expect(options[3]?.disabled).toBe(false);
   });
 
   it("cada uno dice cuántos lo cumplen sobre el total", () => {

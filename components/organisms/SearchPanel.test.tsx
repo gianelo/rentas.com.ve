@@ -11,10 +11,12 @@ const COUNTS = {
   total: 16,
   byZone: { chacao: 12, altamira: 9, rosal: 0 },
   byMinRooms: { 1: 16, 2: 9, 3: 4, 4: 0 },
+  byMinBathrooms: { 1: 16, 2: 7, 3: 0 },
   byAttribute: {
     hasPowerPlant: 9,
     hasRegularWater: 12,
     isFurnished: 4,
+    hasParking: 11,
     hasSecurity: 0,
     hasAppliances: 3,
   },
@@ -23,12 +25,15 @@ const COUNTS = {
     zone: 40,
     price: 22,
     rooms: 31,
+    bathrooms: 31,
     publisherType: 25,
     hasPowerPlant: 18,
     hasRegularWater: 19,
     isFurnished: 20,
+    hasParking: 24,
     hasSecurity: 21,
     hasAppliances: 23,
+    area: 27,
   },
   byPriceBucket: [
     { count: 1, lowestUsd: 200, highestUsd: 240 },
@@ -197,6 +202,44 @@ describe("lo que cada grupo muestra", () => {
     expect(render()).toContain("4+");
   });
 
+  /**
+   * **Los baños, en el mismo grupo que las habitaciones** (14.45, lámina 7b:
+   * los dibuja uno debajo del otro en una sola columna). Se mira el
+   * encabezado propio y el «3+», que es lo que distingue «tres o más» de
+   * «exactamente tres».
+   */
+  it("los baños con su encabezado y el «3+» del último escalón", () => {
+    const markup = render();
+
+    expect(markup).toContain("Baños");
+    expect(markup).toContain("3+");
+    // Y su conteo real al lado, que es la tarea (regla transversal 3).
+    expect(markup).toContain(">7<");
+  });
+
+  /**
+   * **Los metros², el tercer control del grupo «tamaño» y el único que se
+   * escribe** (14.45 rebanada B). Es un `<form method="get">` porque un campo
+   * suelto no envía nada sin JavaScript, y lleva su propio botón por lo mismo:
+   * el `Enter` implícito de un formulario de un solo campo existe, pero no se
+   * ve, y el panel entero se toca con el dedo.
+   */
+  it("los metros² son un campo escrito con su propio formulario", () => {
+    const markup = render();
+
+    expect(markup).toContain('id="metros-desde"');
+    expect(markup).toContain('name="metros"');
+    expect(markup).toContain('type="number"');
+    expect(markup).toContain("Usar esta superficie");
+    // Sin conteo al lado, y es la decisión: un campo libre no tiene opciones
+    // que contar, así que el número real es el total que el botón ya dice.
+    expect(markup).toContain("Superficie mínima");
+  });
+
+  it("vuelve escrito con lo que ya está puesto, para poder corregirlo", () => {
+    expect(render({ criteria: { minAreaM2: 90 } })).toContain('value="90"');
+  });
+
   it("«Limpiar todo» está siempre a la vista (F8)", () => {
     expect(render()).toContain("Limpiar todo");
   });
@@ -280,18 +323,20 @@ describe("el conteo en vivo se monta ENCIMA del piso, nunca en su lugar (14.34)"
     expect(markup).toContain('data-preview="Ver 70 avisos"');
   });
 
-  it("los adelantos son exactamente los diez enlaces que se pueden tocar", () => {
+  it("los adelantos son exactamente los doce enlaces que se pueden tocar", () => {
     // Contarlos, y no buscar la ausencia de uno: un `not.toContain` sigue en
     // verde si el atributo desapareció de TODAS las opciones, que es la misma
-    // clase de defecto que la 20.x ya pagó dos veces. Nueve: tres escalones de
-    // habitaciones (el cuarto cuenta 0 y llega apagado), quién publica, cuatro
-    // atributos (vigilancia cuenta 0) y «Limpiar todo».
+    // clase de defecto que la 20.x ya pagó dos veces. Doce: tres escalones de
+    // habitaciones (el cuarto cuenta 0 y llega apagado), **dos de baños** (el
+    // «3+» cuenta 0, 14.45), quién publica, **cinco atributos** —los cuatro de
+    // antes más el puesto de estacionamiento de la rebanada C, y vigilancia
+    // cuenta 0— y «Limpiar todo».
     const markup = render();
-    expect(markup.split('data-preview="').length - 1).toBe(9);
+    expect(markup.split('data-preview="').length - 1).toBe(12);
 
-    // Y las dos apagadas se dibujan como `<span aria-disabled>`, sin dirección
+    // Y las tres apagadas se dibujan como `<span aria-disabled>`, sin dirección
     // que tocar y por lo tanto sin número que adelantar.
-    expect(markup.split('aria-disabled="true"').length - 1).toBe(2);
+    expect(markup.split('aria-disabled="true"').length - 1).toBe(3);
   });
 
   it("el número del botón se anuncia cuando cambia", () => {

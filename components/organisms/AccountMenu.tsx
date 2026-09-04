@@ -13,8 +13,18 @@ export interface AccountMenuItem {
 export interface AccountMenuProps {
   /** El piso: a dónde lleva el control sin JavaScript (diseño 14a/14b). */
   readonly href: string;
-  /** Lo que se lee en la barra — "Mis avisos", nunca el nombre de la cuenta. */
+  /**
+   * El nombre accesible del control — "Mis avisos", nunca el nombre de la
+   * cuenta. **Siempre viaja**, se dibuje o no: es lo que un lector de
+   * pantalla anuncia.
+   */
   readonly triggerLabel: string;
+  /**
+   * Si esas palabras además se LEEN en la barra (tasks.md 14.56). Llega ya
+   * decidido desde el dominio (`NavAccountAuthenticated.hasListings`): acá no
+   * se mira ningún dato, sólo se dibuja lo que ya se resolvió afuera.
+   */
+  readonly triggerLabelVisible: boolean;
   readonly initials: string;
   readonly imageUrl: string | null;
   /** Lo que se lee dentro del panel, cuando lo hay. */
@@ -42,6 +52,7 @@ export interface AccountMenuProps {
 export function AccountMenu({
   href,
   triggerLabel,
+  triggerLabelVisible,
   initials,
   imageUrl,
   panelTitle,
@@ -54,15 +65,21 @@ export function AccountMenu({
     <span className={styles.wrap}>
       <AppLink
         href={href}
-        className={styles.trigger}
+        className={
+          triggerLabelVisible ? styles.trigger : `${styles.trigger} ${styles.triggerIconOnly}`
+        }
         aria-haspopup="menu"
         aria-expanded={open}
+        /* **El nombre accesible no depende de que las palabras se dibujen**
+           (14.56). Sin este atributo, un control sin palabras se anunciaría
+           por sus iniciales —que van `aria-hidden`— o por nada. */
+        aria-label={triggerLabel}
         onClick={(event) => {
           event.preventDefault();
           setOpen((current) => !current);
         }}
       >
-        <span className={styles.triggerLabel}>{triggerLabel}</span>
+        {triggerLabelVisible ? <span className={styles.triggerLabel}>{triggerLabel}</span> : null}
         {imageUrl ? (
           // biome-ignore lint/performance/noImgElement: dominio externo (Google), 30x30 fijo — hoy inalcanzable en producción (schema.ts, user.image queda NULL a propósito).
           <img className={styles.avatar} src={imageUrl} alt="" width={30} height={30} />

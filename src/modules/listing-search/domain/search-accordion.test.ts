@@ -149,6 +149,40 @@ describe("cada grupo cerrado muestra lo elegido", () => {
     expect(step({ ...CARACAS, minRooms: 4 }, "habitaciones").summary).toBe("4+ hab");
   });
 
+  /**
+   * **Los baños viven en el MISMO grupo que las habitaciones** (14.45): el
+   * fundador lo llamó «tamaño» y la lámina 7b los dibuja en una sola columna,
+   * uno debajo del otro. Por eso el resumen del grupo cerrado tiene que decir
+   * los dos — con sólo «2 hab» encima de un grupo que además filtra baños, el
+   * renglón del acordeón esconde justo el filtro que alguien acaba de poner.
+   */
+  it("el grupo del tamaño resume habitaciones Y baños, y el «3+» dice «o más»", () => {
+    expect(step({ ...CARACAS, minBathrooms: 1 }, "habitaciones").summary).toBe("1 baño");
+    expect(step({ ...CARACAS, minBathrooms: 3 }, "habitaciones").summary).toBe("3+ baños");
+    expect(step({ ...CARACAS, minRooms: 2, minBathrooms: 2 }, "habitaciones").summary).toBe(
+      "2 hab · 2 baños",
+    );
+  });
+
+  it("el grupo queda contestado con los baños solos, sin habitaciones", () => {
+    expect(step({ ...CARACAS, minBathrooms: 2 }, "habitaciones").answered).toBe(true);
+    expect(step(CARACAS, "habitaciones").answered).toBe(false);
+  });
+
+  /**
+   * **Los metros² son la tercera parte del mismo grupo «tamaño»** (14.45
+   * rebanada B). No son un escalón sino un número escrito, así que el resumen
+   * dice el número tal cual con su «desde»: es un mínimo, y «72 m²» a secas se
+   * leería como "mide 72".
+   */
+  it("el grupo del tamaño nombra también los metros², y son un mínimo", () => {
+    expect(step({ ...CARACAS, minAreaM2: 72 }, "habitaciones").summary).toBe("Desde 72 m²");
+    expect(step({ ...CARACAS, minAreaM2: 72 }, "habitaciones").answered).toBe(true);
+    expect(
+      step({ ...CARACAS, minRooms: 2, minBathrooms: 2, minAreaM2: 90 }, "habitaciones").summary,
+    ).toBe("2 hab · 2 baños · Desde 90 m²");
+  });
+
   it("quién publica dice a quién, con las mismas palabras que el resumen", () => {
     expect(step(CARACAS, "publica").summary).toBe("Cualquiera");
     expect(step(CARACAS, "publica").answered).toBe(false);
@@ -160,6 +194,19 @@ describe("cada grupo cerrado muestra lo elegido", () => {
     expect(step(CARACAS, "atributos").summary).toBe("Cualquiera");
     const view = step({ ...CARACAS, attributes: ["hasPowerPlant", "hasSecurity"] }, "atributos");
     expect(view.summary).toBe("planta · vigilancia");
+    expect(view.answered).toBe(true);
+  });
+
+  /**
+   * **El renglón cerrado tiene que nombrar el puesto**: en el teléfono el
+   * acordeón esconde el grupo, y un resumen que omite el filtro que alguien
+   * acaba de poner lo deja invisible y puesto — el mismo defecto que la
+   * rebanada A nombró con los baños.
+   */
+  it("el puesto de estacionamiento entra en el resumen, corto como los demás", () => {
+    const view = step({ ...CARACAS, attributes: ["hasParking"] }, "atributos");
+
+    expect(view.summary).toBe("puesto");
     expect(view.answered).toBe(true);
   });
 
@@ -206,6 +253,15 @@ describe("la barra resumen de resultados", () => {
 describe("countPillFilters — lo que el filtro de la pastilla abre de verdad (14i)", () => {
   it("la zona NO cuenta: la resuelve el texto de la pastilla, no el panel", () => {
     expect(countPillFilters({ ...CARACAS, zoneNames: ["Chacao", "Altamira"] })).toBe(0);
+  });
+
+  it("los baños cuentan como un filtro más: la pastilla abre el grupo del tamaño entero", () => {
+    expect(countPillFilters({ ...CARACAS, minBathrooms: 2 })).toBe(1);
+    expect(countPillFilters({ ...CARACAS, minRooms: 2, minBathrooms: 2 })).toBe(2);
+    // Y los metros² son el tercero del mismo grupo (14.45 rebanada B): la
+    // pastilla cuenta filtros puestos, no grupos abiertos.
+    expect(countPillFilters({ ...CARACAS, minAreaM2: 72 })).toBe(1);
+    expect(countPillFilters({ ...CARACAS, minRooms: 2, minBathrooms: 2, minAreaM2: 72 })).toBe(3);
   });
 
   it("el caso de la lámina 7c: precio, habitaciones y quién publica son 3", () => {

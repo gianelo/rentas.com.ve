@@ -92,15 +92,27 @@ export const FILTER_KEYS = [
   "min",
   "max",
   "hab",
+  // Los baños (14.45), por la misma razón que `hab`: refina la lista, así que
+  // la dirección deja de ser la de la zona y pasa a ser una combinación.
+  "banos",
+  // Y la superficie mínima (14.45 rebanada B). Que sea un campo escrito y no
+  // una lista de escalones no cambia nada acá: refina igual, y encima es
+  // continua — indexar `?metros=71`, `72` y `73` publicaría tres direcciones
+  // casi idénticas por cada número que alguien escriba.
+  "metros",
   // Zonas EXTRA sobre la que ya afirma la ruta: la query sólo puede ensanchar
   // la búsqueda, y ensancharla la vuelve otra página.
   "zona",
   "tipo",
   "pub",
-  // Los cinco atributos, con los nombres cortos del fundador (F12).
+  // Los seis atributos, con los nombres cortos del fundador (F12). El puesto
+  // de estacionamiento (14.45 rebanada C) entra por la misma razón que los
+  // otros cinco: refina la lista, así que la dirección deja de ser la de la
+  // zona.
   "planta",
   "agua",
   "amoblado",
+  "puesto",
   "vigilancia",
   "electro",
   // **La paginación también.** La página 2 es contenido casi idéntico al de la
@@ -116,6 +128,17 @@ export const FILTER_KEYS = [
   // dos direcciones para una página es contenido duplicado.
   "filtros",
   "busca",
+  // **Y el orden de la lista** (14.47), por exactamente la misma razón dicha
+  // una línea más arriba y llevada un paso más lejos: `?orden=` devuelve los
+  // MISMOS avisos, sólo que en otra fila. Indexar los tres órdenes publicaría
+  // el catálogo entero tres veces como contenido duplicado.
+  //
+  // La otra mitad de la regla no está acá sino en `SEARCH_ORDER_TOKENS`: el
+  // orden por defecto viaja como **ausencia** del parámetro, así que la
+  // dirección canónica de la zona —la que la pantalla enlaza y la que Google
+  // ya tiene— se sigue indexando. Con un `?orden=recientes` explícito esta
+  // línea habría sacado del índice la página en el orden por defecto.
+  "orden",
 ] as const;
 
 /**

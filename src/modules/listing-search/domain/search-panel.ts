@@ -1,3 +1,4 @@
+import type { BathroomStep } from "./bathroom-steps";
 import type { PriceBucketTally } from "./price-histogram";
 import { buildPriceHistogramView, type PriceHistogramView } from "./price-histogram-panel";
 import type { RoomStep } from "./room-steps";
@@ -21,8 +22,10 @@ import {
 import type { ListingAttribute, PublisherType, SearchCriteria } from "./search-criteria";
 import {
   type AttributeOption,
+  type BathroomOption,
   type RoomOption,
   resolveAttributeOptions,
+  resolveBathroomOptions,
   resolveRoomOptions,
   resolveZoneOptions,
   type ZoneOption,
@@ -59,6 +62,8 @@ export interface PanelCounts {
   readonly total: number;
   readonly byZone: Readonly<Record<string, number>>;
   readonly byMinRooms: Readonly<Record<RoomStep, number>>;
+  /** Los tres escalones de baños, contados sin su propio filtro (14.45). */
+  readonly byMinBathrooms: Readonly<Record<BathroomStep, number>>;
   readonly byAttribute: Readonly<Record<ListingAttribute, number>>;
   readonly byPublisherType: Readonly<Record<PublisherType, number>>;
   /**
@@ -146,7 +151,13 @@ export interface SearchPanelInput {
   /** Los filtros ya validados. Se leen de acá y no de la query cruda. */
   readonly criteria: Pick<
     SearchCriteria,
-    "minPriceUsd" | "maxPriceUsd" | "minRooms" | "publisherType" | "attributes"
+    | "minPriceUsd"
+    | "maxPriceUsd"
+    | "minRooms"
+    | "minBathrooms"
+    | "minAreaM2"
+    | "publisherType"
+    | "attributes"
   >;
   /** La ficha del único resultado, cuando hay exactamente uno (F7). */
   readonly onlyListingHref?: string;
@@ -178,6 +189,8 @@ export function relaxableFilters(
     filters.push("price");
   }
   if (criteria.minRooms !== undefined) filters.push("rooms");
+  if (criteria.minBathrooms !== undefined) filters.push("bathrooms");
+  if (criteria.minAreaM2 !== undefined) filters.push("area");
   if (criteria.publisherType !== undefined) filters.push("publisherType");
   for (const attribute of criteria.attributes ?? []) filters.push(attribute);
   return filters;
@@ -194,8 +207,17 @@ export function relaxableFilters(
  * sería mandar a alguien a mirar apartamentos a mil kilómetros.
  */
 export function withoutFilter(criteria: SearchCriteria, filter: RelaxableFilter): SearchCriteria {
-  const { zoneIds, minPriceUsd, maxPriceUsd, minRooms, publisherType, attributes, ...rest } =
-    criteria;
+  const {
+    zoneIds,
+    minPriceUsd,
+    maxPriceUsd,
+    minRooms,
+    minBathrooms,
+    minAreaM2,
+    publisherType,
+    attributes,
+    ...rest
+  } = criteria;
 
   const keep = <T>(value: T | undefined, dropped: boolean): T | undefined =>
     dropped ? undefined : value;
@@ -208,6 +230,8 @@ export function withoutFilter(criteria: SearchCriteria, filter: RelaxableFilter)
     ...maybe("minPriceUsd", keep(minPriceUsd, filter === "price")),
     ...maybe("maxPriceUsd", keep(maxPriceUsd, filter === "price")),
     ...maybe("minRooms", keep(minRooms, filter === "rooms")),
+    ...maybe("minBathrooms", keep(minBathrooms, filter === "bathrooms")),
+    ...maybe("minAreaM2", keep(minAreaM2, filter === "area")),
     ...maybe("publisherType", keep(publisherType, filter === "publisherType")),
     ...maybe("attributes", dropAttribute(attributes, filter)),
   };
@@ -245,6 +269,10 @@ export function reliefHref(
     return buildSearchHref(place.basePath, place.query, { minPrice: null, maxPrice: null });
   }
   if (filter === "rooms") return buildSearchHref(place.basePath, place.query, { minRooms: null });
+  if (filter === "bathrooms") {
+    return buildSearchHref(place.basePath, place.query, { minBathrooms: null });
+  }
+  if (filter === "area") return buildSearchHref(place.basePath, place.query, { minAreaM2: null });
   if (filter === "publisherType") {
     return buildSearchHref(place.basePath, place.query, { publisherType: null });
   }
@@ -266,6 +294,7 @@ interface Previewable {
 }
 
 export type RoomChoice = RoomOption & Previewable & { readonly href: string };
+export type BathroomChoice = BathroomOption & Previewable & { readonly href: string };
 export type AttributeChoice = AttributeOption & Previewable & { readonly href: string };
 
 export interface PublisherChoice extends Previewable {
@@ -292,6 +321,28 @@ export interface PriceForm {
   readonly max: string;
   /** El dibujo, o la negativa a dibujarlo, ya resuelto (F5). */
   readonly histogram: PriceHistogramView;
+}
+
+/**
+ * **Los metros², que se ESCRIBEN en vez de elegirse** (14.45 rebanada B,
+ * decisión del fundador 2026-09-04: *«hay casas que tienen 72,5 o 84 y así no
+ * puede ser preseleccionado»*).
+ *
+ * Es un formulario y no una tira de enlaces porque la superficie es un continuo:
+ * no hay opciones que enlazar ni, por lo tanto, conteo por opción que mostrar.
+ * **La regla transversal 3 se cumple igual, del otro lado**: el número real
+ * pasa a ser el total de resultados, que el botón de confirmar ya dice.
+ *
+ * Un campo suelto no envía nada sin JavaScript, así que va envuelto en su propio
+ * `<form method="get">` con el resto de la búsqueda escondida — el mismo molde
+ * del precio, por la misma razón (D13).
+ */
+export interface AreaForm {
+  readonly action: string;
+  readonly hidden: readonly HiddenField[];
+  readonly name: string;
+  /** Lo que ya está puesto, o vacío. Sale del criterio ya validado, nunca del crudo. */
+  readonly value: string;
 }
 
 /**
@@ -330,6 +381,14 @@ export interface SearchPanelModel {
   readonly zones: readonly ZoneChoice[];
   readonly price: PriceForm;
   readonly rooms: readonly RoomChoice[];
+  /**
+   * Los baños, en el MISMO grupo que las habitaciones (14.45). La lámina 7b los
+   * dibuja uno debajo del otro en una sola columna, que es el grupo que el
+   * fundador llamó «tamaño».
+   */
+  readonly bathrooms: readonly BathroomChoice[];
+  /** Los metros², el tercer control del mismo grupo «tamaño» (14.45 rebanada B). */
+  readonly area: AreaForm;
   readonly publisher: PublisherChoice;
   readonly attributes: readonly AttributeChoice[];
   readonly clearAllHref: string;
@@ -421,6 +480,36 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
         step: "habitaciones",
       }),
     })),
+    bathrooms: resolveBathroomOptions(counts.byMinBathrooms, criteria.minBathrooms).map(
+      (option) => ({
+        ...option,
+        previewLabel: preview(counts, option.disabled, {
+          kind: "bathrooms",
+          step: option.nextValue === null ? null : option.step,
+        }),
+        // Vuelve a SU grupo, que es el mismo de las habitaciones: saltar a otro
+        // después de tocar un escalón es perder de vista lo que se eligió.
+        href: buildSearchHref(basePath, query, {
+          minBathrooms: option.nextValue,
+          step: "habitaciones",
+        }),
+      }),
+    ),
+    area: {
+      action: basePath,
+      // Su propio nombre no puede ir además escondido —viajaría dos veces y
+      // ganaría el viejo—, y la página se cae igual que en el precio: escribir
+      // otra superficie es otra búsqueda, y su página 3 no significa nada.
+      hidden: hiddenFields(
+        query,
+        [SEARCH_QUERY_NAMES.minAreaM2, SEARCH_QUERY_NAMES.page],
+        "habitaciones",
+      ),
+      name: SEARCH_QUERY_NAMES.minAreaM2,
+      // Del criterio y no de la query cruda: `?metros=abc` se cayó allá, y
+      // devolverlo escrito acá mostraría un filtro puesto que no está puesto.
+      value: criteria.minAreaM2 === undefined ? "" : String(criteria.minAreaM2),
+    },
     publisher: toPublisherChoice(input),
     attributes: resolveAttributeOptions(
       counts.byAttribute,

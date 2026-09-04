@@ -1,3 +1,4 @@
+import { BATHROOM_STEPS, type BathroomStep, bathroomStepLabel } from "./bathroom-steps";
 import { ROOM_STEPS, type RoomStep, roomStepLabel } from "./room-steps";
 import { LISTING_ATTRIBUTES, type ListingAttribute } from "./search-criteria";
 
@@ -121,11 +122,52 @@ export function resolveRoomOptions(
   });
 }
 
+export interface BathroomOption {
+  readonly step: BathroomStep;
+  /** «1», «2», «3+». El «+» es la regla de `bathroom-steps.ts`, no adorno. */
+  readonly label: string;
+  readonly count: number;
+  readonly chosen: boolean;
+  readonly disabled: boolean;
+  /** El escalón, o `null` para soltar el filtro al volver a tocar el elegido. */
+  readonly nextValue: string | null;
+}
+
+/**
+ * Los tres escalones con su conteo. **Es la misma forma que las habitaciones y
+ * eso no es copiar por comodidad**: las dos son una selección única sobre un
+ * mínimo, así que la opción elegida se suelta al volver a tocarla y la de cero
+ * queda deshabilitada por la misma regla transversal 4. Lo que difiere es la
+ * escala —tres botones contra cuatro— y eso ya vive en `bathroom-steps.ts`.
+ */
+export function resolveBathroomOptions(
+  byMinBathrooms: Readonly<Record<BathroomStep, number>>,
+  minBathrooms: number | undefined,
+): readonly BathroomOption[] {
+  return BATHROOM_STEPS.map((step) => {
+    const count = byMinBathrooms[step] ?? 0;
+    const chosen = minBathrooms === step;
+
+    return {
+      step,
+      label: bathroomStepLabel(step),
+      count,
+      chosen,
+      disabled: count === 0 && !chosen,
+      nextValue: chosen ? null : String(step),
+    };
+  });
+}
+
 /** Cómo se lee cada atributo. Copia; qué atributos existen lo dice el dominio. */
 const ATTRIBUTE_LABELS: Readonly<Record<ListingAttribute, string>> = {
   hasPowerPlant: "Planta eléctrica",
   hasRegularWater: "Agua regular",
   isFurnished: "Amoblado",
+  // El rótulo del fundador, entero. «Puesto» solo es lo que dice la tira de
+  // datos de la ficha, donde al lado hay un número; acá es una casilla y tiene
+  // que decir de qué.
+  hasParking: "Puesto de estacionamiento",
   hasSecurity: "Vigilancia 24 h",
   hasAppliances: "Línea blanca",
 };
@@ -150,8 +192,14 @@ export interface AttributeOption {
 }
 
 /**
- * Los cinco atributos con su conteo. **Se combinan con Y** (F6): marcar dos
+ * Los seis atributos con su conteo. **Se combinan con Y** (F6): marcar dos
  * pide los dos, así que marcar uno nuevo nunca desmarca al anterior.
+ *
+ * **El sexto es derivado y acá no se nota, que es el punto** (14.45 rebanada
+ * C): «Puesto de estacionamiento» sale de `parking_spots > 0` y el resto de
+ * los cinco de una columna booleana, pero las dos cosas llegan como un número
+ * en `byAttribute` y se ofrecen con la misma regla. Una rama acá para el
+ * derivado sería la derivación escrita dos veces.
  */
 export function resolveAttributeOptions(
   byAttribute: Readonly<Record<ListingAttribute, number>>,

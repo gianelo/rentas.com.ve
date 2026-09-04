@@ -90,3 +90,104 @@ test("una dirección vieja con un grupo que ya no existe abre el panel y lo expl
   await expect(page.getByTestId("search-panel")).toBeVisible();
   await expect(page.getByText(/ya no existe/)).toBeVisible();
 });
+
+/**
+ * **El filtro de baños, sin una línea de JavaScript** (14.45).
+ *
+ * Lo que se mide acá es lo que el conteo hace posible: cada escalón es un
+ * enlace `GET` con su número al lado, así que el servidor vuelve a contar con
+ * la dirección que llega y el número no puede quedar desfasado — no hay estado
+ * en el cliente que pueda desfasarse. Con el script apagado, un control que se
+ * dibujara sólo al hidratar dejaría el grupo del tamaño a la mitad.
+ */
+test("los baños se eligen desde la dirección, con su conteo al lado", async ({ page }) => {
+  await page.goto("/alquiler/distrito-capital?filtros=habitaciones");
+
+  const grupo = page.locator("#filtros-habitaciones");
+  await expect(grupo.getByRole("heading", { name: "Baños" })).toBeVisible();
+
+  // La segunda tira del grupo es la de baños: la primera son las habitaciones,
+  // y las dos comparten grupo porque la lámina 7b las dibuja en una columna.
+  const banos = grupo.locator("ul").nth(1);
+  await expect(banos.getByRole("listitem")).toHaveCount(3);
+  // El «3+» no lleva a ninguna parte: la siembra no tiene ningún aviso de tres
+  // baños, y ninguna opción lleva a un vacío (regla transversal 4).
+  await expect(banos.locator('[aria-disabled="true"]')).toHaveCount(1);
+
+  await banos.getByRole("link").last().click();
+
+  await expect(page).toHaveURL(/banos=2/);
+  // Y el renglón del grupo lo dice: el resumen nombra los baños, no sólo las
+  // habitaciones.
+  await expect(grupo.getByRole("heading").first()).toContainText("2 baños");
+});
+
+/**
+ * **El puesto de estacionamiento, sin una línea de JavaScript** (14.45
+ * rebanada C).
+ *
+ * Es la sexta opción del grupo y **la única derivada**: su número sale de
+ * `parking_spots > 0` y no de una columna booleana. Lo que se mide acá es que
+ * eso no se note desde afuera — mismo enlace `GET`, mismo «n de m» al lado,
+ * misma dirección compartible. Y que el número **no sea el total**: la siembra
+ * de Distrito Capital tiene dos avisos y uno sin puesto, así que un conteo que
+ * dijera «2 de 2» sería la derivación sin aplicar el umbral. Ese cero está en
+ * `scripts/seed-e2e.ts` a propósito y con la razón escrita al lado.
+ */
+test("el puesto es la sexta opción, con su conteo derivado del número", async ({ page }) => {
+  await page.goto("/alquiler/distrito-capital?filtros=atributos");
+
+  const grupo = page.locator("#filtros-atributos");
+  const opciones = grupo.locator("ul").first();
+  await expect(opciones.getByRole("listitem")).toHaveCount(6);
+
+  const puesto = opciones.getByRole("listitem").filter({ hasText: "Puesto de estacionamiento" });
+  await expect(puesto).toHaveCount(1);
+  // El «n de m» con n < m: el aviso sin puesto queda afuera del conteo.
+  await expect(puesto).toContainText("1 de 2");
+
+  await puesto.getByRole("link").click();
+
+  await expect(page).toHaveURL(/puesto=1/);
+  // El renglón cerrado del grupo lo nombra: en el teléfono el acordeón lo
+  // esconde, y un resumen que lo omitiera dejaría el filtro puesto e invisible.
+  await expect(grupo.getByRole("heading").first()).toContainText("puesto");
+});
+
+/**
+ * **Los metros², un campo escrito y no una tira de escalones** (14.45 rebanada
+ * B, decisión del fundador 2026-09-04: *«hay casas que tienen 72,5 o 84 y así
+ * no puede ser preseleccionado»*).
+ *
+ * Es el único control del panel que se teclea, así que es el único cuyo piso
+ * sin JavaScript no es un enlace: sin el `<form method="get">` alrededor, el
+ * campo no envía nada y el filtro sólo existe para quien recibió el bundle.
+ * Lo que se mide es el camino entero — escribir, enviar, que la dirección lo
+ * lleve y que la lista se recorte — con el script apagado.
+ *
+ * La siembra tiene un aviso de 45 m² en Distrito Capital a propósito
+ * (`scripts/seed-e2e.ts`): con los dos en 80, un filtro que no recortara nada
+ * pasaría en verde.
+ */
+test("los metros² se escriben en un formulario y recortan la lista", async ({ page }) => {
+  await page.goto("/alquiler/distrito-capital?filtros=habitaciones");
+
+  const grupo = page.locator("#filtros-habitaciones");
+  const campo = grupo.getByLabel("Superficie mínima");
+  await campo.fill("70");
+  // **Se envía con `Enter` y no tocando el botón**, y la razón es medida: con
+  // el grupo del tamaño ya lleno —dos tiras de escalones y este campo— el botón
+  // queda a veces bajo el pie pegajoso del panel a media altura de scroll, y
+  // Playwright lo reporta como interceptado. El envío implícito es el mismo
+  // camino que el botón —un `<form method="get">` sin una línea de script— y no
+  // depende de dónde quedó parada la hoja. Que el botón se dibuje lo afirma
+  // `components/organisms/SearchPanel.test.tsx`.
+  await campo.press("Enter");
+
+  await expect(page).toHaveURL(/metros=70/);
+  // El de 45 m² se cae y queda el de 80: la dirección filtró de verdad.
+  await expect(page.getByTestId("result-count")).toContainText("1 propiedad activa");
+  // Y el renglón cerrado del grupo lo dice, que en el teléfono es lo único que
+  // se ve de un filtro puesto.
+  await expect(grupo.getByRole("heading").first()).toContainText("Desde 70 m²");
+});

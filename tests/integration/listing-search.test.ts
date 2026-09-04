@@ -78,6 +78,18 @@ const P_ZONA = randomUUID();
 const PAGINADOS = RESULTS_PER_PAGE + 2;
 
 /**
+ * **El precio NO sigue a la fecha en esta ciudad, y es a propósito** (14.47).
+ * Con `100 + index` el orden por precio ascendente salía idéntico al orden por
+ * fecha, así que un `ORDER BY` equivocado se veía igual que el correcto y la
+ * prueba pasaba midiendo una casualidad. `7` y `PAGINADOS` son coprimos, así
+ * que cada aviso sigue teniendo un precio distinto.
+ */
+const precioDe = (index: number) => 100 + ((index * 7 + 3) % PAGINADOS);
+const avisoDe = (index: number) => `Aviso ${String(index).padStart(2, "0")}`;
+/** Los índices ordenados por precio, derivados de la MISMA fórmula. */
+const porPrecio = [...Array(PAGINADOS).keys()].sort((a, b) => precioDe(a) - precioDe(b));
+
+/**
  * Una quinta ciudad para la 21.1, con DOS avisos idénticos salvo la fecha.
  *
  * Van en su propia ciudad a propósito: el par vigente/vencido es la aserción
@@ -309,7 +321,7 @@ beforeAll(async () => {
       id: randomUUID(),
       zoneId: P_ZONA,
       cityId: PAGINADA,
-      priceUsd: 100 + index,
+      priceUsd: precioDe(index),
       rooms: 2,
       areaM2: 50,
       status: "active",
@@ -717,5 +729,66 @@ describe("la placa de la ciudad y sus páginas, atadas (F3 + F10)", () => {
 
     const deMaracaibo = new Set(maracaibo.map((row) => row.id));
     for (const row of paginada) expect(deMaracaibo.has(row.id)).toBe(false);
+  });
+});
+
+/**
+ * **El orden de la lista, con tres opciones** (14.47).
+ *
+ * Lo que se prueba acá no es que el `ORDER BY` compile: es que el orden pedido
+ * **deje la fecha atrás** y que siga siendo un orden TOTAL. La segunda mitad es
+ * la que importa y la que no se ve — sin el desempate por `id`, `OFFSET` corta
+ * sobre el orden que Postgres haya elegido esta vez, y la página 2 repite un
+ * aviso y se salta otro sin que nada falle.
+ */
+describe("el orden de la lista (14.47)", () => {
+  const masBarato = avisoDe(porPrecio[0] as number);
+  const masCaro = avisoDe(porPrecio[PAGINADOS - 1] as number);
+
+  it("sin orden pedido la lista es la de siempre: la más nueva arriba", async () => {
+    const results = await search.search({ cityId: PAGINADA });
+
+    expect(results[0]?.title).toBe("Aviso 00");
+    // **El discriminador, y llegó por una mutación que sobrevivía.** Sin esta
+    // línea, cambiar el orden por defecto a «Precio: menor a mayor» no ponía
+    // nada en rojo: con el precio siguiendo a la fecha las dos listas salían
+    // iguales. Los tres encabezados son avisos distintos.
+    expect(results[0]?.title).not.toBe(masBarato);
+  });
+
+  it("«Precio: menor a mayor» encabeza con el más barato, no con el más nuevo", async () => {
+    const results = await search.search({ cityId: PAGINADA, order: "priceAsc" });
+
+    expect(results[0]?.title).toBe(masBarato);
+  });
+
+  it("«Precio: mayor a menor» deja la fecha atrás de verdad", async () => {
+    const results = await search.search({ cityId: PAGINADA, order: "priceDesc" });
+
+    expect(results[0]?.title).toBe(masCaro);
+  });
+
+  it("«Precio: menor a mayor» sale por precio, no por fecha ni por zona", async () => {
+    const results = await search.search({ cityId: FILTROS, order: "priceAsc" });
+
+    expect(results.map((row) => row.priceUsd)).toEqual([100, 200, 300, 400]);
+  });
+
+  it("el orden por precio sigue acotado por ciudad y por vigencia", async () => {
+    // Un orden nuevo no puede abrir una puerta: los tres predicados
+    // incondicionales siguen antes que él.
+    const results = await search.search({ cityId: FILTROS, order: "priceDesc" });
+
+    expect(results.map((row) => row.id)).toEqual([F_D, F_C, F_B, F_A]);
+  });
+
+  it("las dos páginas del orden por precio no repiten ni pierden un aviso", async () => {
+    const [primera, segunda] = await Promise.all([
+      search.search({ cityId: PAGINADA, order: "priceDesc" }),
+      search.search({ cityId: PAGINADA, order: "priceDesc", page: 2 }),
+    ]);
+
+    expect(segunda).toHaveLength(PAGINADOS - RESULTS_PER_PAGE);
+    expect(new Set([...primera, ...segunda].map((row) => row.id)).size).toBe(PAGINADOS);
   });
 });
