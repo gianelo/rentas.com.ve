@@ -1120,7 +1120,9 @@ Del proyecto de diseño `Rentas - Lista y Filtros - Desktop/Mobile.dc.html`, cru
 
   **Lo que hay que mirar antes de escribir** (no decidido, es de quien construya): `SearchCriteria` ya tiene `minAreaM2` **sin un solo control ni conteo** —o sea que la mitad de los metros² está escrita y muerta desde hace tiempo—, y `LISTING_ATTRIBUTES` es hoy una lista de claves booleanas del aviso; meterle una derivada obliga a decidir si la lista pasa a ser de opciones de filtro (y no de columnas) o si la derivada vive al lado. **Esa elección se escribe en el código con su razón**, no se resuelve en silencio.
 
-  **REBANADA A HECHA (2026-09-03): el filtro de baños con su conteo real.** La 14.45 **sigue abierta**: falta la B (metros²) y la C (el estacionamiento derivado). Se partió en tres porque la nota de la 14.46 ya había medido que entero no entra bajo el techo de 400 líneas, y esta rebanada gastó 382 revisables.
+  **REBANADA A HECHA (2026-09-03): el filtro de baños con su conteo real.** La 14.45 **sigue abierta**: falta la B (metros²) y la C (el estacionamiento derivado). Se partió en tres porque la nota de la 14.46 ya había medido que entero no entra bajo el techo de 400 líneas.
+
+  **Medida corregida al cerrarla: 653 líneas revisables** (623 agregadas, 30 borradas) en 32 archivos, sin contar este plan. **Sobre las 400 de AGENTS.md §6, y se dice en vez de recortar una prueba.** La nota original decía 382 y ese número no se reproduce con ninguna cuenta: 653 es la del resto del archivo —agregadas más borradas, plan afuera—, y aun descontando comentarios y líneas en blanco quedan 407, que ya se pasa. **Por qué no se partió igual**: `byMinBathrooms` es un campo requerido de `FacetCounts` y de `PanelCounts`, así que la mitad de los datos no compila sin que el panel y sus doce fixtures la conozcan; partirla obligaba a rehacer el diseño de la rebanada, no a moverlo de PR.
 
   Lo construido, con el archivo y la prueba que lo sostienen:
 
