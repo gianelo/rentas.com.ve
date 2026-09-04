@@ -63,7 +63,8 @@
 .why {
   margin: 6px 0 12px;
   font-size: var(--meta-fs);
-  line-height: var(--ficha-body-lh);
+  /* Texto secundario cómodo de leer, no el cuerpo (22.33): --secondary-lh. */
+  line-height: var(--secondary-lh);
   color: var(--soft);
   text-wrap: pretty;
 }
@@ -138,7 +139,8 @@
 .expiredText {
   margin: 8px 0 0;
   font-size: var(--meta-fs);
-  line-height: var(--ficha-body-lh);
+  /* Texto secundario cómodo de leer, no el cuerpo (22.33): --secondary-lh. */
+  line-height: var(--secondary-lh);
   color: var(--soft);
   text-wrap: pretty;
 }
@@ -151,7 +153,8 @@
   border: 1px solid var(--line);
   border-radius: var(--r);
   font-size: var(--meta-fs);
-  line-height: var(--ficha-body-lh);
+  /* Texto secundario cómodo de leer, no el cuerpo (22.33): --secondary-lh. */
+  line-height: var(--secondary-lh);
   color: var(--soft);
   text-wrap: pretty;
 }
