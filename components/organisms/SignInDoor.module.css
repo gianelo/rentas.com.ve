@@ -55,6 +55,14 @@
   line-height: var(--ficha-body-lh);
   color: var(--soft);
 }
+/* tasks.md 22.39 — «verificado por …», al lado de la razón y no del botón:
+   es una afirmación sobre el contacto, no parte de la acción de entrar. */
+.verified {
+  margin: 6px 0 0;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  color: var(--soft);
+}
 /* El botón ocupa el ancho: es la acción única del panel. */
 .form {
   margin-top: 16px;

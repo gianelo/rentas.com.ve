@@ -16,6 +16,7 @@ import { SignInDoor } from "@/../components/organisms/SignInDoor";
 import { viewListingContact } from "@/modules/contact-reveal/application/view-listing-contact";
 import {
   contactDoorFor,
+  DOOR_OPEN_TOKEN,
   DOOR_QUERY_NAME,
   doorHrefFor,
 } from "@/modules/contact-reveal/domain/sign-in-door";
@@ -24,8 +25,12 @@ import {
   DrizzleContactRevealMetrics,
   DrizzleRevealableListing,
 } from "@/modules/contact-reveal/infrastructure/drizzle-contact-reveal";
+import { isListingContactVerified } from "@/modules/identity/application/is-listing-contact-verified";
 import { resolveNavAccount, resolveNavPublish } from "@/modules/identity/domain/nav-account";
-import { DrizzleContactVerificationEvidence } from "@/modules/identity/infrastructure/drizzle-verified-contact";
+import {
+  DrizzleContactVerificationEvidence,
+  DrizzleListingContactVerification,
+} from "@/modules/identity/infrastructure/drizzle-verified-contact";
 import { DrizzleCatalogue } from "@/modules/listing-catalogue/infrastructure/drizzle-catalogue";
 import { suggestActiveListings } from "@/modules/listing-discovery/application/suggest-active-listings";
 import { resolveListingAvailability } from "@/modules/listing-discovery/domain/listing-availability";
@@ -194,13 +199,28 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
     },
   );
 
+  // tasks.md 22.39 — la consulta nueva sólo corre cuando la puerta va a
+  // dibujarse de verdad: la misma disciplina de costo que ya aplica
+  // `verification` arriba, y la única forma honesta de que
+  // `isListingContactVerified` tenga un llamador real sin cobrarle un viaje
+  // extra a Neon a la mayoría del tráfico anónimo de esta pantalla.
+  const rawDoorToken = query[DOOR_QUERY_NAME];
+  const doorContactVerified =
+    contact.state === "locked" && rawDoorToken === DOOR_OPEN_TOKEN
+      ? await isListingContactVerified(detail.id, {
+          verification: new DrizzleListingContactVerification(db),
+          now: () => now,
+        })
+      : false;
+
   // **Si hay puerta y qué dice lo decide el dominio**: el token lo escribe
   // cualquiera, y sobre un contacto ya revelado sería un muro delante de algo
   // que está abierto.
   const door = contactDoorFor(
     contact,
     { type: detail.publisherType, name: detail.publisherName },
-    query[DOOR_QUERY_NAME],
+    rawDoorToken,
+    doorContactVerified,
   );
 
   // La barra del producto (14a). La sesión sale del MISMO puerto memoizado que
