@@ -45,6 +45,14 @@ export default defineConfig({
       // (14.48): un gate sin prueba propia puede dejar de comprobar en
       // silencio, que es la peor forma de verde.
       "scripts/**/*.{test,spec}.{ts,tsx}",
+      // tasks.md 22.35 — el helper de teardown compartido de las suites de
+      // integración es lógica pura (sin Postgres real) y vive junto a
+      // `tests/integration/` porque de ahí es, pero ese directorio no
+      // corría bajo `pnpm test`: sin esta entrada, su prueba sólo se
+      // ejecutaría con `pnpm test:integration`, atada sin necesidad a
+      // `TEST_DATABASE_URL` — la misma razón por la que `scripts/` tiene su
+      // propia entrada arriba.
+      "tests/integration/support/**/*.{test,spec}.{ts,tsx}",
     ],
     coverage: {
       provider: "v8",

@@ -7,6 +7,7 @@ import {
   DrizzleListingDetail,
 } from "../../src/modules/listing-discovery/infrastructure/drizzle-listing-detail";
 import * as schema from "../../src/shared/db/schema";
+import { withPoolCleanup } from "./support/pool-cleanup";
 
 /**
  * `DrizzleListingDetail` contra Postgres real.
@@ -84,12 +85,15 @@ beforeAll(async () => {
   await insertListing(IN_ORPHAN, ORPHAN_ZONE, "active");
 });
 
-afterAll(async () => {
-  await pool.query('DELETE FROM "listing" WHERE publisher_id = $1', [PUBLISHER]);
-  await pool.query('DELETE FROM "user" WHERE id = $1', [PUBLISHER]);
-  await pool.query('DELETE FROM "city" WHERE id = $1', [CITY]);
-  await pool.end();
-});
+// tasks.md 22.35 — `withPoolCleanup` garantiza el `pool.end()` aunque
+// cualquiera de los tres `DELETE` reviente.
+afterAll(() =>
+  withPoolCleanup(pool, async () => {
+    await pool.query('DELETE FROM "listing" WHERE publisher_id = $1', [PUBLISHER]);
+    await pool.query('DELETE FROM "user" WHERE id = $1', [PUBLISHER]);
+    await pool.query('DELETE FROM "city" WHERE id = $1', [CITY]);
+  }),
+);
 
 describe("findForDetail", () => {
   it("trae todo lo que la ficha dibuja en una consulta", async () => {

@@ -7,6 +7,7 @@ import {
   type VerifiedContactDatabase,
 } from "../../src/modules/identity/infrastructure/drizzle-verified-contact";
 import * as schema from "../../src/shared/db/schema";
+import { withPoolCleanup } from "./support/pool-cleanup";
 
 /**
  * `DrizzleListingContactVerification` contra Postgres real (tasks.md 22.32).
@@ -112,14 +113,17 @@ beforeAll(async () => {
   );
 });
 
-afterAll(async () => {
-  await pool.query('DELETE FROM "listing" WHERE publisher_id = ANY($1)', [
-    [PUBLISHER, OTHER_PUBLISHER],
-  ]);
-  await pool.query('DELETE FROM "user" WHERE id = ANY($1)', [[PUBLISHER, OTHER_PUBLISHER]]);
-  await pool.query('DELETE FROM "city" WHERE id = $1', [CITY]);
-  await pool.end();
-});
+// tasks.md 22.35 — `withPoolCleanup` garantiza el `pool.end()` aunque
+// cualquiera de los tres `DELETE` reviente.
+afterAll(() =>
+  withPoolCleanup(pool, async () => {
+    await pool.query('DELETE FROM "listing" WHERE publisher_id = ANY($1)', [
+      [PUBLISHER, OTHER_PUBLISHER],
+    ]);
+    await pool.query('DELETE FROM "user" WHERE id = ANY($1)', [[PUBLISHER, OTHER_PUBLISHER]]);
+    await pool.query('DELETE FROM "city" WHERE id = $1', [CITY]);
+  }),
+);
 
 describe("findVerifiedAt", () => {
   it("devuelve el instante crudo cuando el triple del aviso tiene fila viva", async () => {
