@@ -323,9 +323,12 @@
   min-block-size: 160px;
   padding: 12px 14px;
   /* Texto secundario cómodo de leer, no el cuerpo (22.33): --secondary-lh.
-     El tamaño lo trae `.control` (`font-size: var(--control-fs)`), con la
+     El tamaño era el de `.control` (`font-size: var(--control-fs)`), con la
      que esta clase siempre se combina en el marcado — encontrada rehaciendo
-     el recuento de la 22.33, no estaba en su lista original de cinco. */
+     el recuento de la 22.33, no estaba en su lista original de cinco. Ahora
+     declara su propio `font-size` (22.46): el par tamaño+interlineado deja
+     de depender de que el marcado siga combinando las dos clases. */
+  font-size: var(--control-fs);
   line-height: var(--secondary-lh);
   resize: vertical;
 }

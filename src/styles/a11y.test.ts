@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { dirname, extname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -69,6 +70,41 @@ describe("srOnly compartido (22.7)", () => {
       // El par de la negativa: sin esto, agregar el `composes` sin quitar
       // el cuerpo viejo dejaría la prueba en verde con la duplicación viva.
       expect(css).not.toMatch(/\.srOnly\s*\{[^}]*position:\s*absolute/);
+
+      // 22.43: la ruta del `composes` se aseveraba como cadena y nunca se
+      // resolvía — un `../` de más o de menos compila mal y ninguna prueba
+      // lo veía antes de `pnpm build`.
+      const resolved = join(dirname(path), from);
+      expect(existsSync(resolved)).toBe(true);
     },
   );
+
+  /**
+   * 22.40: la lista de arriba está completa HOY, y eso se midió, pero es una
+   * enumeración escrita a mano — una sexta hoja que volviera a declarar el
+   * cuerpo entraría sin que nada la viera. Esta guarda recorre `app`,
+   * `components` y `src` en vez de enumerar, con la misma forma que ya usa
+   * `src/styles/secondary-lh.test.ts`.
+   */
+  it("ninguna hoja fuera del módulo compartido declara su propio cuerpo de .srOnly (guarda contra la deriva)", () => {
+    const roots = ["app", "components", "src"];
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (extname(entry.name) === ".css") files.push(full);
+      }
+    };
+    for (const root of roots) walk(root);
+
+    const offenders: string[] = [];
+    for (const file of files) {
+      if (file === SHARED_PATH) continue;
+      const css = readFileSync(file, "utf-8");
+      if (/\.srOnly\s*\{[^}]*position:\s*absolute/.test(css)) offenders.push(file);
+    }
+
+    expect(offenders).toEqual([]);
+  });
 });
