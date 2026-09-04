@@ -90,3 +90,34 @@ test("una dirección vieja con un grupo que ya no existe abre el panel y lo expl
   await expect(page.getByTestId("search-panel")).toBeVisible();
   await expect(page.getByText(/ya no existe/)).toBeVisible();
 });
+
+/**
+ * **El filtro de baños, sin una línea de JavaScript** (14.45).
+ *
+ * Lo que se mide acá es lo que el conteo hace posible: cada escalón es un
+ * enlace `GET` con su número al lado, así que el servidor vuelve a contar con
+ * la dirección que llega y el número no puede quedar desfasado — no hay estado
+ * en el cliente que pueda desfasarse. Con el script apagado, un control que se
+ * dibujara sólo al hidratar dejaría el grupo del tamaño a la mitad.
+ */
+test("los baños se eligen desde la dirección, con su conteo al lado", async ({ page }) => {
+  await page.goto("/alquiler/distrito-capital?filtros=habitaciones");
+
+  const grupo = page.locator("#filtros-habitaciones");
+  await expect(grupo.getByRole("heading", { name: "Baños" })).toBeVisible();
+
+  // La segunda tira del grupo es la de baños: la primera son las habitaciones,
+  // y las dos comparten grupo porque la lámina 7b las dibuja en una columna.
+  const banos = grupo.locator("ul").nth(1);
+  await expect(banos.getByRole("listitem")).toHaveCount(3);
+  // El «3+» no lleva a ninguna parte: la siembra no tiene ningún aviso de tres
+  // baños, y ninguna opción lleva a un vacío (regla transversal 4).
+  await expect(banos.locator('[aria-disabled="true"]')).toHaveCount(1);
+
+  await banos.getByRole("link").last().click();
+
+  await expect(page).toHaveURL(/banos=2/);
+  // Y el renglón del grupo lo dice: el resumen nombra los baños, no sólo las
+  // habitaciones.
+  await expect(grupo.getByRole("heading").first()).toContainText("2 baños");
+});

@@ -7,6 +7,7 @@ const EMPTY: FacetCounts = {
   total: 0,
   byZone: {},
   byMinRooms: { 1: 0, 2: 0, 3: 0, 4: 0 },
+  byMinBathrooms: { 1: 0, 2: 0, 3: 0 },
   byAttribute: {
     hasPowerPlant: 0,
     hasRegularWater: 0,
@@ -20,6 +21,7 @@ const EMPTY: FacetCounts = {
     zone: 0,
     price: 0,
     rooms: 0,
+    bathrooms: 0,
     publisherType: 0,
     hasPowerPlant: 0,
     hasRegularWater: 0,

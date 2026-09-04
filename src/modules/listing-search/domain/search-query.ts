@@ -31,6 +31,7 @@ export type SearchQueryField =
   | "minPrice"
   | "maxPrice"
   | "minRooms"
+  | "minBathrooms"
   | "propertyType"
   | "publisherType"
   | ListingAttribute
@@ -60,6 +61,10 @@ export const SEARCH_QUERY_NAMES: Readonly<Record<SearchQueryField, string>> = {
   minPrice: "min",
   maxPrice: "max",
   minRooms: "hab",
+  // **`banos` y no `baños`** (14.45): con «ñ» la dirección viaja como
+  // `ba%C3%B1os` y deja de leerse en el chat donde se pega, que es la mitad de
+  // para qué existen los nombres cortos del fundador (F12).
+  minBathrooms: "banos",
   propertyType: "tipo",
   publisherType: "pub",
   hasPowerPlant: "planta",

@@ -1,6 +1,7 @@
 import type { PriceHistogramView } from "@/modules/listing-search/domain/price-histogram-panel";
 import type {
   AttributeChoice,
+  BathroomChoice,
   HiddenField,
   RoomChoice,
   SearchPanelModel,
@@ -260,13 +261,28 @@ function PriceHistogram({ histogram }: { readonly histogram: PriceHistogramView 
   );
 }
 
+/**
+ * **Habitaciones y baños, en el mismo grupo** (14.45). La lámina 7b los dibuja
+ * uno debajo del otro en la misma columna, con un encabezado cada uno: es el
+ * grupo que el fundador llamó «tamaño». Los baños llevan `<h3>` y no otro
+ * `<p class=question>` porque son una sección del grupo, y un lector de
+ * pantalla tiene que poder saltar a ella.
+ */
 function RoomsStep({ model }: { readonly model: SearchPanelModel }) {
   return (
-    <ul className={styles.steps}>
-      {model.rooms.map((room) => (
-        <RoomOptionItem key={room.step} room={room} />
-      ))}
-    </ul>
+    <>
+      <ul className={styles.steps}>
+        {model.rooms.map((room) => (
+          <StepOptionItem key={room.step} option={room} />
+        ))}
+      </ul>
+      <h3 className={styles.question}>Baños</h3>
+      <ul className={styles.steps}>
+        {model.bathrooms.map((bathroom) => (
+          <StepOptionItem key={bathroom.step} option={bathroom} />
+        ))}
+      </ul>
+    </>
   );
 }
 
@@ -317,7 +333,13 @@ function AttributesStep({ model }: { readonly model: SearchPanelModel }) {
   );
 }
 
-function RoomOptionItem({ room }: { readonly room: RoomChoice }) {
+/**
+ * Un escalón de una tira numérica: sirve a habitaciones y a baños porque las
+ * dos son la misma forma —selección única sobre un mínimo, con su conteo al
+ * lado— y dos copias del mismo marcado empiezan a discrepar en el próximo
+ * cambio de accesibilidad.
+ */
+function StepOptionItem({ option: room }: { readonly option: RoomChoice | BathroomChoice }) {
   const body = (
     <>
       <span className={styles.stepNumber}>{room.label}</span>

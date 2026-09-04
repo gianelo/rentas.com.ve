@@ -1,3 +1,4 @@
+import type { BathroomStep } from "./bathroom-steps";
 import type { PriceBucketTally } from "./price-histogram";
 import { buildPriceHistogramView, type PriceHistogramView } from "./price-histogram-panel";
 import type { RoomStep } from "./room-steps";
@@ -21,8 +22,10 @@ import {
 import type { ListingAttribute, PublisherType, SearchCriteria } from "./search-criteria";
 import {
   type AttributeOption,
+  type BathroomOption,
   type RoomOption,
   resolveAttributeOptions,
+  resolveBathroomOptions,
   resolveRoomOptions,
   resolveZoneOptions,
   type ZoneOption,
@@ -59,6 +62,8 @@ export interface PanelCounts {
   readonly total: number;
   readonly byZone: Readonly<Record<string, number>>;
   readonly byMinRooms: Readonly<Record<RoomStep, number>>;
+  /** Los tres escalones de baños, contados sin su propio filtro (14.45). */
+  readonly byMinBathrooms: Readonly<Record<BathroomStep, number>>;
   readonly byAttribute: Readonly<Record<ListingAttribute, number>>;
   readonly byPublisherType: Readonly<Record<PublisherType, number>>;
   /**
@@ -146,7 +151,7 @@ export interface SearchPanelInput {
   /** Los filtros ya validados. Se leen de acá y no de la query cruda. */
   readonly criteria: Pick<
     SearchCriteria,
-    "minPriceUsd" | "maxPriceUsd" | "minRooms" | "publisherType" | "attributes"
+    "minPriceUsd" | "maxPriceUsd" | "minRooms" | "minBathrooms" | "publisherType" | "attributes"
   >;
   /** La ficha del único resultado, cuando hay exactamente uno (F7). */
   readonly onlyListingHref?: string;
@@ -178,6 +183,7 @@ export function relaxableFilters(
     filters.push("price");
   }
   if (criteria.minRooms !== undefined) filters.push("rooms");
+  if (criteria.minBathrooms !== undefined) filters.push("bathrooms");
   if (criteria.publisherType !== undefined) filters.push("publisherType");
   for (const attribute of criteria.attributes ?? []) filters.push(attribute);
   return filters;
@@ -194,8 +200,16 @@ export function relaxableFilters(
  * sería mandar a alguien a mirar apartamentos a mil kilómetros.
  */
 export function withoutFilter(criteria: SearchCriteria, filter: RelaxableFilter): SearchCriteria {
-  const { zoneIds, minPriceUsd, maxPriceUsd, minRooms, publisherType, attributes, ...rest } =
-    criteria;
+  const {
+    zoneIds,
+    minPriceUsd,
+    maxPriceUsd,
+    minRooms,
+    minBathrooms,
+    publisherType,
+    attributes,
+    ...rest
+  } = criteria;
 
   const keep = <T>(value: T | undefined, dropped: boolean): T | undefined =>
     dropped ? undefined : value;
@@ -208,6 +222,7 @@ export function withoutFilter(criteria: SearchCriteria, filter: RelaxableFilter)
     ...maybe("minPriceUsd", keep(minPriceUsd, filter === "price")),
     ...maybe("maxPriceUsd", keep(maxPriceUsd, filter === "price")),
     ...maybe("minRooms", keep(minRooms, filter === "rooms")),
+    ...maybe("minBathrooms", keep(minBathrooms, filter === "bathrooms")),
     ...maybe("publisherType", keep(publisherType, filter === "publisherType")),
     ...maybe("attributes", dropAttribute(attributes, filter)),
   };
@@ -245,6 +260,9 @@ export function reliefHref(
     return buildSearchHref(place.basePath, place.query, { minPrice: null, maxPrice: null });
   }
   if (filter === "rooms") return buildSearchHref(place.basePath, place.query, { minRooms: null });
+  if (filter === "bathrooms") {
+    return buildSearchHref(place.basePath, place.query, { minBathrooms: null });
+  }
   if (filter === "publisherType") {
     return buildSearchHref(place.basePath, place.query, { publisherType: null });
   }
@@ -266,6 +284,7 @@ interface Previewable {
 }
 
 export type RoomChoice = RoomOption & Previewable & { readonly href: string };
+export type BathroomChoice = BathroomOption & Previewable & { readonly href: string };
 export type AttributeChoice = AttributeOption & Previewable & { readonly href: string };
 
 export interface PublisherChoice extends Previewable {
@@ -330,6 +349,12 @@ export interface SearchPanelModel {
   readonly zones: readonly ZoneChoice[];
   readonly price: PriceForm;
   readonly rooms: readonly RoomChoice[];
+  /**
+   * Los baños, en el MISMO grupo que las habitaciones (14.45). La lámina 7b los
+   * dibuja uno debajo del otro en una sola columna, que es el grupo que el
+   * fundador llamó «tamaño».
+   */
+  readonly bathrooms: readonly BathroomChoice[];
   readonly publisher: PublisherChoice;
   readonly attributes: readonly AttributeChoice[];
   readonly clearAllHref: string;
@@ -421,6 +446,21 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
         step: "habitaciones",
       }),
     })),
+    bathrooms: resolveBathroomOptions(counts.byMinBathrooms, criteria.minBathrooms).map(
+      (option) => ({
+        ...option,
+        previewLabel: preview(counts, option.disabled, {
+          kind: "bathrooms",
+          step: option.nextValue === null ? null : option.step,
+        }),
+        // Vuelve a SU grupo, que es el mismo de las habitaciones: saltar a otro
+        // después de tocar un escalón es perder de vista lo que se eligió.
+        href: buildSearchHref(basePath, query, {
+          minBathrooms: option.nextValue,
+          step: "habitaciones",
+        }),
+      }),
+    ),
     publisher: toPublisherChoice(input),
     attributes: resolveAttributeOptions(
       counts.byAttribute,

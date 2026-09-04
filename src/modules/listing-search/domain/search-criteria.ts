@@ -70,6 +70,7 @@ export interface RawSearchParams {
   readonly minPrice?: string | null;
   readonly maxPrice?: string | null;
   readonly minRooms?: string | null;
+  readonly minBathrooms?: string | null;
   readonly minAreaM2?: string | null;
   readonly propertyType?: string | null;
   readonly publisherType?: string | null;
@@ -100,6 +101,14 @@ export interface SearchCriteria {
   readonly minPriceUsd?: number;
   readonly maxPriceUsd?: number;
   readonly minRooms?: number;
+  /**
+   * **Un mínimo, y por eso el «3+» del control no es adorno** (14.45, lámina
+   * 7b). El escalón `3` pide tres baños o más, exactamente como `minRooms: 4`
+   * pide cuatro habitaciones o más. Escrito como mínimo y no como número
+   * exacto porque es lo que la gente busca —"que tenga al menos dos"— y porque
+   * un filtro exacto escondería el aviso de tres baños de quien pidió dos.
+   */
+  readonly minBathrooms?: number;
   readonly minAreaM2?: number;
   readonly propertyType?: SearchablePropertyType;
   readonly publisherType?: PublisherType;
@@ -292,6 +301,7 @@ export function buildSearchCriteria(
     ...maybe("minPriceUsd", minPriceUsd),
     ...maybe("maxPriceUsd", maxPriceUsd),
     ...maybe("minRooms", readCount(raw.minRooms)),
+    ...maybe("minBathrooms", readCount(raw.minBathrooms)),
     ...maybe("minAreaM2", readCount(raw.minAreaM2)),
     ...maybe("propertyType", readChoice(raw.propertyType, PROPERTY_TYPES)),
     ...maybe("publisherType", readChoice(raw.publisherType, PUBLISHER_TYPES)),

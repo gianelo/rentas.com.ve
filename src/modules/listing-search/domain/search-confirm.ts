@@ -22,7 +22,13 @@ import type { ListingAttribute } from "./search-criteria";
  */
 
 /** Los filtros que se pueden soltar cuando la búsqueda se queda sin nada. */
-export type RelaxableFilter = "zone" | "price" | "rooms" | "publisherType" | ListingAttribute;
+export type RelaxableFilter =
+  | "zone"
+  | "price"
+  | "rooms"
+  | "bathrooms"
+  | "publisherType"
+  | ListingAttribute;
 
 /**
  * De más cercano a la intención a más periférico.
@@ -35,6 +41,10 @@ export type RelaxableFilter = "zone" | "price" | "rooms" | "publisherType" | Lis
 const RELAXATION_ORDER: readonly RelaxableFilter[] = [
   "zone",
   "rooms",
+  // Los baños después de las habitaciones y antes del precio: es la otra mitad
+  // del tamaño, y soltarla cambia menos la búsqueda que soltar lo que se puede
+  // pagar.
+  "bathrooms",
   "price",
   "publisherType",
   "hasPowerPlant",
@@ -49,6 +59,7 @@ const RELAXATION_NAMES: Readonly<Record<RelaxableFilter, string>> = {
   zone: "las zonas",
   price: "el precio",
   rooms: "las habitaciones",
+  bathrooms: "los baños",
   publisherType: "quién publica",
   hasPowerPlant: "planta eléctrica",
   hasRegularWater: "agua regular",

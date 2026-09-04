@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { resolveAttributeOptions, resolveRoomOptions, resolveZoneOptions } from "./search-options";
+import {
+  resolveAttributeOptions,
+  resolveBathroomOptions,
+  resolveRoomOptions,
+  resolveZoneOptions,
+} from "./search-options";
 
 const ZONES = [
   { id: "chacao", name: "Chacao" },
@@ -102,6 +107,39 @@ describe("los escalones de habitaciones (F6)", () => {
     expect(
       resolveRoomOptions({ 1: 0, 2: 0, 3: 0, 4: 0 }, 2).find((o) => o.step === 2)?.disabled,
     ).toBe(false);
+  });
+});
+
+describe("los escalones de baños (14.45, lámina 7b)", () => {
+  const BY_BATHROOMS = { 1: 16, 2: 9, 3: 0 } as const;
+
+  it("son los tres del dominio, con el «+» del último", () => {
+    expect(resolveBathroomOptions(BY_BATHROOMS, undefined).map((option) => option.label)).toEqual([
+      "1",
+      "2",
+      "3+",
+    ]);
+  });
+
+  it("cada uno dice cuántos habría SI se eligiera, contado sin su propio filtro", () => {
+    expect(resolveBathroomOptions(BY_BATHROOMS, 1).find((option) => option.step === 2)?.count).toBe(
+      9,
+    );
+  });
+
+  it("la selección es única y volver a tocar el elegido lo suelta", () => {
+    const options = resolveBathroomOptions(BY_BATHROOMS, 2);
+
+    expect(options.filter((option) => option.chosen).map((option) => option.step)).toEqual([2]);
+    expect(options.find((option) => option.step === 2)?.nextValue).toBeNull();
+    expect(options.find((option) => option.step === 1)?.nextValue).toBe("1");
+  });
+
+  it("un escalón sin resultados queda deshabilitado, y el elegido nunca", () => {
+    expect(
+      resolveBathroomOptions(BY_BATHROOMS, undefined).find((o) => o.step === 3)?.disabled,
+    ).toBe(true);
+    expect(resolveBathroomOptions(BY_BATHROOMS, 3).find((o) => o.step === 3)?.disabled).toBe(false);
   });
 });
 

@@ -1,3 +1,4 @@
+import { BATHROOM_STEPS, type BathroomStep, bathroomStepLabel } from "./bathroom-steps";
 import { ROOM_STEPS, type RoomStep, roomStepLabel } from "./room-steps";
 import { LISTING_ATTRIBUTES, type ListingAttribute } from "./search-criteria";
 
@@ -113,6 +114,43 @@ export function resolveRoomOptions(
     return {
       step,
       label: roomStepLabel(step),
+      count,
+      chosen,
+      disabled: count === 0 && !chosen,
+      nextValue: chosen ? null : String(step),
+    };
+  });
+}
+
+export interface BathroomOption {
+  readonly step: BathroomStep;
+  /** «1», «2», «3+». El «+» es la regla de `bathroom-steps.ts`, no adorno. */
+  readonly label: string;
+  readonly count: number;
+  readonly chosen: boolean;
+  readonly disabled: boolean;
+  /** El escalón, o `null` para soltar el filtro al volver a tocar el elegido. */
+  readonly nextValue: string | null;
+}
+
+/**
+ * Los tres escalones con su conteo. **Es la misma forma que las habitaciones y
+ * eso no es copiar por comodidad**: las dos son una selección única sobre un
+ * mínimo, así que la opción elegida se suelta al volver a tocarla y la de cero
+ * queda deshabilitada por la misma regla transversal 4. Lo que difiere es la
+ * escala —tres botones contra cuatro— y eso ya vive en `bathroom-steps.ts`.
+ */
+export function resolveBathroomOptions(
+  byMinBathrooms: Readonly<Record<BathroomStep, number>>,
+  minBathrooms: number | undefined,
+): readonly BathroomOption[] {
+  return BATHROOM_STEPS.map((step) => {
+    const count = byMinBathrooms[step] ?? 0;
+    const chosen = minBathrooms === step;
+
+    return {
+      step,
+      label: bathroomStepLabel(step),
       count,
       chosen,
       disabled: count === 0 && !chosen,

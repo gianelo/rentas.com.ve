@@ -1,4 +1,5 @@
 import type { PropertyType } from "../../../../shared/db/schema";
+import type { BathroomStep } from "../../domain/bathroom-steps";
 import type { PriceBucketTally } from "../../domain/price-histogram";
 import type { RoomStep } from "../../domain/room-steps";
 import type { RelaxableFilter } from "../../domain/search-confirm";
@@ -51,6 +52,7 @@ import type { ListingAttribute, PublisherType, SearchCriteria } from "../../doma
  * daría un número distinto del que la opción produce, y la regla 3 no permite
  * que la etiqueta y el resultado discrepen.
  */
+export type { BathroomStep } from "../../domain/bathroom-steps";
 export type { PriceBucketTally } from "../../domain/price-histogram";
 export type { RoomStep } from "../../domain/room-steps";
 export type { RelaxableFilter } from "../../domain/search-confirm";
@@ -82,6 +84,13 @@ export interface FacetCounts {
   readonly byZone: Readonly<Record<string, number>>;
   /** How many results each step of the rooms control would produce. */
   readonly byMinRooms: Readonly<Record<RoomStep, number>>;
+  /**
+   * Lo mismo para los tres escalones de baños (14.45), y **el último es «o
+   * más»**: `3` cuenta `bathrooms >= 3`, igual que el criterio, porque es el
+   * mismo filtro. Contar exactos daría un número distinto del que la opción
+   * produce, y la regla 3 no permite que la etiqueta y el resultado discrepen.
+   */
+  readonly byMinBathrooms: Readonly<Record<BathroomStep, number>>;
   readonly byAttribute: Readonly<Record<ListingAttribute, number>>;
   readonly byPropertyType: Readonly<Record<PropertyType, number>>;
   readonly byPublisherType: Readonly<Record<PublisherType, number>>;

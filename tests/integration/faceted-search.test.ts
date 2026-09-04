@@ -114,6 +114,13 @@ interface Fixture {
   readonly cityId: string;
   readonly priceUsd: number;
   readonly rooms: number;
+  /**
+   * **Por defecto 2, que es lo que la columna tenía escrito a mano antes de la
+   * 14.45.** Dejarlo como default y no como campo obligatorio mantiene intactos
+   * los conteos que las demás pruebas ya afirman: sólo los avisos que esta
+   * faceta mira declaran el suyo.
+   */
+  readonly bathrooms?: number;
   readonly areaM2: number;
   readonly propertyType: string;
   readonly publisherType: string;
@@ -140,9 +147,9 @@ async function insertListing(fixture: Fixture) {
        description, price_usd, rooms, area_m2, bathrooms, parking_spots,
        has_power_plant, has_regular_water, is_furnished, has_security, has_appliances,
        contact_method, contact_value, status, published_at, expires_at)
-     VALUES ($1,$2,$3,$4,$5,$6,'Apartamento','x',$7,$8,$9,2,1,
-       $10,$11,$12,$13,$14,
-       'whatsapp','04121234567',$15,now(),now() + make_interval(mins => $16::int))`,
+     VALUES ($1,$2,$3,$4,$5,$6,'Apartamento','x',$7,$8,$9,$10,1,
+       $11,$12,$13,$14,$15,
+       'whatsapp','04121234567',$16,now(),now() + make_interval(mins => $17::int))`,
     [
       fixture.id,
       ANA,
@@ -153,6 +160,7 @@ async function insertListing(fixture: Fixture) {
       fixture.priceUsd,
       fixture.rooms,
       fixture.areaM2,
+      fixture.bathrooms ?? 2,
       fixture.hasPowerPlant ?? false,
       fixture.hasRegularWater ?? false,
       fixture.isFurnished ?? false,
@@ -189,6 +197,7 @@ beforeAll(async () => {
 
   await insertListing({
     id: A1,
+    bathrooms: 1,
     zoneId: MCBO_CENTRO,
     cityId: MARACAIBO,
     priceUsd: 200,
@@ -200,6 +209,7 @@ beforeAll(async () => {
   });
   await insertListing({
     id: A2,
+    bathrooms: 1,
     zoneId: MCBO_CENTRO,
     cityId: MARACAIBO,
     priceUsd: 300,
@@ -213,6 +223,7 @@ beforeAll(async () => {
   });
   await insertListing({
     id: A3,
+    bathrooms: 2,
     zoneId: MCBO_CENTRO,
     cityId: MARACAIBO,
     priceUsd: 500,
@@ -225,6 +236,7 @@ beforeAll(async () => {
   });
   await insertListing({
     id: A4,
+    bathrooms: 2,
     zoneId: MCBO_NORTE,
     cityId: MARACAIBO,
     priceUsd: 400,
@@ -237,6 +249,11 @@ beforeAll(async () => {
     hasRegularWater: true,
   });
   await insertListing({
+    // **Cuatro baños, y son los que miden el «3+»** (14.45): con el más alto
+    // en exactamente tres, `bathrooms >= 3` y `bathrooms = 3` dan el mismo
+    // número y la diferencia entre «tres o más» y «exactamente tres» queda sin
+    // medir. Con cuatro, contar exactos manda este aviso a cero.
+    bathrooms: 4,
     id: A5,
     zoneId: MCBO_NORTE,
     cityId: MARACAIBO,
@@ -562,6 +579,60 @@ describe("una faceta no se filtra a sí misma (task 14.11)", () => {
 
     // Norte tiene A4 (2 cuartos) y A5 (5 cuartos).
     expect(counts.byMinRooms).toEqual({ 1: 2, 2: 2, 3: 1, 4: 1 });
+  });
+
+  /**
+   * **Los baños, y su «3+»** (14.45). Es la misma regla, y la prueba está acá
+   * porque el número que la distingue es el del último escalón: `3` cuenta los
+   * de tres baños **o más**, no los de exactamente tres. **A5 tiene cuatro, y
+   * por eso esto mide algo**: con el más alto en exactamente tres, contar
+   * `>= 3` y contar `= 3` dan el mismo número y la diferencia queda sin medir.
+   */
+  it("el conteo de baños ignora el filtro de baños, y el último escalón es «o más»", async () => {
+    const counts = await facets.countFacets(
+      { cityId: MARACAIBO, minBathrooms: 3 },
+      ZONAS_OFRECIDAS,
+    );
+
+    expect(counts.total).toBe(1); // A5
+    // Los cinco activos tienen 1, 1, 2, 2 y **4** baños: el de cuatro entra en
+    // el «3+», que es lo que separa «tres o más» de «exactamente tres».
+    expect(counts.byMinBathrooms).toEqual({ 1: 5, 2: 3, 3: 1 });
+  });
+
+  it("el conteo de baños sí refleja el filtro de zona, y el de zona el de baños", async () => {
+    const counts = await facets.countFacets(
+      { cityId: MARACAIBO, zoneIds: [MCBO_NORTE], minBathrooms: 2 },
+      ZONAS_OFRECIDAS,
+    );
+
+    // Norte tiene A4 (2 baños) y A5 (4 baños); la faceta ignora `minBathrooms`.
+    expect(counts.byMinBathrooms).toEqual({ 1: 2, 2: 2, 3: 1 });
+    // La de zona ignora la zona y respeta los dos baños: A3, A4 y A5.
+    expect(counts.byZone).toEqual({
+      [MCBO_CENTRO]: 1,
+      [MCBO_NORTE]: 2,
+      [MCBO_VACIA]: 0,
+    });
+  });
+
+  it("el filtro de baños recorta la lista igual que recorta el total", async () => {
+    // La regla transversal 3 medida donde importa: el número del botón contra
+    // las filas que el motor de la lista realmente devuelve.
+    const criteria = { cityId: MARACAIBO, minBathrooms: 2 };
+    const counts = await facets.countFacets(criteria, ZONAS_OFRECIDAS);
+    const rows = await search.search(criteria);
+
+    expect(counts.total).toBe(rows.length);
+    expect(counts.total).toBe(3); // A3, A4 y A5
+  });
+
+  it("soltar los baños promete lo que soltarlos de verdad devuelve", async () => {
+    const criteria: SearchCriteria = { cityId: MARACAIBO, minRooms: 3, minBathrooms: 3 };
+    const counts = await facets.countFacets(criteria, ZONAS_OFRECIDAS);
+    const soltado = await facets.countFacets(withoutFilter(criteria, "bathrooms"), []);
+
+    expect(counts.withoutFilter.bathrooms).toBe(soltado.total);
   });
 
   it("los dos filtros propios se ignoran a la vez, cada uno en su faceta", async () => {

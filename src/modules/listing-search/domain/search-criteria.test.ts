@@ -184,7 +184,14 @@ describe("buildSearchCriteria — `?zona=` escrita con slugs (F12)", () => {
 describe("buildSearchCriteria — price and characteristics", () => {
   it("reads the numeric filters a query string carries as text", () => {
     const criteria = buildSearchCriteria(
-      { city: MARACAIBO, minPrice: "200", maxPrice: "500", minRooms: "2", minAreaM2: "60" },
+      {
+        city: MARACAIBO,
+        minPrice: "200",
+        maxPrice: "500",
+        minRooms: "2",
+        minBathrooms: "3",
+        minAreaM2: "60",
+      },
       ZONES,
     );
 
@@ -193,13 +200,23 @@ describe("buildSearchCriteria — price and characteristics", () => {
       minPriceUsd: 200,
       maxPriceUsd: 500,
       minRooms: 2,
+      // **Un mínimo, igual que las habitaciones** (14.45): `3` en la dirección
+      // es "tres baños o más", que es lo que el botón «3+» promete.
+      minBathrooms: 3,
       minAreaM2: 60,
     });
   });
 
   it("drops values that are not whole non-negative numbers", () => {
     const criteria = buildSearchCriteria(
-      { city: MARACAIBO, minPrice: "abc", maxPrice: "-1", minRooms: "1.5", minAreaM2: "" },
+      {
+        city: MARACAIBO,
+        minPrice: "abc",
+        maxPrice: "-1",
+        minRooms: "1.5",
+        minBathrooms: "dos",
+        minAreaM2: "",
+      },
       ZONES,
     );
 

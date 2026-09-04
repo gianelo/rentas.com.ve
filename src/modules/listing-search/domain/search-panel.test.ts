@@ -13,6 +13,7 @@ const COUNTS = {
   total: 16,
   byZone: { chacao: 12, altamira: 9, castellana: 7, rosal: 0 },
   byMinRooms: { 1: 16, 2: 9, 3: 4, 4: 0 },
+  byMinBathrooms: { 1: 16, 2: 7, 3: 0 },
   byAttribute: {
     hasPowerPlant: 9,
     hasRegularWater: 12,
@@ -29,6 +30,7 @@ const COUNTS = {
     zone: 40,
     price: 22,
     rooms: 31,
+    bathrooms: 29,
     publisherType: 25,
     hasPowerPlant: 18,
     hasRegularWater: 19,
@@ -333,6 +335,33 @@ describe("paso 4 · habitaciones y atributos (F6)", () => {
     expect(panel().rooms.find((room) => room.step === 4)?.disabled).toBe(true);
   });
 
+  /**
+   * **Los baños son la otra mitad del grupo «tamaño»** (14.45, lámina 7b), y lo
+   * que se mide acá es el conteo, no el botón: cada escalón llega con el número
+   * que la faceta contó sin su propio filtro, y el que da cero no se puede
+   * tocar — la regla transversal 4, «ninguna opción lleva a un vacío».
+   */
+  it("los tres escalones de baños con su conteo, y el «3+» del último", () => {
+    expect(panel().bathrooms.map((option) => option.label)).toEqual(["1", "2", "3+"]);
+    expect(panel().bathrooms.find((option) => option.step === 2)?.count).toBe(7);
+    expect(panel().bathrooms.find((option) => option.step === 3)?.disabled).toBe(true);
+  });
+
+  it("tocar un baño se queda en su grupo y no arrastra la página vieja", () => {
+    const dos = panel({ query: { pag: "3" } }).bathrooms.find((option) => option.step === 2);
+
+    expect(dos?.href).toBe("/alquiler/distrito-capital?banos=2&filtros=habitaciones");
+  });
+
+  it("volver a tocar el baño elegido lo suelta de la dirección", () => {
+    const elegido = panel({ criteria: { minBathrooms: 2 } }).bathrooms.find(
+      (option) => option.step === 2,
+    );
+
+    expect(elegido?.chosen).toBe(true);
+    expect(elegido?.href).not.toContain("banos=");
+  });
+
   it("los cinco atributos con su conteo sobre el total", () => {
     const planta = panel().attributes.find((a) => a.attribute === "hasPowerPlant");
 
@@ -369,6 +398,7 @@ describe("la salida del vacío (F7 · F11)", () => {
 
   it("el precio cuenta como uno solo, aunque sean dos números", () => {
     expect(relaxableFilters({ minPriceUsd: 250, maxPriceUsd: 700 }, [])).toEqual(["price"]);
+    expect(relaxableFilters({ minRooms: 2, minBathrooms: 2 }, [])).toEqual(["rooms", "bathrooms"]);
   });
 
   it("cada salida es una dirección con ese filtro quitado y ningún otro", () => {
@@ -385,6 +415,9 @@ describe("la salida del vacío (F7 · F11)", () => {
     expect(reliefHref(place, "price")).not.toContain("min=");
     expect(reliefHref(place, "price")).toContain("hab=2");
     expect(reliefHref(place, "rooms")).not.toContain("hab=");
+    expect(
+      reliefHref({ ...place, query: { ...place.query, banos: "2" } }, "bathrooms"),
+    ).not.toContain("banos=");
     expect(reliefHref(place, "hasPowerPlant")).not.toContain("planta=");
   });
 
@@ -418,6 +451,11 @@ describe("la salida del vacío (F7 · F11)", () => {
     expect(withoutFilter(criteria, "price").minPriceUsd).toBeUndefined();
     expect(withoutFilter(criteria, "price").maxPriceUsd).toBeUndefined();
     expect(withoutFilter(criteria, "rooms").minRooms).toBeUndefined();
+    expect(
+      withoutFilter({ ...criteria, minBathrooms: 2 }, "bathrooms").minBathrooms,
+    ).toBeUndefined();
+    // Soltar los baños no toca las habitaciones: son dos filtros de un grupo.
+    expect(withoutFilter({ ...criteria, minBathrooms: 2 }, "bathrooms").minRooms).toBe(2);
     expect(withoutFilter(criteria, "publisherType").publisherType).toBeUndefined();
     // Un atributo se cae solo, y los otros siguen: se combinan con Y.
     expect(withoutFilter(criteria, "hasPowerPlant").attributes).toEqual(["hasRegularWater"]);

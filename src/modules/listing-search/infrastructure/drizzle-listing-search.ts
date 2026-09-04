@@ -127,6 +127,11 @@ export class DrizzleListingSearch implements ListingSearchPort {
       filters.push(lte(listings.priceUsd, criteria.maxPriceUsd));
     }
     if (criteria.minRooms !== undefined) filters.push(gte(listings.rooms, criteria.minRooms));
+    // Un MÍNIMO, igual que las habitaciones (14.45): «3+» pide tres baños o
+    // más, que es exactamente lo que la faceta cuenta al lado del botón.
+    if (criteria.minBathrooms !== undefined) {
+      filters.push(gte(listings.bathrooms, criteria.minBathrooms));
+    }
     if (criteria.minAreaM2 !== undefined) filters.push(gte(listings.areaM2, criteria.minAreaM2));
     // task 14.8. El tipo llega ya validado contra la lista cerrada del
     // dominio; `eq` contra la columna tipada es la segunda red, en compilación.
