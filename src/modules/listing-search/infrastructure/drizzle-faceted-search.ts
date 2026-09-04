@@ -1,5 +1,5 @@
 import { and, eq, gt, gte, inArray, lte, type SQL, sql } from "drizzle-orm";
-import type { PgColumn, PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import type { PropertyType } from "../../../shared/db/schema";
 import { listings } from "../../../shared/db/schema";
@@ -16,6 +16,7 @@ import type {
 } from "../application/ports/faceted-search.port";
 import { PRICE_HISTOGRAM_BUCKETS } from "../domain/price-histogram";
 import { LISTING_ATTRIBUTES, type SearchCriteria } from "../domain/search-criteria";
+import { attributeCondition } from "./listing-attribute-sql";
 
 /**
  * Cada número que un filtro muestra, en UNA consulta (task 14.11).
@@ -61,15 +62,6 @@ export type FacetedSearchDatabase = PgDatabase<PgQueryResultHKT, typeof schema>;
  * sólo apaga el eje que se le nombra.
  */
 type FacetAxis = "zone" | "rooms" | "bathrooms" | "type" | "publisher" | "price" | ListingAttribute;
-
-/** Cada atributo con su columna, igual que en `DrizzleListingSearch`. */
-const ATTRIBUTE_COLUMNS: Readonly<Record<ListingAttribute, PgColumn>> = {
-  hasPowerPlant: listings.hasPowerPlant,
-  hasRegularWater: listings.hasRegularWater,
-  isFurnished: listings.isFurnished,
-  hasSecurity: listings.hasSecurity,
-  hasAppliances: listings.hasAppliances,
-};
 
 /**
  * `count(*) filter (where …)`, y `count(*)` pelado cuando no hay nada que
@@ -178,7 +170,7 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       except === "publisher" ? undefined : byPublisherFilter,
       except === "price" ? undefined : priceFilter,
       ...LISTING_ATTRIBUTES.filter((attribute) => attribute !== except && asked.has(attribute)).map(
-        (attribute) => eq(ATTRIBUTE_COLUMNS[attribute], true),
+        attributeCondition,
       ),
     ];
 
@@ -294,6 +286,12 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
           eq(listings.hasRegularWater, true),
         ),
         isFurnished: countWhere(...others("isFurnished"), eq(listings.isFurnished, true)),
+        // **La sexta columna, y es DERIVADA** (14.45 rebanada C): sale de
+        // `parking_spots > 0`, no de un booleano. Va en el MISMO `select` que
+        // las otras cinco por la misma razón que los baños — el costo de este
+        // archivo son los viajes de red— y **con su propio filtro apagado**,
+        // que es lo que deja que su número diga cuántos habría si se cambiara.
+        hasParking: countWhere(...others("hasParking"), attributeCondition("hasParking")),
         hasSecurity: countWhere(...others("hasSecurity"), eq(listings.hasSecurity, true)),
         hasAppliances: countWhere(...others("hasAppliances"), eq(listings.hasAppliances, true)),
         apartamento: countWhere(...others("type"), eq(listings.propertyType, "apartamento")),
@@ -312,6 +310,7 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
         withoutPowerPlant: without("hasPowerPlant"),
         withoutRegularWater: without("hasRegularWater"),
         withoutFurnished: without("isFurnished"),
+        withoutParking: without("hasParking"),
         withoutSecurity: without("hasSecurity"),
         withoutAppliances: without("hasAppliances"),
         // El precio ampliado un escalón: el resto de los filtros siguen. Sin
@@ -345,6 +344,7 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       withoutPowerPlant: 0,
       withoutRegularWater: 0,
       withoutFurnished: 0,
+      withoutParking: 0,
       withoutSecurity: 0,
       withoutAppliances: 0,
       widened: 0,
@@ -359,6 +359,7 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       hasPowerPlant: 0,
       hasRegularWater: 0,
       isFurnished: 0,
+      hasParking: 0,
       hasSecurity: 0,
       hasAppliances: 0,
       apartamento: 0,
@@ -405,6 +406,7 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       hasPowerPlant: sums.hasPowerPlant,
       hasRegularWater: sums.hasRegularWater,
       isFurnished: sums.isFurnished,
+      hasParking: sums.hasParking,
       hasSecurity: sums.hasSecurity,
       hasAppliances: sums.hasAppliances,
     };
@@ -432,6 +434,7 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       hasPowerPlant: sums.withoutPowerPlant,
       hasRegularWater: sums.withoutRegularWater,
       isFurnished: sums.withoutFurnished,
+      hasParking: sums.withoutParking,
       hasSecurity: sums.withoutSecurity,
       hasAppliances: sums.withoutAppliances,
     };
