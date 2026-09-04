@@ -2,7 +2,10 @@ import { randomUUID } from "node:crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { resolveSearchDestination } from "../../src/modules/listing-catalogue/domain/search-destination";
+import {
+  resolveSearchDestination,
+  searchChoices,
+} from "../../src/modules/listing-catalogue/domain/search-destination";
 import type { CatalogueDatabase } from "../../src/modules/listing-catalogue/infrastructure/drizzle-catalogue";
 import { DrizzleSearchVocabulary } from "../../src/modules/listing-catalogue/infrastructure/drizzle-search-vocabulary";
 import { slugify } from "../../src/modules/listing-discovery/domain/listing-url";
@@ -55,20 +58,85 @@ const ZONE_NAME = `Oficina Postal Telegrafica ${randomUUID()}`;
 // El nombre por el que la gente busca, que vive sólo en `zone_alias`.
 const ZONE_ALIAS = `Bellavistona ${randomUUID()}`;
 
+const USER = randomUUID();
+
+// **17.5/17.7 — la oferta real, medida.** Tres zonas que comparten un prefijo
+// que ningún otro archivo usa, con oferta distinta a propósito: si el conteo
+// o la exclusión se rompieran, la primera prueba que falla dice cuál.
+//
+// **El sufijo de cada una es su PROPIO id, no una palabra geográfica.** La
+// primera versión usaba "Norte"/"Sur"/"Este" — "Este" por sí solo hace `ILIKE`
+// sobre miles de topónimos reales de la base que comparten esta suite, y la
+// prueba de la zona vacía encontraba coincidencias ajenas. Un id aleatorio no
+// colisiona con nada que ya exista.
+const ORDER_PREFIX = `Vistalinda ${randomUUID()}`;
+const ZONE_MORE = randomUUID();
+const ZONE_LESS = randomUUID();
+const ZONE_EMPTY = randomUUID();
+const ZONE_MORE_NAME = `${ORDER_PREFIX} ${ZONE_MORE}`;
+const ZONE_LESS_NAME = `${ORDER_PREFIX} ${ZONE_LESS}`;
+const ZONE_EMPTY_NAME = `${ORDER_PREFIX} ${ZONE_EMPTY}`;
+
+/** Mismo predicado que `DrizzleSearchVocabulary` cuenta: activo y no vencido. */
+async function insertActiveListing(zoneId: string) {
+  await pool.query(
+    `INSERT INTO "listing" (id, publisher_id, publisher_type, property_type, city_id, zone_id, title,
+       description, price_usd, rooms, area_m2, bathrooms,
+       contact_method, contact_value, status, published_at, expires_at)
+     VALUES ($1,$2,'owner','apartamento',$3,$4,'Apartamento','x',300,2,70,2,
+       'whatsapp','04121234567','active', now(), now() + interval '30 days')`,
+    [randomUUID(), USER, CITY, zoneId],
+  );
+}
+
+async function insertExpiredListing(zoneId: string) {
+  await pool.query(
+    `INSERT INTO "listing" (id, publisher_id, publisher_type, property_type, city_id, zone_id, title,
+       description, price_usd, rooms, area_m2, bathrooms,
+       contact_method, contact_value, status, published_at, expires_at)
+     VALUES ($1,$2,'owner','apartamento',$3,$4,'Apartamento','x',300,2,70,2,
+       'whatsapp','04121234567','active', now(), now() - interval '1 day')`,
+    [randomUUID(), USER, CITY, zoneId],
+  );
+}
+
 beforeAll(async () => {
   await pool.query('INSERT INTO "city" (id, name) VALUES ($1,$2)', [CITY, CITY_NAME]);
+  await pool.query('INSERT INTO "user" (id, email) VALUES ($1,$2)', [USER, `${USER}@ej.com`]);
   await pool.query(
     `INSERT INTO "zone" (id, city_id, parent_id, name, kind, source)
      VALUES ($1,$2,NULL,$3,'parroquia','INE'),($4,$5,$1,$6,'urbanizacion','INE')`,
     [PARISH, CITY, PARISH_NAME, ZONE, CITY, ZONE_NAME],
   );
   await pool.query('INSERT INTO "zone_alias" (zone_id, alias) VALUES ($1,$2)', [ZONE, ZONE_ALIAS]);
+  // Un aviso vivo para que la zona del alias no caiga en cero (17.7): las dos
+  // pruebas de más abajo esperan que siga resolviendo a una ruta.
+  await insertActiveListing(ZONE);
+
+  await pool.query(
+    `INSERT INTO "zone" (id, city_id, parent_id, name, kind, source)
+     VALUES ($1,$2,NULL,$3,'urbanizacion','INE'),
+            ($4,$2,NULL,$5,'urbanizacion','INE'),
+            ($6,$2,NULL,$7,'urbanizacion','INE')`,
+    [ZONE_MORE, CITY, ZONE_MORE_NAME, ZONE_LESS, ZONE_LESS_NAME, ZONE_EMPTY, ZONE_EMPTY_NAME],
+  );
+  await insertActiveListing(ZONE_MORE);
+  await insertActiveListing(ZONE_MORE);
+  await insertActiveListing(ZONE_MORE);
+  await insertActiveListing(ZONE_LESS);
+  // La vacía no lleva ningún aviso vivo: un vencido, para probar que el
+  // predicado de fecha —y no sólo el estado— es el que la deja en cero.
+  await insertExpiredListing(ZONE_EMPTY);
 });
 
 afterAll(async () => {
-  // Las zonas y sus alias se van con la ciudad: las dos claves foráneas son
-  // ON DELETE cascade, que es la misma garantía en la que se apoya el adaptador.
+  // `listing.city_id` es `ON DELETE restrict` (a propósito: un aviso no puede
+  // quedar huérfano de ciudad en silencio), así que los avisos se borran antes
+  // y no dependen de la cascada. Las zonas y sus alias sí se van con la
+  // ciudad, que es la garantía en la que se apoya el adaptador.
+  await pool.query('DELETE FROM "listing" WHERE city_id = $1', [CITY]);
   await pool.query('DELETE FROM "city" WHERE id = $1', [CITY]);
+  await pool.query('DELETE FROM "user" WHERE id = $1', [USER]);
   await pool.end();
 });
 
@@ -146,5 +214,47 @@ describe("el buscador del inicio, contra filas reales", () => {
     expect(destination.href).toContain("tipo=apartamento");
     expect(destination.href).toContain("amoblado=1");
     expect(destination.href).toContain("max=400");
+  });
+});
+
+/**
+ * **17.5/17.7, contra Postgres y no contra un doble.** Lo que sólo una base
+ * puede contestar: si el `GROUP BY` de avisos activos cuenta bien por zona, si
+ * una zona vencida o sin avisos queda en cero de verdad, y si esos números
+ * —una vez que llegan al dominio— excluyen la vacía y ordenan el resto. Un
+ * doble en memoria filtraría porque lo escribieron para filtrar; esto prueba
+ * que la consulta lo hace.
+ */
+describe("DrizzleSearchVocabulary.lookup — la oferta real (17.5/17.7)", () => {
+  it("cuenta los avisos activos de la zona, y sólo ésos", async () => {
+    const found = await vocabulary.lookup(ORDER_PREFIX);
+
+    expect(found.zones.find((zone) => zone.id === ZONE_MORE)?.count).toBe(3);
+    expect(found.zones.find((zone) => zone.id === ZONE_LESS)?.count).toBe(1);
+    // Vencido no es activo: el aviso de la vacía no cuenta aunque exista.
+    expect(found.zones.find((zone) => zone.id === ZONE_EMPTY)?.count).toBe(0);
+  });
+
+  it("el conteo llega como número y no como el string del bigint", async () => {
+    const found = await vocabulary.lookup(ORDER_PREFIX);
+
+    expect(typeof found.zones.find((zone) => zone.id === ZONE_MORE)?.count).toBe("number");
+  });
+
+  it("la caja de búsqueda no ofrece la zona vacía, y ordena las otras dos por oferta", async () => {
+    const found = await vocabulary.lookup(ORDER_PREFIX);
+    const choices = searchChoices(ORDER_PREFIX, found);
+
+    expect(choices.map((option) => option.label)).toEqual([ZONE_MORE_NAME, ZONE_LESS_NAME]);
+    expect(choices.map((option) => option.label)).not.toContain(ZONE_EMPTY_NAME);
+  });
+
+  it("una búsqueda que sólo nombra la zona vacía no entiende, en vez de mandar a una pantalla sin salida", async () => {
+    // Se busca por el id propio de la zona y no por su nombre completo: el
+    // nombre completo comparte el prefijo con `ZONE_MORE`/`ZONE_LESS`, y el
+    // `ILIKE` por palabra las volvería a traer a las dos.
+    const found = await vocabulary.lookup(ZONE_EMPTY);
+
+    expect(resolveSearchDestination(ZONE_EMPTY, found).kind).toBe("unknown");
   });
 });

@@ -260,11 +260,16 @@ describe("searchChoices", () => {
   });
 
   /**
-   * **Un «0» pegado a una opción se lee como un conteo roto**, y es la misma
-   * regla que `resolveZoneOptions` ya tomó para el panel. Acá además no debería
-   * poder pasar: el vocabulario acotado sólo lleva zonas con avisos.
+   * **17.7 — corregido: una zona en cero ya no se ofrece, ni siquiera sin su
+   * número.** Antes esta prueba pedía que el «0» no se dibujara pero seguía
+   * aceptando la opción; con la taxonomía de 5.796 zonas eso manda a una
+   * pantalla sin salida (regla transversal 4). El vocabulario acotado nunca
+   * debería traer un cero —sólo lleva zonas con avisos—, pero el vocabulario
+   * del servidor (`DrizzleSearchVocabulary`) sí puede, así que la exclusión
+   * tiene que vivir acá y no depender de que quien arma el vocabulario ya la
+   * haya aplicado.
    */
-  it("no escribe un cero al lado de una zona vacía", () => {
+  it("no ofrece una zona en cero — la oferta real decide, no sólo el nombre (17.7)", () => {
     const enCero: SuggestionVocabulary = {
       ...VOCABULARY,
       zones: VOCABULARY.zones.map((zone) =>
@@ -272,7 +277,32 @@ describe("searchChoices", () => {
       ),
     };
 
-    expect(searchChoices("altamira", enCero)[0]?.countLabel).toBeNull();
+    expect(searchChoices("altamira", enCero)).toEqual([]);
+  });
+
+  /**
+   * **17.5 — la zona con más oferta sube, la vacía ni aparece.** El catálogo
+   * decide el orden, no el orden en que el vocabulario trajo las zonas: acá
+   * las tres coinciden con "san rafael" y el vocabulario las trae en el orden
+   * contrario al que deben mostrarse.
+   */
+  it("ordena las zonas por avisos, de mayor a menor (17.5)", () => {
+    const conOferta: SuggestionVocabulary = {
+      cities: VOCABULARY.cities,
+      zones: [
+        { id: "z-a", name: "San Rafael Uno", cityId: "area-mcbo", parentName: null, count: 2 },
+        { id: "z-b", name: "San Rafael Dos", cityId: "area-mcbo", parentName: null, count: 9 },
+        // La vacía va en medio a propósito: si la exclusión se rompiera, un
+        // "3" cero apareciendo en el medio del orden sería la señal.
+        { id: "z-c", name: "San Rafael Tres", cityId: "area-mcbo", parentName: null, count: 0 },
+      ],
+      aliases: [],
+    };
+
+    const choices = searchChoices("san rafael", conOferta);
+
+    expect(choices.map((option) => option.label)).toEqual(["San Rafael Dos", "San Rafael Uno"]);
+    expect(choices.map((option) => option.countLabel)).toEqual(["9", "2"]);
   });
 
   /**

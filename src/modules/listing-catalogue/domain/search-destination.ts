@@ -214,16 +214,45 @@ export function searchChoices(
     });
   };
 
-  for (const suggestion of suggestions) {
-    if (suggestion.kind !== "zone") continue;
+  /**
+   * **17.7 — la oferta real decide qué se ofrece, y una zona en cero no es una
+   * opción.** `suggestFilters` traduce texto a candidatos sin mirar cuánta
+   * oferta tienen; acá es donde se decide qué zona llega a ser un enlace, y
+   * ofrecer una en cero manda a una pantalla sin salida (regla transversal 4)
+   * — la misma razón por la que `boundedVocabularyOf` ya la excluye del lado
+   * del panel. `undefined` (nadie contó) sigue pasando: significa "no sé", no
+   * "no hay", y esta caja siempre cuenta desde 17.5/17.7 salvo que un
+   * vocabulario de prueba deje el campo afuera a propósito.
+   *
+   * **17.5 — ordenadas por oferta, de mayor a menor.** Es el catálogo el que
+   * decide qué zona sube, no el orden en que el vocabulario las trajo: sin
+   * esto, una taxonomía de 5.796 filas ofrecería zonas al azar en vez de las
+   * que de verdad tienen movimiento. `??` con `0` es seguro acá porque un
+   * conteo sabido en cero ya se filtró arriba — lo que compite en el orden es
+   * "sabido y con oferta" contra "no sé", y lo no sabido queda al final.
+   */
+  interface ZoneMatch {
+    readonly suggestion: FilterSuggestion;
+    readonly zone: SuggestionVocabulary["zones"][number];
+    readonly city: { readonly id: string; readonly name: string };
+  }
 
-    const zone = zoneById.get(suggestion.id);
-    const city = zone ? cityById.get(zone.cityId) : undefined;
-    // Una zona cuya ciudad no está curada no tiene ruta que resolver:
-    // `/alquiler/<nada>/<zona>` es un enlace roto, y este repositorio ya se negó
-    // a publicar uno dos veces.
-    if (!zone || !city) continue;
+  const zoneMatches: ZoneMatch[] = suggestions
+    .filter((suggestion) => suggestion.kind === "zone")
+    .map((suggestion) => {
+      const zone = zoneById.get(suggestion.id);
+      return { suggestion, zone, city: zone ? cityById.get(zone.cityId) : undefined };
+    })
+    .filter(
+      (entry): entry is ZoneMatch =>
+        // Una zona cuya ciudad no está curada no tiene ruta que resolver:
+        // `/alquiler/<nada>/<zona>` es un enlace roto, y este repositorio ya
+        // se negó a publicar uno dos veces.
+        entry.zone !== undefined && entry.city !== undefined && entry.zone.count !== 0,
+    )
+    .sort((a, b) => (b.zone.count ?? 0) - (a.zone.count ?? 0));
 
+  for (const { suggestion, zone, city } of zoneMatches) {
     zoneCityIds.add(city.id);
     add(
       // La etiqueta es la de la sugerencia — puede ser el ALIAS, que es el
