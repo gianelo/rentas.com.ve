@@ -42,6 +42,7 @@ const VERIFIED_LISTING = randomUUID();
 const UNVERIFIED_LISTING = randomUUID();
 const MISMATCHED_VALUE_LISTING = randomUUID();
 const MISMATCHED_METHOD_LISTING = randomUUID();
+const CROSS_ACCOUNT_COLLISION_LISTING = randomUUID();
 
 const VERIFIED_AT = new Date("2026-08-19T12:00:00.000Z");
 
@@ -101,6 +102,14 @@ beforeAll(async () => {
   await insertListing(MISMATCHED_VALUE_LISTING, PUBLISHER, "whatsapp", "+58 414 999 0000");
   // Mismo valor y misma cuenta, pero por OTRO canal: tampoco le sirve.
   await insertListing(MISMATCHED_METHOD_LISTING, PUBLISHER, "telefono", "+58 412 555 0134");
+  // Mismo método y mismo valor que la fila viva de PUBLISHER, pero el aviso es
+  // de OTHER_PUBLISHER: la fila verificada no es suya.
+  await insertListing(
+    CROSS_ACCOUNT_COLLISION_LISTING,
+    OTHER_PUBLISHER,
+    "whatsapp",
+    "+58 412 555 0134",
+  );
 });
 
 afterAll(async () => {
@@ -134,6 +143,16 @@ describe("findVerifiedAt", () => {
 
   it("no contesta que sí para el mismo valor por otro método", async () => {
     expect(await verification.findVerifiedAt(MISMATCHED_METHOD_LISTING)).toBeNull();
+  });
+
+  /**
+   * **El seguimiento que dejó abierto la 22.32.** El triple `(método, valor)`
+   * de este aviso coincide letra por letra con la fila viva de PUBLISHER,
+   * pero el aviso es de OTHER_PUBLISHER: sin comparar `user_id` en el `JOIN`,
+   * una cuenta ajena leería «verificado» con la verificación de otra.
+   */
+  it("no contesta que sí para el mismo método y valor de una cuenta ajena", async () => {
+    expect(await verification.findVerifiedAt(CROSS_ACCOUNT_COLLISION_LISTING)).toBeNull();
   });
 
   it("un aviso que no existe no revienta: devuelve null", async () => {
