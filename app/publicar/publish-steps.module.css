@@ -17,20 +17,11 @@
   color: var(--ink);
 }
 
-/* Visible para un lector de pantalla, invisible en la página. `display:none`
-   y `visibility:hidden` lo sacarían también del árbol de accesibilidad, que
-   es justo lo contrario de lo que hace falta: la etiqueta existe para quien
-   no ve el control. */
+/* Compartida con las otras cuatro hojas que usan la misma utilidad de
+   accesibilidad — ver src/styles/a11y.module.css (22.7) para el cuerpo y
+   su razón. */
 .srOnly {
-  position: absolute;
-  inline-size: 1px;
-  block-size: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
+  composes: srOnly from "../../src/styles/a11y.module.css";
 }
 
 /* ---------- la barra superior ---------- */
@@ -331,7 +322,11 @@
 .textarea {
   min-block-size: 160px;
   padding: 12px 14px;
-  line-height: var(--ficha-body-lh);
+  /* Texto secundario cómodo de leer, no el cuerpo (22.33): --secondary-lh.
+     El tamaño lo trae `.control` (`font-size: var(--control-fs)`), con la
+     que esta clase siempre se combina en el marcado — encontrada rehaciendo
+     el recuento de la 22.33, no estaba en su lista original de cinco. */
+  line-height: var(--secondary-lh);
   resize: vertical;
 }
 

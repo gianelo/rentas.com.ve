@@ -59,7 +59,10 @@
 .reason {
   margin: 10px 0 0;
   font-size: var(--control-fs);
-  line-height: var(--ficha-body-lh);
+  /* Texto secundario cómodo de leer, no el cuerpo (22.33): --secondary-lh.
+     Encontrada rehaciendo el recuento de la 22.33: no estaba en su lista
+     original de cinco. */
+  line-height: var(--secondary-lh);
   color: var(--soft);
   text-wrap: pretty;
 }
