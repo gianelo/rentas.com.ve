@@ -183,6 +183,19 @@ describe("cada grupo cerrado muestra lo elegido", () => {
     expect(view.answered).toBe(true);
   });
 
+  /**
+   * **El renglón cerrado tiene que nombrar el puesto**: en el teléfono el
+   * acordeón esconde el grupo, y un resumen que omite el filtro que alguien
+   * acaba de poner lo deja invisible y puesto — el mismo defecto que la
+   * rebanada A nombró con los baños.
+   */
+  it("el puesto de estacionamiento entra en el resumen, corto como los demás", () => {
+    const view = step({ ...CARACAS, attributes: ["hasParking"] }, "atributos");
+
+    expect(view.summary).toBe("puesto");
+    expect(view.answered).toBe(true);
+  });
+
   it("cada grupo lleva su pregunta y su título, tal como los dibuja la lámina 7b", () => {
     expect(step(CARACAS, "precio").title).toBe("Precio");
     expect(step(CARACAS, "precio").question).toBe("¿Cuánto podés pagar al mes?");

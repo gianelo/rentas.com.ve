@@ -310,6 +310,7 @@ const ATTRIBUTE_SUMMARY: Readonly<Record<ListingAttribute, string>> = {
   hasPowerPlant: "planta",
   hasRegularWater: "agua",
   isFurnished: "amoblado",
+  hasParking: "puesto",
   hasSecurity: "vigilancia",
   hasAppliances: "línea blanca",
 };

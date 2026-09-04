@@ -24,6 +24,19 @@ describe("los nombres de la dirección", () => {
   });
 
   /**
+   * **El puesto de estacionamiento, sin «ñ» y sin tilde** (14.45 rebanada C).
+   * Es la misma regla que dejó `banos` escrito así, y por la misma razón: un
+   * nombre con «ñ» viaja `%C3%B1` y deja de leerse en el chat donde se pega.
+   * `estacionamiento` no la tiene, pero es larga para un nombre corto de F12;
+   * `puesto` es la palabra que el diseño ya usa en la tira de datos de la
+   * ficha, así que no hay un segundo vocabulario que aprender.
+   */
+  it("el puesto se llama «puesto»: sin «ñ», sin tilde y con la palabra del diseño", () => {
+    expect(SEARCH_QUERY_NAMES.hasParking).toBe("puesto");
+    expect(Object.values(SEARCH_QUERY_NAMES).join("")).toMatch(/^[a-z]+$/u);
+  });
+
+  /**
    * **tasks.md 18.7 — «nunca se filtra» es una lista cerrada, y esto es lo que
    * la cierra.**
    *
@@ -41,7 +54,7 @@ describe("los nombres de la dirección", () => {
    * en vez de derivados de la constante: derivarlos afirmaría que la constante
    * es igual a sí misma.
    */
-  it("son dieciséis y ninguno más: un filtro nuevo tiene que pasar por acá", () => {
+  it("son diecisiete y ninguno más: un filtro nuevo tiene que pasar por acá", () => {
     expect(Object.values(SEARCH_QUERY_NAMES).sort()).toEqual(
       [
         "zona",
@@ -57,6 +70,8 @@ describe("los nombres de la dirección", () => {
         "amoblado",
         "vigilancia",
         "electro",
+        // El puesto de estacionamiento (14.45 rebanada C).
+        "puesto",
         "pag",
         "filtros",
         "busca",

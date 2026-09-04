@@ -70,6 +70,10 @@ export const SEARCH_QUERY_NAMES: Readonly<Record<SearchQueryField, string>> = {
   hasPowerPlant: "planta",
   hasRegularWater: "agua",
   isFurnished: "amoblado",
+  // **`puesto` y no `estacionamiento`** (14.45 rebanada C): es la palabra que
+  // la tira de datos de la ficha ya usa, y un nombre corto de F12 que hay que
+  // traducir mentalmente no es corto. Sin «ñ» ni tilde, igual que `banos`.
+  hasParking: "puesto",
   hasSecurity: "vigilancia",
   hasAppliances: "electro",
   page: "pag",
