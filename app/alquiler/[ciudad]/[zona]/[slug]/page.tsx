@@ -364,6 +364,7 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
                     isFurnished={detail.isFurnished}
                     hasSecurity={detail.hasSecurity}
                     hasAppliances={detail.hasAppliances}
+                    parkingSpots={detail.parkingSpots}
                   />
 
                   <section className={styles.description}>

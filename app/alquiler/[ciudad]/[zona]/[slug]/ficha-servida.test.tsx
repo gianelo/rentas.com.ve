@@ -309,6 +309,33 @@ describe("la vuelta vive dentro del contenido, no en la barra (14.54)", () => {
  * entregaria a un buscador como un dato de ubicacion al lado de la zona — que
  * es una forma de indexarla, aunque no exista un filtro.
  */
+/**
+ * **El puesto llega a la lista «La propiedad tiene» desde la página** (14.45
+ * rebanada C). `DeclaredFeatures.parkingSpots` es opcional —una ficha vieja
+ * vale cero— así que olvidar la prop compila y borra el ✓ que el fundador
+ * pidió, sin que nada se ponga rojo. Se mide sobre los bytes servidos.
+ */
+describe("el puesto de estacionamiento en la ficha (14.45)", () => {
+  /**
+   * **Recortado a la sección, y no es celo**: la descripción del aviso falso
+   * dice «Puesto de estacionamiento techado», así que la misma afirmación
+   * sobre el HTML entero pasa en verde sin que la lista lo dibuje. Es el
+   * mismo falso positivo que la rebanada A encontró en tres fixtures.
+   */
+  function loQueTiene(html: string): string {
+    const desde = html.indexOf('data-testid="declared-features"');
+    if (desde < 0) throw new Error("la ficha no dibujó la lista de atributos");
+    return html.slice(desde, html.indexOf("</section>", desde));
+  }
+
+  it("aparece con su ✓ en la lista de lo que la propiedad tiene", async () => {
+    const bloque = loQueTiene(await servedBody());
+
+    expect(bloque).toContain("La propiedad tiene");
+    expect(bloque).toContain("Puesto de estacionamiento");
+  });
+});
+
 describe("la referencia se lee en la ficha y no se indexa (18.7)", () => {
   const SENA = "A dos calles de la plaza Altamira, edificio azul";
 

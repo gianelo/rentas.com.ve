@@ -6,6 +6,13 @@ export interface DeclaredFeaturesProps {
   readonly isFurnished: boolean;
   readonly hasSecurity: boolean;
   readonly hasAppliances: boolean;
+  /**
+   * **Un número, no un booleano** (14.45 rebanada C). `listing.parking_spots`
+   * ya existe y el paso 4 de publicar la escribe siempre, así que un
+   * `hasParking` al lado guardaría el mismo hecho dos veces. Ausente se lee
+   * como cero: es lo que vale una ficha vieja que todavía no lo pasa.
+   */
+  readonly parkingSpots?: number;
 }
 
 /** El orden es el del diseño, y el rótulo el que el fundador escribió. */
@@ -34,7 +41,17 @@ const FEATURES = [
  * vacía dice "esta propiedad no tiene nada", que es la misma mentira.
  */
 export function DeclaredFeatures(props: DeclaredFeaturesProps) {
-  const declared = FEATURES.filter(([key]) => props[key]);
+  // **El puesto se lista pero NO entra en la aclaración de abajo**, y la
+  // asimetría tiene una sola razón: el paso 4 de publicar pide el número
+  // siempre —«Puestos permite 0»—, así que acá el cero es un cero declarado y
+  // no un silencio. Nombrarlo como no declarado diría que nadie contestó sobre
+  // una respuesta que sí existe, y la tira de datos de arriba ya la escribe.
+  // La regla de la sección se respeta igual: no se dibuja ninguna ausencia.
+  const hasParking = (props.parkingSpots ?? 0) > 0;
+  const declared = [
+    ...FEATURES.filter(([key]) => props[key]),
+    ...(hasParking ? ([["hasParking", "Puesto de estacionamiento"]] as const) : []),
+  ];
   if (declared.length === 0) return null;
 
   const missing = FEATURES.filter(([key]) => !props[key]).map(([, label]) => label);
