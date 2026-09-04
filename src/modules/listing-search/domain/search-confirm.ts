@@ -27,6 +27,10 @@ export type RelaxableFilter =
   | "price"
   | "rooms"
   | "bathrooms"
+  /** Los metros² (14.45 rebanada B). Se llama `area` y no `minAreaM2` porque
+   * acá se nombra el EJE que se suelta, no el campo del criterio — igual que
+   * `price` nombra los dos extremos a la vez. */
+  | "area"
   | "publisherType"
   | ListingAttribute;
 
@@ -45,6 +49,10 @@ const RELAXATION_ORDER: readonly RelaxableFilter[] = [
   // del tamaño, y soltarla cambia menos la búsqueda que soltar lo que se puede
   // pagar.
   "bathrooms",
+  // Y los metros² cierran el tamaño, antes del precio por la misma razón que
+  // los baños: soltar cuánto mide cambia menos la búsqueda que soltar lo que
+  // se puede pagar.
+  "area",
   "price",
   "publisherType",
   "hasPowerPlant",
@@ -63,6 +71,7 @@ const RELAXATION_NAMES: Readonly<Record<RelaxableFilter, string>> = {
   price: "el precio",
   rooms: "las habitaciones",
   bathrooms: "los baños",
+  area: "los metros²",
   publisherType: "quién publica",
   hasPowerPlant: "planta eléctrica",
   hasRegularWater: "agua regular",

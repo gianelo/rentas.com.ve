@@ -274,12 +274,24 @@
   gap: var(--gap);
 }
 
-.priceField {
+/** Compartida por el precio y por los metros²: es anatomía de campo, no de precio. */
+.field {
   display: flex;
   flex-direction: column;
   gap: 4px;
   flex: 1;
   min-inline-size: 0;
+}
+
+/**
+ * El campo de los metros² (14.45 rebanada B). Mismo apilado que el precio, con
+ * su separación arriba porque cuelga debajo de la tira de escalones de baños.
+ */
+.areaForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  margin-block-start: var(--gap);
 }
 
 .control {

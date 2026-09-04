@@ -30,6 +30,7 @@ const EMPTY: FacetCounts = {
     hasParking: 0,
     hasSecurity: 0,
     hasAppliances: 0,
+    area: 0,
   },
   byPriceBucket: Array.from({ length: 8 }, () => ({ count: 0 })),
   cityTotal: 0,

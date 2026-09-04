@@ -94,6 +94,7 @@ export interface SearchSelection {
   readonly maxPriceUsd?: number;
   readonly minRooms?: number;
   readonly minBathrooms?: number;
+  readonly minAreaM2?: number;
   readonly attributes?: readonly ListingAttribute[];
   readonly publisherType?: PublisherType;
 }
@@ -189,7 +190,10 @@ export function resolveSearchSteps(
     },
     habitaciones: {
       summary: sizeSummary(selection),
-      answered: selection.minRooms !== undefined || selection.minBathrooms !== undefined,
+      answered:
+        selection.minRooms !== undefined ||
+        selection.minBathrooms !== undefined ||
+        selection.minAreaM2 !== undefined,
     },
     publica: {
       summary: publisherSummary(selection.publisherType),
@@ -257,6 +261,19 @@ function bathroomsSummary(minBathrooms: number | undefined): string {
 }
 
 /**
+ * **Los metros², que no son un escalón sino un número escrito** (14.45 rebanada
+ * B). Por eso no hay `+` ni lista que consultar: lo que se escribió es lo que
+ * se dice.
+ *
+ * El «Desde» no es adorno — es un MÍNIMO, y «72 m²» a secas se leería como
+ * «mide 72». Es la misma palabra con la que el precio ya dice su extremo
+ * abierto, para que el renglón no invente un segundo vocabulario.
+ */
+function areaSummary(minAreaM2: number): string {
+  return `Desde ${minAreaM2} m²`;
+}
+
+/**
  * **El grupo que el fundador llamó «tamaño», resumido entero** (14.45).
  *
  * Habitaciones y baños comparten grupo porque la lámina 7b los dibuja en la
@@ -268,6 +285,7 @@ function sizeSummary(selection: SearchSelection): string {
   const parts = [
     ...(selection.minRooms === undefined ? [] : [roomsSummary(selection.minRooms)]),
     ...(selection.minBathrooms === undefined ? [] : [bathroomsSummary(selection.minBathrooms)]),
+    ...(selection.minAreaM2 === undefined ? [] : [areaSummary(selection.minAreaM2)]),
   ];
   return parts.length === 0 ? "Cualquiera" : parts.join(" · ");
 }
@@ -349,6 +367,9 @@ export function describeFilter(selection: SearchSelection, filter: RelaxableFilt
   if (filter === "price") return priceSummary(selection);
   if (filter === "rooms") return roomsSummary(selection.minRooms);
   if (filter === "bathrooms") return bathroomsSummary(selection.minBathrooms);
+  if (filter === "area") {
+    return selection.minAreaM2 === undefined ? "" : areaSummary(selection.minAreaM2);
+  }
   if (filter === "publisherType") {
     return selection.publisherType === undefined ? "" : PUBLISHER_SUMMARY[selection.publisherType];
   }
@@ -367,7 +388,13 @@ export function toSearchSelection(
   zoneNames: readonly string[],
   criteria: Pick<
     SearchCriteria,
-    "minPriceUsd" | "maxPriceUsd" | "minRooms" | "minBathrooms" | "publisherType" | "attributes"
+    | "minPriceUsd"
+    | "maxPriceUsd"
+    | "minRooms"
+    | "minBathrooms"
+    | "minAreaM2"
+    | "publisherType"
+    | "attributes"
   >,
 ): SearchSelection {
   return {
@@ -377,6 +404,7 @@ export function toSearchSelection(
     ...(criteria.maxPriceUsd === undefined ? {} : { maxPriceUsd: criteria.maxPriceUsd }),
     ...(criteria.minRooms === undefined ? {} : { minRooms: criteria.minRooms }),
     ...(criteria.minBathrooms === undefined ? {} : { minBathrooms: criteria.minBathrooms }),
+    ...(criteria.minAreaM2 === undefined ? {} : { minAreaM2: criteria.minAreaM2 }),
     ...(criteria.publisherType === undefined ? {} : { publisherType: criteria.publisherType }),
     ...(criteria.attributes === undefined ? {} : { attributes: criteria.attributes }),
   };
@@ -408,6 +436,7 @@ export function countPillFilters(selection: SearchSelection): number {
   if (selection.minPriceUsd !== undefined || selection.maxPriceUsd !== undefined) count += 1;
   if (selection.minRooms !== undefined) count += 1;
   if (selection.minBathrooms !== undefined) count += 1;
+  if (selection.minAreaM2 !== undefined) count += 1;
   if (selection.publisherType !== undefined) count += 1;
   return count;
 }

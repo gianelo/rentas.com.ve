@@ -281,6 +281,7 @@ function harnessPanel() {
         hasParking: 31,
         hasSecurity: 29,
         hasAppliances: 30,
+        area: 34,
       },
       byPriceBucket: [
         { count: 3, lowestUsd: 300, highestUsd: 390 },

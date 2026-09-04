@@ -649,6 +649,57 @@ describe("una faceta no se filtra a sí misma (task 14.11)", () => {
     expect(counts.withoutFilter.bathrooms).toBe(soltado.total);
   });
 
+  /**
+   * **Los metros², que son un mínimo ESCRITO y no una lista de escalones**
+   * (14.45 rebanada B, decisión del fundador 2026-09-04). No tienen faceta —con
+   * un campo libre no hay opciones que contar— pero sí eje: hasta esta rebanada
+   * el área vivía en el `WHERE` compartido, y desde ahí **no se podía preguntar
+   * cuántos habría sin ella** ni podía el resto de las facetas verla como un
+   * filtro más. Es el mismo movimiento que el precio hizo con F10/F11.
+   *
+   * Las cinco filas activas de Maracaibo miden 40, 60, 90, 70 y 150 m², que es
+   * lo que hace que estos números distingan un `>=` de un `>` y de un `=`.
+   */
+  it("el filtro de metros² recorta la lista igual que recorta el total", async () => {
+    const criteria: SearchCriteria = { cityId: MARACAIBO, minAreaM2: 70 };
+    const counts = await facets.countFacets(criteria, ZONAS_OFRECIDAS);
+    const rows = await search.search(criteria);
+
+    expect(counts.total).toBe(rows.length);
+    expect(counts.total).toBe(3); // A3 (90), A4 (70) y A5 (150) — el 70 entra
+  });
+
+  it("las demás facetas respetan los metros², que ahora son un eje y no el `WHERE`", async () => {
+    const counts = await facets.countFacets({ cityId: MARACAIBO, minAreaM2: 70 }, ZONAS_OFRECIDAS);
+
+    // A3 tiene 3 habitaciones, A4 dos y A5 cinco: los tres que pasan el área.
+    expect(counts.byMinRooms).toEqual({ 1: 3, 2: 3, 3: 2, 4: 1 });
+    expect(counts.byZone).toEqual({ [MCBO_CENTRO]: 1, [MCBO_NORTE]: 2, [MCBO_VACIA]: 0 });
+  });
+
+  it("soltar los metros² promete lo que soltarlos de verdad devuelve", async () => {
+    const criteria: SearchCriteria = { cityId: MARACAIBO, minRooms: 2, minAreaM2: 150 };
+    const counts = await facets.countFacets(criteria, ZONAS_OFRECIDAS);
+    const soltado = await facets.countFacets(withoutFilter(criteria, "area"), []);
+
+    expect(counts.total).toBe(1); // sólo A5
+    expect(counts.withoutFilter.area).toBe(soltado.total);
+    expect(counts.withoutFilter.area).toBe(4); // A2, A3, A4 y A5 tienen 2 habitaciones o más
+  });
+
+  /**
+   * **«Limpiar todo» promete la ciudad entera, y con el área en el `WHERE`
+   * compartido prometía la ciudad ya recortada.** El defecto es de esta misma
+   * rebanada: mientras el área fue inalcanzable desde una pantalla nadie podía
+   * verlo, y en cuanto el campo existe se dibuja en cada búsqueda que lo use.
+   */
+  it("«Limpiar todo» no se queda con los metros² puestos", async () => {
+    const counts = await facets.countFacets({ cityId: MARACAIBO, minAreaM2: 150 }, ZONAS_OFRECIDAS);
+
+    expect(counts.total).toBe(1);
+    expect(counts.cityTotal).toBe(5);
+  });
+
   it("los dos filtros propios se ignoran a la vez, cada uno en su faceta", async () => {
     const counts = await facets.countFacets(
       { cityId: MARACAIBO, zoneIds: [MCBO_CENTRO], minRooms: 3 },

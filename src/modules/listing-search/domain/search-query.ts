@@ -32,6 +32,7 @@ export type SearchQueryField =
   | "maxPrice"
   | "minRooms"
   | "minBathrooms"
+  | "minAreaM2"
   | "propertyType"
   | "publisherType"
   | ListingAttribute
@@ -65,6 +66,11 @@ export const SEARCH_QUERY_NAMES: Readonly<Record<SearchQueryField, string>> = {
   // `ba%C3%B1os` y deja de leerse en el chat donde se pega, que es la mitad de
   // para qué existen los nombres cortos del fundador (F12).
   minBathrooms: "banos",
+  // **`metros` y no `m2` ni `area`** (14.45 rebanada B): la misma regla que
+  // dejó `banos` sin «ñ», llevada al carácter que la rompería acá — `m²` viaja
+  // `m%C2%B2` y una dirección con eso adentro deja de leerse en el chat donde
+  // se pega. `metros` es la palabra entera, y es la que la ficha ya usa.
+  minAreaM2: "metros",
   propertyType: "tipo",
   publisherType: "pub",
   hasPowerPlant: "planta",

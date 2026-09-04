@@ -19,6 +19,10 @@ describe("los nombres de la dirección", () => {
     // leerse en el chat donde se pega, que es la mitad de para qué existen los
     // nombres cortos (F12).
     expect(SEARCH_QUERY_NAMES.minBathrooms).toBe("banos");
+    // **`metros`, sin «²» ni abreviatura** (14.45 rebanada B): la misma regla
+    // que `banos` y `puesto` —el nombre viaja en un chat y tiene que poder
+    // leerse— llevada al carácter que la rompería acá, porque `m²` viaja `m%C2%B2`.
+    expect(SEARCH_QUERY_NAMES.minAreaM2).toBe("metros");
     expect(SEARCH_QUERY_NAMES.zone).toBe("zona");
     expect(SEARCH_QUERY_NAMES.page).toBe("pag");
   });
@@ -54,7 +58,7 @@ describe("los nombres de la dirección", () => {
    * en vez de derivados de la constante: derivarlos afirmaría que la constante
    * es igual a sí misma.
    */
-  it("son diecisiete y ninguno más: un filtro nuevo tiene que pasar por acá", () => {
+  it("son dieciocho y ninguno más: un filtro nuevo tiene que pasar por acá", () => {
     expect(Object.values(SEARCH_QUERY_NAMES).sort()).toEqual(
       [
         "zona",
@@ -72,6 +76,8 @@ describe("los nombres de la dirección", () => {
         "electro",
         // El puesto de estacionamiento (14.45 rebanada C).
         "puesto",
+        // Los metros² como campo libre (14.45 rebanada B).
+        "metros",
         "pag",
         "filtros",
         "busca",

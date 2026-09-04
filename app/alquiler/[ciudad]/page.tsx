@@ -139,6 +139,7 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
       maxPrice: query[SEARCH_QUERY_NAMES.maxPrice],
       minRooms: query[SEARCH_QUERY_NAMES.minRooms],
       minBathrooms: query[SEARCH_QUERY_NAMES.minBathrooms],
+      minAreaM2: query[SEARCH_QUERY_NAMES.minAreaM2],
       propertyType: query[SEARCH_QUERY_NAMES.propertyType],
       publisherType: query[SEARCH_QUERY_NAMES.publisherType],
       hasPowerPlant: query[SEARCH_QUERY_NAMES.hasPowerPlant],

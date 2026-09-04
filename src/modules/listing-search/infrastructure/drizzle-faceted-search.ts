@@ -61,7 +61,15 @@ export type FacetedSearchDatabase = PgDatabase<PgQueryResultHKT, typeof schema>;
  * toda faceta que no sea la del precio lo sigue respetando, porque `others`
  * sólo apaga el eje que se le nombra.
  */
-type FacetAxis = "zone" | "rooms" | "bathrooms" | "type" | "publisher" | "price" | ListingAttribute;
+type FacetAxis =
+  | "zone"
+  | "rooms"
+  | "bathrooms"
+  | "type"
+  | "publisher"
+  | "price"
+  | "area"
+  | ListingAttribute;
 
 /**
  * `count(*) filter (where …)`, y `count(*)` pelado cuando no hay nada que
@@ -95,9 +103,14 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
   ): Promise<FacetCounts> {
     // Lo que TODA faceta comparte, y por eso va en el `WHERE` de afuera: la
     // ciudad y la frescura son incondicionales — `cityId` es obligatorio en el
-    // criterio y el estado no está en el criterio en absoluto (5.5/5.6) — y el
-    // área no es faceta de este puerto ni filtro que el panel pueda soltar, así
-    // que ninguna cuenta tiene motivo para ignorarla.
+    // criterio y el estado no está en el criterio en absoluto (5.5/5.6).
+    //
+    // **El área salió de acá con la 14.45 rebanada B**, por la misma razón por
+    // la que el precio había salido con F10/F11: desde el `WHERE` compartido un
+    // filtro no puede decir cuántos habría sin él, y encima se colaba en
+    // `cityTotal` — el número de «Limpiar todo» prometía la ciudad **ya
+    // recortada por los metros²**. Que no tenga faceta propia no lo saca del
+    // juego: no hay opciones que contar, pero sí una relajación que ofrecer.
     //
     // **La frescura son DOS condiciones y las dos van acá** (task 21.1). Que
     // vivan en el `WHERE` compartido es la parte que importa: es el mismo
@@ -115,13 +128,13 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       eq(listings.status, "active"),
       gt(listings.expiresAt, sql`now()`),
     ];
-    if (criteria.minAreaM2 !== undefined) {
-      shared.push(gte(listings.areaM2, criteria.minAreaM2));
-    }
 
     // El precio se salió del `WHERE` compartido: es soltable, y un filtro que
     // vive afuera no puede contar cuántos habría sin él.
     const priceFilter = priceWithin(criteria);
+    // La superficie mínima, por el mismo motivo y con la misma forma.
+    const areaFilter =
+      criteria.minAreaM2 === undefined ? undefined : gte(listings.areaM2, criteria.minAreaM2);
 
     // Los filtros que SÍ tienen faceta propia quedan fuera del `WHERE` y
     // entran columna por columna. Es la única forma de que la faceta de zona
@@ -169,6 +182,7 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       except === "type" ? undefined : byTypeFilter,
       except === "publisher" ? undefined : byPublisherFilter,
       except === "price" ? undefined : priceFilter,
+      except === "area" ? undefined : areaFilter,
       ...LISTING_ATTRIBUTES.filter((attribute) => attribute !== except && asked.has(attribute)).map(
         attributeCondition,
       ),
@@ -304,6 +318,11 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
         // Las nueve relajaciones, más el techo siguiente y la ciudad pelada.
         withoutZone: without("zone"),
         withoutPrice: without("price"),
+        // **Sin faceta pero con relajación** (14.45 rebanada B): un campo libre
+        // no tiene opciones que contar, y «cuántos habría sin los metros²» es
+        // un número como cualquier otro — el que la ficha quitable adelanta y
+        // el que la salida del vacío ofrece.
+        withoutArea: without("area"),
         withoutRooms: without("rooms"),
         withoutBathrooms: without("bathrooms"),
         withoutPublisher: without("publisher"),
@@ -321,8 +340,9 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
         // **Sólo para decidir si esta zona se ofrece**, no para ofrecerla con
         // un número: una zona entra en `byZone` cuando tiene algún aviso
         // dentro del precio y el área, que es la fila que este `GROUP BY`
-        // devolvía cuando el precio todavía vivía en el `WHERE` de afuera.
-        withinPrice: countWhere(priceFilter),
+        // devolvía cuando los dos vivían en el `WHERE` de afuera. Los dos se
+        // nombran acá justamente porque ya no están ahí.
+        withinPrice: countWhere(priceFilter, areaFilter),
       })
       .from(listings)
       // El histograma entra ya agregado, y su subconsulta devuelve UNA fila
@@ -338,6 +358,7 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       total: 0,
       withoutZone: 0,
       withoutPrice: 0,
+      withoutArea: 0,
       withoutRooms: 0,
       withoutBathrooms: 0,
       withoutPublisher: 0,
@@ -428,6 +449,7 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
     const withoutFilter: Record<RelaxableFilter, number> = {
       zone: sums.withoutZone,
       price: sums.withoutPrice,
+      area: sums.withoutArea,
       rooms: sums.withoutRooms,
       bathrooms: sums.withoutBathrooms,
       publisherType: sums.withoutPublisher,

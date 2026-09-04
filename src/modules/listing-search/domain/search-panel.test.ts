@@ -39,6 +39,10 @@ const COUNTS = {
     hasParking: 24,
     hasSecurity: 21,
     hasAppliances: 23,
+    // Los metros² también se pueden soltar (14.45 rebanada B), y esa relajación
+    // sí es contable aunque el filtro no tenga faceta: no hay opciones que
+    // contar, pero «cuántos habría sin él» es un número como cualquier otro.
+    area: 27,
   },
   byPriceBucket: [
     { count: 1, lowestUsd: 200, highestUsd: 240 },
@@ -403,6 +407,17 @@ describe("la salida del vacío (F7 · F11)", () => {
     expect(relaxableFilters({ minRooms: 2, minBathrooms: 2 }, [])).toEqual(["rooms", "bathrooms"]);
   });
 
+  /**
+   * **Los metros² se pueden soltar como cualquier otro filtro** (14.45 rebanada
+   * B). Es lo que le da ficha quitable y salida del vacío: sin esto, un
+   * «desde 200 m²» tecleado de más deja la lista en cero sin que nada nombre al
+   * culpable ni ofrezca la salida — que es la regla transversal 5.
+   */
+  it("los metros² entran en lo que se puede soltar, y van con el tamaño", () => {
+    expect(relaxableFilters({ minAreaM2: 90 }, [])).toEqual(["area"]);
+    expect(relaxableFilters({ minRooms: 2, minAreaM2: 90 }, [])).toEqual(["rooms", "area"]);
+  });
+
   it("cada salida es una dirección con ese filtro quitado y ningún otro", () => {
     const place = {
       basePath: "/alquiler/distrito-capital/chacao",
@@ -421,6 +436,9 @@ describe("la salida del vacío (F7 · F11)", () => {
       reliefHref({ ...place, query: { ...place.query, banos: "2" } }, "bathrooms"),
     ).not.toContain("banos=");
     expect(reliefHref(place, "hasPowerPlant")).not.toContain("planta=");
+    expect(reliefHref({ ...place, query: { ...place.query, metros: "90" } }, "area")).not.toContain(
+      "metros=",
+    );
   });
 
   it("soltar «sólo de dueños» se queda en la misma ruta, porque no es un lugar", () => {
@@ -458,6 +476,10 @@ describe("la salida del vacío (F7 · F11)", () => {
     ).toBeUndefined();
     // Soltar los baños no toca las habitaciones: son dos filtros de un grupo.
     expect(withoutFilter({ ...criteria, minBathrooms: 2 }, "bathrooms").minRooms).toBe(2);
+    expect(withoutFilter({ ...criteria, minAreaM2: 90 }, "area").minAreaM2).toBeUndefined();
+    // Soltarlos no toca el resto del grupo: son tres filtros, no uno.
+    expect(withoutFilter({ ...criteria, minAreaM2: 90 }, "area").minRooms).toBe(2);
+    expect(withoutFilter({ ...criteria, minAreaM2: 90 }, "rooms").minAreaM2).toBe(90);
     expect(withoutFilter(criteria, "publisherType").publisherType).toBeUndefined();
     // Un atributo se cae solo, y los otros siguen: se combinan con Y.
     expect(withoutFilter(criteria, "hasPowerPlant").attributes).toEqual(["hasRegularWater"]);
@@ -634,12 +656,62 @@ describe("las fichas quitables de los filtros puestos (14.33, lámina 7c)", () =
     expect(panel(CHOSEN).chips.map((chip) => chip.removeLabel)).toContain("Quitar 2 hab");
   });
 
+  /**
+   * **La ficha de los metros² dice el número que alguien escribió**, con el
+   * mismo vocabulario del renglón cerrado: un filtro que se llama distinto
+   * según dónde se lo mire obliga a adivinar de cuál habla cada pantalla.
+   */
+  it("los metros² tienen su ficha, con su número adentro", () => {
+    const chips = panel({ criteria: { minAreaM2: 90 }, query: { metros: "90" } }).chips;
+
+    expect(chips.map((chip) => chip.label)).toEqual(["Desde 90 m²"]);
+    expect(chips[0]?.removeHref).toBe("/alquiler/distrito-capital");
+    expect(chips[0]?.removeLabel).toBe("Quitar Desde 90 m²");
+  });
+
   it("cada atributo es su propia ficha: se combinan con Y", () => {
     const labels = panel({
       criteria: { attributes: ["hasPowerPlant", "hasRegularWater"] },
     }).chips.map((chip) => chip.label);
 
     expect(labels).toEqual(["planta", "agua"]);
+  });
+});
+
+/**
+ * **El control de los metros² es un CAMPO, no una tira de escalones** (14.45
+ * rebanada B, decisión del fundador 2026-09-04). Por eso es un `<form
+ * method="get">` con sus campos escondidos, igual que el precio, y no una lista
+ * de enlaces: un continuo no tiene opciones que enlazar, y sin JavaScript un
+ * campo sin formulario alrededor no puede enviar nada.
+ */
+describe("los metros², el campo del grupo del tamaño (14.45 rebanada B)", () => {
+  it("envía a la misma ruta con el nombre corto del dominio", () => {
+    expect(panel().area.action).toBe("/alquiler/distrito-capital");
+    expect(panel().area.name).toBe("metros");
+  });
+
+  it("vuelve escrito con lo que ya está puesto, y vacío cuando no hay nada", () => {
+    expect(panel().area.value).toBe("");
+    expect(panel({ criteria: { minAreaM2: 90 } }).area.value).toBe("90");
+  });
+
+  /**
+   * Un `<form method="get">` reemplaza la query entera por sus propios campos:
+   * sin esto, escribir los metros² borraría las zonas y el precio ya puestos. Y
+   * el suyo NO puede ir escondido además, o viajaría dos veces y ganaría el
+   * viejo.
+   */
+  it("se lleva el resto de la búsqueda escondido, menos el suyo y la página", () => {
+    const area = panel({ query: { min: "250", metros: "60", pag: "3", filtros: "precio" } }).area;
+    const names = area.hidden.map((field) => field.name);
+
+    expect(names).toContain("min");
+    expect(names).not.toContain("metros");
+    expect(names).not.toContain("pag");
+    // El acordeón queda en SU grupo después de enviar: sin JavaScript el
+    // navegador no puede recordar cuál estaba abierto.
+    expect(area.hidden).toContainEqual({ name: "filtros", value: "habitaciones" });
   });
 });
 

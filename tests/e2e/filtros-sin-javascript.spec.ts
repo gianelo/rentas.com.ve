@@ -153,3 +153,41 @@ test("el puesto es la sexta opción, con su conteo derivado del número", async 
   // esconde, y un resumen que lo omitiera dejaría el filtro puesto e invisible.
   await expect(grupo.getByRole("heading").first()).toContainText("puesto");
 });
+
+/**
+ * **Los metros², un campo escrito y no una tira de escalones** (14.45 rebanada
+ * B, decisión del fundador 2026-09-04: *«hay casas que tienen 72,5 o 84 y así
+ * no puede ser preseleccionado»*).
+ *
+ * Es el único control del panel que se teclea, así que es el único cuyo piso
+ * sin JavaScript no es un enlace: sin el `<form method="get">` alrededor, el
+ * campo no envía nada y el filtro sólo existe para quien recibió el bundle.
+ * Lo que se mide es el camino entero — escribir, enviar, que la dirección lo
+ * lleve y que la lista se recorte — con el script apagado.
+ *
+ * La siembra tiene un aviso de 45 m² en Distrito Capital a propósito
+ * (`scripts/seed-e2e.ts`): con los dos en 80, un filtro que no recortara nada
+ * pasaría en verde.
+ */
+test("los metros² se escriben en un formulario y recortan la lista", async ({ page }) => {
+  await page.goto("/alquiler/distrito-capital?filtros=habitaciones");
+
+  const grupo = page.locator("#filtros-habitaciones");
+  const campo = grupo.getByLabel("Superficie mínima");
+  await campo.fill("70");
+  // **Se envía con `Enter` y no tocando el botón**, y la razón es medida: con
+  // el grupo del tamaño ya lleno —dos tiras de escalones y este campo— el botón
+  // queda a veces bajo el pie pegajoso del panel a media altura de scroll, y
+  // Playwright lo reporta como interceptado. El envío implícito es el mismo
+  // camino que el botón —un `<form method="get">` sin una línea de script— y no
+  // depende de dónde quedó parada la hoja. Que el botón se dibuje lo afirma
+  // `components/organisms/SearchPanel.test.tsx`.
+  await campo.press("Enter");
+
+  await expect(page).toHaveURL(/metros=70/);
+  // El de 45 m² se cae y queda el de 80: la dirección filtró de verdad.
+  await expect(page.getByTestId("result-count")).toContainText("1 propiedad activa");
+  // Y el renglón cerrado del grupo lo dice, que en el teléfono es lo único que
+  // se ve de un filtro puesto.
+  await expect(grupo.getByRole("heading").first()).toContainText("Desde 70 m²");
+});

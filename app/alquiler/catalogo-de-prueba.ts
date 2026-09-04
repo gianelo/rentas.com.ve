@@ -92,7 +92,11 @@ export function matching(criteria: SearchCriteria): readonly ListingSearchResult
       row.cityId === criteria.cityId &&
       (criteria.zoneIds === undefined || criteria.zoneIds.includes(row.zoneId)) &&
       (criteria.minPriceUsd === undefined || row.priceUsd >= criteria.minPriceUsd) &&
-      (criteria.maxPriceUsd === undefined || row.priceUsd <= criteria.maxPriceUsd),
+      (criteria.maxPriceUsd === undefined || row.priceUsd <= criteria.maxPriceUsd) &&
+      // Los metros² también recortan acá (14.45 rebanada B). Un `matching` que
+      // ignorara un filtro del criterio daría conteos que su propio catálogo
+      // contradice, que es exactamente el falso verde que la rebanada C destapó.
+      (criteria.minAreaM2 === undefined || row.areaM2 >= criteria.minAreaM2),
   );
 }
 
@@ -109,6 +113,7 @@ export function facetsFor(
   // histograma, y de ellas salen los extremos reales del mercado.
   const { minPriceUsd: _min, maxPriceUsd: _max, ...withoutPrice } = criteria;
   const unpriced = matching(withoutPrice);
+  const { minAreaM2: _area, ...withoutArea } = criteria;
   const cityTotal = LISTINGS.filter((row) => row.cityId === criteria.cityId).length;
   const byZone: Record<string, number> = {};
   for (const id of offeredZoneIds) byZone[id] = 0;
@@ -168,6 +173,9 @@ export function facetsFor(
       hasParking: rows.length,
       hasSecurity: rows.length,
       hasAppliances: rows.length,
+      // Contado y no copiado: es el único filtro de este catálogo cuyas filas
+      // difieren de las de `rows` cuando está puesto.
+      area: matching(withoutArea).length,
     },
     cityTotal,
   };
