@@ -31,6 +31,7 @@ const COUNTS: PreviewCounts = {
     hasParking: 24,
     hasSecurity: 21,
     hasAppliances: 23,
+    area: 27,
   },
   cityTotal: 70,
 };

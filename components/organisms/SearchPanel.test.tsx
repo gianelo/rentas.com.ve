@@ -33,6 +33,7 @@ const COUNTS = {
     hasParking: 24,
     hasSecurity: 21,
     hasAppliances: 23,
+    area: 27,
   },
   byPriceBucket: [
     { count: 1, lowestUsd: 200, highestUsd: 240 },
@@ -214,6 +215,29 @@ describe("lo que cada grupo muestra", () => {
     expect(markup).toContain("3+");
     // Y su conteo real al lado, que es la tarea (regla transversal 3).
     expect(markup).toContain(">7<");
+  });
+
+  /**
+   * **Los metros², el tercer control del grupo «tamaño» y el único que se
+   * escribe** (14.45 rebanada B). Es un `<form method="get">` porque un campo
+   * suelto no envía nada sin JavaScript, y lleva su propio botón por lo mismo:
+   * el `Enter` implícito de un formulario de un solo campo existe, pero no se
+   * ve, y el panel entero se toca con el dedo.
+   */
+  it("los metros² son un campo escrito con su propio formulario", () => {
+    const markup = render();
+
+    expect(markup).toContain('id="metros-desde"');
+    expect(markup).toContain('name="metros"');
+    expect(markup).toContain('type="number"');
+    expect(markup).toContain("Usar esta superficie");
+    // Sin conteo al lado, y es la decisión: un campo libre no tiene opciones
+    // que contar, así que el número real es el total que el botón ya dice.
+    expect(markup).toContain("Superficie mínima");
+  });
+
+  it("vuelve escrito con lo que ya está puesto, para poder corregirlo", () => {
+    expect(render({ criteria: { minAreaM2: 90 } })).toContain('value="90"');
   });
 
   it("«Limpiar todo» está siempre a la vista (F8)", () => {

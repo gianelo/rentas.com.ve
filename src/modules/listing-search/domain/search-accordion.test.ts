@@ -169,6 +169,20 @@ describe("cada grupo cerrado muestra lo elegido", () => {
     expect(step(CARACAS, "habitaciones").answered).toBe(false);
   });
 
+  /**
+   * **Los metros² son la tercera parte del mismo grupo «tamaño»** (14.45
+   * rebanada B). No son un escalón sino un número escrito, así que el resumen
+   * dice el número tal cual con su «desde»: es un mínimo, y «72 m²» a secas se
+   * leería como "mide 72".
+   */
+  it("el grupo del tamaño nombra también los metros², y son un mínimo", () => {
+    expect(step({ ...CARACAS, minAreaM2: 72 }, "habitaciones").summary).toBe("Desde 72 m²");
+    expect(step({ ...CARACAS, minAreaM2: 72 }, "habitaciones").answered).toBe(true);
+    expect(
+      step({ ...CARACAS, minRooms: 2, minBathrooms: 2, minAreaM2: 90 }, "habitaciones").summary,
+    ).toBe("2 hab · 2 baños · Desde 90 m²");
+  });
+
   it("quién publica dice a quién, con las mismas palabras que el resumen", () => {
     expect(step(CARACAS, "publica").summary).toBe("Cualquiera");
     expect(step(CARACAS, "publica").answered).toBe(false);
@@ -244,6 +258,10 @@ describe("countPillFilters — lo que el filtro de la pastilla abre de verdad (1
   it("los baños cuentan como un filtro más: la pastilla abre el grupo del tamaño entero", () => {
     expect(countPillFilters({ ...CARACAS, minBathrooms: 2 })).toBe(1);
     expect(countPillFilters({ ...CARACAS, minRooms: 2, minBathrooms: 2 })).toBe(2);
+    // Y los metros² son el tercero del mismo grupo (14.45 rebanada B): la
+    // pastilla cuenta filtros puestos, no grupos abiertos.
+    expect(countPillFilters({ ...CARACAS, minAreaM2: 72 })).toBe(1);
+    expect(countPillFilters({ ...CARACAS, minRooms: 2, minBathrooms: 2, minAreaM2: 72 })).toBe(3);
   });
 
   it("el caso de la lámina 7c: precio, habitaciones y quién publica son 3", () => {

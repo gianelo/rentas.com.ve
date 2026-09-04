@@ -186,7 +186,7 @@ function PriceStep({ model }: { readonly model: SearchPanelModel }) {
     <form className={styles.price} method="get" action={model.price.action}>
       <Hidden fields={model.price.hidden} />
       <div className={styles.priceRow}>
-        <label className={styles.priceField} htmlFor="precio-desde">
+        <label className={styles.field} htmlFor="precio-desde">
           <span className={styles.searchLabel}>Desde</span>
           <input
             className={styles.control}
@@ -199,7 +199,7 @@ function PriceStep({ model }: { readonly model: SearchPanelModel }) {
             placeholder="$200"
           />
         </label>
-        <label className={styles.priceField} htmlFor="precio-hasta">
+        <label className={styles.field} htmlFor="precio-hasta">
           <span className={styles.searchLabel}>Hasta</span>
           <input
             className={styles.control}
@@ -282,7 +282,52 @@ function RoomsStep({ model }: { readonly model: SearchPanelModel }) {
           <StepOptionItem key={bathroom.step} option={bathroom} />
         ))}
       </ul>
+      <AreaField model={model} />
     </>
+  );
+}
+
+/**
+ * **Los metros², que se escriben en vez de elegirse** (14.45 rebanada B,
+ * decisión del fundador 2026-09-04: *«hay casas que tienen 72,5 o 84 y así no
+ * puede ser preseleccionado»*).
+ *
+ * Es la tercera parte del grupo «tamaño» y **el único control del panel sin
+ * conteo al lado**: un campo libre no tiene opciones que contar, así que el
+ * número real es el total que el botón de confirmar ya dice (regla transversal
+ * 3, cumplida del otro lado).
+ *
+ * **Su propio `<form method="get">` con su botón**, igual que el precio: un
+ * campo suelto no envía nada con el script apagado, y el envío implícito de un
+ * formulario de un solo campo existe pero no se ve — este panel se toca con el
+ * dedo (D13, F14).
+ *
+ * `min={1}` y `step={1}` acompañan al dominio, no lo reemplazan: el navegador
+ * ayuda antes de enviar y `buildSearchCriteria` decide igual, porque la misma
+ * dirección se pega a mano desde un chat.
+ */
+function AreaField({ model }: { readonly model: SearchPanelModel }) {
+  return (
+    <form className={styles.areaForm} method="get" action={model.area.action}>
+      <Hidden fields={model.area.hidden} />
+      <label className={styles.field} htmlFor="metros-desde">
+        <span className={styles.searchLabel}>Superficie mínima</span>
+        <input
+          className={styles.control}
+          id="metros-desde"
+          type="number"
+          inputMode="numeric"
+          min={1}
+          step={1}
+          name={model.area.name}
+          defaultValue={model.area.value}
+          placeholder="70 m²"
+        />
+      </label>
+      <button className={styles.searchAction} type="submit">
+        Usar esta superficie
+      </button>
+    </form>
   );
 }
 

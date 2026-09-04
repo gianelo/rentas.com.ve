@@ -20,6 +20,7 @@ const NOTHING: Readonly<Record<RelaxableFilter, number>> = {
   hasParking: 0,
   hasSecurity: 0,
   hasAppliances: 0,
+  area: 0,
 };
 
 /**

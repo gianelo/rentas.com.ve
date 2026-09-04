@@ -151,7 +151,13 @@ export interface SearchPanelInput {
   /** Los filtros ya validados. Se leen de acá y no de la query cruda. */
   readonly criteria: Pick<
     SearchCriteria,
-    "minPriceUsd" | "maxPriceUsd" | "minRooms" | "minBathrooms" | "publisherType" | "attributes"
+    | "minPriceUsd"
+    | "maxPriceUsd"
+    | "minRooms"
+    | "minBathrooms"
+    | "minAreaM2"
+    | "publisherType"
+    | "attributes"
   >;
   /** La ficha del único resultado, cuando hay exactamente uno (F7). */
   readonly onlyListingHref?: string;
@@ -184,6 +190,7 @@ export function relaxableFilters(
   }
   if (criteria.minRooms !== undefined) filters.push("rooms");
   if (criteria.minBathrooms !== undefined) filters.push("bathrooms");
+  if (criteria.minAreaM2 !== undefined) filters.push("area");
   if (criteria.publisherType !== undefined) filters.push("publisherType");
   for (const attribute of criteria.attributes ?? []) filters.push(attribute);
   return filters;
@@ -206,6 +213,7 @@ export function withoutFilter(criteria: SearchCriteria, filter: RelaxableFilter)
     maxPriceUsd,
     minRooms,
     minBathrooms,
+    minAreaM2,
     publisherType,
     attributes,
     ...rest
@@ -223,6 +231,7 @@ export function withoutFilter(criteria: SearchCriteria, filter: RelaxableFilter)
     ...maybe("maxPriceUsd", keep(maxPriceUsd, filter === "price")),
     ...maybe("minRooms", keep(minRooms, filter === "rooms")),
     ...maybe("minBathrooms", keep(minBathrooms, filter === "bathrooms")),
+    ...maybe("minAreaM2", keep(minAreaM2, filter === "area")),
     ...maybe("publisherType", keep(publisherType, filter === "publisherType")),
     ...maybe("attributes", dropAttribute(attributes, filter)),
   };
@@ -263,6 +272,7 @@ export function reliefHref(
   if (filter === "bathrooms") {
     return buildSearchHref(place.basePath, place.query, { minBathrooms: null });
   }
+  if (filter === "area") return buildSearchHref(place.basePath, place.query, { minAreaM2: null });
   if (filter === "publisherType") {
     return buildSearchHref(place.basePath, place.query, { publisherType: null });
   }
@@ -314,6 +324,28 @@ export interface PriceForm {
 }
 
 /**
+ * **Los metros², que se ESCRIBEN en vez de elegirse** (14.45 rebanada B,
+ * decisión del fundador 2026-09-04: *«hay casas que tienen 72,5 o 84 y así no
+ * puede ser preseleccionado»*).
+ *
+ * Es un formulario y no una tira de enlaces porque la superficie es un continuo:
+ * no hay opciones que enlazar ni, por lo tanto, conteo por opción que mostrar.
+ * **La regla transversal 3 se cumple igual, del otro lado**: el número real
+ * pasa a ser el total de resultados, que el botón de confirmar ya dice.
+ *
+ * Un campo suelto no envía nada sin JavaScript, así que va envuelto en su propio
+ * `<form method="get">` con el resto de la búsqueda escondida — el mismo molde
+ * del precio, por la misma razón (D13).
+ */
+export interface AreaForm {
+  readonly action: string;
+  readonly hidden: readonly HiddenField[];
+  readonly name: string;
+  /** Lo que ya está puesto, o vacío. Sale del criterio ya validado, nunca del crudo. */
+  readonly value: string;
+}
+
+/**
  * **Un filtro puesto, con la dirección que lo saca** (lámina 7c).
  *
  * Con la barra lateral afuera, la pantalla de resultados se quedaba sin decir
@@ -355,6 +387,8 @@ export interface SearchPanelModel {
    * fundador llamó «tamaño».
    */
   readonly bathrooms: readonly BathroomChoice[];
+  /** Los metros², el tercer control del mismo grupo «tamaño» (14.45 rebanada B). */
+  readonly area: AreaForm;
   readonly publisher: PublisherChoice;
   readonly attributes: readonly AttributeChoice[];
   readonly clearAllHref: string;
@@ -461,6 +495,21 @@ export function buildSearchPanel(input: SearchPanelInput): SearchPanelModel {
         }),
       }),
     ),
+    area: {
+      action: basePath,
+      // Su propio nombre no puede ir además escondido —viajaría dos veces y
+      // ganaría el viejo—, y la página se cae igual que en el precio: escribir
+      // otra superficie es otra búsqueda, y su página 3 no significa nada.
+      hidden: hiddenFields(
+        query,
+        [SEARCH_QUERY_NAMES.minAreaM2, SEARCH_QUERY_NAMES.page],
+        "habitaciones",
+      ),
+      name: SEARCH_QUERY_NAMES.minAreaM2,
+      // Del criterio y no de la query cruda: `?metros=abc` se cayó allá, y
+      // devolverlo escrito acá mostraría un filtro puesto que no está puesto.
+      value: criteria.minAreaM2 === undefined ? "" : String(criteria.minAreaM2),
+    },
     publisher: toPublisherChoice(input),
     attributes: resolveAttributeOptions(
       counts.byAttribute,
