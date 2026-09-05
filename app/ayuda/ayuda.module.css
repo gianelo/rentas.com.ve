@@ -1,0 +1,58 @@
+/* Shared typography for the /ayuda static content pages (tasks.md 23.4).
+   Reuses the ficha's title/body tokens rather than declaring new ones: this
+   is plain long-form text sitting in the same 600px form shell publish
+   already uses, not a new screen with its own hierarchy — the same
+   reasoning app/alquiler/.../reportar/reportar.module.css already writes
+   for itself. */
+.page {
+  background: var(--surface);
+  color: var(--ink);
+  padding: 24px 0 40px;
+}
+
+.title {
+  margin: 0 0 16px;
+  font-size: var(--ficha-title-fs);
+  font-weight: var(--ficha-title-fw);
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+
+.heading {
+  margin: 24px 0 8px;
+  font-size: var(--ficha-body-fs);
+  font-weight: 600;
+  text-wrap: pretty;
+}
+
+.text {
+  margin: 0 0 12px;
+  font-size: var(--ficha-body-fs);
+  line-height: var(--ficha-body-lh);
+  text-wrap: pretty;
+}
+
+.list {
+  margin: 0 0 12px;
+  padding-inline-start: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item {
+  font-size: var(--ficha-body-fs);
+  line-height: var(--ficha-body-lh);
+}
+
+@media (min-width: 768px) {
+  .title {
+    font-size: var(--ficha-title-fs-desktop);
+  }
+
+  .text,
+  .item {
+    font-size: var(--ficha-body-fs-desktop);
+    line-height: var(--ficha-body-lh-desktop);
+  }
+}

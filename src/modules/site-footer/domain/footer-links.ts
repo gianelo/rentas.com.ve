@@ -49,9 +49,15 @@ export interface FooterLinkGroup {
  * no other file changes, and nothing renders until the line changes.
  */
 export const FOOTER_LINK_CATALOGUE: readonly FooterLinkDefinition[] = [
-  { label: "Preguntas frecuentes", category: "ayuda", href: null }, // tasks.md 23.4
-  { label: "Cómo publicar un aviso", category: "ayuda", href: null }, // tasks.md 23.4
-  { label: "Cómo contactar al dueño", category: "ayuda", href: null }, // tasks.md 23.4
+  // tasks.md 23.4 — shipped. Derivable from the product as it already
+  // stands, with no new product decision behind any of the three.
+  { label: "Preguntas frecuentes", category: "ayuda", href: "/ayuda/preguntas-frecuentes" },
+  { label: "Cómo publicar un aviso", category: "ayuda", href: "/ayuda/como-publicar-un-aviso" },
+  {
+    label: "Cómo contactar al dueño",
+    category: "ayuda",
+    href: "/ayuda/como-contactar-al-dueno",
+  },
   { label: "Reportar un aviso", category: "ayuda", href: null }, // tasks.md 23.6
   { label: "Escribinos", category: "ayuda", href: null }, // tasks.md 23.7
   { label: "Términos y condiciones", category: "legal", href: null }, // tasks.md 23.5
