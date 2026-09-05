@@ -34,16 +34,13 @@ describe("resolveFooterLinks", () => {
   });
 
   /**
-   * The real production catalogue, today. tasks.md 23.4 shipped the three
-   * Ayuda pages derivable from the product as it already stands —
-   * "Preguntas frecuentes", "Cómo publicar un aviso", and "Cómo contactar
-   * al dueño" — and left "Reportar un aviso" and "Escribinos" at `null`:
-   * their content depends on the seam decisions tasks.md 23.6/23.7 own,
-   * which this slice explicitly does not build. This test documents that
-   * state as a checked fact rather than a claim in prose, and it is meant
-   * to keep failing every time a new `href` lands until all ten resolve.
+   * The real production catalogue, today. 23.4 shipped the three Ayuda
+   * pages; 23.5 (this slice) ships the five Legal drafts, routed and
+   * linked, pending the founder's ratification. The remaining two stay
+   * `null`, owned by 23.6/23.7. Documents the state as a checked fact, and
+   * keeps failing every time a new `href` lands until all ten resolve.
    */
-  it("resolves the three shipped Ayuda pages against today's real catalogue", () => {
+  it("resolves the eight shipped pages against today's real catalogue", () => {
     expect(resolveFooterLinks(FOOTER_LINK_CATALOGUE)).toEqual([
       { label: "Preguntas frecuentes", category: "ayuda", href: "/ayuda/preguntas-frecuentes" },
       {
@@ -56,6 +53,11 @@ describe("resolveFooterLinks", () => {
         category: "ayuda",
         href: "/ayuda/como-contactar-al-dueno",
       },
+      { label: "Términos y condiciones", category: "legal", href: "/legal/terminos" },
+      { label: "Política de privacidad", category: "legal", href: "/legal/privacidad" },
+      { label: "Uso de cookies", category: "legal", href: "/legal/cookies" },
+      { label: "Normas de publicación", category: "legal", href: "/legal/normas" },
+      { label: "Tratamiento de datos", category: "legal", href: "/legal/datos" },
     ]);
   });
 });
