@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildSitemap, type SitemapListing } from "./sitemap";
+import type { FooterLinkDefinition } from "../../site-footer/domain/footer-links";
+import { ayudaSitemapPaths, buildSitemap, type SitemapListing } from "./sitemap";
 
 const BASE = "https://rentas.com.ve";
 
@@ -172,5 +173,58 @@ describe("buildSitemap", () => {
     // Silencioso sería lo caro: un sitemap con `/alquiler/…` en vez de
     // `https://…/alquiler/…` es un sitemap que Google descarta entero.
     expect(() => buildSitemap("   ", [listing()])).toThrow(/base/i);
+  });
+
+  // Task 23.9 — decided 2026-09-04: the five Ayuda pages enter the sitemap
+  // with "monthly" frequency; the five Legal pages stay out.
+  describe("Ayuda static pages (task 23.9)", () => {
+    it("publishes an Ayuda path as a monthly entry, undated", () => {
+      const entries = buildSitemap(BASE, [], ["/ayuda/escribinos"]);
+
+      expect(entries).toContainEqual({
+        url: `${BASE}/ayuda/escribinos`,
+        changeFrequency: "monthly",
+      });
+    });
+
+    it("keeps listing/zone entries untouched when Ayuda paths are also present", () => {
+      const entries = buildSitemap(BASE, [listing()], ["/ayuda/escribinos"]);
+
+      expect(entries.map((entry) => entry.changeFrequency)).toEqual(
+        expect.arrayContaining(["daily", "weekly", "monthly"]),
+      );
+    });
+
+    it("adds nothing beyond the home entry when no Ayuda path is given", () => {
+      // Backward compatible: the third argument defaults to an empty list,
+      // so a caller that never learned about Ayuda pages is unaffected.
+      const entries = buildSitemap(BASE, []);
+
+      expect(entries).toHaveLength(1);
+    });
+  });
+
+  describe("ayudaSitemapPaths", () => {
+    function footerEntry(overrides: Partial<FooterLinkDefinition> = {}): FooterLinkDefinition {
+      return { label: "Escribinos", category: "ayuda", href: "/ayuda/escribinos", ...overrides };
+    }
+
+    it("keeps a resolved Ayuda entry and drops a resolved Legal entry", () => {
+      const catalogue: readonly FooterLinkDefinition[] = [
+        footerEntry(),
+        footerEntry({ label: "Términos", category: "legal", href: "/legal/terminos" }),
+      ];
+
+      expect(ayudaSitemapPaths(catalogue)).toEqual(["/ayuda/escribinos"]);
+    });
+
+    it("drops an Ayuda entry that has not shipped a page yet", () => {
+      // A `null` href is the declared reason a footer destination is absent
+      // (footer-links.ts) — the sitemap must honour that the same way the
+      // footer itself does, never invent a path for a page that isn't live.
+      const catalogue: readonly FooterLinkDefinition[] = [footerEntry({ href: null })];
+
+      expect(ayudaSitemapPaths(catalogue)).toEqual([]);
+    });
   });
 });
