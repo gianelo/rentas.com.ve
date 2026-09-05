@@ -19,6 +19,7 @@ import {
 } from "@/modules/listing-publication/domain/publishable-listing";
 import type { PublicationZoneOption } from "@/modules/listing-publication/domain/zone-search";
 import { buildSearchPanel } from "@/modules/listing-search/domain/search-panel";
+import type { FooterLinkGroup } from "@/modules/site-footer/domain/footer-links";
 import { ActionButton, NeutralButton, SelectionButton } from "../../components/atoms/buttons";
 import { ListingMeta } from "../../components/atoms/ListingMeta";
 import { ListingTitle } from "../../components/atoms/ListingTitle";
@@ -34,6 +35,7 @@ import { SearchFilters } from "../../components/molecules/SearchFilters";
 import { Nav } from "../../components/organisms/Nav";
 import { SearchPanel } from "../../components/organisms/SearchPanel";
 import { SignInDoor } from "../../components/organisms/SignInDoor";
+import { SiteFooter } from "../../components/organisms/SiteFooter";
 import fichaStyles from "../alquiler/[ciudad]/[zona]/[slug]/ficha.module.css";
 import homeStyles from "../home.module.css";
 import misAvisosStyles from "../mis-avisos/mis-avisos.module.css";
@@ -458,6 +460,19 @@ export default async function MeasureHarnessPage({
           signInAction={measureRevealAction}
         />
       ) : null}
+
+      {/* **El pie del sitio, con las diez entradas resueltas** (tasks.md
+          23.8, 23.10). El registro real de `app/layout.tsx` resuelve HOY a
+          cero grupos — ninguna de las diez páginas existe — así que la
+          altura de 210px y la fila táctil de 44px que la lámina 9a/9b
+          describe no tienen nada que dibujar en producción todavía. Este
+          arnés inyecta las diez entradas ya resueltas (mismo contrato de
+          props que `Nav` ya usa) para que esas dos afirmaciones de
+          geometría sean medibles HOY, antes de que 23.4-23.7 decidan un
+          solo destino real. */}
+      <div data-testid="site-footer-harness">
+        <SiteFooter linkGroups={FOOTER_LINK_GROUPS_HARNESS} />
+      </div>
     </>
   );
 }
@@ -671,3 +686,34 @@ const PORTADAS = [
     url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR42mMQEBYBAABuADjKuEn2AAAAAElFTkSuQmCC",
   },
 ] as const;
+
+/**
+ * The ten real labels the design names (design/pantallas/Rentas -
+ * Footer.dc.html), with placeholder destinations no page in this repository
+ * serves. This fixture exists only so `tests/measure/footer.spec.ts` can
+ * measure real geometry against real content — the production registry in
+ * `app/layout.tsx` resolves to zero groups today (tasks.md 23.2), which
+ * would leave nothing to measure.
+ */
+const FOOTER_LINK_GROUPS_HARNESS: readonly FooterLinkGroup[] = [
+  {
+    category: "ayuda",
+    links: [
+      { label: "Preguntas frecuentes", category: "ayuda", href: "/ayuda/preguntas-frecuentes" },
+      { label: "Cómo publicar un aviso", category: "ayuda", href: "/ayuda/como-publicar" },
+      { label: "Cómo contactar al dueño", category: "ayuda", href: "/ayuda/como-contactar" },
+      { label: "Reportar un aviso", category: "ayuda", href: "/ayuda/reportar" },
+      { label: "Escribinos", category: "ayuda", href: "/ayuda/escribinos" },
+    ],
+  },
+  {
+    category: "legal",
+    links: [
+      { label: "Términos y condiciones", category: "legal", href: "/legal/terminos" },
+      { label: "Política de privacidad", category: "legal", href: "/legal/privacidad" },
+      { label: "Uso de cookies", category: "legal", href: "/legal/cookies" },
+      { label: "Normas de publicación", category: "legal", href: "/legal/normas" },
+      { label: "Tratamiento de datos", category: "legal", href: "/legal/datos" },
+    ],
+  },
+];
