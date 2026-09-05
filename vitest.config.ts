@@ -40,6 +40,10 @@ export default defineConfig({
       // está—, así que su prueba se nombra una por una en vez de abrir la
       // raíz entera a este glob.
       "instrumentation.{test,spec}.ts",
+      // middleware.ts has the same root-only requirement (Next.js only looks
+      // for it there), so its test is named individually for the same
+      // reason instrumentation.ts's is.
+      "middleware.{test,spec}.ts",
       // Los gates de `scripts/` no tenían dónde probarse, y esa ausencia es
       // parte de por qué `lint:tokens` pasó meses sin ver un token huérfano
       // (14.48): un gate sin prueba propia puede dejar de comprobar en
