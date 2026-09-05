@@ -1,0 +1,70 @@
+/* Shared typography for the /legal static content pages (tasks.md 23.5).
+   Mirrors app/ayuda/ayuda.module.css rather than importing it: Ayuda and
+   Legal are different footer categories with different copy owners, free
+   to diverge without coordination. Same tokens, same reason: long-form
+   text in the same 600px form shell publish already uses. */
+.page {
+  background: var(--surface);
+  color: var(--ink);
+  padding: 24px 0 40px;
+}
+
+.title {
+  margin: 0 0 16px;
+  font-size: var(--ficha-title-fs);
+  font-weight: var(--ficha-title-fw);
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+
+.heading {
+  margin: 24px 0 8px;
+  font-size: var(--ficha-body-fs);
+  font-weight: 600;
+  text-wrap: pretty;
+}
+
+.text {
+  margin: 0 0 12px;
+  font-size: var(--ficha-body-fs);
+  line-height: var(--ficha-body-lh);
+  text-wrap: pretty;
+}
+
+.list {
+  margin: 0 0 12px;
+  padding-inline-start: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item {
+  font-size: var(--ficha-body-fs);
+  line-height: var(--ficha-body-lh);
+}
+
+/* The draft-status banner every /legal page carries until ratified
+   (draft-notice.tsx). Bordered rather than filled: it must read as a
+   flag on top of real content, not as an error state or a filled card. */
+.notice {
+  margin: 0 0 20px;
+  padding: 12px 16px;
+  border: 1px solid var(--strong);
+  border-radius: var(--r);
+  font-size: var(--ficha-body-fs);
+  line-height: var(--ficha-body-lh);
+  text-wrap: pretty;
+}
+
+@media (min-width: 768px) {
+  .title {
+    font-size: var(--ficha-title-fs-desktop);
+  }
+
+  .text,
+  .item {
+    font-size: var(--ficha-body-fs-desktop);
+    line-height: var(--ficha-body-lh-desktop);
+  }
+}

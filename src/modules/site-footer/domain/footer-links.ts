@@ -2,14 +2,12 @@
  * The site footer's catalogue of destinations, and the rule that decides
  * which ones a visitor ever sees (tasks.md 23.2; AGENTS.md §7 — fail closed).
  *
- * Ten labels are named in `design/pantallas/Rentas - Footer.dc.html` and NOT
- * ONE of the ten pages they point to exists yet — five are blocked on the
- * founder's Help copy (tasks.md 23.4), five on ratifying Legal drafts
- * (tasks.md 23.5), and two more ("Reportar un aviso", "Escribinos") on
- * decisions the founder has not made yet (tasks.md 23.6, 23.7). Rendering
- * all ten today would be ten dead links repeated on every page of the site,
- * indexed from all of them — the alternative tasks.md 23.2 explicitly
- * rejects as an intermediate step.
+ * Ten labels are named in `design/pantallas/Rentas - Footer.dc.html`. Eight
+ * now resolve: three Ayuda pages as final copy (tasks.md 23.4), and five
+ * Legal pages as DRAFTS pending the founder's ratification (tasks.md 23.5 —
+ * each carries its own "Borrador en revisión" notice, and the task itself
+ * does not close until the ratification does). The remaining two stay
+ * `null`, blocked on decisions the founder has not made (23.6, 23.7).
  *
  * This module is the single place that knows the full catalogue and its
  * current state. `resolveFooterLinks` filters it down to what is safe to
@@ -60,11 +58,13 @@ export const FOOTER_LINK_CATALOGUE: readonly FooterLinkDefinition[] = [
   },
   { label: "Reportar un aviso", category: "ayuda", href: null }, // tasks.md 23.6
   { label: "Escribinos", category: "ayuda", href: null }, // tasks.md 23.7
-  { label: "Términos y condiciones", category: "legal", href: null }, // tasks.md 23.5
-  { label: "Política de privacidad", category: "legal", href: null }, // tasks.md 23.5
-  { label: "Uso de cookies", category: "legal", href: null }, // tasks.md 23.5
-  { label: "Normas de publicación", category: "legal", href: null }, // tasks.md 23.5
-  { label: "Tratamiento de datos", category: "legal", href: null }, // tasks.md 23.5
+  // tasks.md 23.5 — shipped as drafts, not yet ratified (see each page's
+  // own "Borrador en revisión" notice).
+  { label: "Términos y condiciones", category: "legal", href: "/legal/terminos" },
+  { label: "Política de privacidad", category: "legal", href: "/legal/privacidad" },
+  { label: "Uso de cookies", category: "legal", href: "/legal/cookies" },
+  { label: "Normas de publicación", category: "legal", href: "/legal/normas" },
+  { label: "Tratamiento de datos", category: "legal", href: "/legal/datos" },
 ];
 
 /**
