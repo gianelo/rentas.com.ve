@@ -435,6 +435,25 @@
   --pill-meta-fs: 10.5px;
   --pill-filter-fs: 12.5px;
   --pill-filter-fs-desktop: 13px;
+
+  /* The site footer (design/pantallas/Rentas - Footer.dc.html, artboards
+     9a/9b; tasks.md 23.1, 23.11). Only font-size gets its own token here —
+     lint:tokens' literal-value scan is a blanket rule for colour,
+     border-radius, and type size, and a TARGETED one for width/height that
+     only matches the shipped thumbnail dimensions; gap and padding are not
+     checked, and Container.module.css / Nav.module.css already write those
+     as plain px. Not `--nav-brand-fs-desktop` even though the two numbers
+     coincide at 19px: the footer's wordmark and the nav's are different
+     components, and a value that happens to match is not the same token
+     (tokens.css documents this exact lesson for `--brandbar-h`/`--nav-h`). */
+  --footer-brand-fs: 18px;
+  --footer-brand-fs-desktop: 19px;
+  --footer-tagline-fs: 13.5px;
+  --footer-tagline-fs-desktop: 13px;
+  --footer-heading-fs: 10px;
+  --footer-link-fs: 14.5px;
+  --footer-link-fs-desktop: 13.5px;
+  --footer-legal-fs: 11px;
 }
 
 /* ---------- data-layout: compacto (shipped structure) ---------- */
