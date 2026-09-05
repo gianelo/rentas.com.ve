@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import type { ReactNode } from "react";
 import {
   FOOTER_LINK_CATALOGUE,
@@ -32,12 +33,34 @@ export const metadata: Metadata = {
 // describes, not a placeholder.
 const FOOTER_LINK_GROUPS = groupResolvedFooterLinks(resolveFooterLinks(FOOTER_LINK_CATALOGUE));
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  // tasks.md 23.3 — DECIDIDA 2026-09-04. The site footer stays silent on the
+  // listing detail page and the photo viewer: the detail page's own
+  // <footer> already carries the listing's ID and expiry (16.35), which is
+  // data about the LISTING, not the site, and the photo viewer's <footer>
+  // is a control bar for an immersive full-screen view, not a footer at
+  // all. Stacking the site footer under either one is a defect, not a sum;
+  // both keep exactly the footer they already had. This layout has no
+  // client hook and no state to ask which route it is serving, so
+  // middleware.ts scopes itself to exactly those two routes and stamps this
+  // one header; its absence means "render the site footer".
+  //
+  // Known cost, measured 2026-09-04: calling `headers()` here opts every
+  // route into dynamic rendering. `/_not-found`, `/measure`, and
+  // `/measure/lista` flipped from static (○) to dynamic (ƒ) in the build
+  // output the day this landed; `budget:bundle` is unchanged (110.67 KB
+  // gzip) because dynamic vs. static does not change the client bundle it
+  // measures. The founder accepted this cost. It matters for tasks.md 23.9:
+  // the ten upcoming Ayuda/Legales pages are declared "contenido estático y
+  // público … no tienen por qué costar una consulta", and as long as this
+  // layout reads `headers()`, none of them can prerender either — a known
+  // follow-up, not solved here.
+  const hideSiteFooter = (await headers()).get("x-hide-site-footer") === "1";
   return (
     <html lang="es" data-theme="menta" data-layout="compacto">
       <body>
         {children}
-        <SiteFooter linkGroups={FOOTER_LINK_GROUPS} />
+        {!hideSiteFooter && <SiteFooter linkGroups={FOOTER_LINK_GROUPS} />}
       </body>
     </html>
   );
