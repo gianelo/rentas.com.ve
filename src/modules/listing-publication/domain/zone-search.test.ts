@@ -127,6 +127,28 @@ describe("searchPublicationZones", () => {
     expect(results[0]?.scope).toBe("Distrito Capital");
   });
 
+  it("ofrece una zona sin avisos igual que una con oferta (17.7)", () => {
+    // La búsqueda excluye una zona en cero (`searchChoices`, 17.7); publicar
+    // hace lo contrario a propósito: si una zona vacía dejara de ofrecerse
+    // acá, esa zona nunca podría recibir su primer aviso y la taxonomía se
+    // congelaría en lo que trajo el lanzamiento. `searchPublicationZones` ni
+    // siquiera mira `count` — esta prueba deja eso afirmado y no supuesto.
+    const results = searchPublicationZones("altamira", {
+      ...VOCABULARY,
+      zones: [
+        {
+          id: "altamira",
+          name: "Altamira",
+          cityId: "dc",
+          parentName: "Municipio Chacao",
+          count: 0,
+        },
+      ],
+    });
+
+    expect(results.map((option) => option.zoneId)).toEqual(["altamira"]);
+  });
+
   it("descarta una zona cuya ciudad no esta en el catalogo", () => {
     // Una zona sin ciudad conocida no se puede publicar: `listing` tiene una
     // clave foranea compuesta que la rechazaria, y ofrecerla seria mandar a
