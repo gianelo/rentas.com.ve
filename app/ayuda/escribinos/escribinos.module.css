@@ -1,0 +1,39 @@
+/* "Escribinos" (tasks.md 23.7). Los campos reusan `Field` — sus tokens y su
+   `aria-describedby` ya son la forma que el resto del sitio usa — así que
+   este módulo sólo agrega lo que `Field` no cubre: el ritmo del formulario,
+   la trampa de bots y el aviso de rechazo del servidor. */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+/* La trampa (tasks.md 23.7 — "protección contra spam"). Visualmente
+   escondida en vez de `display: none`: algunos rastreadores de formularios
+   ignoran justo esa regla porque es la primera que prueban, y `aria-hidden`
+   más `tabIndex={-1}` en el propio control (page.tsx) garantizan que ningún
+   visitante real —con mouse, teclado o lector de pantalla— la encuentre. */
+.trap {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+  padding: 0;
+  margin: -1px;
+}
+
+.errorBanner {
+  margin: 0 0 16px;
+  padding: 12px;
+  border-radius: var(--r);
+  background: var(--err-bg);
+  color: var(--err);
+  font-family: var(--sans);
+  font-size: var(--meta-fs);
+  line-height: 1.5;
+}

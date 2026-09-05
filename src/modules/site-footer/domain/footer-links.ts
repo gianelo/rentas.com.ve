@@ -2,14 +2,13 @@
  * The site footer's catalogue of destinations, and the rule that decides
  * which ones a visitor ever sees (tasks.md 23.2; AGENTS.md §7 — fail closed).
  *
- * Ten labels are named in `design/pantallas/Rentas - Footer.dc.html` and NOT
- * ONE of the ten pages they point to exists yet — five are blocked on the
- * founder's Help copy (tasks.md 23.4), five on ratifying Legal drafts
- * (tasks.md 23.5), and two more ("Reportar un aviso", "Escribinos") on
- * decisions the founder has not made yet (tasks.md 23.6, 23.7). Rendering
- * all ten today would be ten dead links repeated on every page of the site,
- * indexed from all of them — the alternative tasks.md 23.2 explicitly
- * rejects as an intermediate step.
+ * Ten labels are named in `design/pantallas/Rentas - Footer.dc.html`. All
+ * ten now resolve: five Ayuda pages as final copy (tasks.md 23.4, 23.6,
+ * 23.7 — the last of which renamed "Reportar un aviso" to "Cómo reportar
+ * un aviso"), and five Legal pages as DRAFTS pending the founder's
+ * ratification (tasks.md 23.5 — each carries its own "Borrador en
+ * revisión" notice, and that task itself does not close until the
+ * ratification does).
  *
  * This module is the single place that knows the full catalogue and its
  * current state. `resolveFooterLinks` filters it down to what is safe to
@@ -49,16 +48,29 @@ export interface FooterLinkGroup {
  * no other file changes, and nothing renders until the line changes.
  */
 export const FOOTER_LINK_CATALOGUE: readonly FooterLinkDefinition[] = [
-  { label: "Preguntas frecuentes", category: "ayuda", href: null }, // tasks.md 23.4
-  { label: "Cómo publicar un aviso", category: "ayuda", href: null }, // tasks.md 23.4
-  { label: "Cómo contactar al dueño", category: "ayuda", href: null }, // tasks.md 23.4
-  { label: "Reportar un aviso", category: "ayuda", href: null }, // tasks.md 23.6
-  { label: "Escribinos", category: "ayuda", href: null }, // tasks.md 23.7
-  { label: "Términos y condiciones", category: "legal", href: null }, // tasks.md 23.5
-  { label: "Política de privacidad", category: "legal", href: null }, // tasks.md 23.5
-  { label: "Uso de cookies", category: "legal", href: null }, // tasks.md 23.5
-  { label: "Normas de publicación", category: "legal", href: null }, // tasks.md 23.5
-  { label: "Tratamiento de datos", category: "legal", href: null }, // tasks.md 23.5
+  // tasks.md 23.4 — shipped. Derivable from the product as it already
+  // stands, with no new product decision behind any of the three.
+  { label: "Preguntas frecuentes", category: "ayuda", href: "/ayuda/preguntas-frecuentes" },
+  { label: "Cómo publicar un aviso", category: "ayuda", href: "/ayuda/como-publicar-un-aviso" },
+  {
+    label: "Cómo contactar al dueño",
+    category: "ayuda",
+    href: "/ayuda/como-contactar-al-dueno",
+  },
+  // tasks.md 23.6 — renamed from "Reportar un aviso": that label promised a
+  // verb the footer cannot deliver (reporting needs a listing in the URL
+  // and a signed-in account, neither of which exists standing in the
+  // footer). This page EXPLAINS instead of executing.
+  { label: "Cómo reportar un aviso", category: "ayuda", href: "/ayuda/como-reportar-un-aviso" },
+  // tasks.md 23.7 — a Resend form, not a `mailto:`.
+  { label: "Escribinos", category: "ayuda", href: "/ayuda/escribinos" },
+  // tasks.md 23.5 — shipped as drafts, not yet ratified (see each page's
+  // own "Borrador en revisión" notice).
+  { label: "Términos y condiciones", category: "legal", href: "/legal/terminos" },
+  { label: "Política de privacidad", category: "legal", href: "/legal/privacidad" },
+  { label: "Uso de cookies", category: "legal", href: "/legal/cookies" },
+  { label: "Normas de publicación", category: "legal", href: "/legal/normas" },
+  { label: "Tratamiento de datos", category: "legal", href: "/legal/datos" },
 ];
 
 /**

@@ -15,8 +15,10 @@ test("la puerta de entrar llega entera, con su envío real y su salida", async (
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Entrá para publicar tu propiedad",
   );
-  // Los tres pasos de la lámina bajan la ansiedad antes del botón.
-  await expect(page.getByRole("listitem")).toHaveCount(3);
+  // Los tres pasos de la lámina bajan la ansiedad antes del botón. Se cuentan
+  // dentro del `<main>`: el pie del sitio dibuja su propia lista en todas las
+  // páginas, y un conteo de documento entero mediría el pie, no la pantalla.
+  await expect(page.getByRole("main").getByRole("listitem")).toHaveCount(3);
   // Un `<button>` suelto no navega sin JavaScript: lo que envía es el
   // formulario, y el método tiene que ser el que el navegador solo entiende.
   await expect(page.locator("form").first()).toHaveAttribute("method", /post/i);
@@ -73,7 +75,9 @@ test("la espera del enlace se lee entera y sus dos salidas funcionan sin JavaScr
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Revisá tu correo");
   // La dirección tecleada, de vuelta: es como se caza el tipeo sin volver.
   await expect(page.getByText("maria.f@gmail.com", { exact: true })).toBeVisible();
-  await expect(page.getByRole("listitem")).toHaveCount(3);
+  // Acotada al `<main>` por la misma razón que la de `/signin`: el pie tiene su
+  // propia lista de enlaces y no es lo que esta pantalla vino a medir.
+  await expect(page.getByRole("main").getByRole("listitem")).toHaveCount(3);
   await expect(page.getByText("El enlace sirve una sola vez y vence en 15 minutos.")).toBeVisible();
   // **La cuenta, servida por el servidor.** No tictaquea sin script, y no hace
   // falta que lo haga: dice cuándo se puede, que es lo que se vino a saber.

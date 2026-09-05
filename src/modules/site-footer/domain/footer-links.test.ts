@@ -34,15 +34,38 @@ describe("resolveFooterLinks", () => {
   });
 
   /**
-   * The real production catalogue, today. Ten labels are named in the
-   * artboard and none of the ten destinations exist yet (tasks.md 23.4-23.7
-   * are the founder decisions that fill them in one at a time). This test
-   * documents that state as a checked fact rather than a claim in prose —
-   * and it is meant to start failing the day the first `href` lands, which
-   * is the correct way for it to fail.
+   * The real production catalogue, today. 23.4 shipped the three Ayuda
+   * pages; 23.5 shipped the five Legal drafts; this slice (23.6/23.7)
+   * ships the last two — "Cómo reportar un aviso" (renamed from "Reportar
+   * un aviso") and "Escribinos". Ten of ten resolve. Documents the state
+   * as a checked fact, rewritten RED-first against the nine-entry state
+   * this file held before this slice.
    */
-  it("resolves to nothing against today's real catalogue — none of the ten pages exist yet", () => {
-    expect(resolveFooterLinks(FOOTER_LINK_CATALOGUE)).toEqual([]);
+  it("resolves all ten pages against today's real catalogue", () => {
+    expect(resolveFooterLinks(FOOTER_LINK_CATALOGUE)).toEqual([
+      { label: "Preguntas frecuentes", category: "ayuda", href: "/ayuda/preguntas-frecuentes" },
+      {
+        label: "Cómo publicar un aviso",
+        category: "ayuda",
+        href: "/ayuda/como-publicar-un-aviso",
+      },
+      {
+        label: "Cómo contactar al dueño",
+        category: "ayuda",
+        href: "/ayuda/como-contactar-al-dueno",
+      },
+      {
+        label: "Cómo reportar un aviso",
+        category: "ayuda",
+        href: "/ayuda/como-reportar-un-aviso",
+      },
+      { label: "Escribinos", category: "ayuda", href: "/ayuda/escribinos" },
+      { label: "Términos y condiciones", category: "legal", href: "/legal/terminos" },
+      { label: "Política de privacidad", category: "legal", href: "/legal/privacidad" },
+      { label: "Uso de cookies", category: "legal", href: "/legal/cookies" },
+      { label: "Normas de publicación", category: "legal", href: "/legal/normas" },
+      { label: "Tratamiento de datos", category: "legal", href: "/legal/datos" },
+    ]);
   });
 });
 
