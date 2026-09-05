@@ -19,13 +19,35 @@ describe("RootLayout", () => {
     expect(markup).toContain('lang="es"');
   });
 
-  it("renders its children inside <body>", () => {
+  it("renders its children inside <body>, before the site footer", () => {
     const markup = renderToStaticMarkup(
       <RootLayout>
         <p>content</p>
       </RootLayout>,
     );
 
-    expect(markup).toContain("<body><p>content</p></body>");
+    const bodyStart = markup.indexOf("<body>");
+    const childIndex = markup.indexOf("<p>content</p>");
+    const footerIndex = markup.indexOf("<footer");
+    expect(bodyStart).toBeGreaterThanOrEqual(0);
+    expect(childIndex).toBeGreaterThan(bodyStart);
+    expect(footerIndex).toBeGreaterThan(childIndex);
+  });
+
+  /**
+   * tasks.md 23.1 — the site footer mounts here, on every page, and is not
+   * the first thing to break the plain-HTML shell this test's own describe
+   * block documents: no client component appears anywhere in the markup.
+   */
+  it("mounts the site footer on every page", () => {
+    const markup = renderToStaticMarkup(
+      <RootLayout>
+        <p>content</p>
+      </RootLayout>,
+    );
+
+    expect(markup).toContain("<footer");
+    expect(markup).toContain("rentas.");
+    expect(markup).toContain("© 2026 rentas.com.ve · Publicar y contactar no cuesta nada");
   });
 });

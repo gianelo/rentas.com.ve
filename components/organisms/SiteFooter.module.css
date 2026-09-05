@@ -1,0 +1,167 @@
+/* Site footer (design/pantallas/Rentas - Footer.dc.html, artboards 9a/9b;
+   tasks.md 23.1, 23.10, 23.11). Mobile-first, same 768px breakpoint
+   Container.module.css and Nav.module.css already use — "ni SISTEMA.md ni
+   design.md nombran un punto de quiebre exacto" is still true here, so this
+   reuses the one already chosen instead of inventing a second number for
+   the same open question.
+
+   Horizontal inset comes from `Container`, not from a value copied off the
+   artboard: the artboard's own mobile padding is 20px and Container's is
+   16px, and reusing the site's one existing width primitive beats adding a
+   second one-off horizontal-padding mechanism just for this component. */
+
+.footer {
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  font-family: var(--sans);
+}
+
+.top {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-block: 24px 20px;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wordmark {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: var(--footer-brand-fs);
+  /* Same wordmark, same letter-spacing token Nav's brand already reads —
+     the two draw the identical word and are not a coincidence. */
+  letter-spacing: var(--brand-ls);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.tagline {
+  margin: 0;
+  font-size: var(--footer-tagline-fs);
+  line-height: 1.55;
+  color: var(--soft);
+  text-wrap: pretty;
+}
+
+/* One column per resolved link category (tasks.md 23.2). `.column + .column`
+   and not `.column` alone: the artboard draws a rule only BETWEEN two
+   columns (Legal, following Ayuda) and not above the first one — with zero
+   or one category resolved that rule never appears, which is correct. */
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.column + .column {
+  padding-block-start: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--meta);
+  font-weight: 700;
+  font-size: var(--footer-heading-fs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--soft);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* **44px on mobile, and it is a decision, not a default** (tasks.md 23.10).
+   The artboard argues it in words — "sin acordeón: diez enlaces se leen de
+   una" — and this is where that argument becomes a rule the next reader
+   cannot silently shrink: `--target-min` is the same 44px the rest of the
+   mobile surface already commits to (tokens.css), and there is no
+   `<details>`/accordion anywhere in this file that could hide a row behind
+   a toggle. `tests/measure/footer.spec.ts` measures the drawn height, not
+   this declaration, because declared is not the same as drawn (tokens.css
+   documents that gap being real more than once). */
+.link {
+  display: flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+  font-size: var(--footer-link-fs);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.strip {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-block: 16px 22px;
+  border-top: 1px solid var(--line);
+}
+
+.legal {
+  margin: 0;
+  font-family: var(--meta);
+  font-size: var(--footer-legal-fs);
+  line-height: 1.6;
+  color: var(--soft);
+}
+
+@media (min-width: 768px) {
+  .top {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 40px;
+    padding-block: 36px 26px;
+  }
+
+  .brand {
+    flex: 0 0 320px;
+  }
+
+  .wordmark {
+    font-size: var(--footer-brand-fs-desktop);
+  }
+
+  .tagline {
+    font-size: var(--footer-tagline-fs-desktop);
+    max-width: 260px;
+  }
+
+  .column {
+    flex: 1;
+    gap: 10px;
+  }
+
+  .column + .column {
+    padding-block-start: 0;
+    border-top: none;
+  }
+
+  /* Desktop draws no touch-target row: the artboard's own link anchors carry
+     no min-height, only the mobile ones do (23.10's "filas de 44px" names
+     the phone explicitly). */
+  .link {
+    min-block-size: auto;
+    font-size: var(--footer-link-fs-desktop);
+  }
+
+  .strip {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 24px;
+    padding-block: 16px;
+  }
+}
