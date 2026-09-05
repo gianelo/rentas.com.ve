@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
-import { buildSitemap } from "@/modules/listing-discovery/domain/sitemap";
+import { ayudaSitemapPaths, buildSitemap } from "@/modules/listing-discovery/domain/sitemap";
 import { DrizzleSitemap } from "@/modules/listing-discovery/infrastructure/drizzle-sitemap";
 import { readSiteBaseUrl } from "@/modules/listing-discovery/infrastructure/site-base-url";
+import { FOOTER_LINK_CATALOGUE } from "@/modules/site-footer/domain/footer-links";
 import { db } from "@/shared/db/client";
 
 /**
@@ -29,9 +30,17 @@ export const dynamic = "force-dynamic";
  * `buildSitemap`, en el dominio — la regla permanente del fundador, y también
  * la razón práctica de que el suelo de cobertura del 90 % llegue a `domain/` y
  * no llegue acá.
+ *
+ * Task 23.9: the same discipline applies to the five Ayuda pages.
+ * `ayudaSitemapPaths` — not this file — decides that Ayuda enters and Legal
+ * does not; passing `FOOTER_LINK_CATALOGUE` through is wiring, not a rule.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const listings = await new DrizzleSitemap(db).activeListings();
 
-  return buildSitemap(readSiteBaseUrl(), listings) as MetadataRoute.Sitemap;
+  return buildSitemap(
+    readSiteBaseUrl(),
+    listings,
+    ayudaSitemapPaths(FOOTER_LINK_CATALOGUE),
+  ) as MetadataRoute.Sitemap;
 }

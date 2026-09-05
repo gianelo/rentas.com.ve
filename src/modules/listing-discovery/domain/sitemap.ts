@@ -1,3 +1,4 @@
+import type { FooterLinkDefinition } from "../../site-footer/domain/footer-links";
 import { buildListingPath, slugify } from "./listing-url";
 
 /**
@@ -43,7 +44,39 @@ export interface SitemapEntry {
    * hace que deje de creerle al campo.
    */
   readonly lastModified?: Date;
-  readonly changeFrequency: "daily" | "weekly";
+  /**
+   * `"monthly"` was added for task 23.9: the five Ayuda pages are static
+   * content with no natural "modified" date, so they get the loosest
+   * frequency the domain declares rather than a borrowed "weekly"/"daily"
+   * that would overstate how often they actually change.
+   */
+  readonly changeFrequency: "daily" | "weekly" | "monthly";
+}
+
+/**
+ * Which footer destinations enter the sitemap, and which never do (task
+ * 23.9, decided by the founder on 2026-09-04). Ayuda answers real searches
+ * and is an acquisition surface, so its pages are the only ones this
+ * function returns; Legal is a trust surface and stays out of the sitemap
+ * ON PURPOSE — never because it is hidden from the index (it still carries
+ * no `noindex`, the same argument task 23.5 uses against a placeholder), but
+ * because it should earn its own crawl path from links, not from being
+ * listed at the same weight as content built to answer a search.
+ *
+ * Reads `FOOTER_LINK_CATALOGUE` (site-footer's single source of truth for
+ * these ten destinations) instead of naming its own list of five paths, so
+ * a page that is not live yet (`href: null`) cannot be sitemapped before it
+ * exists — the same guarantee this file already gives listing zone pages.
+ */
+export function ayudaSitemapPaths(
+  footerCatalogue: readonly FooterLinkDefinition[],
+): readonly string[] {
+  return footerCatalogue
+    .filter(
+      (entry): entry is FooterLinkDefinition & { href: string } =>
+        entry.category === "ayuda" && entry.href !== null,
+    )
+    .map((entry) => entry.href);
 }
 
 function joinUrl(base: string, path: string): string {
@@ -60,6 +93,9 @@ function newest(dates: readonly Date[]): Date | undefined {
 export function buildSitemap(
   baseUrl: string,
   listings: readonly SitemapListing[],
+  // Task 23.9. Defaults to empty so an existing caller that has not learned
+  // about Ayuda pages yet keeps its old behaviour unchanged.
+  ayudaPaths: readonly string[] = [],
 ): readonly SitemapEntry[] {
   // Ruidoso y a propósito, igual que `readPhotoPublicBaseUrl`. Con la base
   // vacía el documento sale con direcciones relativas (`/alquiler/…`), y un
@@ -77,6 +113,13 @@ export function buildSitemap(
       changeFrequency: "daily",
     },
   ];
+
+  // Task 23.9 — no `lastModified`: same reasoning as the home entry above
+  // when there is nothing to derive a date from. These are static content
+  // pages; inventing `new Date()` would make the sitemap lie about churn.
+  for (const path of ayudaPaths) {
+    entries.push({ url: joinUrl(base, path), changeFrequency: "monthly" });
+  }
 
   // La ciudad va en la clave junto a la zona: `Centro` existe en Maracaibo y en
   // Distrito Capital, y agrupar sólo por nombre de zona colapsaría las dos en

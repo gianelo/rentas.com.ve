@@ -2,12 +2,13 @@
  * The site footer's catalogue of destinations, and the rule that decides
  * which ones a visitor ever sees (tasks.md 23.2; AGENTS.md §7 — fail closed).
  *
- * Ten labels are named in `design/pantallas/Rentas - Footer.dc.html`. Eight
- * now resolve: three Ayuda pages as final copy (tasks.md 23.4), and five
- * Legal pages as DRAFTS pending the founder's ratification (tasks.md 23.5 —
- * each carries its own "Borrador en revisión" notice, and the task itself
- * does not close until the ratification does). The remaining two stay
- * `null`, blocked on decisions the founder has not made (23.6, 23.7).
+ * Ten labels are named in `design/pantallas/Rentas - Footer.dc.html`. All
+ * ten now resolve: five Ayuda pages as final copy (tasks.md 23.4, 23.6,
+ * 23.7 — the last of which renamed "Reportar un aviso" to "Cómo reportar
+ * un aviso"), and five Legal pages as DRAFTS pending the founder's
+ * ratification (tasks.md 23.5 — each carries its own "Borrador en
+ * revisión" notice, and that task itself does not close until the
+ * ratification does).
  *
  * This module is the single place that knows the full catalogue and its
  * current state. `resolveFooterLinks` filters it down to what is safe to
@@ -56,8 +57,13 @@ export const FOOTER_LINK_CATALOGUE: readonly FooterLinkDefinition[] = [
     category: "ayuda",
     href: "/ayuda/como-contactar-al-dueno",
   },
-  { label: "Reportar un aviso", category: "ayuda", href: null }, // tasks.md 23.6
-  { label: "Escribinos", category: "ayuda", href: null }, // tasks.md 23.7
+  // tasks.md 23.6 — renamed from "Reportar un aviso": that label promised a
+  // verb the footer cannot deliver (reporting needs a listing in the URL
+  // and a signed-in account, neither of which exists standing in the
+  // footer). This page EXPLAINS instead of executing.
+  { label: "Cómo reportar un aviso", category: "ayuda", href: "/ayuda/como-reportar-un-aviso" },
+  // tasks.md 23.7 — a Resend form, not a `mailto:`.
+  { label: "Escribinos", category: "ayuda", href: "/ayuda/escribinos" },
   // tasks.md 23.5 — shipped as drafts, not yet ratified (see each page's
   // own "Borrador en revisión" notice).
   { label: "Términos y condiciones", category: "legal", href: "/legal/terminos" },
