@@ -34,16 +34,14 @@ describe("resolveFooterLinks", () => {
   });
 
   /**
-   * The real production catalogue, today. tasks.md 23.4 shipped the three
-   * Ayuda pages derivable from the product as it already stands —
-   * "Preguntas frecuentes", "Cómo publicar un aviso", and "Cómo contactar
-   * al dueño" — and left "Reportar un aviso" and "Escribinos" at `null`:
-   * their content depends on the seam decisions tasks.md 23.6/23.7 own,
-   * which this slice explicitly does not build. This test documents that
-   * state as a checked fact rather than a claim in prose, and it is meant
-   * to keep failing every time a new `href` lands until all ten resolve.
+   * The real production catalogue, today. 23.4 shipped the three Ayuda
+   * pages; 23.5 shipped the five Legal drafts; this slice (23.6/23.7)
+   * ships the last two — "Cómo reportar un aviso" (renamed from "Reportar
+   * un aviso") and "Escribinos". Ten of ten resolve. Documents the state
+   * as a checked fact, rewritten RED-first against the nine-entry state
+   * this file held before this slice.
    */
-  it("resolves the three shipped Ayuda pages against today's real catalogue", () => {
+  it("resolves all ten pages against today's real catalogue", () => {
     expect(resolveFooterLinks(FOOTER_LINK_CATALOGUE)).toEqual([
       { label: "Preguntas frecuentes", category: "ayuda", href: "/ayuda/preguntas-frecuentes" },
       {
@@ -56,6 +54,17 @@ describe("resolveFooterLinks", () => {
         category: "ayuda",
         href: "/ayuda/como-contactar-al-dueno",
       },
+      {
+        label: "Cómo reportar un aviso",
+        category: "ayuda",
+        href: "/ayuda/como-reportar-un-aviso",
+      },
+      { label: "Escribinos", category: "ayuda", href: "/ayuda/escribinos" },
+      { label: "Términos y condiciones", category: "legal", href: "/legal/terminos" },
+      { label: "Política de privacidad", category: "legal", href: "/legal/privacidad" },
+      { label: "Uso de cookies", category: "legal", href: "/legal/cookies" },
+      { label: "Normas de publicación", category: "legal", href: "/legal/normas" },
+      { label: "Tratamiento de datos", category: "legal", href: "/legal/datos" },
     ]);
   });
 });
