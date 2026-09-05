@@ -34,15 +34,29 @@ describe("resolveFooterLinks", () => {
   });
 
   /**
-   * The real production catalogue, today. Ten labels are named in the
-   * artboard and none of the ten destinations exist yet (tasks.md 23.4-23.7
-   * are the founder decisions that fill them in one at a time). This test
-   * documents that state as a checked fact rather than a claim in prose —
-   * and it is meant to start failing the day the first `href` lands, which
-   * is the correct way for it to fail.
+   * The real production catalogue, today. tasks.md 23.4 shipped the three
+   * Ayuda pages derivable from the product as it already stands —
+   * "Preguntas frecuentes", "Cómo publicar un aviso", and "Cómo contactar
+   * al dueño" — and left "Reportar un aviso" and "Escribinos" at `null`:
+   * their content depends on the seam decisions tasks.md 23.6/23.7 own,
+   * which this slice explicitly does not build. This test documents that
+   * state as a checked fact rather than a claim in prose, and it is meant
+   * to keep failing every time a new `href` lands until all ten resolve.
    */
-  it("resolves to nothing against today's real catalogue — none of the ten pages exist yet", () => {
-    expect(resolveFooterLinks(FOOTER_LINK_CATALOGUE)).toEqual([]);
+  it("resolves the three shipped Ayuda pages against today's real catalogue", () => {
+    expect(resolveFooterLinks(FOOTER_LINK_CATALOGUE)).toEqual([
+      { label: "Preguntas frecuentes", category: "ayuda", href: "/ayuda/preguntas-frecuentes" },
+      {
+        label: "Cómo publicar un aviso",
+        category: "ayuda",
+        href: "/ayuda/como-publicar-un-aviso",
+      },
+      {
+        label: "Cómo contactar al dueño",
+        category: "ayuda",
+        href: "/ayuda/como-contactar-al-dueno",
+      },
+    ]);
   });
 });
 
