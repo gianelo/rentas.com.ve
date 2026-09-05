@@ -112,9 +112,19 @@ function lectores(): readonly string[] {
  * queda dicho acá para que el séptimo vuelva a doler igual. **La decisión de si
  * seis ya son demasiadas es del fundador y este renglón no la toma**: la
  * reporta.
+ *
+ * **SÉPTIMO LECTOR, 2026-09-04 (17.5/17.7), y la misma razón que el sexto.**
+ * `drizzle-search-vocabulary.ts` es la caja de búsqueda de zonas: con 5.796
+ * zonas en el taxonomía, ofrecer una sin avisos manda a una pantalla sin
+ * salida (regla transversal 4), y el orden por oferta (17.5) necesita el
+ * mismo número. Filtra por el reloj por la misma razón que el sexto lector ya
+ * dejó escrita — su destino es también una búsqueda, y esa búsqueda cuenta con
+ * este mismo predicado — así que un reloj distinto acá sería la regla
+ * transversal 3 rota desde la caja en vez de desde la portada.
  */
 const DECLARADOS: readonly string[] = [
   "modules/contact-reveal/infrastructure/drizzle-contact-reveal.ts",
+  "modules/listing-catalogue/infrastructure/drizzle-search-vocabulary.ts",
   "modules/listing-discovery/infrastructure/drizzle-active-zones.ts",
   "modules/listing-discovery/infrastructure/drizzle-home-collections.ts",
   "modules/listing-discovery/infrastructure/drizzle-sitemap.ts",

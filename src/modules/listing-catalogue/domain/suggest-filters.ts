@@ -26,16 +26,22 @@ export interface SuggestionVocabulary {
     /** La parroquia o el municipio. Es lo que desambigua un nombre repetido. */
     parentName: string | null;
     /**
-     * Cuántos avisos activos tiene, **cuando quien armó el vocabulario lo
-     * sabía** (14.51).
+     * Cuántos avisos activos tiene, cuando quien armó el vocabulario lo sabía.
      *
-     * Opcional y no obligatorio porque los dos vocabularios del producto son
-     * distintos por diseño y ninguno es el degradado del otro:
-     * `DrizzleSearchVocabulary` estrecha la taxonomía con `ILIKE` y **no cuenta
-     * nada** —contar por zona ahí sería una consulta más en cada tecleo—,
-     * mientras que el acotado de la pantalla de resultados sale de un conteo
-     * que ya viajó con la página. Obligarlo llevaría a que el adaptador del
-     * servidor escribiera un `0`, que es peor que no saber: un cero es un dato.
+     * **Corrección 2026-09-04 (17.5/17.7).** Este comentario decía que
+     * `DrizzleSearchVocabulary` "no cuenta nada" y que por eso el campo era
+     * opcional. Dejó de ser cierto: con 5.796 zonas en el taxonomía, ofrecer
+     * una zona vacía en la caja de búsqueda manda a una pantalla sin salida
+     * (regla transversal 4), así que el camino de servidor cuenta ahora igual
+     * que el acotado del panel — mismo predicado que `DrizzleActiveZones`
+     * (`status = 'active'` y `expires_at > now()`), para que las dos
+     * respuestas nunca discrepen sobre qué es "tener avisos".
+     *
+     * Sigue siendo opcional porque `searchPublicationZones`
+     * (listing-publication) construye su propio `PublicationZoneOption` sin
+     * pasar por este campo — el lado de publicar decide lo contrario a
+     * propósito: toda zona es elegible, incluidas las vacías, porque si no
+     * una zona nunca podría recibir su primer aviso (17.7).
      */
     count?: number;
   }>;

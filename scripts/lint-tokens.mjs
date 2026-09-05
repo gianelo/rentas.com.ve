@@ -103,30 +103,6 @@ const TOKEN_ALIASES = new Map([
   ["--door-veil", "--scrim"],
 ]);
 
-/**
- * tasks.md 14.48 — **los tokens que nadie usa, y por qué hay una excepción.**
- *
- * Un token declarado sin un solo `var(--x)` es casi siempre peso muerto, y
- * sacarlo es gratis cuando la medida la inventó este proyecto. **No lo es
- * cuando el token es DEL SISTEMA**: `design/reference/sistema/tokens.css` lo
- * declara para las cuatro estructuras y `SISTEMA.md` lo nombra, así que
- * retirarlo del subconjunto que ship*a* es un cambio al conjunto y no un uso de
- * él — la 16.37 lo resolvió así para `--fpb`, con la decisión del fundador y su
- * fila en `SISTEMA.md`. Esa es la única clase de falso positivo que este gate
- * tiene hoy, y la salida no es apagarlo: es nombrar el token, su razón y la
- * tarea que lo debe.
- *
- * **La excepción caduca sola.** Si un token de esta tabla vuelve a usarse, el
- * gate falla igual — por la excepción vencida y no por el uso. Una lista de
- * perdones que nadie limpia es la forma en que un gate deja de significar algo.
- */
-// 22.13: `--ft` y `--tclamp` tenían acá su excepción nombrada. El fundador
-// eligió la misma salida que la 16.37 tomó para `--fpb` — retirarlos del
-// subconjunto que ship*a* en vez de exceptuarlos —, así que `src/styles/
-// tokens.css` ya no los declara y no queda huérfano que perdonar. Una
-// excepción para un token que ya no existe sería un perdón sin motivo vivo.
-const UNUSED_TOKENS_ALLOWED = new Map();
-
 /** Dónde se busca un `var(--x)`. `src/` entra porque `tokens.css` encadena. */
 const USAGE_ROOTS = ["app", "components", "src"];
 
@@ -442,19 +418,8 @@ function checkTokenUsage(cssText, files) {
   const issues = [];
   for (const token of declared) {
     if (used.has(token)) continue;
-    const excuse = UNUSED_TOKENS_ALLOWED.get(token);
-    if (excuse) continue;
     issues.push(
       `${TOKENS_CSS_PATH}: "${token}" está declarado y no lo lee ningún var(${token}) en ${USAGE_ROOTS.join(", ")} — o se retira, o se le da el uso para el que se declaró.`,
-    );
-  }
-
-  // La excepción vencida es un error propio: un perdón que sobrevive a su
-  // motivo es cómo una lista de excepciones deja de significar algo.
-  for (const [token, excuse] of UNUSED_TOKENS_ALLOWED) {
-    if (!used.has(token)) continue;
-    issues.push(
-      `${TOKENS_CSS_PATH}: "${token}" ya se usa, así que su excepción caducó — sacarlo de UNUSED_TOKENS_ALLOWED (motivo registrado: ${excuse}).`,
     );
   }
 
