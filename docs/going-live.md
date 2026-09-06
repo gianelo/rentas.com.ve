@@ -53,6 +53,13 @@ having configured the domain without having configured anything.
   copying every object and migrating the `listing_photo_derivative` keys
   (`src/shared/db/schema.ts:680`), and nothing user-visible carries the bucket
   name.
+- **The logo and the visual identity are not part of it.** A rename changes the
+  word, not the colour system, the typography, or the absence of a logo that
+  `design/reference/sistema/SISTEMA.md:323` declares. That absence is still the
+  standing definition of the mark: *the mark is the word itself, in the system's
+  stack.* Rebranding the palette or commissioning a logo is a separate decision
+  with a separate cost, and folding it into a rename is how a two-day change
+  becomes a two-month one.
 
 ## The taxonomy has to be seeded, and it is not
 
