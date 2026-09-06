@@ -21,7 +21,7 @@ import { signInRedirect } from "./redirect-callback";
  * actualización. Queda probado que **el destino viaja adentro del enlace**.
  */
 
-const ORIGIN = "https://rentas.test";
+const ORIGIN = "https://rentoru.test";
 
 /** Los `handlers` reciben `NextRequest`, que es lo que Next les entrega. */
 const pedido = (u: string, init?: RequestInit) => new NextRequest(u, init as never);
@@ -66,7 +66,7 @@ function puerta({ conLaRegla = true } = {}) {
     adapter: verificationTokenStore(),
     providers: [
       buildEmailProvider({
-        readConfig: () => ({ apiKey: "clave", from: "hola@rentas.test" }),
+        readConfig: () => ({ apiKey: "clave", from: "hola@rentoru.test" }),
         createMailer: () => ({
           async send(message) {
             // Se lee del cuerpo redactado, no de un parámetro interceptado: si

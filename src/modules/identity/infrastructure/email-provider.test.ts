@@ -13,11 +13,11 @@ import { AuthMailerNotConfiguredError } from "./resend-mailer";
 
 const PARAMS = {
   identifier: "tenant@ejemplo.com",
-  url: "https://rentas.com.ve/api/auth/callback/email?token=abc&email=tenant%40ejemplo.com",
+  url: "https://rentoru.com/api/auth/callback/email?token=abc&email=tenant%40ejemplo.com",
   expires: new Date("2026-08-24T10:15:00.000Z"),
   token: "abc",
   theme: {},
-  request: new Request("https://rentas.com.ve"),
+  request: new Request("https://rentoru.com"),
 } as const;
 
 describe("maxAge", () => {
@@ -42,7 +42,7 @@ describe("sendVerificationRequest", () => {
   it("manda el enlace mágico compuesto por el dominio, al remitente configurado", async () => {
     const send = vi.fn().mockResolvedValue(undefined);
     const provider = buildEmailProvider({
-      readConfig: () => ({ apiKey: "re_loquesea", from: "ingresa@rentas.com.ve" }),
+      readConfig: () => ({ apiKey: "re_loquesea", from: "ingresa@rentoru.com" }),
       createMailer: () => ({ send }),
     });
 

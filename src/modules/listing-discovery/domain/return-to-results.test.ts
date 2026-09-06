@@ -11,14 +11,14 @@ const FICHA = "/alquiler/distrito-capital/chacao/apartamento-2-habitaciones-8451
 
 /** Lo que el navegador le entrega a la ficha: el valor ya decodificado. */
 function readBack(listingHref: string): string | undefined {
-  return new URL(listingHref, "https://rentas.com.ve").searchParams.get(RETURN_PARAM) ?? undefined;
+  return new URL(listingHref, "https://rentoru.com").searchParams.get(RETURN_PARAM) ?? undefined;
 }
 
 describe("safeResultsOrigin", () => {
   /**
    * **Es entrada de quien envía, no un dato del servidor.** Este valor llega en
    * la query de la ficha, así que sin esta regla el «← Resultados» es un
-   * redirector abierto: un enlace de rentas.com.ve que deja a quien lo toca en
+   * redirector abierto: un enlace de rentoru.com que deja a quien lo toca en
    * cualquier parte. Ya pasó una vez en este proyecto, en la acción de revelar
    * el contacto, y lo caro no fue el salto — fue que el enlace se veía nuestro.
    */

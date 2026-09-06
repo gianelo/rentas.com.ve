@@ -17,8 +17,8 @@ function card(id: string) {
     areaM2: 65,
     publisherType: "owner" as const,
     photo: {
-      thumbUrl: "https://fotos.rentas.com.ve/t.webp",
-      cardUrl: "https://fotos.rentas.com.ve/c.webp",
+      thumbUrl: "https://fotos.rentoru.com/t.webp",
+      cardUrl: "https://fotos.rentoru.com/c.webp",
       alt: `Foto 1 de 1 — Apartamento ${id}, Chacao`,
     },
   };

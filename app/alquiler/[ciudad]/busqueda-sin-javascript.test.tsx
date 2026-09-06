@@ -66,7 +66,7 @@ vi.mock("@/modules/listing-discovery/infrastructure/drizzle-listing-photos", () 
 import CiudadPage from "./page";
 
 beforeEach(() => {
-  process.env.R2_BUCKET_PUBLIC_URL = "https://fotos.rentas.test";
+  process.env.R2_BUCKET_PUBLIC_URL = "https://fotos.rentoru.test";
   search.mockReset();
   countFacets.mockReset();
   search.mockImplementation(async (criteria: SearchCriteria) => matching(criteria));
@@ -248,7 +248,7 @@ describe("la búsqueda sin JavaScript", () => {
 
     const volver = new URL(
       (ficha as string).replaceAll("&amp;", "&"),
-      "https://rentas.com.ve",
+      "https://rentoru.com",
     ).searchParams.get("volver");
 
     // Literal, no derivado de las mismas funciones que compone la página: la

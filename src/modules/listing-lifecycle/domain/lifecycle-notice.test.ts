@@ -44,20 +44,20 @@ describe("composeNotice", () => {
   const listing = { id: "abc", title: "Apartamento 2 habitaciones", expiresAt: EXPIRES_AT };
 
   it("el aviso de vencimiento cuenta los días que faltan y ofrece renovar", () => {
-    const notice = composeNotice("expiry", listing, DAY_27, "https://rentas.com.ve/renovar/T");
+    const notice = composeNotice("expiry", listing, DAY_27, "https://rentoru.com/renovar/T");
 
     expect(notice.subject).toContain("3 días");
     expect(notice.body).toContain(listing.title);
-    expect(notice.body).toContain("https://rentas.com.ve/renovar/T");
+    expect(notice.body).toContain("https://rentoru.com/renovar/T");
   });
 
   // El segundo correo tiene que nombrar la consecuencia —las fotos— y la
   // fecha. «Tu aviso vence» otra vez no le dice a nadie que va a perder algo.
   it("el aviso de purga nombra las fotos y el día en que se borran", () => {
-    const notice = composeNotice("purge", listing, DAY_40, "https://rentas.com.ve/renovar/T");
+    const notice = composeNotice("purge", listing, DAY_40, "https://rentoru.com/renovar/T");
 
     expect(notice.subject.toLowerCase()).toContain("foto");
     expect(notice.body).toContain("15 de septiembre de 2026");
-    expect(notice.body).toContain("https://rentas.com.ve/renovar/T");
+    expect(notice.body).toContain("https://rentoru.com/renovar/T");
   });
 });

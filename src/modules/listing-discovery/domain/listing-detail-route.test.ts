@@ -107,7 +107,7 @@ describe("resolveListingRoute", () => {
     expect(resolution.kind).toBe("redirect");
     expect(
       resolution.kind === "redirect" &&
-        new URL(resolution.to, "https://rentas.com.ve").searchParams.get(RETURN_PARAM),
+        new URL(resolution.to, "https://rentoru.com").searchParams.get(RETURN_PARAM),
     ).toBe("/alquiler/caracas/chacao?min=200&hab=2");
   });
 

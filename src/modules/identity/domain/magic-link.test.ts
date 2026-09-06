@@ -16,7 +16,7 @@ describe("MAGIC_LINK_MAX_AGE_SECONDS", () => {
 
 describe("composeMagicLinkEmail", () => {
   it("incluye el enlace tal cual, sin envolverlo ni acortarlo", () => {
-    const url = "https://rentas.com.ve/api/auth/callback/email?token=abc&email=a%40b.com";
+    const url = "https://rentoru.com/api/auth/callback/email?token=abc&email=a%40b.com";
 
     const email = composeMagicLinkEmail(url);
 
@@ -24,7 +24,7 @@ describe("composeMagicLinkEmail", () => {
   });
 
   it("dice que vale 15 minutos y una sola vez, para que quien lo lee sepa la regla", () => {
-    const email = composeMagicLinkEmail("https://rentas.com.ve/x");
+    const email = composeMagicLinkEmail("https://rentoru.com/x");
 
     expect(email.body).toContain("15 minutos");
     expect(email.body).toContain("una sola vez");
@@ -39,7 +39,7 @@ describe("composeMagicLinkEmail", () => {
    * viejo puesto.
    */
   it("el asunto nombra el producto, que es lo que vuelve legítimo al correo", () => {
-    const email = composeMagicLinkEmail("https://rentas.com.ve/x");
+    const email = composeMagicLinkEmail("https://rentoru.com/x");
 
     expect(email.subject).toBe("Tu enlace para entrar a Rentoru");
   });

@@ -22,7 +22,7 @@ export function signInRedirect({ url, baseUrl }: { url: string; baseUrl: string 
  * La dirección llega absoluta o relativa según el momento. Esto la vuelve una
  * ruta nuestra, o la cadena vacía —que el dominio ya rechaza—. Es traducción,
  * no comprobación; se comparan orígenes y no prefijos de texto para que
- * `https://rentas.com.ve.evil.test/…` no pase por empezar igual que el nuestro.
+ * `https://rentoru.com.evil.test/…` no pase por empezar igual que el nuestro.
  */
 function rutaPropia(url: string, baseUrl: string): string {
   try {

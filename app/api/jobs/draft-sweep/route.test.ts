@@ -26,7 +26,7 @@ afterEach(() => {
 
 async function get(headers: Record<string, string> = {}) {
   const { GET } = await import("./route");
-  return GET(new Request("https://rentas.com.ve/api/jobs/draft-sweep", { headers }));
+  return GET(new Request("https://rentoru.com/api/jobs/draft-sweep", { headers }));
 }
 
 const CERRADO = { error: "unauthorized", drafts_deleted: 0, objects_removed: 0 };

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { ListingPhotoView } from "@/modules/listing-discovery/application/ports/listing-photos.port";
 import { PhotoStrip } from "./PhotoStrip";
 
-const BASE = "https://fotos.rentas.com.ve";
+const BASE = "https://fotos.rentoru.com";
 const HREF = "/alquiler/caracas/chacao/apto-2-hab-abc123";
 
 function photo(position: number): ListingPhotoView {

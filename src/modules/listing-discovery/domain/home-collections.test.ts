@@ -19,7 +19,7 @@ const CITIES = [
   { id: "mcbo", name: "Maracaibo" },
 ] as const;
 
-const BASE_URL = "https://fotos.rentas.com.ve";
+const BASE_URL = "https://fotos.rentoru.com";
 
 /** Una portada completa: las dos derivadas que la F9 exige. */
 function cover(): GridCover {

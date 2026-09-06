@@ -212,8 +212,8 @@ function covers(ids: readonly string[]) {
 }
 
 beforeEach(() => {
-  process.env.R2_BUCKET_PUBLIC_URL = "https://fotos.rentas.test";
-  process.env.SITE_URL = "https://rentas.test";
+  process.env.R2_BUCKET_PUBLIC_URL = "https://fotos.rentoru.test";
+  process.env.SITE_URL = "https://rentoru.test";
   vi.clearAllMocks();
   findForDetail.mockResolvedValue(detail());
   allFor.mockResolvedValue([]);

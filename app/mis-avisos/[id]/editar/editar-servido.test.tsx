@@ -103,7 +103,7 @@ const AVISO = {
  * guardada. Se pone en el entorno y no se dobla `readPhotoPublicBaseUrl`: la
  * negativa cuando falta es parte de lo que esta pantalla promete.
  */
-const BASE = "https://fotos.rentas.com.ve";
+const BASE = "https://fotos.rentoru.com";
 
 /** Tres fotos con su miniatura, como las devuelve la lectura de la 18.26. */
 const FOTOS = [

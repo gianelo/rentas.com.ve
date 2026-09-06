@@ -17,7 +17,7 @@ describe("safeSignInDestination", () => {
    * **El destino llega en un campo del formulario, así que es entrada de quien
    * envía y no un dato del servidor.** Sin esta regla, un formulario armado a
    * mano convierte la acción de revelar en un redirector abierto: un enlace de
-   * rentas.com.ve que deja a quien lo toca en cualquier parte. Eso es un regalo
+   * rentoru.com que deja a quien lo toca en cualquier parte. Eso es un regalo
    * para el phishing, y lo caro es justamente que el enlace se ve nuestro.
    */
   it("rechaza otro origen escrito completo", () => {

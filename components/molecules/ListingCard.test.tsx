@@ -17,8 +17,8 @@ function render(overrides: Partial<Parameters<typeof ListingCard>[0]> = {}) {
       areaM2={65}
       publisherType="owner"
       photo={{
-        thumbUrl: "https://fotos.rentas.com.ve/photos/pub/tok/thumb.webp",
-        cardUrl: "https://fotos.rentas.com.ve/photos/pub/tok/card.webp",
+        thumbUrl: "https://fotos.rentoru.com/photos/pub/tok/thumb.webp",
+        cardUrl: "https://fotos.rentoru.com/photos/pub/tok/card.webp",
         alt: "Foto 1 de 1 — Apartamento 2 habitaciones, Chacao",
       }}
       {...overrides}
@@ -128,7 +128,7 @@ describe("ListingCard — la portada", () => {
 
     expect(source).toContain('media="(min-width: 768px)"');
     expect(source).toContain("card.webp");
-    expect(markup).toContain('src="https://fotos.rentas.com.ve/photos/pub/tok/thumb.webp"');
+    expect(markup).toContain('src="https://fotos.rentoru.com/photos/pub/tok/thumb.webp"');
   });
 
   /**

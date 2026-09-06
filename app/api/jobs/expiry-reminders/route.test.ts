@@ -12,7 +12,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 const ENV_KEYS = [
   "DATABASE_URL",
   "CRON_SECRET",
-  "SITE_BASE_URL",
   "RENEWAL_TOKEN_SECRET",
   "RESEND_API_KEY",
   "LIFECYCLE_MAIL_FROM",
@@ -22,7 +21,6 @@ let saved: Record<string, string | undefined>;
 beforeEach(() => {
   saved = Object.fromEntries(ENV_KEYS.map((key) => [key, process.env[key]]));
   process.env.DATABASE_URL = "postgres://u:p@nunca-se-usa-pooler.neon.tech/db";
-  process.env.SITE_BASE_URL = "https://rentas.com.ve";
 });
 
 afterEach(() => {
@@ -35,7 +33,7 @@ afterEach(() => {
 async function post(headers: Record<string, string> = {}) {
   const { POST } = await import("./route");
   return POST(
-    new Request("https://rentas.com.ve/api/jobs/expiry-reminders", { method: "POST", headers }),
+    new Request("https://rentoru.com/api/jobs/expiry-reminders", { method: "POST", headers }),
   );
 }
 
@@ -92,7 +90,7 @@ describe("cuando falta la configuración del correo", () => {
   });
 
   it.each([
-    ["falta la clave de Resend", { LIFECYCLE_MAIL_FROM: "avisos@rentas.com.ve" }],
+    ["falta la clave de Resend", { LIFECYCLE_MAIL_FROM: "avisos@rentoru.com" }],
     ["falta el remitente", { RESEND_API_KEY: "re_loquesea" }],
     ["no hay ninguna de las dos", {}],
   ])("devuelve 500 y reminders_sent = 0 cuando %s", async (_caso, env) => {
