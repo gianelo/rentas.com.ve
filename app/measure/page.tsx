@@ -24,6 +24,7 @@ import { ActionButton, NeutralButton, SelectionButton } from "../../components/a
 import { ListingMeta } from "../../components/atoms/ListingMeta";
 import { ListingTitle } from "../../components/atoms/ListingTitle";
 import { Price } from "../../components/atoms/Price";
+import { SelectionChip } from "../../components/atoms/SelectionChip";
 import { Container } from "../../components/layout/Container";
 import { DetailSplit } from "../../components/layout/DetailSplit";
 import { FormShell } from "../../components/layout/FormShell";
@@ -262,6 +263,7 @@ export default async function MeasureHarnessPage({
                   rooms={2}
                   areaM2={78}
                   publisherType="owner"
+                  photoCount={n}
                   photo={{
                     thumbUrl: "https://fotos.rentoru.com/photos/pub/tok/thumb.webp",
                     cardUrl: "https://fotos.rentoru.com/photos/pub/tok/card.webp",
@@ -298,6 +300,7 @@ export default async function MeasureHarnessPage({
                     rooms={2}
                     areaM2={78}
                     publisherType={quien}
+                    photoCount={1}
                     photo={{ thumbUrl: url, cardUrl: url, alt: `Portada ${nombre}` }}
                   />
                 </li>
@@ -324,10 +327,14 @@ export default async function MeasureHarnessPage({
         <div data-testid="chips-inicio">
           <ul className={homeStyles.chips}>
             <li>
-              <span className={homeStyles.chipSelected}>Distrito Capital</span>
+              <SelectionChip href="#" selected ariaCurrent="true">
+                Distrito Capital
+              </SelectionChip>
             </li>
             <li>
-              <span className={homeStyles.chip}>Maracaibo</span>
+              <SelectionChip href="#" selected={false} ariaCurrent="true">
+                Maracaibo
+              </SelectionChip>
             </li>
           </ul>
         </div>
@@ -335,14 +342,14 @@ export default async function MeasureHarnessPage({
         <div data-testid="chips-mis-avisos">
           <ul className={misAvisosStyles.fichas}>
             <li>
-              <span className={misAvisosStyles.ficha} aria-current="page">
+              <SelectionChip href="#" selected ariaCurrent="page">
                 Todos <span className={misAvisosStyles.fichaCuenta}>3</span>
-              </span>
+              </SelectionChip>
             </li>
             <li>
-              <span className={misAvisosStyles.ficha}>
+              <SelectionChip href="#" selected={false} ariaCurrent="page">
                 Activas <span className={misAvisosStyles.fichaCuenta}>2</span>
-              </span>
+              </SelectionChip>
             </li>
           </ul>
         </div>

@@ -419,6 +419,7 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
                     rooms={card.rooms}
                     areaM2={card.areaM2}
                     publisherType={card.publisherType}
+                    photoCount={card.photoCount}
                     photo={card.photo}
                   />
                 </li>

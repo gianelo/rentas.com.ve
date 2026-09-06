@@ -503,6 +503,7 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
                       rooms={card.rooms}
                       areaM2={card.areaM2}
                       publisherType={card.publisherType}
+                      photoCount={card.photoCount}
                       photo={card.photo}
                     />
                   </li>

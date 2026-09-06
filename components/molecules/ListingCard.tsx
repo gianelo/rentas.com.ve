@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { AppLink } from "../atoms/AppLink";
 import { ListingMeta } from "../atoms/ListingMeta";
 import { ListingTitle } from "../atoms/ListingTitle";
+import { PhotoCounter } from "../atoms/PhotoCounter";
 import { Price } from "../atoms/Price";
 import { PublisherBadge } from "../atoms/PublisherBadge";
 import styles from "./ListingCard.module.css";
@@ -28,6 +29,8 @@ export interface ListingCardProps {
   readonly areaM2: number;
   readonly publisherType: "owner" | "broker";
   readonly photo: ListingCardPhoto;
+  /** El contador sobre la portada — "1 / 6" (tasks.md 22.8, artboard 7c). */
+  readonly photoCount: number;
 }
 
 /**
@@ -52,6 +55,7 @@ export function ListingCard({
   areaM2,
   publisherType,
   photo,
+  photoCount,
 }: ListingCardProps) {
   return (
     <article className={styles.card} data-testid="listing-card">
@@ -79,6 +83,8 @@ export function ListingCard({
         <span className={styles.badgeSlot}>
           <PublisherBadge publisherType={publisherType} />
         </span>
+
+        <PhotoCounter total={photoCount} />
       </div>
 
       <div className={styles.body}>

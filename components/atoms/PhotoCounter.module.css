@@ -1,0 +1,17 @@
+/* Artboard 7c: `position:absolute; right:9px; bottom:9px`, `--meta` a 10px,
+   pastilla de fondo `--surface` y texto `--soft`. El padre (`.cover` de
+   `ListingCard`) es el ancla — la misma razón por la que la placa de
+   publicador se ancla ahí y no en la tarjeta entera. */
+.counter {
+  position: absolute;
+  right: 9px;
+  bottom: 9px;
+  display: inline-flex;
+  padding-inline: 6px;
+  border-radius: var(--rs);
+  background: var(--surface);
+  color: var(--soft);
+  font-family: var(--meta);
+  font-size: var(--card-photocount-fs);
+  line-height: 1.4;
+}

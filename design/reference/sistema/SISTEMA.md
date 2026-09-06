@@ -133,9 +133,9 @@ Escala: `4 · 8 · 12 · 16 · 24 · 32 · 48`. Nada fuera de esa escala.
 
 #### La miniatura de 44 × 34, y por qué sigue declarada
 
-`--tw`/`--th` (44 × 34) y `--twd`/`--thd` (64 × 48) siguen en el conjunto porque **siguen vistiendo dos superficies**: la fila de `/mis-avisos` y el subidor de fotos del paso 2 de publicar. Lo que ya no visten es el camino de lectura, que es la anatomía que este apartado describía.
+`--tw`/`--th` (44 × 34) y `--twd`/`--thd` (64 × 48) siguen en el conjunto porque **siguen vistiendo dos superficies**: la fila de medición de `ResultRow` (1b.10/1b.11/1b.12, camino ya retirado de la lectura) y el subidor de fotos del paso 2 de publicar, respectivamente. Lo que ya no visten es el camino de lectura, que es la anatomía que este apartado describía.
 
-**Contradicción abierta, verificada y NO resuelta acá — requiere al fundador.** Ninguna de las nueve láminas dibuja una miniatura de 44 × 34, y la de `/mis-avisos` (artboards 14c y 14d) dibuja **74 × 56**, que no es ninguno de los dos pares. El código usa `--tw`/`--th`. No se cambió de oficio porque mover esa miniatura es un cambio visible que ninguna tarea pidió y ninguna decisión del fundador cubre.
+**RESUELTO por el fundador el 2026-09-05 (22.15): manda la lámina.** Ninguna de las nueve láminas dibujaba una miniatura de 44 × 34, y la de `/mis-avisos` (artboards 14c y 14d) dibuja **74 × 56**, que no era ninguno de los dos pares declarados. `/mis-avisos` bajó a `--mis-avisos-thumb-w`/`--mis-avisos-thumb-h` (74 × 56), un token propio y no un alias de `--tw`/`--th` ni de `--twd`/`--thd` — dos números iguales no son el mismo token si son de dos componentes distintos (la misma razón que separa `--footer-brand-fs-desktop` de `--nav-brand-fs-desktop`).
 
 ### Layout de escritorio
 
@@ -153,7 +153,7 @@ Escala: `4 · 8 · 12 · 16 · 24 · 32 · 48`. Nada fuera de esa escala.
 Tres niveles, y no deben mezclarse:
 
 1. **Acción** — relleno `--accent`, texto `--accent-ink`. Publicar, Continuar, Renovar, Crear.
-2. **Selección / estado** — fondo `--tint`, borde y texto `--accent`. Toggle Dueño/Inmobiliaria, ciudad, habitaciones, chips activos. Comunica estado, no invita a enviar.
+2. **Selección / estado** — fondo `--tint`, borde y texto `--accent`. Toggle Dueño/Inmobiliaria, ciudad, habitaciones, chips activos. Comunica estado, no invita a enviar. **La ficha de selección** —un enlace que elige una opción de un conjunto, con una marcada; las fichas de ciudad del inicio y las de estado de `/mis-avisos`— es este nivel dibujado por un solo átomo compartido, `components/atoms/SelectionChip.tsx` (tasks.md 22.5 unificó el color, 22.12 unificó el componente). **No es** `FilterChips`: esa ficha siempre representa un filtro *aplicado*, siempre lleva su `×` de quitar y no tiene estado "no elegida" — es otro papel, aunque comparta el mismo idioma de color.
 3. **Neutro** — borde `--strong`, sin relleno, texto `--ink`. Cancelar, Corregir archivo.
 
 ## Distinción dueño / inmobiliaria
@@ -176,6 +176,8 @@ El badge **no** usa el color de acento: el contraste es relleno vs borde. Aparec
 **Layout escritorio (1280, lámina 7c):** barra de 68px con marca, pastilla al centro y las acciones contra el borde → contenedor 1100, **sin barra lateral** → miga de pan, título, conteo → fichas de filtro puesto → **cuadrícula de cuatro columnas de 254px** → paginación. Los filtros viven sólo en el modal, que se abre desde la propia pastilla y **por dirección**, no por un manejador de clic. **El modal va sobre la lista, no en lugar de ella** (14.46): velo `--scrim` de borde a borde y la hoja como tarjeta de 800 con borde y `--r`. La lámina 7b lo dibuja distinto —panel sobre una banda de `--bg`, sin velo— y ahí la lámina queda corregida por la 14.46, igual que la 16.24 corrigió su `min-height:40px`. En el teléfono no hay tarjeta: la lámina 6b dibuja una pantalla completa y así se entrega.
 
 **Tarjeta de resultado:** portada 4:3 arriba, y debajo, en este orden de documento: placa de publicador, precio, título recortado a dos líneas, metadatos (`zona · N hab · N m²`). El precio va antes del título en el orden de lectura y con más peso visual. Un solo enlace por tarjeta —su nombre accesible es el título— y el área tocable se extiende a la tarjeta entera con un `::after`, porque dos líneas de texto no llegan a 44px de forma confiable y errarle en una cuadrícula de dos columnas abre el aviso de al lado.
+
+**El contador de fotos, sobre la esquina de la portada** (`components/atoms/PhotoCounter.tsx`, tasks.md 22.8, artboard 7c: `right:9px;bottom:9px`, `--meta` a 10px, pastilla `--surface`/`--soft`). Ninguna tarea lo nombraba antes; se agregó el 2026-09-05 al leer la lámina para el cierre de esta sección. Dice "1 / N": la posición es siempre 1 (la tarjeta sólo dibuja la portada) y `N` es el total real de fotos del aviso, que `ListingPhotosPort.coversFor` ahora trae junto con la portada.
 
 **Densidad:** cuadrícula de tarjetas con portada. Ver la corrección de abajo — este documento decía lo contrario.
 
@@ -252,7 +254,7 @@ El color aparece solo en los dos estados que piden algo. Activa y vencida son ne
 
 **Las fichas de filtro por estado** (una por estado, más «Todos», con su conteo) usan el **nivel 2 de la jerarquía de botones** cuando están elegidas: relleno `--tint`, borde y texto `--accent`. **Decidido por el fundador el 2026-08-28**, después de que la pantalla las dibujara con relleno `--tint` pero borde `--strong` y texto `--ink` — el mismo componente pintado con dos idiomas según la pantalla.
 
-**Layout escritorio:** grid `120px 1fr 200px` — la acción vive en su propia columna, alineada a la derecha.
+**Layout escritorio:** grid `120px 1fr 200px` — la acción vive en su propia columna, alineada a la derecha. **Construido el 2026-09-05 (22.15)**: hasta entonces la hoja no tenía esta disposición y la fila se veía igual en los dos anchos.
 
 ### 7. La pastilla de búsqueda y la barra que la lleva
 

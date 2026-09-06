@@ -12,6 +12,7 @@ export interface ListingStripCard {
   readonly areaM2: number;
   readonly publisherType: "owner" | "broker";
   readonly photo: ListingCardPhoto;
+  readonly photoCount: number;
 }
 
 export interface ListingStripLink {
@@ -113,6 +114,7 @@ export function ListingStrip({ stripKey, title, subtitle, cards, seeAll }: Listi
               rooms={card.rooms}
               areaM2={card.areaM2}
               publisherType={card.publisherType}
+              photoCount={card.photoCount}
               photo={card.photo}
             />
           </li>

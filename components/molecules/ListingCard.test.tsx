@@ -16,6 +16,7 @@ function render(overrides: Partial<Parameters<typeof ListingCard>[0]> = {}) {
       rooms={2}
       areaM2={65}
       publisherType="owner"
+      photoCount={6}
       photo={{
         thumbUrl: "https://fotos.rentoru.com/photos/pub/tok/thumb.webp",
         cardUrl: "https://fotos.rentoru.com/photos/pub/tok/card.webp",
@@ -151,6 +152,26 @@ describe("ListingCard — la portada", () => {
    */
   it("reserva el espacio de la foto por proporción, no por alto fijo", () => {
     expect(block(cardCss, "photo")).toContain("aspect-ratio: var(--card-photo-ratio)");
+  });
+
+  /**
+   * **tasks.md 22.8 — el contador de fotos sobre la portada** (artboard 7c).
+   * Se comprueba con un total que no es 1, para que no quede verde por
+   * casualidad con el "Foto 1 de 1" del `alt` — son dos textos distintos con
+   * dos fuentes distintas (SISTEMA.md, listing-grid.ts).
+   */
+  it("dibuja 1 / N con el total real del aviso, entre la foto y el cuerpo", () => {
+    const markup = render({ photoCount: 6 });
+    const finFoto = markup.indexOf("</picture>");
+    const contador = markup.indexOf("1 / 6");
+    const abreCuerpo = markup.indexOf("<div", finFoto);
+
+    expect(contador).toBeGreaterThan(finFoto);
+    expect(contador).toBeLessThan(abreCuerpo);
+  });
+
+  it("con un solo aviso de una sola foto dice 1 / 1, no un texto fijo distinto", () => {
+    expect(render({ photoCount: 1 })).toContain("1 / 1");
   });
 });
 
