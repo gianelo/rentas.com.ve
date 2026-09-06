@@ -276,11 +276,16 @@ export function loadDotEnvWithoutOverriding(env: Record<string, string | undefin
  * That would leave this function's first genuine run on a preview deploy —
  * an unverified script populating the only environment anyone looks at.
  *
- * With the handle injected, tests/integration/seed.test.ts drives the exact
- * same code against the disposable Postgres container and asserts the rows
- * it produces, including a second run to prove idempotency.
+ * With the handle injected, tests/integration/seed-taxonomy.test.ts drives
+ * the exact same code against the disposable Postgres container and asserts
+ * the rows it produces — and, above all, that it produces no others: the
+ * whole point of the split is that this half can run against a real
+ * deployment, so a user or a listing appearing here is a defect. The
+ * idempotency of the two halves together is asserted by seed.test.ts.
+ *
+ * This half is the territory alone: cities, zones and search aliases.
  */
-export async function seed(database?: SeedDatabase): Promise<void> {
+export async function seedTaxonomy(database?: SeedDatabase): Promise<void> {
   // Resolved here, not as a default parameter: the real client must not be
   // loaded at all when a handle was supplied (see the import note above).
   const target: SeedDatabase = database ?? (await import("./client")).db;
@@ -289,11 +294,8 @@ export async function seed(database?: SeedDatabase): Promise<void> {
   // listing-catalogue. Los ids salen del camino completo, asi que una segunda
   // corrida produce exactamente las mismas filas y el upsert es un no-op real
   // -- que es lo que la idempotencia de la 2.3 pide de verdad.
-  const {
-    areas,
-    zones: zoneRows,
-    unmappedMunicipalities,
-  } = buildTerritoryRows(readTerritoryDocuments());
+  const territoryDocuments = readTerritoryDocuments();
+  const { areas, zones: zoneRows, unmappedMunicipalities } = buildTerritoryRows(territoryDocuments);
 
   if (unmappedMunicipalities.length > 0) {
     // Ruidoso a proposito. Un municipio sin area no se puede insertar sin
@@ -323,7 +325,6 @@ export async function seed(database?: SeedDatabase): Promise<void> {
   // **Los alias de busqueda.** El arbol guarda el nombre que la fuente publica;
   // esto guarda el nombre por el que la gente lo busca. Son 3.547 filas, y
   // ninguna crea una zona: cada una apunta a una que ya existe.
-  const territoryDocuments = readTerritoryDocuments();
   const aliasResult = buildAliasRows(
     territoryDocuments,
     readTerritoryToponyms(),
@@ -347,6 +348,19 @@ export async function seed(database?: SeedDatabase): Promise<void> {
       .values(aliasResult.aliases.slice(i, i + BATCH))
       .onConflictDoNothing({ target: [zoneAliases.zoneId, zoneAliases.alias] });
   }
+}
+
+/**
+ * Los dos publicantes y los diez avisos de demostración, y NADA de
+ * taxonomía. Separado de `seedTaxonomy` por la 17.15: mientras esto vivía
+ * dentro de la misma función sin bandera, sembrar el territorio real exigía
+ * insertar además datos de mentira, así que nadie corrió nunca el seed
+ * contra el despliegue y producción llegó sin zonas. La demo sigue
+ * necesitando la taxonomía por delante — cada aviso resuelve su zona por id
+ * y falla ruidosamente si no está.
+ */
+export async function seedDemo(database?: SeedDatabase): Promise<void> {
+  const target: SeedDatabase = database ?? (await import("./client")).db;
 
   const publisherIds = new Map<string, string>();
   for (const { key, name } of SEED_PUBLISHERS) {
@@ -430,6 +444,16 @@ export async function seed(database?: SeedDatabase): Promise<void> {
   }
 }
 
+/**
+ * Las dos mitades, en el mismo orden de siempre: es lo que la Preview de
+ * Vercel necesita en una sola llamada, y lo que deja intactos a
+ * tests/integration/seed.test.ts y a scripts/seed-demo.ts.
+ */
+export async function seed(database?: SeedDatabase): Promise<void> {
+  await seedTaxonomy(database);
+  await seedDemo(database);
+}
+
 // Runs only when invoked directly (`pnpm db:seed`), never on import — so
 // this module can also be imported by tests without a side-effecting
 // database call (e.g. `loadDotEnvWithoutOverriding`, exercised in
@@ -454,9 +478,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   // be able to redirect it.
   loadDotEnvWithoutOverriding(process.env);
 
-  seed()
+  // `--taxonomy-only` (`pnpm db:seed:taxonomy`) siembra el territorio y nada
+  // más: es la única forma de poblar un entorno real sin meterle dos
+  // publicantes inventados y diez avisos de mentira. Misma lectura de
+  // argumentos que `scripts/seed-demo.ts --purge`, que ya es la convención
+  // acá y no necesita un parser.
+  const taxonomyOnly = process.argv.includes("--taxonomy-only");
+
+  (taxonomyOnly ? seedTaxonomy() : seed())
     .then(() => {
-      console.log("seed: complete");
+      console.log(taxonomyOnly ? "seed: taxonomy complete" : "seed: complete");
       process.exit(0);
     })
     .catch((error) => {
