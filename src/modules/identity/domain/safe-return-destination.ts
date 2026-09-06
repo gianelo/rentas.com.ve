@@ -78,42 +78,19 @@ function internalUrl(candidate: string): URL | null {
   }
 }
 
-export function safeSignInDestination(candidate: string): string {
-  const value = candidate.trim();
-  const url = internalUrl(value);
-  if (url === null) return SIGN_IN_FALLBACK;
-  if (url.pathname !== SIGN_IN_FALLBACK) return SIGN_IN_FALLBACK;
-
-  // `searchParams` decodifica una sola vez, que es lo correcto: `%252F` queda
-  // como el texto `%2F` y no como una barra, así que la doble codificación no
-  // se convierte en una ruta al pasar por acá.
-  const back = url.searchParams.get("callbackUrl");
-  if (!back) return SIGN_IN_FALLBACK;
-
-  // **La barra invertida NO se comprueba acá, y eso está verificado.** El
-  // riesgo real es `/\evil.test`, que algunos navegadores normalizan a
-  // `//evil.test` — otro origen — y ése ya cae en la comprobación de ruta de
-  // arriba. Adentro del parámetro una barra invertida no crea un origen, así
-  // que una comprobación extra pasaba todas las mutaciones sin atrapar nada:
-  // código de seguridad que ningún ataque alcanza, que es peor que no tenerlo
-  // porque hace confiar de más.
-  if (!back.startsWith(RETURN_PREFIX)) return SIGN_IN_FALLBACK;
-
-  return value;
-}
-
 /**
- * La misma regla, sobre una ruta pelada (tasks.md 8.7).
+ * A dónde puede volver una acción que recibe una ficha en un campo oculto
+ * (tasks.md 8.7).
  *
- * `safeSignInDestination` valida `/signin?callbackUrl=<ficha>`; esto valida la
- * ficha sola. La acción de reportar la recibe en un campo oculto y la usa para
- * dos redirecciones —el acuse y la vuelta cuando el aviso no existe—, así que
- * es exactamente la misma entrada de quien envía y el mismo riesgo: un enlace
- * que se ve nuestro y deja a quien lo toca en cualquier parte.
+ * La acción de reportar la recibe en un campo oculto y la usa para dos
+ * redirecciones —el acuse y la vuelta cuando el aviso no existe—, así que es
+ * la misma entrada de quien envía y el mismo riesgo que cualquier destino que
+ * viaja en un formulario: un enlace que se ve nuestro y deja a quien lo toca
+ * en cualquier parte.
  *
- * **Comparte el origen inventado y el prefijo con la función de arriba a
- * propósito.** Dos copias de esta comprobación es cómo una de las dos se queda
- * vieja el día que el prefijo cambie.
+ * **Comparte el origen inventado y el prefijo con `safeSignInReturn` y
+ * `signInDoorOf` a propósito.** Dos copias de esta comprobación es cómo una de
+ * las dos se queda vieja el día que el prefijo cambie.
  *
  * **Devuelve `null` y no un respaldo.** Mandar a alguien a `/signin` cuando no
  * se sabe de dónde vino es inofensivo; acá el valor se concatena para armar
