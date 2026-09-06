@@ -732,6 +732,68 @@ test.describe("el panel de filtros a los dos anchos (14.32)", () => {
 });
 
 /**
+ * **El pie pegajoso no tapa el último atributo del panel** — regresión
+ * expuesta por PR #259 (`9402ac7`): el `e2e` de CI vio
+ * `filtros-sin-javascript.spec.ts:137` fallar porque `.foot` interceptaba el
+ * clic sobre «Puesto de estacionamiento» cuando Playwright la desplazaba a
+ * la vista.
+ *
+ * La 22.11 alargó cada fila de atributo —interruptor y conteo debajo, en vez
+ * de la única línea de `.option`— y la lista pasó a necesitar scroll bajo el
+ * pie pegajoso (`position: sticky; inset-block-end: 0`, fondo opaco). Cuando
+ * Playwright desplaza la última fila a la vista, la fila queda visible y
+ * estable y el pie, encima. Una aserción sobre el contenido de la hoja no
+ * puede ver esto —`.foot` sigue siendo sticky a propósito—; lo que hace
+ * falta es la geometría real de las dos cajas.
+ */
+test.describe("el pie del panel no tapa la última fila (regresión de la 22.11)", () => {
+  test("la última fila de atributos no se solapa con el pie al desplazarla a la vista", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto("/measure");
+    // El truco de `transform: translateZ(0)` del arnés (línea ~246 de
+    // `app/measure/page.tsx`) fija el `position: fixed` del panel a ESE
+    // contenedor y no al viewport real —necesario ahí para no tapar el resto
+    // del arnés—, así que se quita sólo en esta prueba para medir el panel
+    // `fixed` de verdad, del mismo tamaño que ve un visitante.
+    await page.evaluate(() => {
+      const wrap = document.querySelector('[data-testid="search-panel-harness"]') as HTMLElement;
+      wrap.style.transform = "none";
+    });
+
+    const ultimaFila = page
+      .locator("#filtros-atributos")
+      .locator("ul")
+      .first()
+      .getByRole("listitem")
+      .last();
+
+    // `scrollIntoView({ block: "end" })` y no `scrollIntoViewIfNeeded()`: el
+    // primero pide la alineación exacta que expone el defecto —el borde
+    // inferior de la fila contra el borde inferior del scrollport—, que es
+    // la que `scroll-padding-block-end` corrige. El segundo sólo promete
+    // "visible" con la alineación que el navegador prefiera, y no reproduce
+    // el defecto de forma confiable.
+    await ultimaFila.evaluate((node) => node.scrollIntoView({ block: "end" }));
+
+    const filaBox = await ultimaFila.boundingBox();
+    // `search-confirm` es hijo directo de `.foot` (no lleva su propio
+    // `data-testid`): su padre es la caja del pie entero.
+    const pieBox = await page.getByTestId("search-confirm").locator("xpath=..").boundingBox();
+    if (!filaBox || !pieBox) throw new Error("la fila o el pie del panel no se dibujaron");
+
+    console.log(
+      `[regresión 22.11] fila: top=${filaBox.y} bottom=${filaBox.y + filaBox.height} · pie: top=${pieBox.y}`,
+    );
+    // La fila entera tiene que quedar arriba del pie: si su borde inferior
+    // pasa el borde superior del pie, el pie la tapa y el clic de Playwright
+    // —y el de cualquier visitante con mouse— cae en el pie y no en la fila.
+    expect(filaBox.y + filaBox.height).toBeLessThanOrEqual(pieBox.y);
+  });
+});
+
+/**
  * **Los átomos de la tarjeta, medidos en un navegador de verdad.**
  *
  * Una aserción sobre el contenido de una hoja dice qué se declaró; estas dicen
