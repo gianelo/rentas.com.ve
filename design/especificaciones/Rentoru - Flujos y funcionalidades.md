@@ -1,11 +1,11 @@
-# Rentas — Flujos y funcionalidades
+# Rentoru — Flujos y funcionalidades
 
-Qué hace el sistema y en qué orden. Sustituye a `Rentas - UX movil.md`, que solo cubría la búsqueda.
+Qué hace el sistema y en qué orden. Sustituye a `Rentoru - UX movil.md`, que solo cubría la búsqueda.
 
 Archivos de referencia visual:
-- `Rentas - Lista y Filtros - Mobile.dc.html` · `Rentas - Lista y Filtros - Desktop.dc.html`
-- `Rentas - Entrar - Mobile.dc.html` · `Rentas - Entrar - Desktop.dc.html`
-- `Rentas - Ficha - Mobile.dc.html` · `Rentas - Ficha - Desktop.dc.html`
+- `Rentoru - Lista y Filtros - Mobile.dc.html` · `Rentoru - Lista y Filtros - Desktop.dc.html`
+- `Rentoru - Entrar - Mobile.dc.html` · `Rentoru - Entrar - Desktop.dc.html`
+- `Rentoru - Ficha - Mobile.dc.html` · `Rentoru - Ficha - Desktop.dc.html`
 
 ---
 
@@ -69,7 +69,7 @@ INICIO ──"Publicar"──► ENTRAR ──► PUBLICAR 1 datos ──► 2 f
 | 11 | Toca "Ver el WhatsApp" | Abre entrar. En móvil como hoja sobre el aviso; en escritorio como diálogo |
 | 12 | Entra con Google | Vuelve **a la misma ficha**, con el número completo |
 | 12b | O pide enlace por correo | Muestra "Revisá tu correo". Al abrir el enlace, vuelve a la misma ficha |
-| 13 | Escribe por WhatsApp | Fuera del sistema. Rentas no participa |
+| 13 | Escribe por WhatsApp | Fuera del sistema. Rentoru no participa |
 
 **Punto de fuga principal:** el paso 11. Es el único momento en que se le pide algo al inquilino. Por eso la hoja no tapa el aviso y siempre ofrece "Seguir mirando sin entrar".
 
@@ -192,7 +192,7 @@ Se manda por WhatsApp y el otro ve lo mismo; el botón de volver deshace el últ
 | Con cuenta | número completo, desde cuándo está verificado, "Escribir por WhatsApp" y "Copiar el número" |
 | Aviso vencido | sin contacto, explicación de que venció y no se renovó, salida a los avisos activos de la zona |
 
-**F30 · Advertencia de negociación.** Acompaña al contacto, no al pie: "Rentas no participa en la negociación. Visitá la propiedad y verificá quién es el dueño antes de entregar dinero."
+**F30 · Advertencia de negociación.** Acompaña al contacto, no al pie: "Rentoru no participa en la negociación. Visitá la propiedad y verificá quién es el dueño antes de entregar dinero."
 
 **F31 · Reportar.** Enlace discreto al pie, junto al ID del aviso y su fecha de vencimiento. Un reporte aceptado pasa el aviso al estado **oculta**.
 

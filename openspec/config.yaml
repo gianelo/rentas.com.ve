@@ -1,7 +1,7 @@
 schema: spec-driven
 
 context: |
-  Project: rentas.com.ve — free long-stay residential rental marketplace (Venezuela).
+  Project: rentoru.com — free long-stay residential rental marketplace (Venezuela).
   Stack: TypeScript / Next.js 15 App Router / React 19 on Vercel.
   Data: Neon Postgres + Drizzle ORM. Storage: Cloudflare R2. Auth: Auth.js v5 (Google).
   Email: Resend. Architecture: hexagonal per capability under src/modules/, screaming layout.

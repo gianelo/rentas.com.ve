@@ -1,9 +1,9 @@
-# Rentas — Ficha del aviso
+# Rentoru — Ficha del aviso
 
 Especificación para implementar. Cubre flujo, UI, colores y reglas.
 
-Archivos de diseño: `Rentas - Ficha - Mobile.dc.html` · `Rentas - Ficha - Desktop.dc.html`
-Contexto general: `Rentas - Flujos y funcionalidades.md`
+Archivos de diseño: `Rentoru - Ficha - Mobile.dc.html` · `Rentoru - Ficha - Desktop.dc.html`
+Contexto general: `Rentoru - Flujos y funcionalidades.md`
 
 ---
 
@@ -186,7 +186,7 @@ Es lo único de la ficha que cambia según quién mira. **El número siempre se 
 
 Acompaña al contacto, **no va al pie**:
 
-> Rentas no participa en la negociación. Visitá la propiedad y verificá quién es el dueño antes de entregar dinero.
+> Rentoru no participa en la negociación. Visitá la propiedad y verificá quién es el dueño antes de entregar dinero.
 
 ---
 

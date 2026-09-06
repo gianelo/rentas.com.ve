@@ -1,4 +1,4 @@
-# Especificación de pantallas — Rentas
+# Especificación de pantallas — Rentoru
 
 > ## ⚠️ HISTÓRICO — superado por el sistema de diseño
 >
@@ -140,13 +140,13 @@ Usá estos textos exactos. No inventes ni traduzcas.
 
 | Contexto | Texto exacto |
 |---|---|
-| Marca | rentas. |
+| Marca | Rentoru |
 | Acción principal en encabezado | Publicar |
 | Conteo de resultados | 47 propiedades activas |
 | Botón de filtros | Ver 12 propiedades |
 | Aviso de contacto con llave | El contacto se muestra a usuarios registrados |
 | Botón de contacto | Ver WhatsApp del dueño |
-| Advertencia en contacto revelado | Rentas no participa en la negociación. Verificá la propiedad antes de entregar dinero. |
+| Advertencia en contacto revelado | Rentoru no participa en la negociación. Verificá la propiedad antes de entregar dinero. |
 | Etiqueta de tipo de publicador | ¿Publicás como dueño o inmobiliaria? |
 | Ayuda del tipo de publicador | Se muestra siempre en tu aviso. No se puede cambiar después. |
 | Ayuda del precio | Solo el número. Todos los precios están en dólares. |
@@ -156,7 +156,7 @@ Usá estos textos exactos. No inventes ni traduzcas.
 | Encabezado de página de zona | Alquiler en Chacao |
 | Bajada de página de zona | 12 propiedades activas en Chacao, Distrito Capital. Precios desde $275 hasta $890 mensuales. |
 | Migas de pan | Inicio › Distrito Capital › Chacao |
-| Invitación a colaborar | Rentas es gratis y sin comisión. Si te sirve, podés colaborar. |
+| Invitación a colaborar | Rentoru es gratis y sin comisión. Si te sirve, podés colaborar. |
 | Aviso vencido | Esta publicación venció y ya no está disponible. |
 | Encabezado de sugerencias | Estas sí están activas en Chacao |
 | Sin resultados | No hay propiedades con esos filtros |

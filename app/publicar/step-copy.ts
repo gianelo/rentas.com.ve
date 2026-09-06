@@ -17,7 +17,7 @@ import type {
  * y se paga aca con `Record`s sobre las uniones, asi que agregar un paso o una
  * accion deja este archivo sin compilar hasta que alguien escriba la frase.
  *
- * Cada texto sale de las laminas (`Rentas - Publicar - Mobile.dc.html` y
+ * Cada texto sale de las laminas (`Rentoru - Publicar - Mobile.dc.html` y
  * `- Desktop.dc.html`), no de una reescritura de memoria.
  */
 

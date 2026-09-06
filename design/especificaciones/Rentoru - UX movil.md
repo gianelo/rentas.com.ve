@@ -1,7 +1,7 @@
-# Rentas — Funcionalidades del flujo de búsqueda (móvil)
+# Rentoru — Funcionalidades del flujo de búsqueda (móvil)
 
 Qué hace el sistema, no cómo se ve. Cada funcionalidad tiene disparador, comportamiento y casos borde.
-Alcance: inicio, búsqueda y resultados. Referencia visual: `Rentas - Filtros.dc.html`.
+Alcance: inicio, búsqueda y resultados. Referencia visual: `Rentoru - Filtros.dc.html`.
 
 ---
 

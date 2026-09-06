@@ -12,10 +12,11 @@ import styles from "./Nav.module.css";
  * Una sola copia. SISTEMA.md fija que no hay logotipo y que la marca ES la
  * palabra; el fundador renombró el producto a `rentoru.com` (tasks.md 26.2) y
  * eligió «Rentoru» —con mayúscula y SIN punto final— para que la marca y el
- * sufijo de los títulos («— Rentoru») sean una sola forma. El punto que
- * SISTEMA.md:323 todavía describe es del nombre viejo, y la lámina se pone al
- * día en su propia rebanada (tasks.md 26.21/26.23). Escrito dos veces acá, una
- * de las dos se retipea de memoria y queda mal.
+ * sufijo de los títulos («— Rentoru») sean una sola forma. `SISTEMA.md:323` ya
+ * define la marca así, con la mayúscula y la ausencia de punto escritas
+ * (tasks.md 26.23), y las láminas la dibujan igual (26.21): no queda
+ * contradicción entre el sistema y el código. Escrito dos veces acá, una de las
+ * dos se retipea de memoria y queda mal.
  */
 const WORDMARK = "Rentoru";
 

@@ -2,7 +2,7 @@
  * The site footer's catalogue of destinations, and the rule that decides
  * which ones a visitor ever sees (tasks.md 23.2; AGENTS.md §7 — fail closed).
  *
- * Ten labels are named in `design/pantallas/Rentas - Footer.dc.html`. All
+ * Ten labels are named in `design/pantallas/Rentoru - Footer.dc.html`. All
  * ten now resolve: five Ayuda pages as final copy (tasks.md 23.4, 23.6,
  * 23.7 — the last of which renamed "Reportar un aviso" to "Cómo reportar
  * un aviso"), and five Legal pages as DRAFTS pending the founder's
