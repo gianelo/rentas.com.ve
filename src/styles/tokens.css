@@ -263,6 +263,11 @@
   --card-price-fs: 16px;
   --card-price-fs-desktop: 17px;
   --card-title-fs: 13px;
+  /* **El contador de fotos sobre la portada** (tasks.md 22.8, artboard 7c):
+     `--meta` a 10px, un solo tamaño en los dos anchos — la lámina no dibuja
+     una variante de escritorio para éste, a diferencia del precio y el
+     título de la misma tarjeta. */
+  --card-photocount-fs: 10px;
   /* El punto de posición debajo de la tira. Propio y no `--r-thumb` ni una de
      las medidas de miniatura: es una marca, no una imagen, y compartir el
      número con algo que significa otra cosa es cómo un ajuste de miniatura
@@ -481,6 +486,17 @@
   --th: 34px;
   --twd: 64px;
   --thd: 48px;
+  /* **74 × 56, decidido por el fundador el 2026-09-05: manda la lámina**
+     (tasks.md 22.15). Los artboards 14c y 14d de "Cuenta e Importar" dibujan
+     la miniatura de `/mis-avisos` en 74×56, ocho veces, y no en 44×34
+     (`--tw`/`--th`) ni en 64×48 (`--twd`/`--thd`) — esos dos pares siguen
+     vistiendo sus propias superficies (la fila que la cuadrícula reemplazó y
+     el subidor de fotos del paso 2) y no se tocan. Propio y no un alias: es
+     la MISMA razón por la que `--footer-brand-fs-desktop` no se fundió con
+     `--nav-brand-fs-desktop` aunque coincidan en 19px — dos números iguales
+     no son el mismo token si son de dos componentes distintos. */
+  --mis-avisos-thumb-w: 74px;
+  --mis-avisos-thumb-h: 56px;
   --gap: 8px;
   --rowpad: 7px 12px;
   --fp: 15px;

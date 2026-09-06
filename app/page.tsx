@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AppLink } from "@/../components/atoms/AppLink";
+import { SelectionChip } from "@/../components/atoms/SelectionChip";
 import type { SearchPillProps } from "@/../components/molecules/SearchPill";
 import { Nav } from "@/../components/organisms/Nav";
 import { resolveNavAccount, resolveNavPublish } from "@/modules/identity/domain/nav-account";
@@ -250,17 +251,14 @@ export default async function InicioPage({ searchParams }: InicioProps) {
           <ul className={styles.chips}>
             {cityChips.map((chip) => (
               <li key={chip.cityId}>
-                <AppLink
-                  className={chip.selected ? styles.chipSelected : styles.chip}
-                  href={chip.href}
-                  // `true` y no `page`: la ficha activa es el elemento elegido
-                  // del conjunto, pero su enlace **quita** la ciudad y por lo
-                  // tanto no lleva a la página en la que estás. Anunciarla como
-                  // "página actual" prometería lo contrario de lo que hace.
-                  aria-current={chip.selected ? "true" : undefined}
-                >
+                {/* `ariaCurrent="true"` y no `"page"`: la ficha activa es el
+                    elemento elegido del conjunto, pero su enlace **quita** la
+                    ciudad y por lo tanto no lleva a la página en la que
+                    estás. Anunciarla como "página actual" prometería lo
+                    contrario de lo que hace. */}
+                <SelectionChip href={chip.href} selected={chip.selected} ariaCurrent="true">
                   {chip.label}
-                </AppLink>
+                </SelectionChip>
               </li>
             ))}
           </ul>

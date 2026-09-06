@@ -81,7 +81,10 @@ export const LISTINGS = [MCBO_BARATO, MCBO_CARO, DC_CHACAO, DC_ALTAMIRA];
 /** Todos tienen portada: sin las dos derivadas, la regla F9 los saca de la cuadrícula. */
 export function coversFor(ids: readonly string[]) {
   return new Map(
-    ids.map((id) => [id, { keys: { thumb: `${id}/thumb.webp`, card: `${id}/card.webp` } }]),
+    ids.map((id) => [
+      id,
+      { keys: { thumb: `${id}/thumb.webp`, card: `${id}/card.webp` }, photoCount: 1 },
+    ]),
   );
 }
 

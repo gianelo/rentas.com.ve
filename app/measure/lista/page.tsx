@@ -117,6 +117,7 @@ export default function MeasureListaPage() {
                   rooms={aviso.rooms}
                   areaM2={aviso.areaM2}
                   publisherType={indice % 3 === 0 ? "broker" : "owner"}
+                  photoCount={6}
                   photo={{
                     thumbUrl: "https://fotos.rentoru.com/photos/pub/tok/thumb.webp",
                     cardUrl: "https://fotos.rentoru.com/photos/pub/tok/card.webp",

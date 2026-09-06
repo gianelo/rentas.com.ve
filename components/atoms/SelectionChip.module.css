@@ -1,0 +1,54 @@
+/* La ficha de selección (tasks.md 22.5, 22.12) — un enlace que elige una
+   opción de un conjunto, con una marcada. Converge a la tipografía que ya
+   traía `home.module.css` (`--meta`, mono, `--meta-fs-sm`), no a la de
+   `/mis-avisos` (`--sans`, `--control-fs`): el inicio ya era la referencia
+   para el color desde la 22.5, y extender el mismo precedente a la
+   tipografía es no inventar una segunda regla de convergencia. */
+.chip,
+.selected {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  /* Sólo importa cuando hay más de un hijo — `/mis-avisos` agrega un conteo
+     al lado del texto (`FichaDeAviso`'s `.fichaCuenta`); el inicio no tiene
+     un segundo hijo y el valor no dibuja nada ahí. */
+  gap: 7px;
+  min-block-size: var(--target-min);
+  padding-inline: 14px;
+  border-radius: var(--rs);
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  line-height: 1.4;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.chip {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--soft);
+}
+
+/* Nivel 2 de la jerarquía de botones (SISTEMA.md): relleno `--tint`, borde y
+   texto `--accent`. Estructural antes que cromático — el borde teñido y el
+   relleno se distinguen en escala de grises, el mismo criterio que ya cumple
+   la placa de publicador. */
+.selected {
+  border: 1px solid var(--accent);
+  background: var(--tint);
+  color: var(--accent);
+  font-weight: var(--meta-fw);
+}
+
+.chip:focus-visible,
+.selected:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  .chip,
+  .selected {
+    min-block-size: var(--target-min-desktop);
+  }
+}

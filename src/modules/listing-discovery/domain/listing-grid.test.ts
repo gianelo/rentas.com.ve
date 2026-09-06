@@ -18,15 +18,18 @@ function listing(overrides: Partial<GridListing> = {}): GridListing {
   };
 }
 
-function cover(keys: Record<string, string>): GridCover {
-  return { keys };
+function cover(keys: Record<string, string>, photoCount = 1): GridCover {
+  return { keys, photoCount };
 }
 
-const fullCover = cover({
-  thumb: "photos/pub/tok/thumb.webp",
-  card: "photos/pub/tok/card.webp",
-  strip: "photos/pub/tok/strip.webp",
-});
+const fullCover = cover(
+  {
+    thumb: "photos/pub/tok/thumb.webp",
+    card: "photos/pub/tok/card.webp",
+    strip: "photos/pub/tok/strip.webp",
+  },
+  6,
+);
 
 describe("buildListingGrid", () => {
   it("arma la ruta canónica del aviso con buildListingPath", () => {
@@ -115,6 +118,23 @@ describe("buildListingGrid", () => {
       zoneName: "Chacao",
       title: "Apartamento 2 habitaciones",
     });
+  });
+
+  /**
+   * **tasks.md 22.8 — el contador de fotos que la lámina dibuja.** El texto
+   * alternativo de la portada dice "1 de 1" a propósito (es verdad de la
+   * imagen que se ve); el conteo de la tarjeta es otro dato y tiene que ser
+   * el real del aviso, no 1 fijo.
+   */
+  it("trae el conteo real de fotos del aviso, no el de la portada", () => {
+    const [card] = buildListingGrid(
+      [listing()],
+      new Map([[listing().id, cover({ thumb: "t.webp", card: "c.webp" }, 6)]]),
+      BASE,
+    );
+
+    expect(card?.photoCount).toBe(6);
+    expect(card?.photo.alt).toBe("Foto 1 de 1 — Apartamento 2 habitaciones, Chacao");
   });
 
   it("no consulta nada con una lista vacía", () => {

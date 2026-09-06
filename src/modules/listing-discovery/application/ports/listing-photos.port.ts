@@ -17,6 +17,13 @@ export interface ListingPhotoView {
    * escrita acá.
    */
   readonly keys: Readonly<Partial<Record<DerivativeName, string>>>;
+  /**
+   * **Cuántas fotos tiene el aviso, no cuál es ésta** (tasks.md 22.8). Sólo
+   * `coversFor` lo llena — es el total que el contador de la tarjeta dibuja
+   * sobre la portada («1 / 6»); `allFor` no lo necesita, porque quien pide
+   * todas las fotos ya las tiene contadas por su propio arreglo.
+   */
+  readonly photoCount: number;
 }
 
 export interface ListingPhotosPort {

@@ -353,4 +353,54 @@ describe("/mis-avisos — la lista de avisos (14d)", () => {
 
     expect(html).toMatch(/<a[^>]*href="\/importar"[^>]*>Importar cartera<\/a>/);
   });
+
+  /**
+   * **tasks.md 22.15 — la acción, en su propia columna a partir de 768px**
+   * (SISTEMA.md, "Layout escritorio: grid 120px 1fr 200px"). Se comprueba por
+   * fila y no por presencia global: un aviso activo ofrece Editar, un
+   * borrador ofrece Subir fotos + Activar, y los dos tienen que vivir dentro
+   * del mismo bloque marcado — si volviera a mezclarse con el cuerpo, esta
+   * prueba seguiría verde por casualidad de orden de texto.
+   */
+  it("la acción de la fila vive en su propio bloque, no en el cuerpo (22.15)", async () => {
+    listPublisherListings.mockResolvedValue(
+      boardOf([
+        listing({ id: "activa", status: "active", photoCount: 3 }),
+        listing({ id: "borrador", status: "draft", photoCount: 0 }),
+      ]),
+    );
+
+    const html = await draw();
+    const bloques = [
+      ...html.matchAll(/data-testid="ficha-accion"[^>]*>([\s\S]*?)<\/div><\/li>/g),
+    ].map((match) => match[1] ?? "");
+
+    expect(bloques).toHaveLength(2);
+    // Los borradores van primero (SISTEMA.md, "Mis publicaciones"), así que el
+    // orden real es Activar y luego Editar — no el orden en que se mockean.
+    expect(bloques.some((bloque) => bloque.includes("Activar"))).toBe(true);
+    expect(bloques.some((bloque) => bloque.includes("Editar"))).toBe(true);
+  });
+});
+
+describe("la miniatura y el layout de escritorio (tasks.md 22.15)", () => {
+  const misAvisosCss = readFileSync("app/mis-avisos/mis-avisos.module.css", "utf-8");
+
+  /**
+   * Los artboards 14c y 14d dibujan la miniatura en 74×56, no en 44×34
+   * (`--tw`/`--th`, la fila que la cuadrícula reemplazó en la 14.25).
+   */
+  it("la miniatura pasa a 74×56 y deja de vestir --tw/--th", () => {
+    expect(misAvisosCss).toContain("inline-size: var(--mis-avisos-thumb-w)");
+    expect(misAvisosCss).toContain("block-size: var(--mis-avisos-thumb-h)");
+    expect(misAvisosCss).not.toMatch(/\.miniatura\s*\{[^}]*var\(--tw\)/);
+  });
+
+  /** SISTEMA.md, "Layout escritorio": grid 120px 1fr 200px, a partir de 768px. */
+  it("gana una disposición de escritorio que hoy no tiene", () => {
+    const desktop =
+      misAvisosCss.match(/@media \(min-width: 768px\)\s*\{([\s\S]*)\}\s*$/)?.[1] ?? "";
+
+    expect(desktop).toContain("grid-template-columns: 120px 1fr 200px");
+  });
 });

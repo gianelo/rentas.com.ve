@@ -213,7 +213,10 @@ const OTRA_CIUDAD = activo("dc-1", "Penthouse en Chacao", CHACAO);
 /** Portadas para todos: sin las dos derivadas, la regla F9 los saca de la cuadrícula. */
 function covers(ids: readonly string[]) {
   return new Map(
-    ids.map((id) => [id, { keys: { thumb: `${id}/thumb.webp`, card: `${id}/card.webp` } }]),
+    ids.map((id) => [
+      id,
+      { keys: { thumb: `${id}/thumb.webp`, card: `${id}/card.webp` }, photoCount: 1 },
+    ]),
   );
 }
 

@@ -16,6 +16,7 @@ function card(id: string) {
     rooms: 2,
     areaM2: 65,
     publisherType: "owner" as const,
+    photoCount: 1,
     photo: {
       thumbUrl: "https://fotos.rentoru.com/t.webp",
       cardUrl: "https://fotos.rentoru.com/c.webp",

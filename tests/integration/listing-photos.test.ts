@@ -140,6 +140,18 @@ describe("coversFor", () => {
   it("no consulta cuando no le dan ids", async () => {
     expect((await photos.coversFor([])).size).toBe(0);
   });
+
+  /**
+   * **tasks.md 22.8 — el conteo es del aviso, no de la portada.** `WITH_PHOTOS`
+   * tiene tres fotos (posiciones 0, 1 y 2); `SECOND` tiene una sola. El
+   * contador de la tarjeta necesita el total real, no un 1 fijo.
+   */
+  it("trae el total de fotos del aviso, no sólo la portada", async () => {
+    const covers = await photos.coversFor([WITH_PHOTOS, SECOND]);
+
+    expect(covers.get(WITH_PHOTOS)?.photoCount).toBe(3);
+    expect(covers.get(SECOND)?.photoCount).toBe(1);
+  });
 });
 
 describe("allFor", () => {

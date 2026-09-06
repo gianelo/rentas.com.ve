@@ -392,6 +392,7 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
                     rooms={card.rooms}
                     areaM2={card.areaM2}
                     publisherType={card.publisherType}
+                    photoCount={card.photoCount}
                     photo={card.photo}
                   />
                 </li>

@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import { listingPhotoDerivatives, listingPhotos } from "../../../shared/db/schema";
@@ -31,20 +31,43 @@ export class DrizzleListingPhotos implements ListingPhotosPort {
     // algunos motores rechazan, y de todas formas la respuesta se sabe.
     if (listingIds.length === 0) return new Map();
 
-    const rows = await this.db
-      .select({
-        listingId: listingPhotos.listingId,
-        position: listingPhotos.position,
-        name: listingPhotoDerivatives.name,
-        key: listingPhotoDerivatives.key,
-      })
-      .from(listingPhotos)
-      .innerJoin(listingPhotoDerivatives, eq(listingPhotoDerivatives.photoId, listingPhotos.id))
-      .where(and(inArray(listingPhotos.listingId, [...listingIds]), eq(listingPhotos.position, 0)));
+    // **Dos consultas, no veintiuna** (tasks.md 22.8). El conteo total de
+    // fotos por aviso no sale de la fila de la portada —esa fila es la
+    // posición 0 y nada más—, así que hace falta una segunda agregación. Las
+    // dos corren en paralelo y las dos siguen siendo "una llamada para todos
+    // los avisos", que es la garantía que este método ya tenía.
+    const [rows, totals] = await Promise.all([
+      this.db
+        .select({
+          listingId: listingPhotos.listingId,
+          position: listingPhotos.position,
+          name: listingPhotoDerivatives.name,
+          key: listingPhotoDerivatives.key,
+        })
+        .from(listingPhotos)
+        .innerJoin(listingPhotoDerivatives, eq(listingPhotoDerivatives.photoId, listingPhotos.id))
+        .where(
+          and(inArray(listingPhotos.listingId, [...listingIds]), eq(listingPhotos.position, 0)),
+        ),
+      this.db
+        .select({ listingId: listingPhotos.listingId, total: count() })
+        .from(listingPhotos)
+        .where(inArray(listingPhotos.listingId, [...listingIds]))
+        .groupBy(listingPhotos.listingId),
+    ]);
 
-    const covers = new Map<string, { position: number; keys: Record<string, string> }>();
+    const photoCounts = new Map(totals.map((row) => [row.listingId, Number(row.total)]));
+
+    const covers = new Map<
+      string,
+      { position: number; keys: Record<string, string>; photoCount: number }
+    >();
     for (const row of rows) {
-      const existing = covers.get(row.listingId) ?? { position: row.position, keys: {} };
+      const existing = covers.get(row.listingId) ?? {
+        position: row.position,
+        keys: {},
+        photoCount: photoCounts.get(row.listingId) ?? 0,
+      };
       existing.keys[row.name] = row.key;
       covers.set(row.listingId, existing);
     }
@@ -67,12 +90,23 @@ export class DrizzleListingPhotos implements ListingPhotosPort {
 
     // Agrupado acá y no con un `GROUP BY`: Postgres devolvería un arreglo de
     // pares que habría que desarmar igual, y el orden ya viene resuelto.
-    const byPosition = new Map<number, { position: number; keys: Record<string, string> }>();
+    const byPosition = new Map<
+      number,
+      { position: number; keys: Record<string, string>; photoCount: number }
+    >();
     for (const row of rows) {
-      const existing = byPosition.get(row.position) ?? { position: row.position, keys: {} };
+      const existing = byPosition.get(row.position) ?? {
+        position: row.position,
+        keys: {},
+        // Quien pide todas las fotos ya las tiene contadas por el arreglo que
+        // le devuelve `allFor`; se rellena igual para que el campo nunca
+        // quede a medio declarar en este puerto.
+        photoCount: byPosition.size + 1,
+      };
       existing.keys[row.name] = row.key;
       byPosition.set(row.position, existing);
     }
+    for (const entry of byPosition.values()) entry.photoCount = byPosition.size;
 
     return [...byPosition.values()].sort(
       (a, b) => a.position - b.position,
