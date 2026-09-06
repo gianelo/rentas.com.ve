@@ -39,6 +39,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/shared/db/seed.ts",
     "db:seed:taxonomy": "tsx src/shared/db/seed.ts --taxonomy-only",
+    "db:reseed:taxonomy": "tsx scripts/reseed-taxonomy.ts",
     "db:test:up": "docker compose up -d --wait postgres",
     "db:test:down": "docker compose down -v",
     "db:test:migrate": "drizzle-kit migrate --config drizzle.test.config.ts",

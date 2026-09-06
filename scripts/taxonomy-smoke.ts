@@ -29,7 +29,18 @@ import {
   expectedTaxonomy,
   findTaxonomyGapsIn,
 } from "../src/modules/operability/infrastructure/taxonomy-census";
-import { db } from "../src/shared/db/client";
+import { loadDotEnvWithoutOverriding } from "../src/shared/db/seed";
+
+// En Vercel `DATABASE_URL` ya viene en el entorno y esto no hace nada. Está
+// para la otra mitad del trabajo: mirar desde una laptop si un despliegue
+// tiene su taxonomía, que es como se comprobó la siembra del 2026-09-06. Sin
+// esto el comando sólo existe adentro del build, y un guardián que no se
+// puede consultar a mano se consulta cuando ya es tarde. Lo que está en el
+// entorno real GANA sobre el archivo, así que un `.env` local no puede
+// redirigir un despliegue. El import es dinámico porque `./client` resuelve
+// la cadena de conexión al importarse: cargar primero, importar después.
+loadDotEnvWithoutOverriding(process.env);
+const { db } = await import("../src/shared/db/client");
 
 const gaps = await findTaxonomyGapsIn(db as unknown as SmokeDatabase);
 
