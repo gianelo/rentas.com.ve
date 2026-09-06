@@ -13,6 +13,8 @@ import styles from "../legal.module.css";
 export const metadata: Metadata = {
   title: "Uso de cookies — Rentoru",
   description: "Las únicas dos cookies que rentoru.com usa, y para qué sirve cada una.",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/legal/cookies" },
 };
 
 export default function CookiesPage() {

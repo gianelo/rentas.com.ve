@@ -5,7 +5,10 @@ import { AppLink } from "@/../components/atoms/AppLink";
 import type { ListingPhotoView } from "@/modules/listing-discovery/application/ports/listing-photos.port";
 import { photoAltText, photoUrl } from "@/modules/listing-discovery/domain/listing-photo-view";
 import { listingIdFromSlug } from "@/modules/listing-discovery/domain/listing-url";
-import { resolvePhotoViewer } from "@/modules/listing-discovery/domain/photo-viewer";
+import {
+  photoViewerPath,
+  resolvePhotoViewer,
+} from "@/modules/listing-discovery/domain/photo-viewer";
 import { DrizzleListingDetail } from "@/modules/listing-discovery/infrastructure/drizzle-listing-detail";
 import { DrizzleListingPhotos } from "@/modules/listing-discovery/infrastructure/drizzle-listing-photos";
 import { readPhotoPublicBaseUrl } from "@/modules/listing-discovery/infrastructure/photo-public-base-url";
@@ -273,5 +276,22 @@ export async function generateMetadata({ params }: VisorProps): Promise<Metadata
     // con la miniatura de la propia foto.
     title: `Foto ${resolution.view.number} de ${resolution.view.total} — ${detail.title}, ${detail.zoneName}`,
     description: detail.description.slice(0, 155),
+    // **La canónica del visor apunta a la foto, no a la ficha** (26.12).
+    //
+    // Es la decisión que esta tarea tenía que tomar, y la tomó el diseño antes:
+    // el docblock de esta misma pantalla dice «una foto, una URL … cada
+    // fotografía tiene su propia dirección, así que se indexa, se manda por
+    // WhatsApp la foto de la cocina y no "el aviso"». Canonizar hacia la ficha
+    // desharía exactamente eso — le diría a Google que las seis direcciones que
+    // la 16.5 creó a propósito son la misma página, y el enlace compartido
+    // dejaría de existir como resultado propio. La ficha no está sola del otro
+    // lado: la salida del visor la enlaza, y el sitemap la lleva por su cuenta.
+    //
+    // Sale de `photoViewerPath` sobre `exitHref` —la canónica de la ficha que
+    // `resolvePhotoViewer` ya calculó— y no de los segmentos que llegaron,
+    // porque `/foto/02` resuelve a esta misma foto y no es su dirección.
+    alternates: {
+      canonical: photoViewerPath(resolution.view.exitHref, resolution.view.number),
+    },
   };
 }

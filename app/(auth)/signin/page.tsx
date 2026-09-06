@@ -10,6 +10,8 @@ import styles from "./signin.module.css";
 
 export const metadata: Metadata = {
   title: "Entrar — Rentoru",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/signin" },
 };
 
 interface SignInPageProps {

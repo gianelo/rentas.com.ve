@@ -17,6 +17,8 @@ import { PUBLISH_VIOLATION_COPY } from "../violation-copy";
 
 export const metadata: Metadata = {
   title: "Revisá tu aviso — Rentoru",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/publicar/revisar" },
 };
 
 interface ReviewPageProps {

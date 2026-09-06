@@ -19,6 +19,7 @@ import { buildListingGrid } from "@/modules/listing-discovery/domain/listing-gri
 import {
   isFilteredZoneRoute,
   resolveZoneRoute,
+  zoneRoutePath,
 } from "@/modules/listing-discovery/domain/zone-route";
 import { DrizzleListingPhotos } from "@/modules/listing-discovery/infrastructure/drizzle-listing-photos";
 import { readPhotoPublicBaseUrl } from "@/modules/listing-discovery/infrastructure/photo-public-base-url";
@@ -468,12 +469,23 @@ export async function generateMetadata({ params, searchParams }: ZonaProps): Pro
   const place = resolveZoneRoute(cities, zones, ciudad, zona);
   if (!place) return {};
 
+  // La regla mecánica de la 14.24: la zona se indexa, la zona refinada no.
+  // Las refinadas son combinatorias, y publicarlas todas es contenido
+  // duplicado sobre el dominio entero.
+  const filtered = isFilteredZoneRoute(query);
+
   return {
     title: `Alquiler en ${place.zone.name}, ${place.city.name} — Rentoru`,
     description: `Avisos de alquiler de larga estancia en ${place.zone.name}, ${place.city.name}. Publicar y buscar es gratis, sin comisión.`,
-    // La regla mecánica de la 14.24: la zona se indexa, la zona refinada no.
-    // Las refinadas son combinatorias, y publicarlas todas es contenido
-    // duplicado sobre el dominio entero.
-    robots: isFilteredZoneRoute(query) ? { index: false, follow: true } : undefined,
+    robots: filtered ? { index: false, follow: true } : undefined,
+    // **Sólo se canoniza lo que pide ser indexado** (26.12). La refinada ya
+    // sale del índice con la línea de arriba, y sumarle una canónica hacia la
+    // zona sin filtros serían dos señales contradictorias. Relativa: la base
+    // la pone `metadataBase` en el layout, una sola vez.
+    //
+    // Sale de `zoneRoutePath` —el catálogo— y no de los segmentos que
+    // llegaron: devolver la petición como canónica es la forma clásica del
+    // defecto.
+    alternates: filtered ? undefined : { canonical: zoneRoutePath(place) },
   };
 }

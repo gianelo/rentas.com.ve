@@ -37,6 +37,8 @@ export const metadata: Metadata = {
   title: "Alquileres de larga estancia en Venezuela — Rentoru",
   description:
     "Alquileres de larga estancia en Distrito Capital y Maracaibo. Publicar y buscar es gratis, sin comisión.",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/" },
 };
 
 /**

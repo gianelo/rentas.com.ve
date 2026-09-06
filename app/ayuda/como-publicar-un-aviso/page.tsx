@@ -11,6 +11,8 @@ import styles from "../ayuda.module.css";
 export const metadata: Metadata = {
   title: "Cómo publicar un aviso — Rentoru",
   description: "Los nueve pasos para publicar un aviso en rentoru.com, sin comisión.",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/ayuda/como-publicar-un-aviso" },
 };
 
 interface Step {

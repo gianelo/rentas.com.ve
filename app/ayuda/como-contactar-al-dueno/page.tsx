@@ -16,6 +16,8 @@ import styles from "../ayuda.module.css";
 export const metadata: Metadata = {
   title: "Cómo contactar al dueño — Rentoru",
   description: "Cómo funciona el contacto con llave de rentoru.com, y por qué pide un mensaje.",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/ayuda/como-contactar-al-dueno" },
 };
 
 export default function ComoContactarPage() {

@@ -29,6 +29,8 @@ import { SubirFoto } from "./SubirFoto";
 
 export const metadata: Metadata = {
   title: "Mis avisos — Rentoru",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/mis-avisos" },
 };
 
 // La sesión se lee en cada pedido: quién está adentro, cuántos avisos tiene y

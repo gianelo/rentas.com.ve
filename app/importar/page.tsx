@@ -19,6 +19,8 @@ import styles from "./importar.module.css";
 
 export const metadata: Metadata = {
   title: "Importar cartera — Rentoru",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/importar" },
 };
 
 // Quién está adentro y si su cuenta importa cartera se lee en cada pedido:
