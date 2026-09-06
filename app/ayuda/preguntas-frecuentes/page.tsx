@@ -16,8 +16,8 @@ import styles from "../ayuda.module.css";
  * — never an invented policy.
  */
 export const metadata: Metadata = {
-  title: "Preguntas frecuentes — Rentas",
-  description: "Cómo funciona rentas.com.ve: publicar, buscar y contactar, sin comisión.",
+  title: "Preguntas frecuentes — Rentoru",
+  description: "Cómo funciona rentoru.com: publicar, buscar y contactar, sin comisión.",
 };
 
 export default function PreguntasFrecuentesPage() {
@@ -27,8 +27,8 @@ export default function PreguntasFrecuentesPage() {
 
       <h2 className={styles.heading}>¿Cuánto cuesta publicar o contactar a un dueño?</h2>
       <p className={styles.text}>
-        Nada. Publicar un aviso y contactar al dueño no cuestan nada: rentas.com.ve no cobra
-        comisión ni a quien publica ni a quien alquila.
+        Nada. Publicar un aviso y contactar al dueño no cuestan nada: rentoru.com no cobra comisión
+        ni a quien publica ni a quien alquila.
       </p>
 
       <h2 className={styles.heading}>¿Cuánto dura un aviso publicado?</h2>
@@ -56,9 +56,9 @@ export default function PreguntasFrecuentesPage() {
         <AppLink href="/ayuda/como-contactar-al-dueno">Cómo contactar al dueño</AppLink>.
       </p>
 
-      <h2 className={styles.heading}>¿rentas.com.ve interviene en el contrato o en el pago?</h2>
+      <h2 className={styles.heading}>¿rentoru.com interviene en el contrato o en el pago?</h2>
       <p className={styles.text}>
-        No. rentas.com.ve no participa en la negociación entre las partes. Visitá la propiedad y
+        No. rentoru.com no participa en la negociación entre las partes. Visitá la propiedad y
         verificá quién es el dueño antes de entregar dinero.
       </p>
 

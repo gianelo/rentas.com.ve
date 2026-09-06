@@ -34,7 +34,7 @@ import { readNavAccountFlags } from "./_lib/nav-account";
 import styles from "./home.module.css";
 
 export const metadata: Metadata = {
-  title: "Alquileres de larga estancia en Venezuela — Rentas",
+  title: "Alquileres de larga estancia en Venezuela — Rentoru",
   description:
     "Alquileres de larga estancia en Distrito Capital y Maracaibo. Publicar y buscar es gratis, sin comisión.",
 };

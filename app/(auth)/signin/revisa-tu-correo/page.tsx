@@ -19,7 +19,7 @@ import { TICKET_COOKIE } from "../enlace";
 import styles from "./espera.module.css";
 
 export const metadata: Metadata = {
-  title: "Revisá tu correo — Rentas",
+  title: "Revisá tu correo — Rentoru",
 };
 
 /**

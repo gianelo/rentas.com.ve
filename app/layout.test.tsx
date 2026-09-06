@@ -53,8 +53,14 @@ describe("RootLayout", () => {
     const markup = await render(null);
 
     expect(markup).toContain("<footer");
-    expect(markup).toContain("rentas.");
-    expect(markup).toContain("© 2026 rentas.com.ve · Publicar y contactar no cuesta nada");
+    // The wordmark as the sole text of its own anchor. This used to be a
+    // bare `toContain("rentas.")`, which the copyright line's own
+    // "rentas.com.ve" already satisfied — so the assertion passed without
+    // ever looking at the wordmark, and a typo in the mark itself went
+    // through. SiteFooter.test.tsx had already fixed exactly this in its
+    // own file; this one had not been updated (tasks.md 26.13).
+    expect(markup).toContain(">Rentoru</a>");
+    expect(markup).toContain("© 2026 rentoru.com · Publicar y contactar no cuesta nada");
   });
 
   /**

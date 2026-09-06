@@ -64,7 +64,7 @@ import {
 import { SubirFoto } from "../../SubirFoto";
 
 export const metadata: Metadata = {
-  title: "Editar aviso — Rentas",
+  title: "Editar aviso — Rentoru",
 };
 
 // De quién es el aviso y si sigue activo se lee en cada pedido: un aviso que

@@ -4,7 +4,7 @@ import { requireSession } from "../_lib/require-session";
 import { readPublicationContext } from "./publication-context";
 
 export const metadata: Metadata = {
-  title: "Publicar — Rentas",
+  title: "Publicar — Rentoru",
 };
 
 /**

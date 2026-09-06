@@ -12,16 +12,17 @@ describe("SiteFooter", () => {
   it("draws the wordmark, the tagline, and the two-line legal strip", () => {
     const markup = renderToStaticMarkup(<SiteFooter linkGroups={[]} />);
 
-    // The wordmark as the sole text of its own anchor — not `toContain("rentas.")`,
-    // which the copyright line's "rentas.com.ve" would also satisfy and hide
-    // a typo in the wordmark itself (the same risk Nav.tsx's own comment
-    // names for its two copies).
-    expect(markup).toContain(">rentas.</a>");
+    // The wordmark as the sole text of its own anchor — not a bare
+    // `toContain`, which the two "rentoru.com" lines of the strip below
+    // already put in this markup and which would hide a typo in the
+    // wordmark itself (the same risk Nav.tsx's own comment names for its
+    // two copies).
+    expect(markup).toContain(">Rentoru</a>");
     expect(markup).toContain(
       "Alquileres en Venezuela sin comisión. El dueño publica, el inquilino escribe directo.",
     );
-    expect(markup).toContain("© 2026 rentas.com.ve · Publicar y contactar no cuesta nada");
-    expect(markup).toContain("rentas.com.ve no interviene en el contrato entre las partes");
+    expect(markup).toContain("© 2026 rentoru.com · Publicar y contactar no cuesta nada");
+    expect(markup).toContain("rentoru.com no interviene en el contrato entre las partes");
   });
 
   /**

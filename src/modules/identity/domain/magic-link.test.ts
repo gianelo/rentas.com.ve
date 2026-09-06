@@ -29,6 +29,20 @@ describe("composeMagicLinkEmail", () => {
     expect(email.body).toContain("15 minutos");
     expect(email.body).toContain("una sola vez");
   });
+
+  /**
+   * **El asunto no lo miraba ninguna prueba** (tasks.md 26.7). Es la primera
+   * línea que ve alguien en su bandeja antes de decidir si el correo es
+   * legítimo, y un asunto que nombra una marca distinta a la del remitente
+   * —que ya dice `rentoru.com` desde la 26.17— se lee como suplantación. Sin
+   * esta aserción el renombre no tenía guardián y quedaba verde con el nombre
+   * viejo puesto.
+   */
+  it("el asunto nombra el producto, que es lo que vuelve legítimo al correo", () => {
+    const email = composeMagicLinkEmail("https://rentas.com.ve/x");
+
+    expect(email.subject).toBe("Tu enlace para entrar a Rentoru");
+  });
 });
 
 describe("isVerificationLinkExpired", () => {

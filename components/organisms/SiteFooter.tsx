@@ -3,17 +3,22 @@ import { AppLink } from "../atoms/AppLink";
 import styles from "./SiteFooter.module.css";
 
 /**
- * A single copy. SISTEMA.md fixes it with the trailing dot ("rentas."), and
- * Nav.tsx already flags the same risk in its own copy: this is retyped here
- * rather than imported, so it is a third occurrence and not a second.
+ * A single copy. SISTEMA.md fixes that there is no logo and that the mark IS
+ * the word; the founder renamed the product to `rentoru.com` (tasks.md 26.2)
+ * and chose "Rentoru" — capitalised and with NO trailing dot — so the mark and
+ * the title suffix ("— Rentoru") are one single form. The trailing dot
+ * SISTEMA.md:323 still describes belongs to the old name, and the board catches
+ * up in its own slice (tasks.md 26.21/26.23). Nav.tsx already flags the same
+ * risk in its own copy: this is retyped here rather than imported, so it is a
+ * third occurrence and not a second.
  */
-const WORDMARK = "rentas.";
+const WORDMARK = "Rentoru";
 
 const TAGLINE =
   "Alquileres en Venezuela sin comisión. El dueño publica, el inquilino escribe directo.";
 
-const COPYRIGHT_LINE = "© 2026 rentas.com.ve · Publicar y contactar no cuesta nada";
-const DISCLAIMER_LINE = "rentas.com.ve no interviene en el contrato entre las partes";
+const COPYRIGHT_LINE = "© 2026 rentoru.com · Publicar y contactar no cuesta nada";
+const DISCLAIMER_LINE = "rentoru.com no interviene en el contrato entre las partes";
 
 const CATEGORY_LABELS = {
   ayuda: "Ayuda",
