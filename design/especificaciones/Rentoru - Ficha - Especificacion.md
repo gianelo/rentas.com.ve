@@ -179,7 +179,7 @@ Es lo único de la ficha que cambia según quién mira. **El número siempre se 
 
 ### Aviso vencido
 - Sin contacto, en ningún estado de sesión
-- Recuadro punteado: "Venció el 12 de septiembre y el dueño no lo renovó. No mostramos el contacto de avisos vencidos."
+- Recuadro punteado: "Venció el 12 de septiembre y no fue renovado. No mostramos el contacto de avisos vencidos."
 - Salida: "Ver avisos activos en Chacao"
 
 ### Advertencia de negociación
