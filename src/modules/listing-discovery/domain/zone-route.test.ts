@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { isFilteredZoneRoute, resolveCityRoute, resolveZoneRoute } from "./zone-route";
+import {
+  cityRoutePath,
+  isFilteredZoneRoute,
+  resolveCityRoute,
+  resolveZoneRoute,
+  zoneRoutePath,
+} from "./zone-route";
 
 const cities = [
   { id: "dc", name: "Distrito Capital" },
@@ -218,5 +224,36 @@ describe("la tabla de la resolución de ubicación (fundador, 2026-08-26)", () =
     // `/alquiler/dc?zona=chacao` es la MISMA página que `/alquiler/dc/chacao`.
     // Publicar las dos es contenido duplicado con dos direcciones.
     expect(isFilteredZoneRoute({ zona: "chacao" })).toBe(true);
+  });
+});
+
+/**
+ * **La dirección canónica de un lugar la arma el dominio** (tarea 26.12).
+ *
+ * Las dos pantallas escribían `/alquiler/${ciudad}` a mano con el segmento que
+ * llegó en la petición, y devolver la petición como canónica es la forma
+ * clásica del defecto: la canónica deja de ser un hecho del catálogo y pasa a
+ * ser un eco de lo que alguien escribió. Acá se arma desde el nombre curado y
+ * con la misma `slugify` que `buildListingPath`, que es lo que hace que la
+ * canónica de la zona y el enlace «← Resultados» de la ficha sean la misma
+ * dirección.
+ */
+describe("la ruta canónica de un lugar", () => {
+  const dc = { id: "c1", name: "Distrito Capital" };
+  const chacao = { id: "z1", name: "Chacao", cityId: "c1" };
+
+  it("la ciudad sale de su nombre curado, no del segmento que llegó", () => {
+    expect(cityRoutePath(dc)).toBe("/alquiler/distrito-capital");
+  });
+
+  it("la zona cuelga de su ciudad, resueltas juntas", () => {
+    expect(zoneRoutePath({ city: dc, zone: chacao })).toBe("/alquiler/distrito-capital/chacao");
+  });
+
+  it("usa la misma slugify que la ficha, así que acentos y mayúsculas no separan las dos", () => {
+    const maracaibo = { id: "c2", name: "Maracaibo" };
+    const bella = { id: "z2", name: "Bella Vista", cityId: "c2" };
+
+    expect(zoneRoutePath({ city: maracaibo, zone: bella })).toBe("/alquiler/maracaibo/bella-vista");
   });
 });

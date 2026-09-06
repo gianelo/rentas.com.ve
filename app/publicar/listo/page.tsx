@@ -5,6 +5,8 @@ import styles from "../publish-page.module.css";
 
 export const metadata: Metadata = {
   title: "Aviso publicado — Rentoru",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/publicar/listo" },
 };
 
 interface DonePageProps {

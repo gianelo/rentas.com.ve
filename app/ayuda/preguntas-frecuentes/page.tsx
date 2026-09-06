@@ -18,6 +18,8 @@ import styles from "../ayuda.module.css";
 export const metadata: Metadata = {
   title: "Preguntas frecuentes — Rentoru",
   description: "Cómo funciona rentoru.com: publicar, buscar y contactar, sin comisión.",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/ayuda/preguntas-frecuentes" },
 };
 
 export default function PreguntasFrecuentesPage() {

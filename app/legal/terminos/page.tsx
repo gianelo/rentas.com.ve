@@ -12,6 +12,8 @@ import styles from "../legal.module.css";
 export const metadata: Metadata = {
   title: "Términos y condiciones — Rentoru",
   description: "Las reglas de uso de rentoru.com, tal como funciona hoy.",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/legal/terminos" },
 };
 
 export default function TerminosPage() {

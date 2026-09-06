@@ -17,6 +17,7 @@ import { resolveSearchPill } from "@/modules/listing-catalogue/domain/search-pil
 import { DrizzleCatalogue } from "@/modules/listing-catalogue/infrastructure/drizzle-catalogue";
 import { buildListingGrid } from "@/modules/listing-discovery/domain/listing-grid";
 import {
+  cityRoutePath,
   isFilteredZoneRoute,
   resolveCityRoute,
 } from "@/modules/listing-discovery/domain/zone-route";
@@ -445,12 +446,22 @@ export async function generateMetadata({ params, searchParams }: CiudadProps): P
   const city = resolveCityRoute(cities, ciudad);
   if (!city) return {};
 
+  // La misma regla mecánica que la página de zona: la ciudad se indexa, la
+  // ciudad refinada no. Las refinadas son combinatorias, y publicarlas todas
+  // es contenido duplicado sobre el dominio entero.
+  const filtered = isFilteredZoneRoute(query);
+
   return {
     title: `Alquiler en ${city.name} — Rentoru`,
     description: `Avisos de alquiler de larga estancia en ${city.name}. Publicar y buscar es gratis, sin comisión.`,
-    // La misma regla mecánica que la página de zona: la ciudad se indexa, la
-    // ciudad refinada no. Las refinadas son combinatorias, y publicarlas todas
-    // es contenido duplicado sobre el dominio entero.
-    robots: isFilteredZoneRoute(query) ? { index: false, follow: true } : undefined,
+    robots: filtered ? { index: false, follow: true } : undefined,
+    // **Sólo se canoniza lo que pide ser indexado** (26.12). Una refinada ya
+    // sale del índice con la línea de arriba; agregarle además una canónica
+    // hacia la ciudad sin filtros serían dos señales que se contradicen. Y es
+    // relativa: la base la pone `metadataBase` en el layout, una sola vez.
+    //
+    // Sale de `cityRoutePath` y no del segmento que llegó: devolver la
+    // petición como canónica es la forma clásica del defecto.
+    alternates: filtered ? undefined : { canonical: cityRoutePath(city) },
   };
 }

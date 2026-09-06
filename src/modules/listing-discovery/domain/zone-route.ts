@@ -176,3 +176,26 @@ export function resolveCityRoute<C extends RoutableCity>(
 
   return cities.find((candidate) => slugify(candidate.name) === citySlug) ?? null;
 }
+
+/**
+ * La dirección canónica de una ciudad y la de una zona (tarea 26.12).
+ *
+ * **Se arma desde el catálogo y no desde la petición.** Las dos pantallas
+ * escribían `/alquiler/${ciudad}` con el segmento que llegó, y devolver la
+ * petición como canónica es la forma clásica del defecto: la canónica deja de
+ * ser un hecho del catálogo y pasa a ser un eco de lo que alguien escribió.
+ * Hoy las dos coinciden —`resolveZoneRoute` compara contra `slugify(nombre)`,
+ * así que un segmento que no sea el canónico ya es un 404—, y esa coincidencia
+ * es justamente lo que no hay que dejar sostenido por casualidad.
+ *
+ * Es la misma `slugify` que `buildListingPath`, que es lo que hace que la
+ * canónica de la zona y el enlace «← Resultados» de la ficha sean la misma
+ * dirección y no dos que se parecen.
+ */
+export function cityRoutePath(city: RoutableCity): string {
+  return `/alquiler/${slugify(city.name)}`;
+}
+
+export function zoneRoutePath({ city, zone }: ZoneRoute): string {
+  return `${cityRoutePath(city)}/${slugify(zone.name)}`;
+}

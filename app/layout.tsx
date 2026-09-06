@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
+import { SOCIAL_CARD } from "@/modules/listing-discovery/domain/social-card";
+import { readSiteBaseUrl } from "@/modules/listing-discovery/infrastructure/site-base-url";
 import {
   FOOTER_LINK_CATALOGUE,
   groupResolvedFooterLinks,
@@ -20,9 +22,41 @@ import "@/styles/base.css";
 // once, on the root element. No component reads either attribute directly —
 // every component resolves colour, radius, and geometry through the CSS
 // custom properties these two attributes select in src/styles/tokens.css.
+
+// tasks.md 26.12 — `metadataBase`, and why the host is written exactly once.
+//
+// Every `alternates.canonical` in `app/` is a RELATIVE path. This is the
+// single place that turns them into absolute URLs, so a deploy on a preview
+// domain canonicalises against its own origin without a line of code
+// changing. Writing the host in each page instead would put it in 27 files,
+// which is 26 correct renames and one that is not.
+//
+// **It reads `readSiteBaseUrl()` and never a literal**, so it fails closed
+// exactly as `robots.ts` and `sitemap.ts` do (task 26.10, AGENTS.md §7):
+// without `SITE_URL` the build stops here rather than publishing canonicals
+// and social cards that point somewhere else. That is deliberate — a wrong
+// canonical is not reported by anything, it is simply obeyed.
+//
+// `app/opengraph-image.tsx` is attached to every route by file convention,
+// and it fills BOTH `og:image` and `twitter:image` — measured on the built
+// output, not assumed — so no image is named here. `twitter.card` is, because
+// nothing else says a 1200×630 image should be shown at full width.
 export const metadata: Metadata = {
+  metadataBase: new URL(readSiteBaseUrl()),
   title: "Rentoru",
   description: "Free long-stay residential rental marketplace for Venezuela.",
+  openGraph: {
+    type: "website",
+    siteName: "Rentoru",
+    locale: "es_VE",
+    title: "Rentoru",
+    description: SOCIAL_CARD.tagline,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Rentoru",
+    description: SOCIAL_CARD.tagline,
+  },
 };
 
 // tasks.md 23.1/23.2 — the site footer. `linkGroups` is resolved once, here,

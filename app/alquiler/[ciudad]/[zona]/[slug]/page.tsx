@@ -43,7 +43,10 @@ import {
   serializeStructuredData,
 } from "@/modules/listing-discovery/domain/listing-structured-data";
 import { suggestionHeading } from "@/modules/listing-discovery/domain/listing-suggestions";
-import { listingIdFromSlug } from "@/modules/listing-discovery/domain/listing-url";
+import {
+  buildListingPath,
+  listingIdFromSlug,
+} from "@/modules/listing-discovery/domain/listing-url";
 import {
   RETURN_PARAM,
   resultsLink,
@@ -564,5 +567,15 @@ export async function generateMetadata({ params }: FichaProps): Promise<Metadata
     // `undefined` cuando se indexa, igual que la página de zona: no emitir la
     // etiqueta es la respuesta por defecto, y `index: true` no dice nada más.
     robots: indexing.index ? undefined : { index: false, follow: indexing.follow },
+    // **La canónica es la que arma el dominio, no la que llegó** (26.12).
+    // Toda ruta que termine en este id resuelve a este aviso, así que la
+    // dirección pedida es una de infinitas y la canónica es la ÚNICA que
+    // `buildListingPath` produce — la misma a la que el 308 de arriba
+    // redirige. Rearmarla acá serían dos definiciones de «canónico» que
+    // arrancan iguales y se separan en el primer arreglo apurado.
+    //
+    // Sólo cuando se indexa: un aviso vencido o de contenido delgado ya salió
+    // del índice, y sumarle una canónica serían dos señales contradictorias.
+    alternates: indexing.index ? { canonical: buildListingPath(detail) } : undefined,
   };
 }

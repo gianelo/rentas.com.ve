@@ -12,6 +12,8 @@ import styles from "../legal.module.css";
 export const metadata: Metadata = {
   title: "Tratamiento de datos — Rentoru",
   description: "Qué datos personales procesa rentoru.com, dato por dato.",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/legal/datos" },
 };
 
 export default function DatosPage() {

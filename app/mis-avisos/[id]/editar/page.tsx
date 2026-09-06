@@ -65,6 +65,14 @@ import { SubirFoto } from "../../SubirFoto";
 
 export const metadata: Metadata = {
   title: "Editar aviso — Rentoru",
+  // 26.12 — **sin canónica, y por eso fuera del índice.** Es la misma llamada
+  // que hace `reportar/page.tsx`: no es contenido. La pantalla vive detrás de
+  // una sesión y de la propiedad del aviso, así que un rastreador sólo ve la
+  // redirección a la puerta; y su ruta lleva un `[id]` que esta metadata
+  // estática no resuelve, de modo que no hay dirección canónica que declarar.
+  // Declarar `noindex` y una canónica a la vez serían dos señales que se
+  // contradicen, así que va la que dice la verdad.
+  robots: { index: false, follow: false },
 };
 
 // De quién es el aviso y si sigue activo se lee en cada pedido: un aviso que

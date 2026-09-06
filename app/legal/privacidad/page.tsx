@@ -14,6 +14,8 @@ import styles from "../legal.module.css";
 export const metadata: Metadata = {
   title: "Política de privacidad — Rentoru",
   description: "Qué datos recoge rentoru.com, para qué los usa y con quién los comparte.",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/legal/privacidad" },
 };
 
 export default function PrivacidadPage() {

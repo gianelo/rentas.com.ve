@@ -1,6 +1,15 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+// tasks.md 26.12 — el layout ahora arma `metadataBase` con `readSiteBaseUrl()`
+// en el cuerpo del módulo, así que sin origen **el import se cae**. No es un
+// accidente de la prueba: es el fallo cerrado del AGENTS.md §7, y
+// `metadata-canonica.test.ts` lo afirma como comportamiento. Acá sólo se le da
+// un origen para poder mirar lo demás.
+vi.hoisted(() => {
+  process.env.SITE_URL ??= "https://ejemplo.test";
+});
+
 const { headersGet } = vi.hoisted(() => ({
   headersGet: vi.fn((): string | null => null),
 }));
