@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { ActionButton } from "../../../components/atoms/buttons";
+import { AppLink } from "../../../components/atoms/AppLink";
+import { ActionButton, NeutralButton } from "../../../components/atoms/buttons";
+import { GoogleMark } from "../../../components/atoms/icons";
 import { Label } from "../../../components/atoms/Label";
 import { Container } from "../../../components/layout/Container";
 import { signInPageFor } from "../../../src/modules/identity/domain/sign-in-page";
@@ -50,7 +52,13 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
               <p className={styles.reason}>{page.reason}</p>
 
               <form className={styles.form} action={continueWithGoogle}>
-                <ActionButton type="submit">Continuar con Google</ActionButton>
+                {/* Nivel 3 y con la marca (tasks.md 22.20): con el disco de
+                    Google puesto, un relleno --accent competiría con la marca,
+                    y el borde sin relleno es el que Google exige. */}
+                <NeutralButton type="submit">
+                  <GoogleMark />
+                  Continuar con Google
+                </NeutralButton>
               </form>
 
               {/* La segunda puerta (22.22). Google arriba y el correo debajo,
@@ -82,7 +90,20 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
               </form>
 
               {page.assurance ? <p className={styles.assurance}>{page.assurance}</p> : null}
-              <p className={styles.legal}>{page.legal}</p>
+              {/* Cada fragmento ya viene decidido por `signInPageFor` (22.24):
+                  acá sólo se elige entre un `<span>` y un enlace real, nunca
+                  qué palabra enlaza a qué ruta. */}
+              <p className={styles.legal}>
+                {page.legal.map((fragment) =>
+                  fragment.kind === "link" ? (
+                    <AppLink key={fragment.href} href={fragment.href}>
+                      {fragment.label}
+                    </AppLink>
+                  ) : (
+                    <span key={fragment.value}>{fragment.value}</span>
+                  ),
+                )}
+              </p>
             </div>
 
             {page.steps.length > 0 ? (

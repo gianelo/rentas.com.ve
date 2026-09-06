@@ -458,6 +458,7 @@ export default async function MeasureHarnessPage({
           stayHref="/alquiler/distrito-capital/chacao/apartamento-medida"
           callbackUrl="/alquiler/distrito-capital/chacao/apartamento-medida"
           signInAction={measureRevealAction}
+          requestMagicLinkAction={measureRevealAction}
         />
       ) : null}
 

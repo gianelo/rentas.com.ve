@@ -339,6 +339,17 @@
   --title-fs: 20px;
   --title-fw: 700;
   --title-lh: 1.25;
+
+  /* **El papel propio de la puerta de entrar** (láminas 8a/9a, tasks.md
+     22.25). NO es `--title-fs` con otro nombre: las dos láminas dibujan 22 y
+     28 sólo en esta pantalla, y subir `--title-fs` movería el `<h1>` de las
+     seis pantallas que ya shipean — inicio, ciudad, zona, publicar, mis
+     avisos, importar. **DESBLOQUEADO 2026-09-05** — manda la lámina (el
+     fundador: «el UI y UX es la lámina») y el sistema admite el tamaño como
+     rol propio de esta pantalla, la misma forma con la que `--wait-mark-size`
+     ya admitió el disco de la espera. */
+  --door-title-fs: 22px;
+  --door-title-fs-desktop: 28px;
   /* The brand is the word "Rentoru" set in the display face — SISTEMA.md
      "Assets": there is no logotype. --disp resolves to --mono under
      data-layout="compacto", so the wordmark changes with the structure axis
@@ -409,6 +420,14 @@
   --nav-h-desktop: 68px;
   --nav-brand-fs: 17px;
   --nav-brand-fs-desktop: 19px;
+
+  /* **La barra de la puerta de entrar, con su propio alto** (tasks.md 22.25).
+     Mismo argumento que `--door-title-fs`: la 8a dibuja 56 y la 9a 72, y son
+     números que no pisan `--nav-h`/`--nav-h-desktop` porque esta barra no
+     lleva pastilla de búsqueda — es un rol propio, no una variante de la
+     barra de navegación. **DESBLOQUEADO 2026-09-05**, misma resolución. */
+  --door-bar-h: 56px;
+  --door-bar-h-desktop: 72px;
   /* Un solo tamaño para "Publicar gratis", "Publicar", "Entrar" y "Mis
      avisos": son la misma clase de control en la barra, y la lámina los
      dibuja los cuatro a 13.5px. */

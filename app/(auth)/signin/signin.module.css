@@ -15,7 +15,9 @@
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 8px;
-  min-block-size: var(--nav-h);
+  /* --door-bar-h, no --nav-h: es el rol propio de esta barra (tasks.md
+     22.25), no una variante de la de navegación. */
+  min-block-size: var(--door-bar-h);
 }
 .brand,
 .back {
@@ -51,7 +53,9 @@
 }
 .title {
   margin: 0;
-  font-size: var(--title-fs);
+  /* --door-title-fs, no --title-fs (tasks.md 22.25): el papel propio de esta
+     pantalla, no el encabezado del resto del producto. */
+  font-size: var(--door-title-fs);
   font-weight: var(--title-fw);
   line-height: var(--title-lh);
   text-wrap: pretty;
@@ -198,7 +202,7 @@
   .barInner {
     grid-template-columns: auto auto;
     justify-content: space-between;
-    min-block-size: var(--nav-h-desktop);
+    min-block-size: var(--door-bar-h-desktop);
   }
   .brand {
     order: 0;
@@ -206,6 +210,9 @@
   }
   .back {
     order: 1;
+  }
+  .title {
+    font-size: var(--door-title-fs-desktop);
   }
   .grid {
     grid-template-columns: 420px 1fr;

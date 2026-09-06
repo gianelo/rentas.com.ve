@@ -19,6 +19,21 @@ export const DOOR_QUERY_NAME = "entrar";
 /** Su único valor válido. Cualquier otro deja la puerta cerrada. */
 export const DOOR_OPEN_TOKEN = "si";
 
+/**
+ * El campo de correo y su botón, debajo del de Google (tasks.md 22.22, 22.28
+ * — láminas 8a/8b/9a/9b). **La misma forma que `SignInEmailDoor`** en
+ * `identity/domain/sign-in-page.ts`, y a propósito: es la misma puerta
+ * dibujada dos veces —página y hoja— y una copia que discrepara sería la
+ * misma frase escrita mal en un lugar y bien en el otro.
+ */
+export interface ContactEmailDoor {
+  readonly separator: string;
+  readonly label: string;
+  readonly placeholder: string;
+  readonly submit: string;
+  readonly note: string;
+}
+
 export interface ContactDoorCopy {
   readonly title: string;
   readonly reason: string;
@@ -26,6 +41,8 @@ export interface ContactDoorCopy {
   readonly stayLabel: string;
   readonly closeLabel: string;
   readonly assurance: string;
+  /** El campo de correo y su botón (tasks.md 22.28). Igual para las cuatro puertas. */
+  readonly email: ContactEmailDoor;
   /**
    * tasks.md 22.39 — «verificado por …», al lado del contacto tapado
    * (láminas Ficha 8b/9b), o `null` cuando no hay nada que afirmar.
@@ -80,6 +97,13 @@ export function contactDoorFor(
     stayLabel: "Seguir mirando sin entrar",
     closeLabel: "Cerrar sin entrar",
     assurance: "Volvés a este mismo aviso al terminar.",
+    email: {
+      separator: "o con tu correo",
+      label: "Correo",
+      placeholder: "tucorreo@ejemplo.com",
+      submit: "Enviarme el enlace",
+      note: "Te mandamos un enlace que te deja entrar. No manejamos contraseñas.",
+    },
     verifiedNotice: verified ? `verificado por ${noun}` : null,
   };
 }

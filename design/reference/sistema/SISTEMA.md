@@ -298,7 +298,7 @@ El color aparece solo en los dos estados que piden algo. Activa y vencida son ne
 
 **Lo que dice depende de por qué puerta se entró** (`signInPageFor`, `src/modules/identity/domain/sign-in-page.ts`): publicar trae los tres pasos, un aviso trae la promesa de vuelta, y la cuenta no promete ninguno de los dos. La copia es de producto y vive en el dominio, no en la pantalla.
 
-**Desvíos de la lámina, deliberados.** El `<h1>` usa `--title-fs` como el de todas las demás pantallas, y no el 22/28 que estas dos láminas dibujan sólo acá: un tamaño de encabezado propio de una pantalla es cómo empieza la deriva. El enlace de vuelta va en `--ink`, igual que el «← Resultados» de la ficha, y no en `--accent`. El campo de correo y su botón «Enviarme el enlace» **no están dibujados todavía**: desembocan en la pantalla de espera, que no existe (tarea 15.9). Y el botón va **sin la marca de Google**, en el nivel 1 — ver Assets y la tarea 22.20.
+**Papel propio de esta pantalla, no deriva** (tasks.md 22.25, DESBLOQUEADO 2026-09-05 — manda la lámina, rama 1 del encabezado de la fase 22). El `<h1>` usa `--door-title-fs`/`--door-title-fs-desktop` (22/28) y la barra usa `--door-bar-h`/`--door-bar-h-desktop` (56/72): son los números que las dos láminas dibujan sólo acá, admitidos como rol propio de la puerta y no como un cambio de `--title-fs`/`--nav-h`, que moverían las seis pantallas que ya shipean. El enlace de vuelta va en `--ink`, igual que el «← Resultados» de la ficha, y no en `--accent`. El campo de correo y su botón «Enviarme el enlace» están dibujados desde la 22.22. Y el botón lleva la marca de Google —tercer SVG en línea, ver Assets— en el **nivel 3** de la jerarquía: con el logo puesto, un relleno `--accent` competiría con la marca, y el borde sin relleno es el que Google exige (tasks.md 22.20).
 
 ## Interactions & Behavior
 
@@ -324,19 +324,20 @@ Ninguno propio. No hay logotipo: la marca es la palabra "Rentoru" en el stack de
 
 **Glifos de texto por defecto.** `←`, `✓`, `✱`, `×`, `·` son caracteres, no imágenes: no piden red, heredan el color y la métrica del texto que los rodea, y escalan con el tipo.
 
-**Y un conjunto CERRADO de dos SVG en línea** (decisión del fundador, 2026-08-25), que son los de la pastilla de búsqueda:
+**Y un conjunto de tres SVG en línea**, dos cerrados por decisión del fundador (2026-08-25) y un tercero admitido como excepción de marca (DESBLOQUEADO 2026-09-05, tasks.md 22.20):
 
 | Glifo | Uso | Por qué no es un carácter |
 |---|---|---|
 | tres rayas | el contador de filtros | no hay carácter que signifique "filtro" sin ambigüedad |
 | lupa | la acción de buscar | `◎` se lee como un ojo, no como una lupa |
+| disco de Google | el botón «Continuar con Google» (láminas 8a/8b/9a/9b) | **excepción de marca, no una tercera decisión de icono propio.** Las reglas de marca de Google exigen su logo exacto y no admiten una versión propia — acá el sistema no puede derivar nada, así que se reproduce tal cual en vez de discutirse como los otros dos |
 
 Las condiciones son parte de la regla, no una sugerencia:
 
-- **En línea, nunca un paquete de iconos.** Dos SVG pesan menos de 200 bytes; una librería pesa decenas de KB y trae cientos que nadie usa.
-- **`aria-hidden="true"`** y su etiqueta accesible al lado — la lupa va dentro de un enlace con `aria-label="Buscar"`.
-- **`stroke="currentColor"`**, así heredan el color como lo haría un carácter.
-- **El conjunto es cerrado.** Un tercer icono no se agrega: se discute. Esta tabla es la lista completa, y ampliarla es cambiar el sistema, no usarlo.
+- **En línea, nunca un paquete de iconos.** Los SVG de este sistema pesan bytes, no kilobytes; una librería de iconos trae decenas de KB y cientos que nadie usa.
+- **`aria-hidden="true"`** y su etiqueta accesible al lado. La lupa va dentro de un enlace con `aria-label="Buscar"`; el disco de Google va dentro de un botón cuyo texto visible ya dice «Continuar con Google» — ninguno de los tres SVG es su propio nombre accesible.
+- **`stroke="currentColor"`** en los dos primeros, así heredan el color como lo haría un carácter. **El disco de Google es la única excepción a esto también**: sus cuatro colores son parte de la marca y no del tema — `currentColor` los borraría.
+- **El conjunto de los dos primeros sigue cerrado.** Un cuarto icono de interfaz no se agrega: se discute. El disco de Google no abre la puerta a un cuarto — es una excepción de marca, con su razón escrita, y no una regla nueva de "hasta tres iconos".
 
 ## Contenido real usado
 
