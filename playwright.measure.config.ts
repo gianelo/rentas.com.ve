@@ -39,6 +39,19 @@ export default defineConfig({
       // porque Next no pisa una variable que ya está puesta.
       DATABASE_URL:
         "postgresql://harness:harness@ep-measure-harness-pooler.us-east-2.aws.neon.tech/rentas?sslmode=require",
+      // Misma razón que la de arriba, y llegó por el mismo camino (26.12).
+      //
+      // `app/layout.tsx` declara `metadataBase: new URL(readSiteBaseUrl())`, y
+      // desde la 26.10 esa función falla cerrado en vez de inventar un dominio.
+      // El arnés monta el layout para dibujar, así que sin esto la página
+      // revienta al renderizar y Playwright se queda esperando el servidor —
+      // que es exactamente cómo se cayó este job la primera vez.
+      //
+      // El valor es irrutable a propósito: lo que el arnés mide es la
+      // MAQUETACIÓN, y ninguna de sus afirmaciones mira una dirección. Un
+      // dominio real acá sólo serviría para que una medición dependiera del
+      // anfitrión del día.
+      SITE_URL: "https://measure-harness-no-es-el-dominio-real.invalid",
     },
   },
   projects: [
