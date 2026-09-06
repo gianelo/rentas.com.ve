@@ -30,20 +30,24 @@ export interface SmokeDatabase {
   execute(query: ReturnType<typeof sql>): Promise<unknown>;
 }
 
-export async function actualTableShapes(db: SmokeDatabase): Promise<readonly TableShape[]> {
-  const result = await db.execute(sql`
-    select table_name, column_name
-    from information_schema.columns
-    where table_schema = 'public'
-  `);
+/**
+ * `neon-http` devuelve las filas peladas y `node-postgres` un `QueryResult`.
+ * Todo chequeo de humo tiene que correr contra los dos: contra Neon en el
+ * despliegue y contra el contenedor en la prueba que lo prueba. Exportado —y
+ * no repetido en cada adaptador— desde que la 17.15 agregó el segundo.
+ */
+export function smokeRows<Row>(result: unknown): Row[] {
+  return (Array.isArray(result) ? result : (result as { rows: unknown[] }).rows) as Row[];
+}
 
-  // `neon-http` devuelve las filas peladas y `node-postgres` un `QueryResult`.
-  // El chequeo tiene que correr contra los dos: contra Neon en el despliegue y
-  // contra el contenedor en la prueba que lo prueba.
-  const rows = (Array.isArray(result) ? result : (result as { rows: unknown[] }).rows) as {
-    table_name: string;
-    column_name: string;
-  }[];
+export async function actualTableShapes(db: SmokeDatabase): Promise<readonly TableShape[]> {
+  const rows = smokeRows<{ table_name: string; column_name: string }>(
+    await db.execute(sql`
+      select table_name, column_name
+      from information_schema.columns
+      where table_schema = 'public'
+    `),
+  );
 
   const byTable = new Map<string, string[]>();
   for (const row of rows) {

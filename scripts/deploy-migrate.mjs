@@ -162,3 +162,28 @@ execSync("pnpm drizzle-kit migrate", { stdio: "inherit" });
 // code expects. It exits non-zero on its own, so `execSync` stops the build.
 console.log("deploy-migrate: verifying the schema matches the code…");
 execSync("pnpm tsx scripts/schema-smoke.ts", { stdio: "inherit" });
+
+// **The third question, and the one that had no asker until 2026-09-05.**
+// The schema check proves the COLUMNS arrived. Nothing proved the ROWS did.
+// The territorial taxonomy only ever reached a database through a hand-run
+// `pnpm db:seed`: no deploy step ran it, no CI job ran it, and no test
+// asserted a real environment's contents. Production therefore served 10
+// provisional zones under a city called "Distrito Capital" instead of the
+// 5,796 that `docs/territorio/` defines, step 2 of the publish flow offered
+// no zone at all, and publishing was impossible — with the whole suite green.
+//
+// **It fails the build rather than warning.** A warning is precisely the
+// failure mode this file already documents at the top: the error WAS written,
+// nobody was reading. A deploy that ships a product whose publish flow cannot
+// complete is not a deploy worth having, and the founder's instruction is that
+// this defect can never ship silently again. The exit is also cheap to clear —
+// `pnpm db:seed` is idempotent and deletes nothing — which is what separates
+// this from a gate that people learn to bypass.
+//
+// It is deliberately directional: it fails on taxonomy that is MISSING, never
+// on rows that merely exist beyond it. Production still carries those ten
+// provisional zones with real listings hanging off them, and a gate demanding
+// exact equality would block every deploy until somebody deleted real data —
+// the shape of the migration-0010 outage described above.
+console.log("deploy-migrate: verifying the taxonomy is seeded…");
+execSync("pnpm tsx scripts/taxonomy-smoke.ts", { stdio: "inherit" });

@@ -18,6 +18,41 @@ whole list in one sitting: several of these break each other half-done.
 | 5 | Cloudflare → R2 → custom domain | Point `fotos.<domain>` at the bucket, then set `R2_BUCKET_PUBLIC_URL` to it | Photos keep loading from `r2.dev`, which Cloudflare documents as development-only: no caching, rate limited, billed read operations |
 | 6 | Vercel → env | Re-check every `R2_BUCKET_*` value is the production bucket, not a test one | Uploads land somewhere nobody renders from |
 
+## The taxonomy has to be seeded, and it is not
+
+Everything above lives in a dashboard. This one lives in the database, and it
+is the same kind of item for the same reason: nothing in the repository put it
+there.
+
+`city` and `zone` are populated only by `pnpm db:seed`, run by hand against
+the target environment. No deploy step ran it and no CI job ran it, so a fresh
+environment comes up with whatever rows somebody typed in early on. On
+**2026-09-05** production held 10 provisional zones under a city called
+`Distrito Capital` instead of the 5,796 that `docs/territorio/` defines, and
+5 areas were 2. Step 2 of the publish flow offers a zone; with none to offer,
+**the whole publish path was dead** — while the test suite stayed green,
+because nothing asserted a real environment's contents.
+
+So: after pointing an environment at a database, run
+
+```
+pnpm db:seed
+```
+
+against it. It is idempotent — ids are derived from the full territorial path,
+so a second run changes nothing — and it deletes nothing.
+
+**The deploy gate now verifies it.** `scripts/deploy-migrate.mjs` runs
+`scripts/taxonomy-smoke.ts` after the schema check, and a production build
+whose database is missing taxonomy **fails** rather than deploying a product
+nobody can publish on. The expected counts are derived from `docs/territorio/`
+at check time, never hardcoded, so adding a file to the taxonomy moves the
+gate with it. It is directional: missing rows fail the build, extra rows do
+not — the provisional zones already carry real listings, and a gate demanding
+exact equality would block every deploy until somebody deleted real data.
+
+Run it against any environment by hand with `pnpm smoke:taxonomy`.
+
 ## Why CORS is the one that will bite
 
 `content-type` is signed into the presigned PUT, so the browser sends a
