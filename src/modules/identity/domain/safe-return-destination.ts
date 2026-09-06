@@ -10,7 +10,7 @@
  *
  * **El destino llega en un campo del formulario.** Es entrada de quien envía,
  * nunca un dato del servidor. Sin esta regla la acción de revelar es un
- * redirector abierto: un enlace de rentas.com.ve que deja a quien lo toca en
+ * redirector abierto: un enlace de rentoru.com que deja a quien lo toca en
  * cualquier parte. Lo caro no es el salto, es que el enlace se ve nuestro —
  * exactamente lo que un phishing necesita.
  *

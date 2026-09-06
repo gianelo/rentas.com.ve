@@ -118,8 +118,8 @@ export default function MeasureListaPage() {
                   areaM2={aviso.areaM2}
                   publisherType={indice % 3 === 0 ? "broker" : "owner"}
                   photo={{
-                    thumbUrl: "https://fotos.rentas.com.ve/photos/pub/tok/thumb.webp",
-                    cardUrl: "https://fotos.rentas.com.ve/photos/pub/tok/card.webp",
+                    thumbUrl: "https://fotos.rentoru.com/photos/pub/tok/thumb.webp",
+                    cardUrl: "https://fotos.rentoru.com/photos/pub/tok/card.webp",
                     alt: `Foto 1 de 1 — ${aviso.title}, Chacao`,
                   }}
                 />

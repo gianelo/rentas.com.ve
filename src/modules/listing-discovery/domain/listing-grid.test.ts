@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildListingGrid, type GridCover, type GridListing } from "./listing-grid";
 import { RETURN_PARAM } from "./return-to-results";
 
-const BASE = "https://fotos.rentas.com.ve";
+const BASE = "https://fotos.rentoru.com";
 
 function listing(overrides: Partial<GridListing> = {}): GridListing {
   return {
@@ -136,7 +136,7 @@ describe("buildListingGrid", () => {
       "/alquiler/distrito-capital/chacao?min=200&hab=2",
     );
 
-    const href = new URL(card?.href as string, "https://rentas.com.ve");
+    const href = new URL(card?.href as string, "https://rentoru.com");
     expect(href.searchParams.get(RETURN_PARAM)).toBe(
       "/alquiler/distrito-capital/chacao?min=200&hab=2",
     );

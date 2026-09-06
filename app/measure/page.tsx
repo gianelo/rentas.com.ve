@@ -263,8 +263,8 @@ export default async function MeasureHarnessPage({
                   areaM2={78}
                   publisherType="owner"
                   photo={{
-                    thumbUrl: "https://fotos.rentas.com.ve/photos/pub/tok/thumb.webp",
-                    cardUrl: "https://fotos.rentas.com.ve/photos/pub/tok/card.webp",
+                    thumbUrl: "https://fotos.rentoru.com/photos/pub/tok/thumb.webp",
+                    cardUrl: "https://fotos.rentoru.com/photos/pub/tok/card.webp",
                     alt: `Foto 1 de 1 — Apartamento ${n}, Chacao`,
                   }}
                 />

@@ -33,20 +33,20 @@ describe("configuración", () => {
    */
   it("no se deja construir sin clave", () => {
     expect(
-      () => new ResendContactMailer(undefined, "ingresa@rentas.com.ve", "hola@rentas.com.ve"),
+      () => new ResendContactMailer(undefined, "ingresa@rentoru.com", "hola@rentoru.com"),
     ).toThrow(ContactMailerNotConfiguredError);
   });
 
   it("no se deja construir sin remitente (AUTH_MAIL_FROM, reusado)", () => {
-    expect(() => new ResendContactMailer("re_loquesea", undefined, "hola@rentas.com.ve")).toThrow(
+    expect(() => new ResendContactMailer("re_loquesea", undefined, "hola@rentoru.com")).toThrow(
       ContactMailerNotConfiguredError,
     );
   });
 
   it("no se deja construir sin destino (CONTACT_MAIL_TO, la variable nueva de 23.7)", () => {
-    expect(
-      () => new ResendContactMailer("re_loquesea", "ingresa@rentas.com.ve", undefined),
-    ).toThrow(ContactMailerNotConfiguredError);
+    expect(() => new ResendContactMailer("re_loquesea", "ingresa@rentoru.com", undefined)).toThrow(
+      ContactMailerNotConfiguredError,
+    );
   });
 });
 
@@ -56,17 +56,17 @@ describe("el envío", () => {
 
     await new ResendContactMailer(
       "re_loquesea",
-      "ingresa@rentas.com.ve",
-      "hola@rentas.com.ve",
+      "ingresa@rentoru.com",
+      "hola@rentoru.com",
       client,
     ).send(MESSAGE);
 
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({
-        from: "ingresa@rentas.com.ve",
+        from: "ingresa@rentoru.com",
         // El destino lo fija la infraestructura, nunca el mensaje: el
         // puerto (`ContactMailerPort`) ni siquiera tiene un campo `to`.
-        to: "hola@rentas.com.ve",
+        to: "hola@rentoru.com",
         replyTo: MESSAGE.replyTo,
         subject: MESSAGE.subject,
         text: MESSAGE.body,
@@ -78,8 +78,8 @@ describe("el envío", () => {
     const { client } = fakeResend({ error: { message: "domain is not verified" } });
     const mailer = new ResendContactMailer(
       "re_loquesea",
-      "ingresa@rentas.com.ve",
-      "hola@rentas.com.ve",
+      "ingresa@rentoru.com",
+      "hola@rentoru.com",
       client,
     );
 

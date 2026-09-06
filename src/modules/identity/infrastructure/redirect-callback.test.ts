@@ -7,7 +7,7 @@ import { signInRedirect } from "./redirect-callback";
  * 15.10, F19). No decide nada: traduce la dirección que la librería entrega a
  * la ruta que `safeSignInReturn` sabe juzgar, y la vuelve a armar.
  */
-const BASE = "https://rentas.com.ve";
+const BASE = "https://rentoru.com";
 const FICHA = "/alquiler/distrito-capital/chacao/apto-abc123";
 
 describe("signInRedirect", () => {
@@ -25,7 +25,7 @@ describe("signInRedirect", () => {
   it.each([
     ["el inicio, que la F19 prohíbe por su nombre", `${BASE}/`],
     ["otro origen escrito completo", "https://evil.test/publicar"],
-    ["un dominio que empieza igual que el nuestro", "https://rentas.com.ve.evil.test/publicar"],
+    ["un dominio que empieza igual que el nuestro", "https://rentoru.com.evil.test/publicar"],
     ["basura que ni siquiera parsea", "://"],
   ])("cae al inicio ante %s", (_caso, url) => {
     expect(signInRedirect({ url, baseUrl: BASE })).toBe(BASE);

@@ -12,7 +12,7 @@ import { sendLifecycleNotices } from "./send-lifecycle-notices";
 const NOW = new Date("2026-08-28T10:00:00.000Z");
 const EXPIRES_AT = new Date("2026-08-31T10:00:00.000Z");
 const SECRET = "secreto";
-const BASE_URL = "https://rentas.com.ve";
+const BASE_URL = "https://rentoru.com";
 
 function listing(overrides: Partial<LifecycleListing> = {}): LifecycleListing {
   return {

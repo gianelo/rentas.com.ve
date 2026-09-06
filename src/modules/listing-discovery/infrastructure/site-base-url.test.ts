@@ -18,21 +18,22 @@ describe("readSiteBaseUrl", () => {
    * direcciones de producción desde un dominio que no es el nuestro.
    */
   it("usa el dominio de la vista previa de Vercel cuando no hay configuración", () => {
-    expect(readSiteBaseUrl({ VERCEL_URL: "rentas-abc123.vercel.app" })).toBe(
-      "https://rentas-abc123.vercel.app",
+    expect(readSiteBaseUrl({ VERCEL_URL: "rentoru-abc123.vercel.app" })).toBe(
+      "https://rentoru-abc123.vercel.app",
     );
   });
 
-  it("cae al dominio del producto, y nunca falla", () => {
-    // La asimetría con `readPhotoPublicBaseUrl`, que sí lanza: aquélla protege
-    // una pantalla que sin la variable se ve rota. Ésta sirve a un rastreador,
-    // y fallar dejaría al sitio entero sin sitemap por una variable faltante.
-    expect(readSiteBaseUrl({})).toBe("https://rentas.com.ve");
+  it("lanza cuando no hay ninguna variable, en vez de inventar un dominio", () => {
+    // Ya no hay respaldo codificado (tasks.md 26.10). En Vercel `VERCEL_URL`
+    // siempre está puesta (26.1), así que este caso no es producción: es una
+    // prueba o un entorno local sin configurar, y ahí un error ruidoso vale
+    // más que un origen que parece bueno y está mal.
+    expect(() => readSiteBaseUrl({})).toThrow(/SITE_URL/);
   });
 
-  it("ignora una variable presente pero vacía", () => {
+  it("lanza con una variable presente pero vacía, igual que si faltara", () => {
     // Es lo que deja un panel de configuración donde alguien borró el valor
     // sin borrar la clave. Tratarla como configurada emitiría `https://`.
-    expect(readSiteBaseUrl({ SITE_URL: "   ", VERCEL_URL: "" })).toBe("https://rentas.com.ve");
+    expect(() => readSiteBaseUrl({ SITE_URL: "   ", VERCEL_URL: "" })).toThrow(/SITE_URL/);
   });
 });

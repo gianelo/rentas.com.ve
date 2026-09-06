@@ -198,7 +198,7 @@ describe("activeListings", () => {
    */
   it("no publica la página de una zona cuyo único aviso ya venció", async () => {
     const rows = (await sitemap.activeListings()).filter((row) => row.cityName === CITY_NAME);
-    const urls = buildSitemap("https://rentas.test", rows).map((entry) => entry.url);
+    const urls = buildSitemap("https://rentoru.test", rows).map((entry) => entry.url);
 
     expect(urls.some((url) => url.includes(`zona-${ZONE}`))).toBe(true);
     expect(urls.some((url) => url.includes(`zona-${OTHER_ZONE}`))).toBe(false);

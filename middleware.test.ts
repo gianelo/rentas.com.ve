@@ -21,7 +21,7 @@ describe("middleware", () => {
   });
 
   it("stamps a listing detail request with x-hide-site-footer", () => {
-    const request = new NextRequest("https://rentas.test/alquiler/caracas/altamira/av_1");
+    const request = new NextRequest("https://rentoru.test/alquiler/caracas/altamira/av_1");
 
     const response = middleware(request);
 
@@ -29,7 +29,7 @@ describe("middleware", () => {
   });
 
   it("stamps a photo viewer request with x-hide-site-footer", () => {
-    const request = new NextRequest("https://rentas.test/alquiler/caracas/altamira/av_1/foto/2");
+    const request = new NextRequest("https://rentoru.test/alquiler/caracas/altamira/av_1/foto/2");
 
     const response = middleware(request);
 

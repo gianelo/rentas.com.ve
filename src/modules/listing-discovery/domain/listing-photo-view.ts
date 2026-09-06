@@ -51,7 +51,7 @@ export function photoAltText({ position, total, title, zone }: PhotoCaptionParts
 export function photoUrl(publicBaseUrl: string, key: string): string {
   if (key.trim() === "") {
     // Ruidoso, porque el modo de falla silencioso es peor: una
-    // `<img src="https://fotos.rentas.com.ve">` no falla de forma visible —
+    // `<img src="https://fotos.rentoru.com">` no falla de forma visible —
     // pide la raíz del bucket, recibe cualquier cosa y dibuja un ícono roto.
     throw new Error("listing-photo-view: no se puede construir una URL con clave vacía.");
   }

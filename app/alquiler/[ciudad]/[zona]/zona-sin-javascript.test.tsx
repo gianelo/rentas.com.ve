@@ -78,7 +78,7 @@ vi.mock("@/modules/listing-discovery/infrastructure/drizzle-listing-photos", () 
 import ZonaPage from "./page";
 
 beforeEach(() => {
-  process.env.R2_BUCKET_PUBLIC_URL = "https://fotos.rentas.test";
+  process.env.R2_BUCKET_PUBLIC_URL = "https://fotos.rentoru.test";
   search.mockReset();
   countFacets.mockReset();
   search.mockImplementation(async (criteria: SearchCriteria) => matching(criteria));
@@ -181,7 +181,7 @@ describe("la página de zona sin JavaScript", () => {
 
     const volver = new URL(
       (ficha as string).replaceAll("&amp;", "&"),
-      "https://rentas.com.ve",
+      "https://rentoru.com",
     ).searchParams.get("volver");
 
     // El literal, no una expresión derivada de las mismas funciones que la

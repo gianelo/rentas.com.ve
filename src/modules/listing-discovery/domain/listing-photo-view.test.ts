@@ -52,22 +52,22 @@ describe("photoAltText", () => {
 
 describe("photoUrl", () => {
   it("une la base pública con la clave de R2", () => {
-    expect(photoUrl("https://fotos.rentas.com.ve", "photos/pub/tok/card.webp")).toBe(
-      "https://fotos.rentas.com.ve/photos/pub/tok/card.webp",
+    expect(photoUrl("https://fotos.rentoru.com", "photos/pub/tok/card.webp")).toBe(
+      "https://fotos.rentoru.com/photos/pub/tok/card.webp",
     );
   });
 
   it("tolera una base con barra final, que es como se escribe en un .env", () => {
     // Nadie recuerda si la variable lleva barra. Una URL con `//` en el medio
     // funciona a veces y rompe el caché otras, porque es una URL distinta.
-    expect(photoUrl("https://fotos.rentas.com.ve/", "a/b.webp")).toBe(
-      "https://fotos.rentas.com.ve/a/b.webp",
+    expect(photoUrl("https://fotos.rentoru.com/", "a/b.webp")).toBe(
+      "https://fotos.rentoru.com/a/b.webp",
     );
   });
 
   it("refuse una clave vacía en vez de emitir una URL que apunta a la raíz", () => {
-    // Una `<img src="https://fotos.rentas.com.ve">` no falla de forma visible:
+    // Una `<img src="https://fotos.rentoru.com">` no falla de forma visible:
     // pide la raíz del bucket, recibe cualquier cosa y dibuja un ícono roto.
-    expect(() => photoUrl("https://fotos.rentas.com.ve", "")).toThrow();
+    expect(() => photoUrl("https://fotos.rentoru.com", "")).toThrow();
   });
 });

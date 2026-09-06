@@ -32,7 +32,7 @@ describe("configuración", () => {
    * enterarse de que nunca hubo proveedor.
    */
   it("no se deja construir sin clave", () => {
-    expect(() => new ResendLifecycleMailer(undefined, "avisos@rentas.com.ve")).toThrow(
+    expect(() => new ResendLifecycleMailer(undefined, "avisos@rentoru.com")).toThrow(
       LifecycleMailerNotConfiguredError,
     );
   });
@@ -52,11 +52,11 @@ describe("el envío", () => {
   it("manda el asunto y el cuerpo que compuso el dominio, sin reescribirlos", async () => {
     const { send, client } = fakeResend({ error: null });
 
-    await new ResendLifecycleMailer("re_loquesea", "avisos@rentas.com.ve", client).send(MESSAGE);
+    await new ResendLifecycleMailer("re_loquesea", "avisos@rentoru.com", client).send(MESSAGE);
 
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({
-        from: "avisos@rentas.com.ve",
+        from: "avisos@rentoru.com",
         to: MESSAGE.to,
         subject: MESSAGE.subject,
         // El texto plano es el del dominio tal cual: es lo que ve quien lee
@@ -74,7 +74,7 @@ describe("el envío", () => {
    */
   it("convierte en excepción el error que Resend devuelve", async () => {
     const { client } = fakeResend({ error: { message: "domain is not verified" } });
-    const mailer = new ResendLifecycleMailer("re_loquesea", "avisos@rentas.com.ve", client);
+    const mailer = new ResendLifecycleMailer("re_loquesea", "avisos@rentoru.com", client);
 
     await expect(mailer.send(MESSAGE)).rejects.toThrow(LifecycleMailerSendError);
     // El motivo del proveedor viaja: "el correo falló" sin la causa obliga a

@@ -23,12 +23,12 @@ function fakeResend(result: { error: { message: string } | null }) {
 const MESSAGE = {
   to: "tenant@ejemplo.com",
   subject: "Tu enlace para entrar a Rentas",
-  body: "Entrá con este enlace:\nhttps://rentas.com.ve/api/auth/callback/email?token=x",
+  body: "Entrá con este enlace:\nhttps://rentoru.com/api/auth/callback/email?token=x",
 };
 
 describe("configuración", () => {
   it("no se deja construir sin clave", () => {
-    expect(() => new ResendMailer(undefined, "ingresa@rentas.com.ve")).toThrow(
+    expect(() => new ResendMailer(undefined, "ingresa@rentoru.com")).toThrow(
       AuthMailerNotConfiguredError,
     );
   });
@@ -44,7 +44,7 @@ describe("readAuthMailerConfig", () => {
   // adaptador que falla en el primer envío.
   it("devuelve undefined si falta la clave", () => {
     expect(
-      readAuthMailerConfig({ RESEND_API_KEY: undefined, AUTH_MAIL_FROM: "ingresa@rentas.com.ve" }),
+      readAuthMailerConfig({ RESEND_API_KEY: undefined, AUTH_MAIL_FROM: "ingresa@rentoru.com" }),
     ).toBeUndefined();
   });
 
@@ -58,9 +58,9 @@ describe("readAuthMailerConfig", () => {
     expect(
       readAuthMailerConfig({
         RESEND_API_KEY: "re_loquesea",
-        AUTH_MAIL_FROM: "ingresa@rentas.com.ve",
+        AUTH_MAIL_FROM: "ingresa@rentoru.com",
       }),
-    ).toEqual({ apiKey: "re_loquesea", from: "ingresa@rentas.com.ve" });
+    ).toEqual({ apiKey: "re_loquesea", from: "ingresa@rentoru.com" });
   });
 });
 
@@ -68,11 +68,11 @@ describe("el envío", () => {
   it("manda el asunto y el cuerpo que compuso el dominio, sin reescribirlos", async () => {
     const { send, client } = fakeResend({ error: null });
 
-    await new ResendMailer("re_loquesea", "ingresa@rentas.com.ve", client).send(MESSAGE);
+    await new ResendMailer("re_loquesea", "ingresa@rentoru.com", client).send(MESSAGE);
 
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({
-        from: "ingresa@rentas.com.ve",
+        from: "ingresa@rentoru.com",
         to: MESSAGE.to,
         subject: MESSAGE.subject,
         text: MESSAGE.body,
@@ -82,7 +82,7 @@ describe("el envío", () => {
 
   it("convierte en excepción el error que Resend devuelve", async () => {
     const { client } = fakeResend({ error: { message: "domain is not verified" } });
-    const mailer = new ResendMailer("re_loquesea", "ingresa@rentas.com.ve", client);
+    const mailer = new ResendMailer("re_loquesea", "ingresa@rentoru.com", client);
 
     await expect(mailer.send(MESSAGE)).rejects.toThrow(AuthMailerSendError);
     await expect(mailer.send(MESSAGE)).rejects.toThrow("domain is not verified");
