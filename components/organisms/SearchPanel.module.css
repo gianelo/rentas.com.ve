@@ -33,6 +33,30 @@
   /* Por encima del menú de cuenta (2), que es lo único que se levanta en esta
      pantalla. */
   z-index: 3;
+  /* **La reserva para el propio pie pegajoso** (regresión sobre la 22.11).
+     La 22.11 alargó cada fila de atributo —interruptor y conteo debajo, en
+     vez de la única línea de `.option`—, y la lista pasó a necesitar scroll
+     bajo `.foot`, que es `position: sticky; inset-block-end: 0` con fondo
+     opaco. Sin esto, desplazar la última fila a la vista la deja justo
+     debajo del borde del scrollport, que es exactamente donde `.foot` se
+     pinta encima: CI vio ese clic interceptado en
+     `filtros-sin-javascript.spec.ts:137`. `scroll-padding-block-end` le dice
+     al desplazamiento nativo (el mismo que usa Playwright para llevar un
+     elemento a la vista) que el pie ocupa esa franja del final, así que
+     nunca deja una fila justo ahí — un `scroll-margin` en `.attribute`
+     arreglaría sólo los atributos; esto arregla cualquier fila interactiva
+     del panel, que es la garantía real. El tamaño es el de `.foot`: su
+     `padding-block-start` (`--gap`), el control más alto que contiene —
+     `.confirm` con `--action-h`, no `--target-min`: medido, no supuesto— y
+     su borde de 1px.
+
+     **Y un `--gap` más de holgura, que no es adorno.** Reservar exactamente
+     la altura del pie dejaba la última fila a **0,35 px** de tocarlo —medido:
+     `bottom=664,65` contra `top=665`—, y esa diferencia la decide el
+     redondeo subpíxel de la fuente, que no es el mismo en esta máquina que
+     en el runner de CI. Una franja de más no se ve; una de menos vuelve a
+     interceptar el clic. */
+  scroll-padding-block-end: calc(var(--gap) * 2 + var(--action-h) + 1px);
 }
 
 .sheet {
