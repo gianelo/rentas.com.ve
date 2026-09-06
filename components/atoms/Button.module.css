@@ -7,6 +7,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* Sin efecto en un botón de un solo hijo de texto; separa el ícono del
+     texto en el botón «Continuar con Google» (tasks.md 22.20), que es el
+     único que hoy lleva los dos. */
+  gap: 8px;
   min-height: var(--target-min);
   padding: 8px 16px;
   border-radius: var(--r);

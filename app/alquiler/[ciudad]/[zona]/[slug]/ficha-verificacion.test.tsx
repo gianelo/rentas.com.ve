@@ -96,6 +96,11 @@ vi.mock("./reveal-actions", () => ({
   revealListingContact: vi.fn(),
   continueWithGoogle: vi.fn(),
 }));
+// tasks.md 22.28 — misma razón que el mock de arriba: `requestMagicLink`
+// también arrastra Auth.js.
+vi.mock("../../../../(auth)/signin/actions", () => ({
+  requestMagicLink: vi.fn(),
+}));
 
 import FichaPage from "./page";
 

@@ -117,9 +117,30 @@ describe("la pantalla de entrar dice por qué puerta se entró (15.7)", () => {
       (d) => signInPageFor(d).legal,
     );
 
-    expect(new Set(legales).size).toBe(1);
-    expect(legales[0]).toBe(
+    expect(new Set(legales.map((l) => JSON.stringify(l))).size).toBe(1);
+    // Concatenando los fragmentos se recupera la frase entera, texto por
+    // texto y enlace por enlace, palabra por palabra.
+    const primero = legales[0] ?? [];
+    const texto = primero.map((f) => (f.kind === "link" ? f.label : f.value)).join("");
+    expect(texto).toBe(
       "Al entrar aceptás los términos y la privacidad. Rentoru no participa en el trato: no cobramos comisión, no retenemos pagos y no redactamos contratos.",
     );
+  });
+
+  /**
+   * **Las dos pantallas ya existen (Fase 23), así que la línea legal enlaza**
+   * (tasks.md 22.24). Antes iba sin enlaces porque `/terminos` y `/privacidad`
+   * contestaban 404; hoy `/legal/terminos` y `/legal/privacidad` son rutas
+   * reales e indexables (PR #238), y mandar a un 404 desde la pantalla que
+   * pide una cuenta ya no es el riesgo que era.
+   */
+  it("enlaza «términos» a /legal/terminos y «privacidad» a /legal/privacidad", () => {
+    const legal = signInPageFor("/publicar").legal;
+    const enlaces = legal.filter((f) => f.kind === "link");
+
+    expect(enlaces).toEqual([
+      { kind: "link", label: "términos", href: "/legal/terminos" },
+      { kind: "link", label: "privacidad", href: "/legal/privacidad" },
+    ]);
   });
 });

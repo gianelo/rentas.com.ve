@@ -36,6 +36,18 @@ export interface SignInEmailDoor {
   readonly note: string;
 }
 
+/**
+ * Un fragmento de texto plano, o un enlace, de la línea legal (22.24).
+ *
+ * **Un arreglo de fragmentos y no un string con marcado**, porque la frase
+ * vive en `domain/` y el marcado no: `app/` sólo tiene que recorrer la lista y
+ * decidir entre un `<span>` y un `AppLink`, sin parsear nada ni saber qué
+ * palabra enlaza a qué ruta — esa decisión ya viene tomada.
+ */
+export type LegalFragment =
+  | { readonly kind: "text"; readonly value: string }
+  | { readonly kind: "link"; readonly label: string; readonly href: string };
+
 export interface SignInPage {
   /** Dice para qué, no «Iniciar sesión» (nota de la lámina 8a). */
   readonly title: string;
@@ -46,7 +58,7 @@ export interface SignInPage {
   readonly aside: string | null;
   /** La promesa de la F19, sólo cuando hay un aviso al que volver. */
   readonly assurance: string | null;
-  readonly legal: string;
+  readonly legal: readonly LegalFragment[];
   /** El campo de correo y su botón, debajo del de Google (láminas 8a/9a). */
   readonly email: SignInEmailDoor;
   /** La salida visible: entrar nunca es obligatorio para mirar (F20). */
@@ -57,14 +69,29 @@ export interface SignInPage {
 
 /**
  * La misma frase que la hoja de la ficha (`contactDoorFor`), pineada por valor
- * en `sign-in-page.test.ts`: son dos formas de una sola puerta. La línea legal
- * va **sin enlaces** porque `/terminos` y `/privacidad` no existen, y un enlace
- * que contesta 404 es peor que una frase sin enlace (22.24).
+ * en `sign-in-page.test.ts`: son dos formas de una sola puerta.
  */
 const ACCOUNT_REASON = "Pedimos la cuenta para frenar avisos falsos. Es gratis y es un toque.";
 const RETURN_ASSURANCE = "Volvés a este mismo aviso al terminar.";
-const LEGAL =
-  "Al entrar aceptás los términos y la privacidad. Rentoru no participa en el trato: no cobramos comisión, no retenemos pagos y no redactamos contratos.";
+
+/**
+ * Las dos palabras enlazadas a `/legal/terminos` y `/legal/privacidad`
+ * (tasks.md 22.24). **Ya no van sin enlace**: la Fase 23 construyó las dos
+ * pantallas (PR #238) y las dos son indexables, así que el argumento con el
+ * que la 15.7 shipeó la frase pelada —mandar a un 404 desde la pantalla que
+ * pide una cuenta— se cayó solo.
+ */
+const LEGAL: readonly LegalFragment[] = [
+  { kind: "text", value: "Al entrar aceptás los " },
+  { kind: "link", label: "términos", href: "/legal/terminos" },
+  { kind: "text", value: " y la " },
+  { kind: "link", label: "privacidad", href: "/legal/privacidad" },
+  {
+    kind: "text",
+    value:
+      ". Rentoru no participa en el trato: no cobramos comisión, no retenemos pagos y no redactamos contratos.",
+  },
+];
 const LISTINGS_WAY_OUT: SignInWayOut = { href: "/", label: "← Volver a los avisos" };
 
 /**

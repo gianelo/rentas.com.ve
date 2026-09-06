@@ -60,6 +60,7 @@ import { db } from "@/shared/db/client";
 import { shortSpanishDate } from "@/shared/format/spanish-date";
 import { readNavAccountFlags } from "../../../../_lib/nav-account";
 import { readSession, requestSessionPort } from "../../../../_lib/session";
+import { requestMagicLink } from "../../../../(auth)/signin/actions";
 import styles from "./ficha.module.css";
 import { continueWithGoogle, revealListingContact } from "./reveal-actions";
 
@@ -533,6 +534,10 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
           stayHref={listingHref}
           callbackUrl={listingHref}
           signInAction={continueWithGoogle}
+          // tasks.md 22.28 — la misma acción que la puerta de página ya usa
+          // (`app/(auth)/signin/actions.ts`): un solo lugar donde sale el
+          // correo, y no una segunda copia que se desincronice de la primera.
+          requestMagicLinkAction={requestMagicLink}
         />
       ) : null}
     </>

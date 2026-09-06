@@ -113,6 +113,12 @@ vi.mock("./reveal-actions", () => ({
   revealListingContact: vi.fn(),
   continueWithGoogle: vi.fn(),
 }));
+// Misma razón que el mock de arriba (tasks.md 22.28): `requestMagicLink`
+// también arrastra Auth.js, y acá se prueba lo que sale del servidor, no lo
+// que la acción hace al recibir el POST del campo de correo de la puerta.
+vi.mock("../../../../(auth)/signin/actions", () => ({
+  requestMagicLink: vi.fn(),
+}));
 
 import FichaPage from "./page";
 
