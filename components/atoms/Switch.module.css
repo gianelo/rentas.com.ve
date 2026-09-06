@@ -1,0 +1,28 @@
+/* **El interruptor de la lámina 7b** (tasks.md 22.11): 44×26, perilla de
+   20×20. `--rs` (999px en `tokens.css`) es el mismo token de pastilla que ya
+   usan `PhotoCounter` y `SearchPill` — no hace falta un radio nuevo para un
+   segundo pill. Apagado y encendido se distinguen por posición de la perilla
+   y por relleno, nunca sólo por color: la misma regla que el histograma de
+   precio y el badge de publicador ya cumplen. */
+.track {
+  display: inline-flex;
+  align-items: center;
+  inline-size: 44px;
+  block-size: 26px;
+  padding: 3px;
+  border-radius: var(--rs);
+  background: var(--line);
+  flex-shrink: 0;
+}
+
+.track[data-on] {
+  justify-content: flex-end;
+  background: var(--accent);
+}
+
+.knob {
+  inline-size: 20px;
+  block-size: 20px;
+  border-radius: var(--rs);
+  background: var(--surface);
+}

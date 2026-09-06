@@ -7,6 +7,8 @@ import type {
   SearchPanelModel,
 } from "@/modules/listing-search/domain/search-panel";
 import { AppLink } from "../atoms/AppLink";
+import { SegmentedControl } from "../atoms/SegmentedControl";
+import { Switch } from "../atoms/Switch";
 import { LiveResultCount } from "./LiveResultCount";
 import styles from "./SearchPanel.module.css";
 
@@ -271,20 +273,29 @@ function PriceHistogram({ histogram }: { readonly histogram: PriceHistogramView 
 function RoomsStep({ model }: { readonly model: SearchPanelModel }) {
   return (
     <>
-      <ul className={styles.steps}>
-        {model.rooms.map((room) => (
-          <StepOptionItem key={room.step} option={room} />
-        ))}
-      </ul>
+      <SegmentedControl options={model.rooms.map(toSegmentedOption)} />
       <h3 className={styles.question}>Baños</h3>
-      <ul className={styles.steps}>
-        {model.bathrooms.map((bathroom) => (
-          <StepOptionItem key={bathroom.step} option={bathroom} />
-        ))}
-      </ul>
+      <SegmentedControl options={model.bathrooms.map(toSegmentedOption)} />
       <AreaField model={model} />
     </>
   );
+}
+
+/**
+ * `RoomChoice` y `BathroomChoice` son la misma forma con otro nombre de
+ * campo (`room.step`); el control segmentado no necesita saber cuál de las
+ * dos está dibujando.
+ */
+function toSegmentedOption(option: RoomChoice | BathroomChoice) {
+  return {
+    key: String(option.step),
+    label: option.label,
+    count: option.count,
+    chosen: option.chosen,
+    disabled: option.disabled,
+    href: option.href,
+    previewLabel: option.previewLabel,
+  };
 }
 
 /**
@@ -379,49 +390,17 @@ function AttributesStep({ model }: { readonly model: SearchPanelModel }) {
 }
 
 /**
- * Un escalón de una tira numérica: sirve a habitaciones y a baños porque las
- * dos son la misma forma —selección única sobre un mínimo, con su conteo al
- * lado— y dos copias del mismo marcado empiezan a discrepar en el próximo
- * cambio de accesibilidad.
+ * **El interruptor de la 7b** (tasks.md 22.11) reemplaza el prefijo «✓ »: el
+ * estado elegido se lee en la posición y el relleno de la perilla, no sólo en
+ * el color, y `aria-current` sigue siendo lo que un lector de pantalla
+ * anuncia — el `Switch` es puramente decorativo (`aria-hidden`).
  */
-function StepOptionItem({ option: room }: { readonly option: RoomChoice | BathroomChoice }) {
-  const body = (
-    <>
-      <span className={styles.stepNumber}>{room.label}</span>
-      <span className={styles.count}>{room.count}</span>
-    </>
-  );
-
-  return (
-    <li>
-      {room.disabled ? (
-        <span className={styles.roomOption} aria-disabled="true">
-          {body}
-        </span>
-      ) : (
-        // Rol `link`, igual que las zonas: `aria-pressed` no lo admite y no
-        // llega a ningún lector de pantalla. El escalón elegido es el actual
-        // dentro de la lista de escalones, que es lo que `aria-current` dice.
-        <AppLink
-          className={styles.roomOption}
-          href={room.href}
-          aria-current={room.chosen ? "true" : undefined}
-          data-chosen={room.chosen ? "" : undefined}
-          data-preview={room.previewLabel ?? undefined}
-        >
-          {body}
-        </AppLink>
-      )}
-    </li>
-  );
-}
-
 function AttributeOptionItem({ attribute }: { readonly attribute: AttributeChoice }) {
   const body = (
     <>
-      <span className={styles.optionName}>
-        {attribute.chosen ? "✓ " : ""}
-        {attribute.label}
+      <span className={styles.attributeHead}>
+        <span className={styles.optionName}>{attribute.label}</span>
+        <Switch on={attribute.chosen} />
       </span>
       {/* «9 de 16», y el cero SÍ se escribe: es la respuesta a «¿por qué no
           puedo tocar esto?» (F6). */}
@@ -432,14 +411,14 @@ function AttributeOptionItem({ attribute }: { readonly attribute: AttributeChoic
   return (
     <li>
       {attribute.disabled ? (
-        <span className={styles.option} aria-disabled="true">
+        <span className={styles.attribute} aria-disabled="true">
           {body}
         </span>
       ) : (
         // Rol `link` otra vez, y el mismo cambio: `aria-pressed` sobre un
         // enlace es marcado que se lee accesible y no lo es.
         <AppLink
-          className={styles.option}
+          className={styles.attribute}
           href={attribute.href}
           aria-current={attribute.chosen ? "true" : undefined}
           data-chosen={attribute.chosen ? "" : undefined}
