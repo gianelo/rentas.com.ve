@@ -22,7 +22,7 @@ function fakeResend(result: { error: { message: string } | null }) {
 
 const MESSAGE = {
   to: "tenant@ejemplo.com",
-  subject: "Tu enlace para entrar a Rentas",
+  subject: "Tu enlace para entrar a Rentoru",
   body: "Entrá con este enlace:\nhttps://rentoru.com/api/auth/callback/email?token=x",
 };
 

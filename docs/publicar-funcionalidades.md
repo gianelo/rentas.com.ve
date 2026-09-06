@@ -1,8 +1,8 @@
-# Rentas — Publicar
+# Rentoru — Publicar
 
 Funcionalidades del módulo de publicación. Qué hace el sistema, no cómo se ve.
 
-Contexto: `Rentas - Flujos y funcionalidades.md` (flujo B) · `docs/resumen-tecnico.md`
+Contexto: `Rentoru - Flujos y funcionalidades.md` (flujo B) · `docs/resumen-tecnico.md`
 
 **Cómo leer este documento.** Todo lo marcado ✓ está implementado y probado hoy: las reglas salen del código, no de una propuesta. Lo marcado ◆ no existe todavía. Se separan porque rediseñar algo construido cuesta distinto que construirlo.
 

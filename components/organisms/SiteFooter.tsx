@@ -6,11 +6,12 @@ import styles from "./SiteFooter.module.css";
  * A single copy. SISTEMA.md fixes that there is no logo and that the mark IS
  * the word; the founder renamed the product to `rentoru.com` (tasks.md 26.2)
  * and chose "Rentoru" — capitalised and with NO trailing dot — so the mark and
- * the title suffix ("— Rentoru") are one single form. The trailing dot
- * SISTEMA.md:323 still describes belongs to the old name, and the board catches
- * up in its own slice (tasks.md 26.21/26.23). Nav.tsx already flags the same
- * risk in its own copy: this is retyped here rather than imported, so it is a
- * third occurrence and not a second.
+ * the title suffix ("— Rentoru") are one single form. `SISTEMA.md:323` now
+ * defines the mark that way, with the capital and the absent dot written down
+ * (tasks.md 26.23), and the boards draw it the same (26.21): system and code no
+ * longer contradict each other. Nav.tsx already flags the same risk in its own
+ * copy: this is retyped here rather than imported, so it is a third occurrence
+ * and not a second.
  */
 const WORDMARK = "Rentoru";
 
@@ -37,7 +38,7 @@ export interface SiteFooterProps {
 }
 
 /**
- * The site footer (design/pantallas/Rentas - Footer.dc.html, artboards
+ * The site footer (design/pantallas/Rentoru - Footer.dc.html, artboards
  * 9a/9b; tasks.md 23.1).
  *
  * **The frame needs no link to say its own promise.** The brand, the

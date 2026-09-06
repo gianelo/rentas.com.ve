@@ -9,7 +9,7 @@ import type { StoredDraft } from "../../draft";
 import { STEP_MAP_TRIGGER_LABEL } from "../../step-copy";
 
 /**
- * **El mapa de pasos de móvil** (tasks.md 18.17, §12 de `Rentas - Publicar -
+ * **El mapa de pasos de móvil** (tasks.md 18.17, §12 de `Rentoru - Publicar -
  * Especificacion.md`), en los bytes que salen de la ruta.
  *
  * Ninguna lámina lo dibuja: §12 lo lista entre lo que falta diseñar, y era el

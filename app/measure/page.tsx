@@ -688,7 +688,7 @@ const PORTADAS = [
 ] as const;
 
 /**
- * The ten real labels the design names (design/pantallas/Rentas -
+ * The ten real labels the design names (design/pantallas/Rentoru -
  * Footer.dc.html), with placeholder destinations no page in this repository
  * serves. This fixture exists only so `tests/measure/footer.spec.ts` can
  * measure real geometry against real content — the production registry in

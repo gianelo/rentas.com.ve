@@ -4,7 +4,7 @@ import type { StoredDraft } from "../draft";
 
 /**
  * **«Al volver desde revisar, decir qué cambió»** (tasks.md 18.16, regla 4 de
- * la §4 de `Rentas - Publicar - Especificacion.md`), en los bytes que salen de
+ * la §4 de `Rentoru - Publicar - Especificacion.md`), en los bytes que salen de
  * la ruta.
  *
  * La 18.8 ya garantiza que corregir el paso 4 no borra los pasos 5 a 9 —

@@ -2,7 +2,7 @@
 
 Read this before writing anything in this repository. It is agent-agnostic on purpose — Claude, Codex, Cursor, whatever comes next.
 
-`rentas.com.ve` is a free long-stay residential rental marketplace for Distrito Capital and Maracaibo. Publishing and searching are free; the platform never holds money, writes contracts, or takes a commission. When a tenant finds something, they register and get the publisher's WhatsApp.
+`rentoru.com` is a free long-stay residential rental marketplace for Distrito Capital and Maracaibo. Publishing and searching are free; the platform never holds money, writes contracts, or takes a commission. When a tenant finds something, they register and get the publisher's WhatsApp.
 
 ---
 

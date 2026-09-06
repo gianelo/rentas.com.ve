@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest";
  * una pantalla se separan sin que nadie lo note.
  */
 const LAMINA = readFileSync(
-  new URL("../../../../../design/pantallas/Rentas - Ficha - Desktop.dc.html", import.meta.url),
+  new URL("../../../../../design/pantallas/Rentoru - Ficha - Desktop.dc.html", import.meta.url),
   "utf8",
 );
 const SPLIT = readFileSync(

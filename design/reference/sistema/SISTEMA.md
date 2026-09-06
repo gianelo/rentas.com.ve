@@ -1,4 +1,4 @@
-# Sistema de diseño — Rentas
+# Sistema de diseño — Rentoru
 
 > **Esta es la fuente de verdad visual del proyecto.** Combinación adoptada: estructura **`compacto`** + paleta **`menta`**. Registrada en el plan como D14 (dirección visual) y D16 (contrato de tokens) en `openspec/changes/mvp-rental-listings/design.md`.
 >
@@ -12,7 +12,7 @@
 
 ## Overview
 
-Rentas es un portal de clasificados de alquiler residencial de larga estadía para Distrito Capital y Maracaibo. Publicar y buscar son gratis; la plataforma no participa en el trato (no retiene pagos, no redacta contratos, no cobra comisión). Cuando un inquilino encuentra algo, se registra y recibe el WhatsApp de quien publicó.
+Rentoru es un portal de clasificados de alquiler residencial de larga estadía para Distrito Capital y Maracaibo. Publicar y buscar son gratis; la plataforma no participa en el trato (no retiene pagos, no redacta contratos, no cobra comisión). Cuando un inquilino encuentra algo, se registra y recibe el WhatsApp de quien publicó.
 
 Este paquete cubre seis pantallas en móvil (360px) y escritorio (1280px), en una única combinación de diseño elegida: **estructura "Directorio compacto" + paleta "Menta"**.
 
@@ -201,7 +201,7 @@ El badge **no** usa el color de acento: el contraste es relleno vs borde. Aparec
 
 **Layout escritorio:** grid `640px 1fr`. Izquierda: foto de 640×360, tira de tres miniaturas de 120×90, descripción a 520px de ancho, enlace de reporte. Derecha: tarjeta sticky con precio, título, datos y bloque de contacto.
 
-**Bloque de contacto (con llave):** recuadro con borde punteado `--strong` y fondo `--bg`. Texto: "El contacto se muestra a usuarios registrados". Botón de acción: "Ver WhatsApp del dueño". Debajo, en escritorio: "Rentas no participa en la negociación. Verificá la propiedad antes de entregar dinero."
+**Bloque de contacto (con llave):** recuadro con borde punteado `--strong` y fondo `--bg`. Texto: "El contacto se muestra a usuarios registrados". Botón de acción: "Ver WhatsApp del dueño". Debajo, en escritorio: "Rentoru no participa en la negociación. Verificá la propiedad antes de entregar dinero."
 
 Debe verse que el teléfono existe y qué falta para verlo. Nunca ocultar el bloque entero.
 
@@ -230,7 +230,7 @@ Es un formulario, no un embudo de cinco pasos. Paso 2 son las fotos (el único l
 
 **Layout:** encabezado con miga de pan (`Inicio › Distrito Capital › Chacao`), título `Alquiler en Chacao` y una línea de resumen con conteo y rango de precios reales. Luego la misma lista de resultados. En escritorio, barra lateral con zonas cercanas y su conteo.
 
-**Bloque de aporte:** fondo `--tint`, borde `--accent`, radio `--r`. Texto: "Rentas es gratis y sin comisión. Si te sirve, podés colaborar." Botón neutro "Colaborar" y una × de descarte de 44px. Es descartable y no debe empujar los resultados abajo del pliegue.
+**Bloque de aporte:** fondo `--tint`, borde `--accent`, radio `--r`. Texto: "Rentoru es gratis y sin comisión. Si te sirve, podés colaborar." Botón neutro "Colaborar" y una × de descarte de 44px. Es descartable y no debe empujar los resultados abajo del pliegue.
 
 ### 5. Mis publicaciones
 
@@ -320,7 +320,7 @@ Poca. El camino de lectura no tiene estado en cliente.
 
 ## Assets
 
-Ninguno propio. No hay logotipo: la marca es la palabra "rentas." en el stack del sistema. Los rectángulos con trama diagonal son marcadores de foto — las fotos reales las suben los usuarios.
+Ninguno propio. No hay logotipo: la marca es la palabra "Rentoru" en el stack del sistema — **con mayúscula inicial y sin punto final**, para que la marca y el sufijo de los títulos ("— Rentoru") sean una sola forma. Los rectángulos con trama diagonal son marcadores de foto — las fotos reales las suben los usuarios.
 
 **Glifos de texto por defecto.** `←`, `✓`, `✱`, `×`, `·` son caracteres, no imágenes: no piden red, heredan el color y la métrica del texto que los rodea, y escalan con el tipo.
 
@@ -398,7 +398,7 @@ Los dos ejes se dejan tokenizados por dos razones prácticas, más allá de pode
 
 ## Files
 
-- `Rentas - Compacto Menta.dc.html` — las seis pantallas en móvil y escritorio, con la combinación elegida fija. Abrir en el navegador.
+- `pantallas-compacto-menta.html` — las seis pantallas en móvil y escritorio, con la combinación elegida fija. Abrir en el navegador.
 - `tokens.css` — los nueve estilos y las cuatro estructuras como variables CSS, listos para copiar al proyecto.
 - `support.js` — runtime de la herramienta de diseño. Necesario solo para que el HTML de referencia se abra; **no** portarlo.
 

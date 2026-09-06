@@ -5,7 +5,7 @@ import { buildPriceStepHistogramView } from "./price-histogram-step";
 /**
  * **El histograma del paso 3 de publicar** (tasks.md 18.9, rebanada D).
  *
- * La lámina de `Rentas - Publicar - Desktop` dibuja ocho barras sobre un eje
+ * La lámina de `Rentoru - Publicar - Desktop` dibuja ocho barras sobre un eje
  * `$200`–`$1000`, con la franja de la mayoría marcada y la frase «La mayoría
  * pide entre $380 y $620. Tu precio está en el medio.». Esta cuenta produce
  * exactamente esos números, así que las aserciones se leen contra la lámina.

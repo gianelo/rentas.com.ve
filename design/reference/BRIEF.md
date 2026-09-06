@@ -1,4 +1,4 @@
-# Brief de diseño — Rentas
+# Brief de diseño — Rentoru
 
 > ## ⚠️ HISTÓRICO — este documento ya cumplió su función
 >
@@ -20,7 +20,7 @@ Documento portable. Pegalo en la herramienta que quieras probar (claude.ai, v0, 
 
 ## Prompt corto
 
-> Diseñá la interfaz de **Rentas**, un portal de alquiler residencial para Venezuela. Es gratis, sin comisión y sin intermediación: el inquilino busca, encuentra, y recibe el WhatsApp de quien publica para seguir por su cuenta.
+> Diseñá la interfaz de **Rentoru**, un portal de alquiler residencial para Venezuela. Es gratis, sin comisión y sin intermediación: el inquilino busca, encuentra, y recibe el WhatsApp de quien publica para seguir por su cuenta.
 >
 > **El modelo mental es Craigslist**: el aviso es la interfaz, densidad alta, sin cromo que compita con el contenido, y velocidad como decisión de diseño. Pero con la tipografía, el espaciado y el diseño móvil de un producto actual — sobrio, no anticuado. Referencia de qué tan moderno: **GOV.UK o Linear, no Airbnb**.
 >
@@ -47,7 +47,7 @@ Documento portable. Pegalo en la herramienta que quieras probar (claude.ai, v0, 
 
 ## El producto
 
-Rentas es a las propiedades lo que un portal de empleo es a los trabajos. Publicar es gratis, buscar es gratis, y la plataforma **no participa en el trato**: no retiene pagos, no redacta contratos, no cobra comisión. Cuando alguien encuentra lo que busca, recibe el WhatsApp de quien publicó y sigue por su cuenta.
+Rentoru es a las propiedades lo que un portal de empleo es a los trabajos. Publicar es gratis, buscar es gratis, y la plataforma **no participa en el trato**: no retiene pagos, no redacta contratos, no cobra comisión. Cuando alguien encuentra lo que busca, recibe el WhatsApp de quien publicó y sigue por su cuenta.
 
 Existe porque hoy la oferta de alquiler vive en grupos de WhatsApp e Instagram: no se puede buscar y no se puede confiar. Los portales pagos dejan afuera al propietario individual, y el robo de fotos hace que la estafa sea rutina.
 

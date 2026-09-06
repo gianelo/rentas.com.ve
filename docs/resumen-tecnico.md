@@ -1,6 +1,6 @@
-# Rentas — Resumen técnico del MVP
+# Rentoru — Resumen técnico del MVP
 
-**rentas.com.ve** · Agosto 2026
+**rentoru.com** · Agosto 2026
 
 Portal de alquiler residencial de larga estadía, sin intermediación. Monolito TypeScript, estructura hexagonal por capacidad, y tres reglas de negocio garantizadas por estructura en lugar de por disciplina.
 

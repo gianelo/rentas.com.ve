@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { StoredDraft } from "../../draft";
 
 /**
- * **«Descartar el cambio»** (tasks.md 18.18, lámina `Rentas - Publicar -
+ * **«Descartar el cambio»** (tasks.md 18.18, lámina `Rentoru - Publicar -
  * Desktop.dc.html`, marco *«volviendo al paso 4 desde revisar»*), en los bytes
  * que salen de la ruta.
  *

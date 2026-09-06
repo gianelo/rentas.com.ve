@@ -1,9 +1,9 @@
-# Rentas — Publicar
+# Rentoru — Publicar
 
 Especificación para implementar. Flujo, pantallas, UI, colores y reglas.
 
-Archivos de diseño: `Rentas - Publicar - Mobile.dc.html` · `Rentas - Publicar - Desktop.dc.html`
-Contexto general: `Rentas - Flujos y funcionalidades.md`
+Archivos de diseño: `Rentoru - Publicar - Mobile.dc.html` · `Rentoru - Publicar - Desktop.dc.html`
+Contexto general: `Rentoru - Flujos y funcionalidades.md`
 
 ---
 
