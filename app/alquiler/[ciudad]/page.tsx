@@ -446,7 +446,7 @@ export async function generateMetadata({ params, searchParams }: CiudadProps): P
   if (!city) return {};
 
   return {
-    title: `Alquiler en ${city.name} — Rentas`,
+    title: `Alquiler en ${city.name} — Rentoru`,
     description: `Avisos de alquiler de larga estancia en ${city.name}. Publicar y buscar es gratis, sin comisión.`,
     // La misma regla mecánica que la página de zona: la ciudad se indexa, la
     // ciudad refinada no. Las refinadas son combinatorias, y publicarlas todas

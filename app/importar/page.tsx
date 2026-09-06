@@ -18,7 +18,7 @@ import { ImportarCartera } from "./ImportarCartera";
 import styles from "./importar.module.css";
 
 export const metadata: Metadata = {
-  title: "Importar cartera — Rentas",
+  title: "Importar cartera — Rentoru",
 };
 
 // Quién está adentro y si su cuenta importa cartera se lee en cada pedido:

@@ -64,7 +64,7 @@ export interface SignInPage {
 const ACCOUNT_REASON = "Pedimos la cuenta para frenar avisos falsos. Es gratis y es un toque.";
 const RETURN_ASSURANCE = "Volvés a este mismo aviso al terminar.";
 const LEGAL =
-  "Al entrar aceptás los términos y la privacidad. Rentas no participa en el trato: no cobramos comisión, no retenemos pagos y no redactamos contratos.";
+  "Al entrar aceptás los términos y la privacidad. Rentoru no participa en el trato: no cobramos comisión, no retenemos pagos y no redactamos contratos.";
 const LISTINGS_WAY_OUT: SignInWayOut = { href: "/", label: "← Volver a los avisos" };
 
 /**

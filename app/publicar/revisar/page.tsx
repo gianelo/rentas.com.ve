@@ -16,7 +16,7 @@ import { changeNoticeMessage, FEATURE_LABELS, STEP_COPY, stepSummary } from "../
 import { PUBLISH_VIOLATION_COPY } from "../violation-copy";
 
 export const metadata: Metadata = {
-  title: "Revisá tu aviso — Rentas",
+  title: "Revisá tu aviso — Rentoru",
 };
 
 interface ReviewPageProps {
@@ -111,7 +111,7 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
     <div className={styles.shell}>
       <header className={styles.bar}>
         <div className={styles.barInner}>
-          <p className={styles.brand}>rentas.</p>
+          <p className={styles.brand}>Rentoru</p>
           <span className={styles.saved}>Guardado</span>
           <AppLink className={styles.exit} href="/" aria-label="Salir de publicar">
             ×

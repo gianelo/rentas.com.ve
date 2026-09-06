@@ -91,7 +91,7 @@ const REVEALED_LABEL: Record<ContactMethod, (noun: string) => string> = {
  * migración lo tiene en `NULL`. Ahí nunca deja el `wa.me` sin texto.
  */
 function defaultRevealMessage(listingTitle: string): string {
-  return `Hola, vi tu aviso «${listingTitle}» en rentas.com.ve y me interesa.`;
+  return `Hola, vi tu aviso «${listingTitle}» en rentoru.com y me interesa.`;
 }
 
 /**
@@ -243,7 +243,7 @@ export function ContactBlock({
       {/* Acompaña al contacto y no va al pie (F30): quien está por escribir es
           quien tiene que leerla, no quien ya se fue de la página. */}
       <p className={styles.warning}>
-        Rentas no participa en la negociación. Visitá la propiedad y verificá quién es el dueño
+        Rentoru no participa en la negociación. Visitá la propiedad y verificá quién es el dueño
         antes de entregar dinero.
       </p>
     </section>

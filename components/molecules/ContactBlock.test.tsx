@@ -252,6 +252,13 @@ describe("con cuenta", () => {
 
     expect(markup).toContain(encodeURIComponent("Apartamento 2 habitaciones en Chacao"));
     expect(markup).not.toContain("null");
+    // **Y la plantilla nombra el sitio** (tasks.md 26.8). Esta prueba miraba
+    // sólo el título del aviso, así que el nombre del sitio dentro de la
+    // plantilla no lo afirmaba nadie: es la superficie más lejana del
+    // renombre —sale del sitio, entra a WhatsApp y llega al teléfono de quien
+    // publicó— y no tiene modo de error, sólo le dice a quien recibe el
+    // mensaje que el interesado viene de un sitio que no existe.
+    expect(markup).toContain(encodeURIComponent("en rentoru.com y me interesa."));
   });
 
   /**

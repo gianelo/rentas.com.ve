@@ -24,7 +24,7 @@ import { readPublicationContext } from "../../publication-context";
 import { PRIMARY_ACTION_LABEL, STEP_COPY, stepSummary } from "../../step-copy";
 
 export const metadata: Metadata = {
-  title: "Publicar — Rentas",
+  title: "Publicar — Rentoru",
 };
 
 interface StepPageProps {

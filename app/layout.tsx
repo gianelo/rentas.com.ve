@@ -21,7 +21,7 @@ import "@/styles/base.css";
 // every component resolves colour, radius, and geometry through the CSS
 // custom properties these two attributes select in src/styles/tokens.css.
 export const metadata: Metadata = {
-  title: "Rentas",
+  title: "Rentoru",
   description: "Free long-stay residential rental marketplace for Venezuela.",
 };
 

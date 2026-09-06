@@ -555,8 +555,8 @@ test.describe("la barra del producto (14a, 14.41)", () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/measure");
 
-    const busqueda = await centres(page, "nav-harness-busqueda", "a", "rentas.");
-    const ficha = await centres(page, "nav-harness-ficha", "a", "rentas.");
+    const busqueda = await centres(page, "nav-harness-busqueda", "a", "Rentoru");
+    const ficha = await centres(page, "nav-harness-ficha", "a", "Rentoru");
 
     console.log(`[14.54] marca de la búsqueda en ${busqueda.left}, de la ficha en ${ficha.left}`);
     expect(ficha.visible).toBe(true);
@@ -572,7 +572,7 @@ test.describe("la barra del producto (14a, 14.41)", () => {
     await page.setViewportSize({ width: 360, height: 900 });
     await page.goto("/measure");
 
-    const brand = await centres(page, "nav-harness-ficha", "a", "rentas.");
+    const brand = await centres(page, "nav-harness-ficha", "a", "Rentoru");
 
     // La 14.55 decidirá esconderla en móvil; hoy es el único camino al inicio
     // desde la ficha, y declarado en la hoja no es dibujado: esto lo mide.

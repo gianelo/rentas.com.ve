@@ -9,12 +9,15 @@ import { AccountMenu } from "./AccountMenu";
 import styles from "./Nav.module.css";
 
 /**
- * Una sola copia. SISTEMA.md lo fija —"no hay logotipo: la marca es la palabra
- * «rentas.»"— y con el punto; tres láminas lo exportan sin él y la de Sistema,
- * que es la que manda, lo escribe con punto nueve veces. Escrito dos veces acá,
- * una de las dos se retipea de memoria y queda «Rentas».
+ * Una sola copia. SISTEMA.md fija que no hay logotipo y que la marca ES la
+ * palabra; el fundador renombró el producto a `rentoru.com` (tasks.md 26.2) y
+ * eligió «Rentoru» —con mayúscula y SIN punto final— para que la marca y el
+ * sufijo de los títulos («— Rentoru») sean una sola forma. El punto que
+ * SISTEMA.md:323 todavía describe es del nombre viejo, y la lámina se pone al
+ * día en su propia rebanada (tasks.md 26.21/26.23). Escrito dos veces acá, una
+ * de las dos se retipea de memoria y queda mal.
  */
-const WORDMARK = "rentas.";
+const WORDMARK = "Rentoru";
 
 /**
  * **Una sola forma** (tasks.md 14.54). Tuvo tres —pastilla, vuelta y
@@ -70,7 +73,7 @@ export function Nav({ account, publish, pill, signInHref }: NavProps) {
         {/* **La marca, en el primer slot y una sola vez** (14.54). Había una
             segunda copia corrida al centro (`.brandCentre`) porque en la ficha
             el primer slot se lo llevaba `← Resultados`; sin la vuelta, esa
-            segunda copia dibujaría «rentas.» dos veces en toda pantalla sin
+            segunda copia dibujaría «Rentoru» dos veces en toda pantalla sin
             pastilla. Sigue siendo un enlace y no el `<span>` que la lámina
             exporta: el `.dc.html` es una referencia, no código a copiar
             (AGENTS.md §2), y una marca sin destino le quita a la ficha su

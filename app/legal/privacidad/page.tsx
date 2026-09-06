@@ -12,8 +12,8 @@ import styles from "../legal.module.css";
  * design.md la nombra como pregunta abierta sin fecha.
  */
 export const metadata: Metadata = {
-  title: "Política de privacidad — Rentas",
-  description: "Qué datos recoge rentas.com.ve, para qué los usa y con quién los comparte.",
+  title: "Política de privacidad — Rentoru",
+  description: "Qué datos recoge rentoru.com, para qué los usa y con quién los comparte.",
 };
 
 export default function PrivacidadPage() {
@@ -67,7 +67,7 @@ export default function PrivacidadPage() {
       <h2 className={styles.heading}>Tus derechos</h2>
       <p className={styles.text}>
         Hoy no existe una pantalla propia para corregir o borrar tus datos. Mientras tanto, escribí
-        a <AppLink href="mailto:hola@rentas.com.ve">hola@rentas.com.ve</AppLink>.
+        a <AppLink href="mailto:hola@rentoru.com">hola@rentoru.com</AppLink>.
       </p>
 
       <h2 className={styles.heading}>Cookies</h2>

@@ -112,14 +112,14 @@ describe("la pantalla de entrar dice por qué puerta se entró (15.7)", () => {
     expect(new Set(bloques.map((b) => JSON.stringify(b))).size).toBe(1);
   });
 
-  it("la línea legal es una sola y dice que Rentas no participa en el trato", () => {
+  it("la línea legal es una sola y dice que Rentoru no participa en el trato", () => {
     const legales = [FICHA, "/publicar", "/mis-avisos", undefined].map(
       (d) => signInPageFor(d).legal,
     );
 
     expect(new Set(legales).size).toBe(1);
     expect(legales[0]).toBe(
-      "Al entrar aceptás los términos y la privacidad. Rentas no participa en el trato: no cobramos comisión, no retenemos pagos y no redactamos contratos.",
+      "Al entrar aceptás los términos y la privacidad. Rentoru no participa en el trato: no cobramos comisión, no retenemos pagos y no redactamos contratos.",
     );
   });
 });

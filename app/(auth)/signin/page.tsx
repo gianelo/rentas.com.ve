@@ -9,7 +9,7 @@ import { DoorBar } from "./DoorBar";
 import styles from "./signin.module.css";
 
 export const metadata: Metadata = {
-  title: "Entrar — Rentas",
+  title: "Entrar — Rentoru",
 };
 
 interface SignInPageProps {

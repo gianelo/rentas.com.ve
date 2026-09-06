@@ -31,10 +31,13 @@ describe("PreguntasFrecuentesPage", () => {
     expect(markup).toContain("correo");
   });
 
-  it("states rentas.com.ve does not take part in the deal between the parties", () => {
+  // The name promises the site's own name and the body never looked at it,
+  // so a rename left this green with the old brand still on the page
+  // (tasks.md 26.13). Both halves are asserted now.
+  it("states rentoru.com does not take part in the deal between the parties", () => {
     const markup = renderToStaticMarkup(<PreguntasFrecuentesPage />);
 
-    expect(markup).toContain("no participa en la negociación");
+    expect(markup).toContain("rentoru.com no participa en la negociación");
   });
 
   it("is indexable — the page carries no noindex directive", () => {

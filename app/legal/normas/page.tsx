@@ -9,8 +9,8 @@ import styles from "../legal.module.css";
  * Cada número acá es el mismo que el formulario aplica hoy.
  */
 export const metadata: Metadata = {
-  title: "Normas de publicación — Rentas",
-  description: "Qué se puede publicar en rentas.com.ve, tal como lo aplica el formulario hoy.",
+  title: "Normas de publicación — Rentoru",
+  description: "Qué se puede publicar en rentoru.com, tal como lo aplica el formulario hoy.",
 };
 
 export default function NormasPage() {

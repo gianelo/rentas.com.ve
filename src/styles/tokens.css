@@ -1,4 +1,4 @@
-/* Rentas — shipped design tokens (design.md D16, tasks.md 1b.1).
+/* Rentoru — shipped design tokens (design.md D16, tasks.md 1b.1).
 
    Two independent axes, both set once on <html> in the app shell
    (app/layout.tsx) and never read directly by any component:
@@ -339,7 +339,7 @@
   --title-fs: 20px;
   --title-fw: 700;
   --title-lh: 1.25;
-  /* The brand is the word "rentas." set in the display face — SISTEMA.md
+  /* The brand is the word "Rentoru" set in the display face — SISTEMA.md
      "Assets": there is no logotype. --disp resolves to --mono under
      data-layout="compacto", so the wordmark changes with the structure axis
      exactly like the price does. */

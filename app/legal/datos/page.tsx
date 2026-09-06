@@ -10,8 +10,8 @@ import styles from "../legal.module.css";
  * (`contact_reveal_event` en schema.ts).
  */
 export const metadata: Metadata = {
-  title: "Tratamiento de datos — Rentas",
-  description: "Qué datos personales procesa rentas.com.ve, dato por dato.",
+  title: "Tratamiento de datos — Rentoru",
+  description: "Qué datos personales procesa rentoru.com, dato por dato.",
 };
 
 export default function DatosPage() {
@@ -55,7 +55,7 @@ export default function DatosPage() {
         Igual que en la política general: no vendemos tus datos, no armamos perfiles publicitarios
         con ellos y no compartimos tu contacto con nadie fuera de quien vos elegís que lo vea. Para
         cualquier pregunta sobre este tratamiento, escribí a{" "}
-        <AppLink href="mailto:hola@rentas.com.ve">hola@rentas.com.ve</AppLink>.
+        <AppLink href="mailto:hola@rentoru.com">hola@rentoru.com</AppLink>.
       </p>
     </article>
   );

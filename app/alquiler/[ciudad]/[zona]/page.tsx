@@ -469,7 +469,7 @@ export async function generateMetadata({ params, searchParams }: ZonaProps): Pro
   if (!place) return {};
 
   return {
-    title: `Alquiler en ${place.zone.name}, ${place.city.name} — Rentas`,
+    title: `Alquiler en ${place.zone.name}, ${place.city.name} — Rentoru`,
     description: `Avisos de alquiler de larga estancia en ${place.zone.name}, ${place.city.name}. Publicar y buscar es gratis, sin comisión.`,
     // La regla mecánica de la 14.24: la zona se indexa, la zona refinada no.
     // Las refinadas son combinatorias, y publicarlas todas es contenido

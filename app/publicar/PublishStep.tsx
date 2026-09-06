@@ -164,7 +164,7 @@ export function PublishStep(props: PublishStepProps) {
               ←
             </AppLink>
           ) : (
-            <p className={styles.brand}>rentas.</p>
+            <p className={styles.brand}>Rentoru</p>
           )}
 
           {/* **El mapa, que es lo que en 360 reemplaza al riel** (18.17). El
@@ -502,7 +502,7 @@ function StepFields(props: FieldsProps) {
             ¿No está la tuya?{" "}
             <AppLink
               className={styles.escapeLink}
-              href="mailto:hola@rentas.com.ve?subject=Falta%20mi%20zona"
+              href="mailto:hola@rentoru.com?subject=Falta%20mi%20zona"
             >
               Avisanos
             </AppLink>

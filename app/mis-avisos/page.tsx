@@ -28,7 +28,7 @@ import styles from "./mis-avisos.module.css";
 import { SubirFoto } from "./SubirFoto";
 
 export const metadata: Metadata = {
-  title: "Mis avisos — Rentas",
+  title: "Mis avisos — Rentoru",
 };
 
 // La sesión se lee en cada pedido: quién está adentro, cuántos avisos tiene y

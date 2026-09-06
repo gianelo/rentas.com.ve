@@ -195,7 +195,7 @@ export default async function MeasureHarnessPage({
 
         <ReadingWidth>
           <p data-testid="body-copy">
-            Rentas es gratis y sin comisión para quien publica y para quien alquila. Mantenemos la
+            Rentoru es gratis y sin comisión para quien publica y para quien alquila. Mantenemos la
             plataforma con aportes voluntarios de personas que ya usaron el servicio y quieren
             ayudar a que siga siendo gratuito para el resto.
           </p>

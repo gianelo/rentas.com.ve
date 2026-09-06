@@ -52,7 +52,7 @@ describe("GET /importar/plantilla", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/csv");
     expect(response.headers.get("content-disposition")).toContain("attachment");
-    expect(response.headers.get("content-disposition")).toContain("plantilla-rentas.csv");
+    expect(response.headers.get("content-disposition")).toContain("plantilla-rentoru.csv");
     await expect(response.text()).resolves.toContain("referencia_externa");
   });
 

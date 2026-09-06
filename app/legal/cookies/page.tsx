@@ -11,8 +11,8 @@ import styles from "../legal.module.css";
  * búsqueda en todo el repositorio no encontró ninguna.
  */
 export const metadata: Metadata = {
-  title: "Uso de cookies — Rentas",
-  description: "Las únicas dos cookies que rentas.com.ve usa, y para qué sirve cada una.",
+  title: "Uso de cookies — Rentoru",
+  description: "Las únicas dos cookies que rentoru.com usa, y para qué sirve cada una.",
 };
 
 export default function CookiesPage() {
@@ -22,7 +22,7 @@ export default function CookiesPage() {
       <DraftNotice />
 
       <p className={styles.text}>
-        rentas.com.ve usa exactamente dos cookies, y las dos son necesarias para que el sitio
+        rentoru.com usa exactamente dos cookies, y las dos son necesarias para que el sitio
         funcione. Ninguna de las dos vende ni comparte información con anunciantes.
       </p>
 

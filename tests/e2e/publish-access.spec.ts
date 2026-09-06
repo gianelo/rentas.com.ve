@@ -57,15 +57,15 @@ test("the root IS the search, not a landing page that links to it", async ({ pag
   // results page reached from elsewhere and wrong for the strongest URL on
   // the domain — so it exists and is visually hidden.
   await expect(page.locator("h1")).toHaveCount(1);
-  // The wordmark is lowercase with a period — it IS the mark, and a
-  // capitalised "Rentas" means somebody retyped it from memory.
+  // The wordmark is the single form the founder chose — it IS the mark, and a
+  // lowercase "rentoru" or a trailing dot means somebody retyped it from memory.
   //
   // **Acotada al encabezado desde la 23.1, y no por gusto**: el pie del sitio
   // dibuja el MISMO cuartel en `contentinfo`, así que sin acotar hay dos
   // coincidencias y el modo estricto de Playwright la rechaza. Lo que esta
   // prueba siempre quiso afirmar es la marca del encabezado — que el pie
   // repita el cuartel es correcto y lo cubren sus propias pruebas.
-  await expect(page.getByRole("banner").getByText("rentas.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("banner").getByText("Rentoru", { exact: true })).toBeVisible();
   // **Esta aserción estaba podrida antes de este trabajo, y nadie lo vio.**
   // Miraba `search-filters`, que es `SearchFilters` — la caja de filtros que
   // vivía en `/` cuando la raíz ERA los resultados. La 14.24 mudó los
