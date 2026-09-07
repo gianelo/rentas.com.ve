@@ -2327,3 +2327,128 @@ El fundador trajo hoy una lámina que nunca había estado en el repositorio: `de
 **Grupo F — lo que esta fase deliberadamente NO hace.**
 
 - [x] 26.27 **Los tres no-objetivos, escritos para que no se reabran.** **(1) No hay 301 desde `rentas.com.ve`**, porque el sitio nunca se sirvió desde ahí: no hay autoridad de enlace que transferir, no hay direcciones indexadas que preservar y no hay contenido duplicado entre dos anfitriones — quien vuelva a plantearlo tiene que traer primero evidencia de una dirección `rentas.com.ve` que alguna vez haya devuelto una página. **(2) No se renombra el balde de R2** (`rentas-photos`), por lo que la 26.18 argumenta: R2 no renombra en el lugar, hacerlo obliga a copiar cada objeto y a migrar las claves de `listing_photo_derivative`, y nada visible para el usuario lleva ese nombre. **(3) El logotipo y la identidad visual quedan para después**, decisión del fundador el 2026-09-05: esta fase cambia la palabra, no el sistema de color, la tipografía ni la ausencia de logotipo que `SISTEMA.md:323` declara — y esa ausencia sigue siendo la definición vigente de la marca hasta que el fundador diga otra cosa. **HECHA el 2026-09-06.** **Su estado terminado no era escribirlos —ya estaban escritos acá— sino ponerlos donde alguien que fuera a reabrirlos los encuentre, y comprobar que los tres se sostienen de verdad.** **Dónde viven ahora, y son dos lugares con trabajos distintos**: `docs/rentoru-cutover.md` §9 ya los registraba los tres citando esta tarea por número, pero ése es el registro de lo YA EJECUTADO del Grupo D y nadie lo abre para preguntarse si conviene redirigir; `docs/going-live.md` §*What is not part of a rename* es la lista mirando hacia adelante, la que alguien SÍ va a leer la próxima vez, **y tenía sólo dos de los tres** — se agregó el del logotipo y la identidad visual. **Comprobado que los tres se sostienen en el árbol, no supuesto: (1)** no existe `next.config` en absoluto y `middleware.ts` no menciona el host viejo, así que no hay redirección declarada en ninguna parte; **(2)** el balde sigue siendo `rentas-photos`, sin tocar; **(3)** `SISTEMA.md:323` sigue declarando que no hay logotipo — **la ausencia sobrevivió al renombre**, que es justamente lo que este no-objetivo protege: la fase cambió la palabra y dejó intacta la definición. **Y la carga de la prueba queda escrita en los dos lugares**: quien reabra el 301 tiene que traer primero evidencia de una dirección `rentas.com.ve` que alguna vez haya devuelto una página.
+
+## Fase 27 — La cuota se agotó en un día, y el sitio entero se cayó con ella (2026-09-07)
+
+**Por qué existe.** El 2026-09-07 producción devolvió 500 en **todo lo que consulta la base** —inicio, ciudad, zona, `sitemap.xml`— y el despliegue falló en `pnpm drizzle-kit migrate`. La causa no estaba en el código: **Neon había agotado la transferencia de red del mes, 13,48 de 5 GB**, y cortaba las conexiones. `Compute` iba en 9,35 de 100 y `Storage` en 0,09 de 0,5: **la única barra agotada era la transferencia**.
+
+**Lo que HAY hoy, medido y no supuesto.** La medición se corrió **entera en local**, sin tocar producción ni gastar cuota, con el arnés que la 11.22 ya construyó: Postgres del `docker-compose.yml`, `scripts/neon-http-proxy.mjs` y `pnpm db:seed:taxonomy`. Los números:
+
+- **5.813 zonas y 18 ciudades** tras la siembra real.
+- **`DrizzleCatalogue.listZones()` devuelve 679 kB por llamada** — y son los bytes crudos de las seis columnas, **antes** del envoltorio JSON con el que Neon los manda por HTTP.
+- Es un `SELECT ... FROM zone ORDER BY name` **sin `WHERE` y sin `LIMIT`**, y lo llaman las **tres** pantallas del camino de lectura, todas dinámicas: `app/alquiler/[ciudad]/page.tsx:56`, `app/alquiler/[ciudad]/[zona]/page.tsx` y `suggest-active-listings.ts`.
+- Por ciudad: **Caracas 3.220 zonas / 316 kB**, Maracaibo 1.464 / 149 kB, La Guaira 791 / 75 kB.
+
+**La cronología cierra el caso.** Hasta el 5 de septiembre producción tenía **10 zonas** y cada vista costaba ~1 KB. La resiembra de la **17.15**, el 6 de septiembre, las llevó a 5.813: **el coste por vista se multiplicó por ~580**, y la cuota murió al día siguiente. 13,48 GB ÷ 679 kB ≈ **20.000 vistas**, con **un solo aviso publicado**. Los avisos nunca fueron el peso.
+
+**Lo que NO hay.** Ningún techo que impida que una consulta del camino de lectura devuelva un conjunto sin límite, ninguna regla escrita que diga que una decisión de diseño dependía del tamaño de una tabla, y **ninguna alarma**: el fundador se enteró del consumo con el sitio ya caído. Tampoco hay separación entre las vistas previas y producción — `scripts/deploy-migrate.mjs` lo documenta con todas las letras: *«a preview's `DATABASE_URL` is the production database»*.
+
+**Dos hipótesis que se descartaron por el camino, anotadas para que nadie las repita.** La primera: Vercel había subido Node de 22 a 24 porque `engines` decía `">=22"`, un rango abierto. Se fijó en `22.x` y **falló idéntico** — no era. La segunda: el aviso de `pg` sobre `sslmode`; pero ese aviso sale en las dos versiones de Node y `pg` 8.23 está desde el 16 de agosto, o sea que ya estaba el día que funcionó. **El fijado de Node se conserva igual**, porque destapó un hueco real: el CI fijaba 22 y producción flotaba.
+
+- [ ] 27.1 **El dominio deja de filtrar en JavaScript lo que Postgres puede filtrar con un índice.** Es la causa, y la tarea que sola resuelve el problema.
+
+    **Lo que hace hoy, verbatim.** `resolveZoneRoute` vive en `domain/` y decide así si una URL existe:
+
+    ```js
+    zones.find((c) => c.cityId === city.id && slugify(c.name) === zoneSlug)
+    ```
+
+    Eso es un `WHERE` de dos condiciones **hecho a mano en JavaScript, sobre 5.813 elementos, después de haberlos traído por la red**. Lo mismo `boundedVocabulary`, que —como su nombre dice— recibe el catálogo entero y lo acota acá.
+
+    **Y el código NO está mal escrito: está escrito para un mundo que dejó de existir el 6 de septiembre.** La regla de `AGENTS.md` §3 es que el dominio no habla con la base: recibe datos planos y decide. Por eso la página consulta y le pasa el arreglo. **Con 10 zonas eso costaba ~1 KB**, y a ese precio mantener el dominio puro y probable sin base de datos ni dobles es un cambio excelente. Nadie se equivocó.
+
+    **El defecto real es que la condición nunca se escribió.** «Esto funciona mientras el catálogo sea chico» no estaba en ningún lado, así que cuando la resiembra de la 17.15 lo llevó de 10 a 5.813 **nada se puso rojo**: el código siguió haciendo exactamente lo mismo, y lo mismo pasó a costar 580 veces más.
+
+    **El arreglo no abandona la arquitectura; la respeta mejor.** El puerto expone la búsqueda —`findZoneBySlug(ciudad, zona)` y sus hermanas—, Postgres la resuelve con un índice y devuelve **una fila**. El dominio sigue decidiendo las REGLAS: qué hace válida una ruta, la ambigüedad de que «Centro» exista en Maracaibo y en Caracas, qué pasa si no coincide. La infraestructura hace la BÚSQUEDA. **Hoy el dominio está usurpando el trabajo del motor**, y eso es menos hexagonal, no más.
+
+    **Lo que cambia, medido:** resolver la URL pasa de 5.813 filas y 679 kB a **una fila y ~120 bytes**; el panel de filtros pasa a pedir **sólo las zonas con avisos** —hoy, con un aviso publicado, **una**—; y el nombre de zona de cada tarjeta, sólo el de los avisos mostrados. **El mismo pedido, la misma pantalla, el mismo resultado en el navegador.** Lo único que cambia es quién filtra.
+
+    **La única parte que necesita una decisión.** La coincidencia de la búsqueda —alguien escribe «chaca» y hay que encontrar «Chacao»— sí mira muchos nombres, y no se resuelve con una fila. Pero tampoco necesita 5.813 en cada carga de página: se resuelve **cuando alguien escribe, no cuando alguien mira**, con una consulta de coincidencia o con el índice de topónimos que ya existe (`toponym-resolve.ts`). Esa parte se decide aparte y con su medición.
+
+    **Cuatro caminos que se descartaron, escritos para que no se reabran.** **(1) Caché con revalidación**: baja el consumo pero sigue leyendo, y hay que invalidarla a mano en cada resiembra. **(2) Generar el catálogo en tiempo de compilación desde `docs/territorio/`**: convertiría documentación en dependencia de ejecución, y `territorio-files.ts` lee con `readdirSync("docs/territorio")` —ruta relativa que **no sobrevive al empaquetado serverless**—. **(3) Acotar por ciudad y nada más**: no alcanza, Caracas sola son 3.220 zonas y 316 kB. **(4) Cambiar a una base NoSQL**: no resuelve nada —el proveedor cobra egreso, no consultas, y los mismos datos pesan lo mismo— y se perdería la clave foránea que hoy impide que un aviso apunte a una zona inexistente.
+
+    **La base sigue siendo la única fuente de verdad**, y `docs/territorio/` sigue siendo lo que dice ser. Sólo deja de mandarse la tabla entera para contestar una pregunta de una fila. **Con la medición antes y después escrita acá.**
+
+- [ ] 27.2 **Las vistas previas dejan de compartir la base con producción.** La vista previa es `dev`, y hoy apunta a la MISMA base que producción.
+
+    **Una corrección al primer borrador de esta tarea, medida y no supuesta.** Decía que cada despliegue de vista previa «prerenderiza páginas contra la base viva». **Es falso.** Las cuatro pantallas del camino de lectura son dinámicas —el inicio por `force-dynamic`, la ciudad, la zona y la ficha porque usan `searchParams`—, así que Next **no las prerenderiza**, y `pnpm build` corrió el 2026-09-07 con una `DATABASE_URL` inalcanzable y **pasó igual**. Los once PRs de ese día no se comieron la transferencia: **la fuga era la 27.1**. Esta tarea no es de costo.
+
+    **Lo que sí es cierto, y es peor que el costo.** Primero: **una vista previa abierta consulta producción**, no en el build sino al visitarla, con datos de personas reales — y con las acciones de servidor disponibles, también puede escribirlos. Segundo: `scripts/deploy-migrate.mjs` **se salta las vistas previas a propósito**, y su propio comentario dice por qué —*«a preview build of an unmerged branch would apply that branch's migrations to live data — a NOT NULL column arriving before the code that fills it»*—. La protección existe, pero al precio de que la vista previa **renderice contra un esquema que puede no corresponder a su código**. Dos cosas rotas a la vez: puede tocar datos vivos, y puede mentir.
+
+    **Y el 2026-09-07 lo demostró de la peor forma.** Cuando Neon agotó la cuota, no cayó sólo producción: **`dev` dejó de funcionar también**, porque comparten base. Un entorno de prueba que se cae con producción no es un entorno de prueba — es producción con otro nombre, y quita justamente el lugar donde se podría haber diagnosticado el incidente.
+
+    **La mitad del trabajo ya está hecha y no la hicimos nosotros: la rama `preview` de Neon YA EXISTE**, vista en el panel el 2026-09-07 y marcada `Schema-only`. Lo que falta es conectar su cadena a la variable de entorno de **Preview** en Vercel, dejando la de **Production** intacta. Es configuración, no código.
+
+    **Y entonces se puede cerrar la otra mitad**: con una base propia por entorno, `deploy-migrate` **deja de saltarse las vistas previas** y cada rama aplica sus migraciones a su propia base. Ahí la vista previa pasa a probar de verdad lo que va a desplegarse —incluido el paso de migración, que hoy no se prueba en ninguna parte (27.6)—, en vez de renderizar contra el esquema de otro.
+
+    **Qué hay que decidir**: si la rama `preview` se siembra con la taxonomía real —que la 27.1 necesita para medirse— o con la semilla determinista de `scripts/seed-e2e.ts`; y si hay una rama por vista previa o una sola compartida entre todas.
+
+- [ ] 27.3 **DEPENDE DE LA MEDICIÓN DE LA 27.1. No se empieza antes.** Cachear lo que el camino de lectura sigue pidiendo en cada visita, **si después de la 27.1 todavía hace falta**.
+
+    **Por qué está condicionada.** Con los 679 kB del catálogo fuera, lo que queda por visita son las 18 ciudades (~2 kB), los avisos que se muestran y los conteos: unos pocos kilobytes. A 3.000 visitas diarias eso es **menos de 1 GB al mes**, cómodamente dentro de los 5 GB gratis. **Es muy posible que la 27.1 sola cierre el problema y esta tarea se cierre con el número y sin código** — que es la mejor forma de cerrar una tarea.
+
+    **El `force-dynamic` NO es el defecto, y quitarlo rompe una protección deliberada.** Los dos archivos tienen su razón escrita y las dos son buenas. `app/page.tsx`: sin esa línea Next intenta exportar la página en compilación, y el build corre contra una `DATABASE_URL` **inalcanzable a propósito**, así que la compilación se cae en `listCities()` — *«se descubrió compilando, no en producción»*; y aparte, las cuatro tiras del inicio cambian cada vez que alguien publica. `app/sitemap.ts`: un sitemap horneado en el despliegue queda viejo con el primer aviso publicado después, y *«la página que más necesita estar al día sería la más desactualizada del sitio»*. **Esa `DATABASE_URL` inrouteable del job `build` es un guardián, no un accidente**: existe para que un cambio que consulte durante la compilación se caiga en CI en vez de en producción.
+
+    **Por eso, si la tarea se hace, se cachea el DATO y no la ruta.** La ruta sigue siendo dinámica —el guardián del build sigue en pie— y lo que se cachea es el resultado de la consulta, entre peticiones. Quitar el `force-dynamic` sería cambiar un problema de cuota por uno de compilación, y de paso borrar una protección que ya atrapó un defecto real.
+
+    **Y una pregunta que hay que contestar antes de escribir una línea**: cuánta desactualización tolera el sitemap. El comentario argumenta contra uno horneado en el DESPLIEGUE, y tiene razón — pero eso no es lo mismo que uno con **una hora**. Un aviso nuevo tarda días en ser rastreado. Si una hora sirve, la tarea es chica; si tiene que estar al segundo, **la respuesta correcta es no hacer esta tarea y dejarlo dicho**.
+
+- [ ] 27.4 **La otra mitad del par de presupuestos: un techo de FILAS sobre lo que el camino de lectura le pide a la base.** Es la tarea que impide que esto vuelva a pasar.
+
+    **El nombre ya estaba escrito en el repositorio.** `scripts/budget-bundle.ts` pone un techo medido —`BUDGET_BYTES = 130 * 1024`— sobre el JavaScript que baja al navegador en el camino de lectura, y falla el CI si se pasa; su propio comentario se llama *«the fast half of the budget pair»*. **Ya existe el presupuesto de lo que BAJA. Falta el de lo que SUBE desde la base.** Va en el mismo job `budget`, para que las dos mitades se lean juntas y para que un fallo diga «budget» y cualquiera entienda qué significa sin abrir un archivo.
+
+    **Se mide en FILAS y no en bytes** (decisión del fundador, 2026-09-07). Los bytes cambian entre máquinas —codificación, largo de los nombres— y una prueba que depende de eso parpadea. **Las filas son estables**: 5.813 son 5.813 en todos lados, y el defecto se expresa exacto en filas.
+
+    **Y tiene que correr con la taxonomía REAL sembrada, o no prueba nada**: con 10 zonas habría pasado igual que pasó. Sembrar las 5.813 cuesta segundos de CI en cada PR, y se pagan: este defecto costó el sitio entero.
+
+    **La prueba que hay que escribir es la que habría atrapado el incidente**: sembrar la taxonomía real, renderizar una pantalla del camino de lectura, y afirmar que **ninguna consulta devolvió más de N filas**. Con eso, la resiembra del 6 de septiembre se ponía **roja en CI antes de desplegar** — no al día siguiente con el sitio caído.
+
+    **NO se hace con detección estática, y la razón es un precedente del propio fundador del mismo día.** En la 22.31 eligió la convención sobre el detector mecánico porque *«un argumento opcional sin llenar es a menudo legítimo: el falso positivo sería de diseño, no un accidente»*. Un detector de `SELECT` sin `WHERE` tiene la misma forma: marcaría `listCities()` —18 filas, acotado por diseño, perfectamente correcto— y se aprendería a ignorar. **Una prueba que mide lo que de verdad salió no puede dar ese falso positivo**, y es además la convención que la 22.31 dejó escrita en `AGENTS.md` §1, aplicada del lado de la base.
+
+    **El CI no toca Neon y por eso esto es gratis**, verificado: todos los `DATABASE_URL` del workflow son o la falsa inrouteable `ep-ci-build-0000-pooler.invalid.neon.tech` (`build`, `e2e`, `budget`) o el contenedor en `localhost:5432` (`integration`, `e2e`). El job `budget` hoy no tiene base: **darle una es parte de esta tarea**.
+
+    **Qué queda por decidir**: el número `N`, que sale de la medición de la 27.1 y no de una intuición; y si el techo es uno solo para todo el camino de lectura o uno por pantalla.
+
+- [ ] 27.5 **El latido: no se puede ver el consumo, así que se vigila la consecuencia.**
+
+    **Esta tarea se llamaba «El consumo se ve antes de agotarse» y ese enunciado es falso en el plan que el proyecto usa.** Verificado contra la documentación de Neon el 2026-09-07, antes de escribir una línea:
+
+    - Los avisos por correo —Neon los llama *spending notifications*, al 80% y al 100% de un umbral, revisados cada quince minutos— son *«available on the Launch and Scale plans»*. **El plan Free no los tiene.**
+    - La API de métricas de consumo, que es la que un job periódico consultaría, está limitada a *«usage-based plans (Launch, Scale, Agent, and Enterprise)»*. **El plan Free tampoco la tiene.**
+    - El límite que se agotó es el del propio plan Free: *«Data Transfer: 5 GB per project»* de egreso mensual. Coincide exacto con el panel: 13,48 sobre 5.
+
+    **O sea que en el plan Free el consumo NO se puede ver antes de agotarse por ningún medio automático.** El único lugar donde se ve es el panel, a mano. Por eso el fundador se enteró de los 13,48 GB con el sitio ya caído: no había forma de enterarse antes. La alarma de verdad no es código, **es el plan** — comprar Launch compra el correo y la API de una sola vez.
+
+    **El precedente que esta tarea invocaba tampoco aplica.** Citaba el `smoke:taxonomy` de la 17.15, que es un guardián en el despliegue. Pero **el consumo crece con las visitas, no con los despliegues**: entre la resiembra del 6 de septiembre y la muerte de la cuota el 7 no hubo despliegues, hubo tráfico. Un guardián de despliegue habría estado callado todo ese tiempo. **Un vigilante de cuota tiene que mirar cuando nadie está mirando.**
+
+    **DECISIÓN DEL FUNDADOR, 2026-09-07: el latido.** Ya que no se puede medir el consumo, se vigila su consecuencia. Un workflow programado que le pregunte a producción «¿estás viva?» y falle ruidosamente si no. No dice «vas por el 80%»; dice «se cayó». Y eso convierte *enterarse horas después por casualidad* en *enterarse en minutos*, que es toda la diferencia que esta fase puede comprar gratis.
+
+    **Sería el primer workflow programado del repositorio**, verificado: `.github/workflows/ci.yml` es el único que existe y no tiene ni un `schedule` ni un `workflow_dispatch`; todo se dispara por push o por PR.
+
+    **Y acá está el límite que define la tarea: el latido consume la misma cuota que vigila.** Cada visita del vigilante es una visita de verdad, y hoy una vista del camino de lectura cuesta 679 kB por `listZones()` (medido en la 27.1). La aritmética, contra los 5 GB del plan:
+
+    | Cadencia | Corridas al mes | Costo de cuota hoy | Porción de los 5 GB |
+    | --- | --- | --- | --- |
+    | cada 5 minutos | 8.640 | 5,9 GB | **más del 100% — la alarma sola agota la cuota** |
+    | cada 15 minutos | 2.880 | 1,95 GB | 39% |
+    | cada hora | 720 | 0,49 GB | 10% |
+
+    **Un vigilante que tumba el sitio que vigila no es un vigilante.** Por eso esta tarea **depende de la 27.1**: mientras la taxonomía siga viajando entera en cada vista, la cadencia está atada de manos. Cuando la 27.1 saque esos 679 kB del camino, una vista pasa a costar una fracción y la cadencia se puede apretar sin pensar.
+
+    **Qué queda por decidir**: la cadencia, que no se elige por intuición sino con la tabla de arriba recalculada después de la 27.1; **cuál** dirección se golpea, que debe ser una que toque la base —una página estática devolvería 200 con la base muerta y el latido mentiría—; y cómo grita, porque un job rojo que nadie mira es exactamente el mismo silencio que esta tarea existe para romper.
+
+- [ ] 27.6 **DEPENDIENTE — la distancia entre lo que el CI prueba y lo que Vercel corre, medida pero no cerrada.**
+
+    **La brecha, exacta.** El CI corre `pnpm build`. Vercel corre `pnpm vercel-build`, que es `node scripts/deploy-migrate.mjs && next build`. **No son el mismo comando**, y de ahí salen tres diferencias:
+
+    1. **El CI nunca ejecuta `deploy-migrate.mjs`.** Ese script es el que corre `pnpm drizzle-kit migrate` contra la base de producción en cada despliegue, y no hay una sola prueba que lo toque.
+    2. **El CI migra contra un Postgres en contenedor, sin SSL.** Producción migra contra Neon, con `sslmode=require`. Es una ruta de código distinta que nadie ejercita.
+    3. **El CI fijaba `NODE_VERSION: "22"` mientras producción flotaba** — así fue como Vercel terminó en Node 24 sin que nada se pusiera rojo.
+
+    **La tercera ya está cerrada, y gratis**: `package.json` fija `"engines": { "node": "22.x" }`. Quedan la primera y la segunda.
+
+    **Lo que esta tarea NO es, y hay que dejarlo escrito porque su enunciado anterior lo insinuaba.** La caída del 7 de septiembre **no la causó esta brecha**: la causó la cuota de transferencia agotada, y **la cuota no es reproducible en el CI** — todos sus `DATABASE_URL` son la falsa inrouteable o el contenedor local, verificado. Ningún guardián de `vercel-build`, por completo que fuera, habría visto venir los 13,48 GB. **De ese incidente se ocupan la 27.1 y la 27.4.** Esta cubre un riesgo distinto y real, no el que quemó el sitio.
+
+    **Por qué queda dependiente y no se ejecuta en esta fase.** Cerrarla de verdad exige una base con migraciones pendientes contra la cual correr `deploy-migrate.mjs` y afirmar su comportamiento: eso es un arnés propio, del peso de la 11.22. **La Fase 27 existe para apagar un incendio**, y meterle una tarea de peso completo que no toca ese incendio es exactamente la forma de que la fase no termine.
+
+    **Queda escrita con la medición hecha** —los tres puntos de arriba, uno ya cerrado— para que el día que se retome no haya que volver a averiguar cuál era la distancia.
