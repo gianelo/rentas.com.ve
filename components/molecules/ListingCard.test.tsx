@@ -285,8 +285,18 @@ describe("ListingCard — a dónde lleva", () => {
 });
 
 describe("ListingCard — la cuadrícula y sus reglas transversales", () => {
+  /**
+   * **Se lee el texto visible, no el marcado.** Desde la 22.47 cada parte
+   * del metadato va envuelta en su propio `<span>` (`ListingMetaPart`) para
+   * que ninguna se parta por dentro; el marcado ya no es la subcadena
+   * literal "Chacao · 2 hab · 65 m²", aunque la FRASE leída sí lo es. Afirmar
+   * sobre el HTML crudo aquí repetiría el defecto que 22.17/22.23 ya
+   * cerraron del otro lado (afirmar sobre la hoja): el texto quitando
+   * etiquetas es lo que un lector de pantalla o un visitante realmente ven.
+   */
   it("muestra zona, habitaciones y metros en una sola línea de metadatos", () => {
-    expect(render()).toContain("Chacao · 2 hab · 65 m²");
+    const texto = render().replace(/<[^>]+>/g, "");
+    expect(texto).toContain("Chacao · 2 hab · 65 m²");
   });
 
   it("no atenúa texto con opacity — el gris es --soft", () => {

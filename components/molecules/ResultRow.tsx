@@ -1,5 +1,5 @@
 import { AppLink } from "../atoms/AppLink";
-import { ListingMeta } from "../atoms/ListingMeta";
+import { ListingMeta, ListingMetaPart } from "../atoms/ListingMeta";
 import { ListingTitle } from "../atoms/ListingTitle";
 import { Price } from "../atoms/Price";
 import { PublisherBadge } from "../atoms/PublisherBadge";
@@ -68,10 +68,27 @@ export function ResultRow({
             title
           )}
         </ListingTitle>
+        {/* Cada parte nunca se parte por dentro (tasks.md 22.47) — la
+            ciudad y la antigüedad que sólo dibuja el escritorio son partes
+            igual que zona/habitaciones/metros, así que van envueltas igual. */}
         <ListingMeta>
-          {zone}
-          {city ? <span className={styles.wide}> · {city}</span> : null} · {rooms} hab · {areaM2} m²
-          {ageLabel ? <span className={styles.wide}> · {ageLabel}</span> : null}
+          <ListingMetaPart>{zone}</ListingMetaPart>
+          {city ? (
+            <span className={styles.wide}>
+              {" · "}
+              <ListingMetaPart>{city}</ListingMetaPart>
+            </span>
+          ) : null}
+          {" · "}
+          <ListingMetaPart>{rooms} hab</ListingMetaPart>
+          {" · "}
+          <ListingMetaPart>{areaM2} m²</ListingMetaPart>
+          {ageLabel ? (
+            <span className={styles.wide}>
+              {" · "}
+              <ListingMetaPart>{ageLabel}</ListingMetaPart>
+            </span>
+          ) : null}
         </ListingMeta>
       </div>
     </article>

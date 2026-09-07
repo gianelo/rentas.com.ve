@@ -1,14 +1,45 @@
-/* SISTEMA.md "Metadato": 12px / 600 / 1.4, color `--soft`. Un solo sitio
-   donde se declara — hasta la 22.3 eran tres, y la tercera
-   (`app/mis-avisos/mis-avisos.module.css`) ya había perdido `font-family`,
-   `font-weight` y `line-height` sin que nada se pusiera rojo. */
+/* Papel propio de la tarjeta y NO el "Metadato" genérico de SISTEMA.md
+   (12px / 600 / `--sans`, `--meta-fs` / `--meta-fw`) — ésos siguen vivos en
+   otras diez superficies (`SearchPanel`, `AccountMenu`, `SiteFooter`,
+   `SearchSuggestions`, el inicio) y no se tocan acá.
+
+   **10,5px móvil / 11px escritorio / 400, y familia `--sans` — no `--meta`
+   (mono)** (tasks.md 22.9, fundador: tamaño 2026-09-05, familia 2026-09-06
+   después de medir). El tamaño baja a lo que dibuja la lámina; la familia
+   diverge de la lámina a propósito: medido contra los 136px disponibles a
+   360px, `--meta` (mono) pliega la frase de muestra («Chacao · 2 hab ·
+   78 m²», holgura −2,3 %) y `--sans` al mismo tamaño entra con +16,6 %. El
+   monoespaciado da a cada carácter el mismo avance, más ancho — el tipo se
+   achicó y se hizo más ancho a la vez. Divergencia registrada en
+   `SISTEMA.md`, no corrección silenciosa. */
 .meta {
   margin: 0;
   font-family: var(--sans);
-  font-size: var(--meta-fs);
-  font-weight: var(--meta-fw);
+  font-size: var(--card-meta-fs);
+  font-weight: var(--card-meta-fw);
   line-height: 1.4;
   /* Nunca `opacity`: atenuar así se lleva puesto el borde y el fondo, y deja
      el contraste fuera de control. El gris del sistema es --soft. */
   color: var(--soft);
+}
+
+@media (min-width: 768px) {
+  .meta {
+    font-size: var(--card-meta-fs-desktop);
+  }
+}
+
+/* **Una parte del metadato nunca se parte por dentro** (tasks.md 22.47,
+   fundador 2026-09-06). La frase se compone como texto plano en cada
+   consumidor, así que el navegador puede cortarla en cualquier espacio
+   propio — «Los Palos Grandes» o «78 m²» partidos a la mitad se leen peor
+   que la frase entera cayendo a la línea de abajo, y ninguna familia ni
+   tamaño arregla que «Los Palos Grandes · 2 hab · 78 m²» no entra en 136px.
+   `white-space: nowrap` es toda la regla: un consumidor envuelve cada
+   unidad con `ListingMetaPart` (`ListingMeta.tsx`) y dos unidades siguen
+   separadas por un espacio normal, que es donde el navegador SÍ puede
+   partir. Ver `ListingMetaPart` para por qué el agrupamiento vive ahí y no
+   en `.meta` ni en la frase de cada consumidor. */
+.part {
+  white-space: nowrap;
 }
