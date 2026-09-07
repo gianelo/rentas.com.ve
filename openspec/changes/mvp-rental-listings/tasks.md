@@ -2452,3 +2452,40 @@ El fundador trajo hoy una lámina que nunca había estado en el repositorio: `de
     **Por qué queda dependiente y no se ejecuta en esta fase.** Cerrarla de verdad exige una base con migraciones pendientes contra la cual correr `deploy-migrate.mjs` y afirmar su comportamiento: eso es un arnés propio, del peso de la 11.22. **La Fase 27 existe para apagar un incendio**, y meterle una tarea de peso completo que no toca ese incendio es exactamente la forma de que la fase no termine.
 
     **Queda escrita con la medición hecha** —los tres puntos de arriba, uno ya cerrado— para que el día que se retome no haya que volver a averiguar cuál era la distancia.
+
+- [ ] 27.7 **La ruta de zona nombra un LUGAR, no una fila: `/alquiler/<ciudad>/<zona>` busca en todas las zonas que se llaman así.**
+
+    **Esta no es una tarea de consumo, y conviene decirlo de entrada.** Salió midiendo la 27.1 y vive en esta fase porque toca exactamente el mismo código; separarla de fase la haría redescubrir todo otra vez. Pero lo que arregla es un **agujero de producto**, no la cuota.
+
+    **Lo que se midió** (2026-09-07, contenedor local con las 5.813 zonas reales y la `slugify` del repositorio, no una copia):
+
+    | | |
+    | --- | --- |
+    | Colisiones de ciudad | **0** |
+    | Slugs vacíos | **0** |
+    | Slugs truncados por `MAX_SLUG_LENGTH` | **0** |
+    | Grupos `(ciudad, slug)` con más de una zona | **335** |
+    | Zonas involucradas | **779** |
+    | **Zonas sin URL propia hoy** | **444** |
+
+    **No son filas duplicadas.** Se verificó consultando el padre de cada una: son **lugares reales y distintos que comparten nombre en parroquias distintas de la misma ciudad**. En Maracaibo, *Barrio Nuevo* existe en Cristo de Aranza, Juana de Ávila **y** Olegario Villalobos; *Sector Santa Ana* en Antonio Borjas Romero, Domitila Flores y Manuel Dagnino. Duplicados de verdad —misma ciudad, mismo padre, mismo nombre— hay **3 en 5.813**: ruido, no el fenómeno.
+
+    **El defecto, exacto.** `resolveZoneRoute` usa `zones.find(...)`, que devuelve **la primera coincidencia en silencio**. Las otras 444 zonas no tienen dirección: un aviso publicado en el *Barrio Nuevo* de Juana de Ávila vive en una zona que ninguna URL puede nombrar. **Nadie lo sabía porque nadie fue a contarlas.**
+
+    **DECISIÓN DEL FUNDADOR, 2026-09-07**: *«como son parroquias diferentes, son diferentes lugares... Si buscamos por zona barrio nuevo, entonces deberían salir todos los avisos que están en barrio nuevo con cada parroquia, todos, no solo uno.»*
+
+    O sea: **la ruta direcciona el NOMBRE, y el nombre cubre todos los lugares que se llaman así dentro de esa ciudad.** `/alquiler/maracaibo/barrio-nuevo` busca en las tres. Ninguna zona queda sin dirección, porque la dirección deja de apuntar a una fila.
+
+    **El camino ya está construido, verificado.** `SearchLocation.zoneIds` ya es plural —su comentario dice *«Las zonas de la búsqueda, combinadas con O (F4)»*—, `SearchCriteria.zoneIds` ya es plural desde la 14.6, y la búsqueda, las facetas, los conteos y la paginación ya combinan varias. **El único punto singular del camino entero** es `SearchLocationInput.routeZoneId?: string` y su uso en `resolveSearchLocation`:
+
+    ```js
+    zoneIds: input.routeZoneId === undefined ? [] : [input.routeZoneId]
+    ```
+
+    El cambio es `routeZoneId: string` → `routeZoneIds: readonly string[]`, más que `resolveZoneRoute` devuelva el conjunto que comparte `(cityId, slug)` en vez de la primera.
+
+    **No viola la regla de indexación de la 14.36, y hay que dejarlo escrito para que nadie lo lea como una violación.** Esa regla manda `noindex` a la forma **combinada** —`?zona=a,b`, «Chacao O Altamira»—, que son dos lugares distintos elegidos a mano. Acá es **un solo lugar nombrado** que resulta estar guardado en varias filas. La ruta sigue siendo canónica e indexable.
+
+    **Por qué NO se implementa junto con la 27.1** (decisión del fundador): la 27.1 apaga el incendio y no cambia nada de lo que el visitante ve. Ésta **sí cambia lo que devuelve una pantalla**, y merece su propia rebanada, su propia prueba y su propio PR. Mezclarlas haría imposible saber cuál de las dos movió un resultado.
+
+    **Qué queda por decidir**: si la pantalla dice algo cuando el nombre cubre varios lugares —«Barrio Nuevo» a secas, o nombrando las parroquias que agrupa—, y qué pasa con la miga de pan y el `<h1>`, que hoy hablan de una zona en singular.
