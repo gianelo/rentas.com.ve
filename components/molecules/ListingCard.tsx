@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { AppLink } from "../atoms/AppLink";
-import { ListingMeta } from "../atoms/ListingMeta";
+import { ListingMeta, ListingMetaPart } from "../atoms/ListingMeta";
 import { ListingTitle } from "../atoms/ListingTitle";
 import { PhotoCounter } from "../atoms/PhotoCounter";
 import { Price } from "../atoms/Price";
@@ -105,8 +105,18 @@ export function ListingCard({
             {title}
           </AppLink>
         </ListingTitle>
+        {/* Cada parte —zona, habitaciones, metros— nunca se parte por
+            dentro (tasks.md 22.47): «Los Palos Grandes» real hoy no entra
+            en los 136px del cuerpo a 360px con ninguna familia ni tamaño, y
+            cae entera a la línea de abajo en vez de partirse a la mitad. El
+            separador `· ` sigue siendo texto normal — es donde el
+            navegador SÍ puede cortar. */}
         <ListingMeta>
-          {zone} · {rooms} hab · {areaM2} m²
+          <ListingMetaPart>{zone}</ListingMetaPart>
+          {" · "}
+          <ListingMetaPart>{rooms} hab</ListingMetaPart>
+          {" · "}
+          <ListingMetaPart>{areaM2} m²</ListingMetaPart>
         </ListingMeta>
       </div>
     </article>

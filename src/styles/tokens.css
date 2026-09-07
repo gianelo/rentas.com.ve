@@ -262,7 +262,34 @@
      este defecto. */
   --card-price-fs: 16px;
   --card-price-fs-desktop: 17px;
-  --card-title-fs: 13px;
+  /* **12,5px móvil / 13px escritorio, y no 13 fijo — manda la lámina**
+     (tasks.md 22.9, fundador 2026-09-05). El sistema declaraba un solo
+     tamaño para los dos anchos; las láminas nuevas dibujan la tarjeta más
+     chica, con un par por punto de quiebre igual que el precio de arriba, y
+     `SISTEMA.md` ya se corrigió para coincidir. */
+  --card-title-fs: 12.5px;
+  --card-title-fs-desktop: 13px;
+  /* **El metadato de la tarjeta: tamaño de la lámina, familia del sistema**
+     (tasks.md 22.9, fundador — tamaño 2026-09-05, familia 2026-09-06 después
+     de medir). Papel propio y no `--meta-fs`/`--meta-fw` — ésos siguen
+     alimentando las otras diez superficies (`SearchPanel`, `AccountMenu`,
+     `SiteFooter`, `SearchSuggestions`, el inicio) y no se tocan.
+
+     El tamaño SÍ baja a lo que dibuja la lámina —10,5px a 360, 11px a
+     1280—, pero la familia diverge de la lámina a propósito: la lámina
+     dibuja `--meta` (mono, ver `[data-layout="compacto"]` más abajo) y el
+     metadato se queda en `--sans`. Medido contra los 136px disponibles a
+     360px con la frase de muestra «Chacao · 2 hab · 78 m²»: en `--meta` a
+     10,5px/400 la frase SE PLIEGA (holgura −2,3 %); en `--sans` al mismo
+     tamaño entra con **+16,6 %** de holgura. El monoespaciado da a cada
+     carácter el mismo avance, más ancho, así que el tipo se achicó y se
+     hizo más ancho a la vez — lo que de verdad frenaba la frase era la
+     familia, no el tamaño. Divergencia registrada en `SISTEMA.md`
+     («Tipografía», punto 6 de «Lo que queda abierto»), exactamente como la
+     16.40 registró el mes abreviado. */
+  --card-meta-fs: 10.5px;
+  --card-meta-fs-desktop: 11px;
+  --card-meta-fw: 400;
   /* **El contador de fotos sobre la portada** (tasks.md 22.8, artboard 7c):
      `--meta` a 10px, un solo tamaño en los dos anchos — la lámina no dibuja
      una variante de escritorio para éste, a diferencia del precio y el

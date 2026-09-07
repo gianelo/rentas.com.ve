@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { AppLink } from "../../components/atoms/AppLink";
-import { ListingMeta } from "../../components/atoms/ListingMeta";
+import { ListingMeta, ListingMetaPart } from "../../components/atoms/ListingMeta";
 import { ListingTitle } from "../../components/atoms/ListingTitle";
 import { Price } from "../../components/atoms/Price";
 import { SelectionChip } from "../../components/atoms/SelectionChip";
@@ -242,9 +242,21 @@ function FichaDeAviso({
             ya había perdido `font-family`, `font-weight` y `line-height`, así
             que la misma frase salía en dos pesos según la pantalla. */}
         <ListingTitle level={2}>{card.title}</ListingTitle>
+        {/* Cada parte nunca se parte por dentro (tasks.md 22.47); la
+            referencia externa cuenta como una sola unidad — "ref." pegado a
+            su código, como se lee en la lámina 14d. */}
         <ListingMeta>
-          {card.zoneName} · {card.rooms} hab · {card.areaM2} m²
-          {card.externalReference === null ? null : ` · ref. ${card.externalReference}`}
+          <ListingMetaPart>{card.zoneName}</ListingMetaPart>
+          {" · "}
+          <ListingMetaPart>{card.rooms} hab</ListingMetaPart>
+          {" · "}
+          <ListingMetaPart>{card.areaM2} m²</ListingMetaPart>
+          {card.externalReference === null ? null : (
+            <>
+              {" · "}
+              <ListingMetaPart>ref. {card.externalReference}</ListingMetaPart>
+            </>
+          )}
         </ListingMeta>
         <p className={styles.estado}>{etiquetaDeEstado(card)}</p>
 

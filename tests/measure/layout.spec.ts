@@ -898,12 +898,16 @@ test.describe("los átomos de la lista y la ficha de selección (22.2-22.5)", ()
     console.log(`[22.3] tarjeta=${JSON.stringify(tarjeta)}`);
     console.log(`[22.3] mis-avisos=${JSON.stringify(misAvisos)}`);
     expect(misAvisos).toEqual(tarjeta);
-    // Y el papel es el que SISTEMA.md llama "Metadato": 12px / 600 / 1.4, gris
-    // `--soft`. Fijado con números para que converger hacia el valor
-    // equivocado no cuente como converger.
-    expect(tarjeta["font-size"]).toBe("12px");
-    expect(tarjeta["font-weight"]).toBe("600");
-    expect(tarjeta["line-height"]).toBe("16.8px");
+    // Y el papel es el que SISTEMA.md llama "Metadato de tarjeta (lista)":
+    // 11px / 400 / 1.4 a este ancho (`--card-meta-fs-desktop` /
+    // `--card-meta-fw`), no el "Metadato" genérico (12px/600) — la 22.9 lo
+    // promovió a un papel propio porque el mono de la lámina no entraba en
+    // los 136px del cuerpo a 360px, y el tamaño bajó con él. Fijado con
+    // números para que converger hacia el valor equivocado no cuente como
+    // converger.
+    expect(tarjeta["font-size"]).toBe("11px");
+    expect(tarjeta["font-weight"]).toBe("400");
+    expect(tarjeta["line-height"]).toBe("15.4px");
   });
 
   test("22.4: el título de lista se dibuja igual en la tarjeta y en /mis-avisos", async ({

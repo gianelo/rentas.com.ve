@@ -22,3 +22,31 @@ import styles from "./ListingMeta.module.css";
 export function ListingMeta({ children }: { readonly children: ReactNode }) {
   return <p className={styles.meta}>{children}</p>;
 }
+
+/**
+ * Una unidad del metadato — una zona, "2 hab", "78 m²", "ref. LC-0912" — que
+ * nunca se parte por dentro (tasks.md 22.47, fundador 2026-09-06).
+ *
+ * **Por qué vive acá y no en `ListingMeta` ni en cada consumidor.**
+ * `ListingMeta` deliberadamente no compone la frase — sólo lleva el papel
+ * tipográfico, para que `ListingCard`, `ResultRow` y `/mis-avisos` sigan
+ * decidiendo cada uno cuáles partes tiene y en qué orden (una ciudad, una
+ * antigüedad, una referencia). Ponerle a `ListingMeta` la regla de "no te
+ * partas" la obligaría a saber qué es una "parte" de una frase que no
+ * arma; ponerla en cada consumidor la habría triplicado, que es
+ * exactamente el defecto que promovió el átomo (ver el comentario de
+ * arriba). `ListingMetaPart` resuelve las dos cosas: declara la regla una
+ * sola vez y deja que sea el consumidor quien decide qué texto es una
+ * unidad.
+ *
+ * **Por qué la regla es sólo `white-space: nowrap` y no un separador
+ * propio.** El defecto medido es que el navegador puede cortar dentro de
+ * una unidad («los» seguido de «palos» en dos líneas); el separador
+ * `· ` entre unidades sigue siendo texto normal en el JSX de cada
+ * consumidor, con un espacio normal a cada lado — y un espacio normal es
+ * exactamente donde SÍ puede cortar, que es lo que hace que la unidad
+ * completa caiga entera a la línea de abajo en vez de partirse.
+ */
+export function ListingMetaPart({ children }: { readonly children: ReactNode }) {
+  return <span className={styles.part}>{children}</span>;
+}
