@@ -30,10 +30,23 @@ describe("el contrato de paginación de la ruta de ciudad", () => {
     expect(PAGE).toContain("resolvePagination");
   });
 
+  /**
+   * **Reescrita por la 22.6.** La paginación ya no se dibuja dentro de
+   * `page.tsx` — vive en `SearchResultsList`, la carcasa de resultados que la
+   * 22.6 extrajo junto con el encabezado. Lo que se afirma ahora es que la
+   * página monta ese componente (y no una copia de su marcado) y que el
+   * componente sigue ofreciendo los enlaces.
+   */
   it("y ofrece los enlaces, porque recortar sin ofrecerlos es truncar en silencio", () => {
-    expect(PAGE).toContain('aria-label="Paginación"');
-    expect(PAGE).toMatch(/rel="prev"/);
-    expect(PAGE).toMatch(/rel="next"/);
+    expect(PAGE).toMatch(/<SearchResultsList[\s>]/);
+
+    const SEARCH_RESULTS_LIST = readFileSync(
+      new URL("../../../components/organisms/SearchResultsList.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(SEARCH_RESULTS_LIST).toContain('aria-label="Paginación"');
+    expect(SEARCH_RESULTS_LIST).toMatch(/rel="prev"/);
+    expect(SEARCH_RESULTS_LIST).toMatch(/rel="next"/);
   });
 
   it("el número de página se llama como lo llama la tabla del dominio", () => {

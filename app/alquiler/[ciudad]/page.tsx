@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-import { AppLink } from "@/../components/atoms/AppLink";
 import { Container } from "@/../components/layout/Container";
-import { FilterChips } from "@/../components/molecules/FilterChips";
-import { ListingCard, ListingGrid } from "@/../components/molecules/ListingCard";
-import { OrderMenu } from "@/../components/molecules/OrderMenu";
 import type { SearchPillProps } from "@/../components/molecules/SearchPill";
 import { Nav } from "@/../components/organisms/Nav";
-import { SearchOutcome } from "@/../components/organisms/SearchOutcome";
 import { SearchPanel } from "@/../components/organisms/SearchPanel";
+import { SearchResultsHeader } from "@/../components/organisms/SearchResultsHeader";
+import { SearchResultsList } from "@/../components/organisms/SearchResultsList";
 import { resolveNavAccount, resolveNavPublish } from "@/modules/identity/domain/nav-account";
 import { boundedVocabulary } from "@/modules/listing-catalogue/domain/bounded-vocabulary";
 import { homeSearchForm } from "@/modules/listing-catalogue/domain/search-destination";
@@ -42,7 +39,6 @@ import { DrizzleListingSearch } from "@/modules/listing-search/infrastructure/dr
 import { db } from "@/shared/db/client";
 import { readNavAccountFlags } from "../../_lib/nav-account";
 import { readSession } from "../../_lib/session";
-import styles from "./ciudad.module.css";
 
 interface CiudadProps {
   params: Promise<{ ciudad: string }>;
@@ -262,6 +258,31 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
   const pageHref = (page: number) =>
     buildSearchHref(cityPath, query, { page: page > 1 ? String(page) : null });
 
+  // La miga de pan de esta ruta: Inicio y la ciudad, sin enlace propio porque
+  // es la página en la que se está parado.
+  const crumbs = [{ label: "Inicio", href: "/" }, { label: city.name }];
+
+  // El título nombra la ciudad entera, así que las zonas elegidas tienen que
+  // decirse: si no, la cuadrícula trae menos avisos que los que el
+  // encabezado promete y parece un error.
+  const notice =
+    chosenZones.length > 0
+      ? { text: `Sólo en ${chosenZones.map((zone) => zone.name).join(", ")}.` }
+      : null;
+
+  // El conteo es el de la búsqueda entera y no el de esta página. **Cambió al
+  // llegar la paginación, y por su culpa**: antes decía cuántas tarjetas
+  // había en pantalla, que era lo honesto cuando la consulta traía todo. Con
+  // 24 por página, "24 propiedades" sobre la primera de trece es el número
+  // equivocado con ventaja.
+  //
+  // Sigue sin cerrar la misma parte que en la página de zona: los avisos sin
+  // portada no se dibujan (F9) pero sí se cuentan, así que este número puede
+  // ser mayor que la cantidad de tarjetas.
+  const countText = `${total === 1 ? "1 propiedad activa" : `${total} propiedades activas`}${
+    pagination.count > 1 ? ` — página ${pagination.current} de ${pagination.count}` : ""
+  }`;
+
   return (
     <>
       {/* **La barra del producto, en lugar de la barra resumen** (14.41). Aquélla
@@ -297,144 +318,33 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
       <SearchPanel model={panel} />
 
       <Container>
-        <nav className={styles.breadcrumb} aria-label="Miga de pan">
-          <ol className={styles.crumbs}>
-            <li className={styles.crumb}>
-              <AppLink className={styles.crumbLink} href="/">
-                Inicio
-              </AppLink>
-            </li>
-            <li className={styles.crumb} aria-current="page">
-              {city.name}
-            </li>
-          </ol>
-        </nav>
+        {/* **El encabezado de resultados, compartido con la ruta de zona**
+            (tasks.md 22.6): miga de pan, título, avisos, conteo con el orden
+            y las fichas de filtro puesto. `SearchResultsHeader` es el único
+            sitio donde se dibuja — dos hojas y dos bloques de JSX idénticos
+            dejaron de ser dos cosas que mantener sincronizadas. */}
+        <SearchResultsHeader
+          crumbs={crumbs}
+          title={`Alquiler en ${city.name}`}
+          notice={notice}
+          priceNotices={priceNotices}
+          countText={countText}
+          orderMenu={buildOrderMenu(cityPath, query)}
+          chips={panel.chips}
+          clearAllHref={panel.clearAllHref}
+        />
 
-        <h1 className={styles.title}>Alquiler en {city.name}</h1>
-
-        {/* El título nombra la ciudad entera, así que las zonas elegidas tienen
-            que decirse: si no, la cuadrícula trae menos avisos que los que el
-            encabezado promete y parece un error. */}
-        {chosenZones.length > 0 ? (
-          <p className={styles.alsoIn}>
-            Sólo en {chosenZones.map((zone) => zone.name).join(", ")}.
-          </p>
-        ) : null}
-
-        {/* El conteo es el de la búsqueda entera y no el de esta página.
-            **Cambió al llegar la paginación, y por su culpa**: antes decía
-            cuántas tarjetas había en pantalla, que era lo honesto cuando la
-            consulta traía todo. Con 24 por página, "24 propiedades" sobre la
-            primera de trece es el número equivocado con ventaja.
-
-            Sigue sin cerrar la misma parte que en la página de zona: los avisos
-            sin portada no se dibujan (F9) pero sí se cuentan, así que este número
-            puede ser mayor que la cantidad de tarjetas. */}
-        {/* **El conteo y el orden, en la misma fila** (14.47, lámina 7c:
-            «70 avisos ······ Recientes ▾»). Cuáles son los tres órdenes y cuál
-            está puesto lo decide `buildOrderMenu`, no esta página. */}
-        <div className={styles.countRow}>
-          <p className={styles.count} data-testid="result-count">
-            {total === 1 ? "1 propiedad activa" : `${total} propiedades activas`}
-            {pagination.count > 1 ? ` — página ${pagination.current} de ${pagination.count}` : ""}
-          </p>
-
-          <OrderMenu model={buildOrderMenu(cityPath, query)} />
-        </div>
-
-        {/* **Lo que se le corrigió al precio, dicho** (14.13, F5). El criterio
-            ya intercambiaba un rango invertido, y callarlo dejaba a alguien
-            mirando los resultados de un rango que no escribió. La frase la
-            escribe el dominio. */}
-        {priceNotices.map((notice) => (
-          <p key={notice} className={styles.alsoIn} role="status">
-            {notice}
-          </p>
-        ))}
-
-        {/* **Los filtros puestos, quitables de a uno** (lámina 7c). Reemplazan a
-            lo que la barra lateral mostraba de un vistazo: cuáles están puestos
-            y cómo sacar uno. Cuáles son y adónde lleva cada «×» lo arma el
-            dominio — quitar una zona devuelve a su ruta canónica y quitar un
-            filtro no toca la ubicación, y son dos reglas distintas. */}
-        <FilterChips chips={panel.chips} clearAllHref={panel.clearAllHref} />
-
-        <div className={styles.results}>
-          {pagination.beyondEnd ? (
-            // La página que ya no existe: el enlace viejo pegado en un chat.
-            // Se responde con la salida, no con una cuadrícula vacía sin causa.
-            <p className={styles.empty}>
-              Esa página ya no existe: la búsqueda tiene {pagination.count}.{" "}
-              <AppLink className={styles.pageLink} href={pageHref(pagination.count)}>
-                Ver la última
-              </AppLink>
-              .
-            </p>
-          ) : total === 0 ? (
-            // **El vacío explicado, con sus salidas** (F11). Reemplaza al aviso
-            // genérico que decía «probá ampliando el precio» sin saber si ampliar
-            // el precio devolvía algo: qué filtro lo causó y cuántos avisos hay
-            // del otro lado de cada salida lo cuenta el dominio contra la base.
-            <SearchOutcome model={outcome} />
-          ) : cards.length === 0 ? (
-            // Contados pero no dibujados: un aviso sin portada no entra en la
-            // cuadrícula (F9). El número de arriba sigue siendo el verdadero.
-            <p className={styles.empty}>Los avisos de esta página todavía no tienen foto.</p>
-          ) : (
-            <ListingGrid>
-              {cards.map((card) => (
-                <li key={card.id}>
-                  <ListingCard
-                    href={card.href}
-                    priceUsd={card.priceUsd}
-                    title={card.title}
-                    zone={card.zoneName}
-                    rooms={card.rooms}
-                    areaM2={card.areaM2}
-                    publisherType={card.publisherType}
-                    photoCount={card.photoCount}
-                    photo={card.photo}
-                  />
-                </li>
-              ))}
-            </ListingGrid>
-          )}
-
-          {/* **La paginación que esta pantalla no tenía.** La consulta ya
-              recortaba a 24 y la página no ofrecía ni un enlace: el aviso 25 en
-              adelante existía y no había forma de llegar. Truncar en silencio es
-              peor que no traer nada, porque nadie puede verlo.
-
-              Enlaces y ningún botón: son direcciones, y tienen que poder abrirse
-              en otra pestaña, guardarse y pegarse (D13). */}
-          {pagination.count > 1 && !pagination.beyondEnd ? (
-            <nav className={styles.pages} aria-label="Paginación">
-              {pagination.previous === null ? null : (
-                <AppLink
-                  className={styles.pageLink}
-                  href={pageHref(pagination.previous)}
-                  rel="prev"
-                >
-                  ← Anterior
-                </AppLink>
-              )}
-              <span className={styles.pageStatus}>
-                Página {pagination.current} de {pagination.count}
-              </span>
-              {pagination.next === null ? null : (
-                <AppLink className={styles.pageLink} href={pageHref(pagination.next)} rel="next">
-                  Siguiente →
-                </AppLink>
-              )}
-            </nav>
-          ) : null}
-
-          {/* **El cierre de la lista** (F10): «Son los 9 avisos que coinciden»
-              más el único cambio que más suma, con su número. A mitad de una
-              lista paginada el dominio devuelve `partial` y esto no dibuja nada,
-              porque todavía faltan avisos. */}
-          {total > 0 ? <SearchOutcome model={outcome} /> : null}
-        </div>
+        {/* **La carcasa de resultados, misma razón** (tasks.md 22.6): la
+            página que ya no existe, el vacío, la cuadrícula y la paginación
+            —«la consulta ya recortaba a 24 y la página no ofrecía ni un
+            enlace» (14.10)— también se dibujaban dos veces. */}
+        <SearchResultsList
+          pagination={pagination}
+          pageHref={pageHref}
+          total={total}
+          cards={cards}
+          outcome={outcome}
+        />
       </Container>
     </>
   );

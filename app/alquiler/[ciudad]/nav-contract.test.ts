@@ -158,10 +158,22 @@ describe("las dos pantallas de resultados y la barra del producto", () => {
    * barra sólo existía bajo 768 px y llevaba un `←` a la ciudad o al inicio; el
    * `Nav` pone la marca en su lugar. Sin la miga, el teléfono se quedaría sin
    * un paso hacia arriba que no sea el botón del navegador.
+   *
+   * **Reescrita por la 22.6.** La miga de pan ya no la dibuja cada `page.tsx`
+   * — vive en `SearchResultsHeader`, el componente que la 22.6 extrajo para
+   * que las dos pantallas dejaran de declarar la misma hoja y el mismo JSX
+   * dos veces. La atadura ahora es doble: que las dos monten ese componente
+   * (y no una copia suya), y que ese componente siga dibujando la miga.
    */
   it("las dos conservan la miga de pan, que es la salida hacia arriba", () => {
     for (const [, page] of ENTRIES) {
-      expect(page).toContain('aria-label="Miga de pan"');
+      expect(page).toMatch(/<SearchResultsHeader[\s>]/);
     }
+
+    const SEARCH_RESULTS_HEADER = readFileSync(
+      new URL("../../../components/organisms/SearchResultsHeader.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(SEARCH_RESULTS_HEADER).toContain('aria-label="Miga de pan"');
   });
 });
