@@ -444,6 +444,11 @@ export default async function MeasureHarnessPage({
                     listingId="00000000-0000-4000-8000-000000000000"
                     listingTitle="Apartamento 2 habitaciones con puesto de estacionamiento"
                     revealAction={measureRevealAction}
+                    // 22.19 — el arnés mide el formulario con el campo de
+                    // mensaje, que es el estado con sesión. La puerta sin
+                    // sesión (`ActionLink` solo) ya la mide `SignInDoor` más
+                    // abajo, montada aparte.
+                    hasSession={true}
                     verificationNotice={null}
                     expiresAt={new Date("2026-09-12T00:00:00.000Z")}
                     zoneName="Chacao"

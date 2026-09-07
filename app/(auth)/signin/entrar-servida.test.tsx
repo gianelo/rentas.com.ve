@@ -17,9 +17,14 @@ vi.mock("@/modules/identity/infrastructure/auth", () => ({
 
 const { default: SignInPage } = await import("./page");
 
-async function servida(callbackUrl?: string) {
+async function servida(callbackUrl?: string, correo?: string) {
   return renderToStaticMarkup(
-    await SignInPage({ searchParams: Promise.resolve(callbackUrl ? { callbackUrl } : {}) }),
+    await SignInPage({
+      searchParams: Promise.resolve({
+        ...(callbackUrl ? { callbackUrl } : {}),
+        ...(correo ? { correo } : {}),
+      }),
+    }),
   );
 }
 
@@ -98,5 +103,45 @@ describe("la pantalla de entrar sale entera en el HTML (15.7)", () => {
     expect(titulo(html)).toBe("Entrá a tu cuenta");
     // Y sin destino la pantalla existe igual: es una ruta que alguien escribe.
     expect(titulo(await servida())).toBe("Entrá a tu cuenta");
+  });
+});
+
+/**
+ * **El rechazo del correo, en los bytes que salen de la ruta** (tasks.md
+ * 22.29). Que `signInPageFor` decida el mensaje y que esta pantalla lo
+ * dibuje son dos afirmaciones distintas — trampa 4 del plan.
+ */
+describe("la puerta dibuja el rechazo del correo con el idioma de validación del sistema (22.29)", () => {
+  it("con la bandera, dibuja el mensaje propio y conserva el texto de ayuda", async () => {
+    const html = await servida(FICHA, "invalido");
+
+    expect(html).toContain("Ese correo no es válido");
+    // El texto de ayuda neutro no se va: SISTEMA.md pide las dos cosas juntas.
+    expect(html).toContain("Te mandamos un enlace que te deja entrar. No manejamos contraseñas.");
+    // El error va primero (regla del propio `Field`, misma familia de campo).
+    expect(html.indexOf("Ese correo no es válido")).toBeLessThan(
+      html.indexOf("Te mandamos un enlace"),
+    );
+  });
+
+  it("sin la bandera, no dibuja ningún mensaje de error", async () => {
+    const html = await servida(FICHA);
+
+    expect(html).not.toContain("Ese correo no es válido");
+  });
+
+  it("anuncia el error al lector de pantalla, no sólo lo dibuja", async () => {
+    const html = await servida(FICHA, "invalido");
+
+    expect(html).toContain('aria-invalid="true"');
+    expect(html).toMatch(/aria-describedby="correo-error"/);
+    expect(html).toContain('id="correo-error"');
+  });
+
+  it("conserva el resto de la pantalla: sigue habiendo un solo <h1> y un solo <main>", async () => {
+    const html = await servida(FICHA, "invalido");
+
+    expect(html.match(/<h1/g)).toHaveLength(1);
+    expect(html.match(/<main/g)).toHaveLength(1);
   });
 });

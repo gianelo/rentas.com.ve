@@ -126,6 +126,22 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+/* SISTEMA.md §225: «Campo en error: borde de 2px `--err`». Ninguna de las
+   cuatro láminas dibuja este estado (tasks.md 22.29) y por eso se deriva del
+   sistema en vez de inventarse — misma regla que ya declara
+   `Field.module.css` (`.controlInvalid`) para el otro formulario del
+   producto. */
+.fieldInvalid {
+  border: 2px solid var(--err);
+}
+/* «... y mensaje propio debajo, además del texto de ayuda neutro» — va
+   ANTES de `.emailNote` en el marcado: la ayuda se queda, el error no la
+   reemplaza. */
+.emailError {
+  margin: 8px 0 0;
+  font-size: var(--meta-fs-sm);
+  color: var(--err);
+}
 .emailNote {
   margin: 10px 0 0;
   font-family: var(--meta);

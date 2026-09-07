@@ -28,6 +28,17 @@ export interface ContactBlockProps {
   /** La revelación, que es un caso de uso y no un enlace. */
   readonly revealAction: (formData: FormData) => Promise<void>;
   /**
+   * Decisión del fundador (2026-09-07, tasks.md 22.19): sin sesión no se
+   * pide el mensaje. El campo lo pedía igual antes de esta tarea; la
+   * persona lo escribía, la redirección a la puerta no lo llevaba, y volvía
+   * a un campo vacío. Guardarlo obligaba a decidir dónde, y la URL es
+   * justo el sitio que publica texto ajeno en el historial y en los
+   * registros. La salida es no pedirlo hasta que la puerta ya quedó atrás:
+   * quien entra vuelve a esta misma ficha y ahí sí escribe, todavía antes
+   * de ver el contacto (6.11-6.13 no cambian).
+   */
+  readonly hasSession: boolean;
+  /**
    * Qué dice la ficha sobre la verificación del contacto (tasks.md
    * 16.12/16.34), ya redactado por `contactVerificationNotice`. `null` es «no
    * hay nada que decir» y no se dibuja ninguna línea.
@@ -114,6 +125,7 @@ export function ContactBlock({
   listingTitle,
   doorHref,
   revealAction,
+  hasSession,
   verificationNotice,
   expiresAt,
   zoneName,
@@ -163,42 +175,58 @@ export function ContactBlock({
                 la que el suelo del 90 % no llega: la misma afirmación que la
                 hoja ya decía desde `sign-in-door.ts`, escrita dos veces. */}
             <p className={styles.why}>{lockedContactNotice(contact.method)}</p>
-            {/* **Un formulario y no un enlace, que era el agujero.** El botón
-                iba a `/signin` y no llamaba a nada: se podía entrar, volver a
-                la ficha, y el número seguía tapado. Un enlace no ejecuta la
-                revelación — y la revelación es el hecho que la métrica norte
-                del producto cuenta. Sigue andando sin JavaScript: es un POST
-                nativo, como el formulario de publicar. */}
-            <form className={styles.control} action={revealAction}>
-              <input type="hidden" name="listingId" value={listingId} />
-              {/* La ficha es la única que conoce su URL canónica; la acción la
-                  usa sólo si hace falta abrir la puerta (F19, 15.8). */}
-              <input type="hidden" name="doorHref" value={doorHref} />
-              {/* La revelación ahora cuesta un mensaje escrito (tasks.md
-                  6.11-6.13): se pide ACÁ, antes de mostrar el contacto, y no
-                  después. `required` es el respaldo del navegador sin
-                  JavaScript; `revealContact` lo exige igual del lado del
-                  servidor si alguien lo salta.
+            {hasSession ? (
+              /* **Un formulario y no un enlace, que era el agujero.** El botón
+                 iba a `/signin` y no llamaba a nada: se podía entrar, volver a
+                 la ficha, y el número seguía tapado. Un enlace no ejecuta la
+                 revelación — y la revelación es el hecho que la métrica norte
+                 del producto cuenta. Sigue andando sin JavaScript: es un POST
+                 nativo, como el formulario de publicar. */
+              <form className={styles.control} action={revealAction}>
+                <input type="hidden" name="listingId" value={listingId} />
+                {/* La ficha es la única que conoce su URL canónica; la acción la
+                    usa sólo si hace falta abrir la puerta (F19, 15.8) — por si
+                    la sesión vence justo entre este render y el envío. */}
+                <input type="hidden" name="doorHref" value={doorHref} />
+                {/* La revelación ahora cuesta un mensaje escrito (tasks.md
+                    6.11-6.13): se pide ACÁ, antes de mostrar el contacto, y no
+                    después. `required` es el respaldo del navegador sin
+                    JavaScript; `revealContact` lo exige igual del lado del
+                    servidor si alguien lo salta.
 
-                  El campo arranca VACÍO y la redacción sugerida viaja como
-                  `placeholder`: un `defaultValue` enviaría el mensaje por el
-                  inquilino y dejaría el revelado costando un clic, que es
-                  justo el costo que este campo existe para cobrar. El
-                  `defaultValue` vacío sale del propio `Field`. */}
-              <Field name="message" label="Tu mensaje para quien publica" required>
-                {(attrs) => (
-                  <textarea
-                    {...attrs}
-                    rows={3}
-                    required
-                    placeholder={defaultRevealMessage(listingTitle)}
-                  />
-                )}
-              </Field>
-              <ActionButton type="submit">
-                {lockedLabel(contact.method, publisherType)}
-              </ActionButton>
-            </form>
+                    El campo arranca VACÍO y la redacción sugerida viaja como
+                    `placeholder`: un `defaultValue` enviaría el mensaje por el
+                    inquilino y dejaría el revelado costando un clic, que es
+                    justo el costo que este campo existe para cobrar. El
+                    `defaultValue` vacío sale del propio `Field`. */}
+                <Field name="message" label="Tu mensaje para quien publica" required>
+                  {(attrs) => (
+                    <textarea
+                      {...attrs}
+                      rows={3}
+                      required
+                      placeholder={defaultRevealMessage(listingTitle)}
+                    />
+                  )}
+                </Field>
+                <ActionButton type="submit">
+                  {lockedLabel(contact.method, publisherType)}
+                </ActionButton>
+              </form>
+            ) : (
+              /* **Sin sesión no se pide el mensaje (tasks.md 22.19).** Un
+                 enlace nativo a la misma ficha con la puerta abierta —nada
+                 que ejecutar todavía, nada que guardar—: quien entra vuelve
+                 acá y RECIÉN entonces ve el formulario de arriba, con el
+                 campo vacío esperándolo. El costo del mensaje no se mueve:
+                 sigue cobrándose antes del contacto, sólo que después de la
+                 puerta y no antes. */
+              <div className={styles.control}>
+                <ActionLink href={doorHref}>
+                  {lockedLabel(contact.method, publisherType)}
+                </ActionLink>
+              </div>
+            )}
           </>
         ) : (
           <>
