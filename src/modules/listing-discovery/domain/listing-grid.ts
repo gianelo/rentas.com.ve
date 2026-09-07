@@ -107,8 +107,15 @@ export function buildListingGrid(
    * `home-collections` y una cuadrícula sin origen no está rota, sólo no sabe
    * de dónde salió. Un origen que la ficha fuera a rechazar no se cuelga —
    * `withResultsOrigin` lo valida antes de escribirlo.
+   *
+   * **Acepta la forma cruda de un parámetro de búsqueda** —`string`, arreglo o
+   * ausente— y no sólo `string`, porque esta función no lo interpreta: se lo
+   * reenvía entero a `withResultsOrigin`, que ya declara ese mismo tipo y es
+   * quien decide si el candidato sirve. Estrecharlo acá obligaba a cada
+   * llamador a normalizar antes lo que el validador de abajo normaliza igual,
+   * y fue lo que frenó a la 22.30 en el paso del tipo.
    */
-  resultsOrigin?: string,
+  resultsOrigin?: string | readonly string[],
 ): readonly GridCard[] {
   const cards: GridCard[] = [];
 

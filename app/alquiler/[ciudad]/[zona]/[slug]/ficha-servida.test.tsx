@@ -321,6 +321,37 @@ describe("la vuelta vive dentro del contenido, no en la barra (14.54)", () => {
     expect(sinOrigen).toContain(">Ver avisos en Tierra Negra<");
     expect(sinOrigen).toContain('href="/alquiler/maracaibo/tierra-negra"');
   });
+
+  /**
+   * tasks.md 22.30 — **la búsqueda sobrevive a la cadena de sugeridos.**
+   * DECIDIDO por el fundador el 2026-09-06: las tarjetas sugeridas arrastran el
+   * origen. Sin esto, quien llega desde una búsqueda filtrada, abre un aviso y
+   * toca un sugerido **pierde la búsqueda en el segundo clic**: la segunda
+   * ficha dibuja el respaldo porque su enlace llegó sin `volver`.
+   *
+   * Se afirma sobre el HTML SERVIDO y no sobre la llamada a `buildListingGrid`:
+   * un espía sobre el cuarto argumento quedaría verde aunque el enlace saliera
+   * sin el parámetro, que es la trampa 1 que la 22.17 acaba de sacar de este
+   * mismo directorio.
+   */
+  it("las tarjetas sugeridas llevan el mismo origen que trajo la ficha", async () => {
+    zonaConAvisos();
+
+    const origen = "/alquiler/maracaibo?min=200";
+    const servido = await servedBody(VENCIDO_SLUG, { [RETURN_PARAM]: origen });
+
+    // El origen viaja codificado: sin codificar, su `&min=200` sería un segundo
+    // parámetro de la ficha destino y no parte del origen (`withResultsOrigin`).
+    const esperado = `${RETURN_PARAM}=${encodeURIComponent(origen)}`;
+
+    // Los dos vecinos de la zona son los que la cuadrícula de sugeridos dibuja.
+    for (const id of ["mcbo-1", "mcbo-2"]) {
+      const enlace = servido.match(new RegExp(`href="[^"]*${id}[^"]*"`))?.[0];
+
+      expect(enlace, `no se dibujó el sugerido ${id}`).toBeDefined();
+      expect(enlace).toContain(esperado);
+    }
+  });
 });
 
 /**
