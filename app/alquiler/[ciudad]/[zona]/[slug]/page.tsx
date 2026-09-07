@@ -471,6 +471,12 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
                     listingId={detail.id}
                     listingTitle={detail.title}
                     revealAction={revealListingContact}
+                    // tasks.md 22.19 — sin sesión no se pide el mensaje: la
+                    // ficha muestra la puerta y nada más. `session` ya está
+                    // leído arriba, del mismo puerto memoizado que usó
+                    // `viewListingContact`, así que esto no agrega una
+                    // consulta.
+                    hasSession={session !== null}
                     // **Ya no es un `null` escrito acá** (tasks.md 16.12). La
                     // frase la trae el caso de uso junto al contacto, así que
                     // esta página no puede volver a certificar —ni a callar—

@@ -61,11 +61,45 @@ export interface SignInPage {
   readonly legal: readonly LegalFragment[];
   /** El campo de correo y su botón, debajo del de Google (láminas 8a/9a). */
   readonly email: SignInEmailDoor;
+  /**
+   * **El rechazo del correo, dicho con el mensaje propio que `SISTEMA.md`
+   * pide debajo del campo** (tasks.md 22.29, decisión del fundador del
+   * 2026-09-07). Ninguna de las cuatro láminas dibuja este estado, así que
+   * se deriva de `SISTEMA.md` §225 en vez de inventarse (rama 3 del
+   * encabezado de la Fase 22, precedente 11b.2): *«Campo en error: borde de
+   * 2px `--err` y mensaje propio debajo, además del texto de ayuda
+   * neutro»*. `null` es la respuesta normal — nada que afirmar.
+   *
+   * **Nunca lleva la dirección tecleada.** La única entrada es un booleano
+   * (`emailRejected`, más abajo): la persona escribió texto que este
+   * dominio no guarda, con el mismo espíritu que la 22.19 aplicó al mensaje
+   * del inquilino.
+   */
+  readonly emailError: string | null;
   /** La salida visible: entrar nunca es obligatorio para mirar (F20). */
   readonly wayOut: SignInWayOut;
   /** Ya juzgado por `safeSignInReturn`. `null` es «sin destino», no «al inicio». */
   readonly returnTo: string | null;
 }
+
+/**
+ * El parámetro que marca la vuelta con el correo rechazado (tasks.md 22.29),
+ * en la misma forma que `DOOR_QUERY_NAME`/`DOOR_OPEN_TOKEN` de
+ * `sign-in-door.ts`: un nombre y un único valor válido, nunca la dirección
+ * que la persona escribió.
+ */
+export const EMAIL_ERROR_QUERY_NAME = "correo";
+export const EMAIL_ERROR_TOKEN = "invalido";
+
+/**
+ * El mensaje propio que `SISTEMA.md` §225 pide debajo del campo, en el mismo
+ * tono que ya usan los otros rechazos de este mismo formulario (`✱ Es un
+ * video, no una foto`, `PhotoUploader.tsx`). No dice cuál fue el motivo
+ * exacto —coma, comilla, dominio sin punto—: el servidor ya normalizó y
+ * descartó la dirección, y no hay nada de ella que valga la pena repetir de
+ * vuelta.
+ */
+const EMAIL_ERROR_MESSAGE = "✱ Ese correo no es válido.";
 
 /**
  * La misma frase que la hoja de la ficha (`contactDoorFor`), pineada por valor
@@ -158,10 +192,19 @@ const DOORS: Record<SignInDoor, DoorCopy> = {
  * niega. Dos copias es cómo una se queda con el nombre viejo del parámetro el
  * día que cambie, y esa es justo la mitad del viaje que la F19 protege.
  */
-export function signInPathFor(returnTo: string | null): string {
-  return returnTo === null
-    ? SIGN_IN_FALLBACK
-    : `${SIGN_IN_FALLBACK}?callbackUrl=${encodeURIComponent(returnTo)}`;
+export function signInPathFor(
+  returnTo: string | null,
+  options: { readonly emailRejected?: boolean } = {},
+): string {
+  // `URLSearchParams` y no concatenar a mano: es donde nace el `?` que debía
+  // ser `&` (la misma advertencia que `doorHrefFor` ya deja escrita en
+  // `sign-in-door.ts`), y acá hay dos parámetros que pueden viajar juntos.
+  const params = new URLSearchParams();
+  if (returnTo !== null) params.set("callbackUrl", returnTo);
+  if (options.emailRejected) params.set(EMAIL_ERROR_QUERY_NAME, EMAIL_ERROR_TOKEN);
+
+  const query = params.toString();
+  return query === "" ? SIGN_IN_FALLBACK : `${SIGN_IN_FALLBACK}?${query}`;
 }
 
 /**
@@ -170,7 +213,10 @@ export function signInPathFor(returnTo: string | null): string {
  * `safeSignInReturn` no admite deja `returnTo` en `null` y la puerta de
  * cuenta, en vez de reemitirse en un formulario que se ve nuestro.
  */
-export function signInPageFor(raw: string | readonly string[] | undefined): SignInPage {
+export function signInPageFor(
+  raw: string | readonly string[] | undefined,
+  options: { readonly emailRejected?: boolean } = {},
+): SignInPage {
   const returnTo = safeSignInReturn(typeof raw === "string" ? raw : "");
   const door = returnTo === null ? null : signInDoorOf(returnTo);
 
@@ -178,6 +224,9 @@ export function signInPageFor(raw: string | readonly string[] | undefined): Sign
     ...(door === null ? ACCOUNT_DOOR : DOORS[door]),
     legal: LEGAL,
     email: EMAIL_DOOR,
+    // tasks.md 22.29 — el booleano ya viene juzgado por quien llama (la
+    // ruta lee el parámetro de la dirección); acá sólo se elige la frase.
+    emailError: options.emailRejected ? EMAIL_ERROR_MESSAGE : null,
     wayOut:
       door === "/alquiler/" && returnTo !== null
         ? { href: returnTo, label: "← Volver al aviso" }

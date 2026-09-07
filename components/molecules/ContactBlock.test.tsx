@@ -10,6 +10,11 @@ const css = readFileSync("components/molecules/ContactBlock.module.css", "utf-8"
 /** Una acción de servidor de mentira: acá se prueba el formulario, no el efecto. */
 async function reveal() {}
 
+/**
+ * `hasSession: true` por omisión (tasks.md 22.19): la mayoría de las pruebas
+ * de este archivo ejercitan el formulario con el campo de mensaje, que sólo
+ * se dibuja con sesión. Las pruebas de la puerta sin sesión lo pisan a mano.
+ */
 function render(contact: ContactPresentation, overrides: Partial<ContactBlockProps> = {}) {
   return renderToStaticMarkup(
     <ContactBlock
@@ -20,6 +25,7 @@ function render(contact: ContactPresentation, overrides: Partial<ContactBlockPro
       listingTitle="Apartamento 2 habitaciones en Chacao"
       doorHref="/alquiler/caracas/chacao/apartamento-listing-1?entrar=si"
       revealAction={reveal}
+      hasSession={true}
       verificationNotice={null}
       expiresAt={new Date("2026-09-12T12:00:00.000Z")}
       zoneName="Chacao"
@@ -184,6 +190,52 @@ describe("sin cuenta", () => {
     expect(render({ state: "locked", method: "email" })).toContain("email");
     expect(render({ state: "locked", method: "email" })).not.toContain("WhatsApp");
     expect(render({ state: "locked", method: "telefono" })).toContain("teléfono");
+  });
+});
+
+/**
+ * **Sin sesión no se pide el mensaje: se abre la puerta primero** (tasks.md
+ * 22.19, decisión del fundador del 2026-09-07).
+ *
+ * Antes de esta tarea el formulario pedía el mensaje aunque no hubiera
+ * sesión, la persona lo escribía, el servidor la mandaba a la puerta y el
+ * texto no viajaba con ella: volvía a un campo vacío. Guardarlo obligaba a
+ * elegir dónde, y la URL es justo el lugar que publica texto ajeno en el
+ * historial y en los registros. La salida que se probó acá es no pedirlo
+ * hasta que la puerta ya quedó atrás.
+ */
+describe("sin sesión, la puerta se abre antes de pedir el mensaje (22.19)", () => {
+  it("no dibuja el campo de mensaje ni el formulario que lo pediría", () => {
+    const markup = render(LOCKED, { hasSession: false });
+
+    expect(markup).not.toContain("<textarea");
+    expect(markup).not.toContain("<form");
+    expect(markup).not.toContain('name="message"');
+  });
+
+  it("ofrece un enlace directo a la puerta sobre esta misma ficha", () => {
+    const markup = render(LOCKED, { hasSession: false });
+
+    expect(markup).toContain('href="/alquiler/caracas/chacao/apartamento-listing-1?entrar=si"');
+  });
+
+  it("sigue diciendo qué falta y por qué, igual que con sesión", () => {
+    const markup = render(LOCKED, { hasSession: false });
+
+    expect(markup).toContain(lockedContactNotice("whatsapp"));
+  });
+
+  it("nombra la acción con el mismo rótulo que el formulario usaría", () => {
+    const markup = render(LOCKED, { hasSession: false });
+
+    expect(markup).toContain("Ver WhatsApp del dueño");
+  });
+
+  it("con sesión, el bloque no cambia: sigue pidiendo el mensaje", () => {
+    const conSesion = render(LOCKED, { hasSession: true });
+
+    expect(conSesion).toContain("<form");
+    expect(conSesion).toContain('name="message"');
   });
 });
 
