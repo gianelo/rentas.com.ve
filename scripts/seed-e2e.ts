@@ -41,7 +41,7 @@ export const ZONE_ROWS = [
   { id: "e2e-zona-bella-vista", cityId: MARACAIBO.id, name: "Bella Vista" },
 ] as const;
 
-const PUBLISHER = {
+export const PUBLISHER = {
   id: "e2e-publicante",
   name: "Publicante de prueba",
   // TLD reservado (RFC 2606): nunca puede ser un buzón real, así que nadie

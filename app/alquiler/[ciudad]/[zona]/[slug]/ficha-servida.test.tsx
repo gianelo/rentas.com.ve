@@ -688,7 +688,19 @@ describe("la puerta del WhatsApp no saca al inquilino de la ficha (15.8)", () =>
     expect(html).not.toContain("Seguir mirando sin entrar");
   });
 
-  it("con el token abierto sale entera en el HTML, sin un solo script", async () => {
+  /**
+   * **Renombrada (tasks.md 22.23).** Se llamaba «con el token abierto sale
+   * entera en el HTML, sin un solo script» y nunca comprobaba la ausencia de
+   * `<script>` — sólo afirma acá lo que su cuerpo mide de verdad: el título,
+   * el motivo y la promesa de vuelta salen en el HTML servido, y el teléfono
+   * no. La ausencia de script tiene su propia medición, en el proyecto
+   * `crawlability` (`tests/e2e/puerta-de-whatsapp-sin-javascript.spec.ts`):
+   * medido al construir esta prueba, `renderToStaticMarkup` de un formulario
+   * con Server Action inyecta el `<script>` de reenvío de React porque fuera
+   * del compilador de Next la acción es una función común, así que afirmarlo
+   * acá habría sido rojo por el arnés y no por la pantalla.
+   */
+  it("con el token abierto sale el título, el motivo y la promesa de vuelta, sin el teléfono", async () => {
     const html = await servedBody(VENCIDO_SLUG, { entrar: "si" });
 
     expect(html).toContain(TITULO_PUERTA);
