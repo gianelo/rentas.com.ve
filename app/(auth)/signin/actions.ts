@@ -94,7 +94,17 @@ export async function requestMagicLink(formData: FormData): Promise<void> {
     // Negarse por la ventana devuelve a la espera, que es donde la cuenta
     // regresiva está dibujada; negarse por la dirección devuelve a la puerta,
     // que es donde está el campo. En los dos casos no salió ningún correo.
-    redirect(decision.reason === "muy-pronto" ? SIGN_IN_WAIT_PATH : signInPathFor(returnTo));
+    //
+    // **La dirección rechazada lleva la bandera** (tasks.md 22.29): antes
+    // volvía a la misma pantalla sin decir nada, y la puerta se veía igual
+    // de vacía que antes de escribir. La bandera es un booleano, nunca la
+    // dirección que se tecleó — `signInPathFor` no la recibe y no podría
+    // devolverla.
+    redirect(
+      decision.reason === "muy-pronto"
+        ? SIGN_IN_WAIT_PATH
+        : signInPathFor(returnTo, { emailRejected: true }),
+    );
   }
 
   // `redirect: false` para poder mirar el resultado antes de escribir nada. Con

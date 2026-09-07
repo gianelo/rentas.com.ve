@@ -555,8 +555,8 @@ test.describe("la barra del producto (14a, 14.41)", () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/measure");
 
-    const busqueda = await centres(page, "nav-harness-busqueda", "a", "rentas.");
-    const ficha = await centres(page, "nav-harness-ficha", "a", "rentas.");
+    const busqueda = await centres(page, "nav-harness-busqueda", "a", "Rentoru");
+    const ficha = await centres(page, "nav-harness-ficha", "a", "Rentoru");
 
     console.log(`[14.54] marca de la búsqueda en ${busqueda.left}, de la ficha en ${ficha.left}`);
     expect(ficha.visible).toBe(true);
@@ -572,7 +572,7 @@ test.describe("la barra del producto (14a, 14.41)", () => {
     await page.setViewportSize({ width: 360, height: 900 });
     await page.goto("/measure");
 
-    const brand = await centres(page, "nav-harness-ficha", "a", "rentas.");
+    const brand = await centres(page, "nav-harness-ficha", "a", "Rentoru");
 
     // La 14.55 decidirá esconderla en móvil; hoy es el único camino al inicio
     // desde la ficha, y declarado en la hoja no es dibujado: esto lo mide.
@@ -732,6 +732,68 @@ test.describe("el panel de filtros a los dos anchos (14.32)", () => {
 });
 
 /**
+ * **El pie pegajoso no tapa el último atributo del panel** — regresión
+ * expuesta por PR #259 (`9402ac7`): el `e2e` de CI vio
+ * `filtros-sin-javascript.spec.ts:137` fallar porque `.foot` interceptaba el
+ * clic sobre «Puesto de estacionamiento» cuando Playwright la desplazaba a
+ * la vista.
+ *
+ * La 22.11 alargó cada fila de atributo —interruptor y conteo debajo, en vez
+ * de la única línea de `.option`— y la lista pasó a necesitar scroll bajo el
+ * pie pegajoso (`position: sticky; inset-block-end: 0`, fondo opaco). Cuando
+ * Playwright desplaza la última fila a la vista, la fila queda visible y
+ * estable y el pie, encima. Una aserción sobre el contenido de la hoja no
+ * puede ver esto —`.foot` sigue siendo sticky a propósito—; lo que hace
+ * falta es la geometría real de las dos cajas.
+ */
+test.describe("el pie del panel no tapa la última fila (regresión de la 22.11)", () => {
+  test("la última fila de atributos no se solapa con el pie al desplazarla a la vista", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto("/measure");
+    // El truco de `transform: translateZ(0)` del arnés (línea ~246 de
+    // `app/measure/page.tsx`) fija el `position: fixed` del panel a ESE
+    // contenedor y no al viewport real —necesario ahí para no tapar el resto
+    // del arnés—, así que se quita sólo en esta prueba para medir el panel
+    // `fixed` de verdad, del mismo tamaño que ve un visitante.
+    await page.evaluate(() => {
+      const wrap = document.querySelector('[data-testid="search-panel-harness"]') as HTMLElement;
+      wrap.style.transform = "none";
+    });
+
+    const ultimaFila = page
+      .locator("#filtros-atributos")
+      .locator("ul")
+      .first()
+      .getByRole("listitem")
+      .last();
+
+    // `scrollIntoView({ block: "end" })` y no `scrollIntoViewIfNeeded()`: el
+    // primero pide la alineación exacta que expone el defecto —el borde
+    // inferior de la fila contra el borde inferior del scrollport—, que es
+    // la que `scroll-padding-block-end` corrige. El segundo sólo promete
+    // "visible" con la alineación que el navegador prefiera, y no reproduce
+    // el defecto de forma confiable.
+    await ultimaFila.evaluate((node) => node.scrollIntoView({ block: "end" }));
+
+    const filaBox = await ultimaFila.boundingBox();
+    // `search-confirm` es hijo directo de `.foot` (no lleva su propio
+    // `data-testid`): su padre es la caja del pie entero.
+    const pieBox = await page.getByTestId("search-confirm").locator("xpath=..").boundingBox();
+    if (!filaBox || !pieBox) throw new Error("la fila o el pie del panel no se dibujaron");
+
+    console.log(
+      `[regresión 22.11] fila: top=${filaBox.y} bottom=${filaBox.y + filaBox.height} · pie: top=${pieBox.y}`,
+    );
+    // La fila entera tiene que quedar arriba del pie: si su borde inferior
+    // pasa el borde superior del pie, el pie la tapa y el clic de Playwright
+    // —y el de cualquier visitante con mouse— cae en el pie y no en la fila.
+    expect(filaBox.y + filaBox.height).toBeLessThanOrEqual(pieBox.y);
+  });
+});
+
+/**
  * **Los átomos de la tarjeta, medidos en un navegador de verdad.**
  *
  * Una aserción sobre el contenido de una hoja dice qué se declaró; estas dicen
@@ -836,12 +898,16 @@ test.describe("los átomos de la lista y la ficha de selección (22.2-22.5)", ()
     console.log(`[22.3] tarjeta=${JSON.stringify(tarjeta)}`);
     console.log(`[22.3] mis-avisos=${JSON.stringify(misAvisos)}`);
     expect(misAvisos).toEqual(tarjeta);
-    // Y el papel es el que SISTEMA.md llama "Metadato": 12px / 600 / 1.4, gris
-    // `--soft`. Fijado con números para que converger hacia el valor
-    // equivocado no cuente como converger.
-    expect(tarjeta["font-size"]).toBe("12px");
-    expect(tarjeta["font-weight"]).toBe("600");
-    expect(tarjeta["line-height"]).toBe("16.8px");
+    // Y el papel es el que SISTEMA.md llama "Metadato de tarjeta (lista)":
+    // 11px / 400 / 1.4 a este ancho (`--card-meta-fs-desktop` /
+    // `--card-meta-fw`), no el "Metadato" genérico (12px/600) — la 22.9 lo
+    // promovió a un papel propio porque el mono de la lámina no entraba en
+    // los 136px del cuerpo a 360px, y el tamaño bajó con él. Fijado con
+    // números para que converger hacia el valor equivocado no cuente como
+    // converger.
+    expect(tarjeta["font-size"]).toBe("11px");
+    expect(tarjeta["font-weight"]).toBe("400");
+    expect(tarjeta["line-height"]).toBe("15.4px");
   });
 
   test("22.4: el título de lista se dibuja igual en la tarjeta y en /mis-avisos", async ({

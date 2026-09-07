@@ -211,8 +211,17 @@ test.describe("14.29: los avisos completos sobre el pliegue", () => {
    * que un aparato con una fuente de sistema un poco más ancha ve cada tarjeta
    * 17 px más alta. Se afirma como **proporción y nunca en píxeles**, que es lo
    * único que las dos máquinas pueden firmar.
+   *
+   * **Addendum 2026-09-07, después de la 22.9.** Todo lo de arriba describe la
+   * tipografía ANTERIOR del metadato (12px / 600 / `--sans`). La 22.9 la bajó
+   * a 10,5px / 11px / 400 —tamaño de la lámina, familia del sistema, medido:
+   * el mono no entra en los 136px disponibles— y la holgura del teléfono subió
+   * de 3,5 % a 16,6 %. La reescritura de abajo, firmada por el fundador el
+   * 2026-09-07, es la prueba viendo ese número y dejando de pedir «al filo»:
+   * la propia prueba anterior ya avisaba que ese día iba a llegar (ver su
+   * comentario, citado en la reescritura).
    */
-  test("el metadato del teléfono va a un pelo de plegarse, y el del escritorio no", async ({
+  test("el metadato entra con margen en el teléfono, y sobra en el escritorio", async ({
     page,
   }) => {
     /** El ancho de la línea SIN plegar, que es el número que cambia de máquina. */
@@ -271,13 +280,25 @@ test.describe("14.29: los avisos completos sobre el pliegue", () => {
     // el contenido. Sin esta igualdad, las dos proporciones de abajo podrían
     // estar comparando dos textos distintos.
     expect(escritorio.texto).toBe(telefono.texto);
-    expect(escritorio.anchoNatural).toBeCloseTo(telefono.anchoNatural, 0);
 
-    // El teléfono, al filo: menos de un 10 % de holgura. Puede ser 3,5 % y puede
-    // ser negativa, según a qué fuente resuelva `system-ui`; lo que no puede es
-    // ser holgada, porque entonces esta explicación dejó de valer y hay que
-    // volver a mirarla.
-    expect(telefono.proporcion).toBeLessThan(0.1);
+    // **Ya no se compara el ancho natural entre anchos — retirada a
+    // propósito, no olvidada.** Esa igualdad suponía una tipografía
+    // invariante por punto de quiebre: la misma frase con el mismo ancho
+    // natural a 360 y a 1280. La 22.9 retiró esa premisa por diseño al pedir
+    // un tamaño por punto de quiebre (10,5px al teléfono, 11px al
+    // escritorio), así que hoy la frase mide dos anchos naturales distintos
+    // y compararlos no afirmaría nada sobre el defecto que esta prueba
+    // vigila — sólo diría que 10,5px y 11px son números distintos.
+
+    // El teléfono, con margen real y no al filo. La propia prueba anterior
+    // anticipó este día en su propio comentario: **«lo que no puede es ser
+    // holgada, porque entonces esta explicación dejó de valer y hay que
+    // volver a mirarla»**. Llegó: medido con la tipografía de la 22.9
+    // (10,5px / `--sans` / 400), la holgura subió del 3,5 % de antes al
+    // 16,6 % de hoy. Pedir «al filo» ahora sería pedir a propósito un
+    // producto peor; el punto de la cota siempre fue avisar ANTES de que la
+    // frase se plegara, no exigir que viva al borde de plegarse.
+    expect(telefono.proporcion).toBeGreaterThan(0.1);
     // El escritorio, sobrado: es lo que hace que allá las dos máquinas midan lo
     // mismo al píxel.
     expect(escritorio.proporcion).toBeGreaterThan(0.25);

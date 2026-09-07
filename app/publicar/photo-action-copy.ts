@@ -5,7 +5,7 @@ import type {
 
 /**
  * El español del menú `⋯` de las fotos (paso 8, lámina 2g y
- * `Rentas - Publicar - Mobile.dc.html`).
+ * `Rentoru - Publicar - Mobile.dc.html`).
  *
  * **Vive acá y no adentro del JSX**, como `step-copy.ts` y
  * `violation-copy.ts`: dos de estas frases la especificación las marca como

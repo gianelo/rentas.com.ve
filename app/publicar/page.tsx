@@ -4,7 +4,9 @@ import { requireSession } from "../_lib/require-session";
 import { readPublicationContext } from "./publication-context";
 
 export const metadata: Metadata = {
-  title: "Publicar — Rentas",
+  title: "Publicar — Rentoru",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/publicar" },
 };
 
 /**

@@ -14,8 +14,10 @@ import styles from "../ayuda.module.css";
  * revealed contact.
  */
 export const metadata: Metadata = {
-  title: "Cómo contactar al dueño — Rentas",
-  description: "Cómo funciona el contacto con llave de rentas.com.ve, y por qué pide un mensaje.",
+  title: "Cómo contactar al dueño — Rentoru",
+  description: "Cómo funciona el contacto con llave de rentoru.com, y por qué pide un mensaje.",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/ayuda/como-contactar-al-dueno" },
 };
 
 export default function ComoContactarPage() {
@@ -49,8 +51,8 @@ export default function ComoContactarPage() {
 
       <h2 className={styles.heading}>Antes de acordar nada</h2>
       <p className={styles.text}>
-        rentas.com.ve no participa en la negociación. Visitá la propiedad y verificá quién es el
-        dueño antes de entregar dinero.
+        rentoru.com no participa en la negociación. Visitá la propiedad y verificá quién es el dueño
+        antes de entregar dinero.
       </p>
     </article>
   );

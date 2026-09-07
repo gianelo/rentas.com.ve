@@ -2,7 +2,7 @@
 
 Read this before writing anything in this repository. It is agent-agnostic on purpose — Claude, Codex, Cursor, whatever comes next.
 
-`rentas.com.ve` is a free long-stay residential rental marketplace for Distrito Capital and Maracaibo. Publishing and searching are free; the platform never holds money, writes contracts, or takes a commission. When a tenant finds something, they register and get the publisher's WhatsApp.
+`rentoru.com` is a free long-stay residential rental marketplace for Distrito Capital and Maracaibo. Publishing and searching are free; the platform never holds money, writes contracts, or takes a commission. When a tenant finds something, they register and get the publisher's WhatsApp.
 
 ---
 
@@ -15,6 +15,8 @@ The practical reason sits next to the principle: the 90% coverage floor reaches 
 **Strict TDD.** RED before GREEN, literally. Write the failing test, watch it fail, then make it pass. A test you never saw fail is decoration, not coverage.
 
 **Mutation-check what matters.** After a test passes, break its subject on purpose and confirm that test — not another one — turns red. Then restore. This repo has caught real defects this way and the habit is why.
+
+**Every new rule ships with a test on the served HTML, not on the call.** A fully-tested domain with no caller, and an optional argument nobody passes, read identically to code that works — `return-to-results.ts` shipped at 100% coverage with a caller no results screen fed (tasks.md 8.7), and the ficha's fourth argument to `buildListingGrid` went unpassed the exact same way (tasks.md 22.30). Mechanical detection was tried and rejected — an unfilled optional argument is often legitimate, so the check would false-positive on purpose, not by accident. A test asserting on the rendered body cannot pass while the argument never travels; that is the guard, not a spy on the call.
 
 **No `Co-Authored-By` and no AI attribution in commits.** Conventional commits, written in Spanish, matching `git log --oneline -20`.
 

@@ -9,8 +9,10 @@ import styles from "../ayuda.module.css";
  * the same two real paths `identity/infrastructure/auth.ts` offers.
  */
 export const metadata: Metadata = {
-  title: "Cómo publicar un aviso — Rentas",
-  description: "Los nueve pasos para publicar un aviso en rentas.com.ve, sin comisión.",
+  title: "Cómo publicar un aviso — Rentoru",
+  description: "Los nueve pasos para publicar un aviso en rentoru.com, sin comisión.",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/ayuda/como-publicar-un-aviso" },
 };
 
 interface Step {

@@ -96,6 +96,11 @@ vi.mock("./reveal-actions", () => ({
   revealListingContact: vi.fn(),
   continueWithGoogle: vi.fn(),
 }));
+// tasks.md 22.28 — misma razón que el mock de arriba: `requestMagicLink`
+// también arrastra Auth.js.
+vi.mock("../../../../(auth)/signin/actions", () => ({
+  requestMagicLink: vi.fn(),
+}));
 
 import FichaPage from "./page";
 
@@ -161,8 +166,8 @@ async function servida() {
 }
 
 beforeEach(() => {
-  process.env.R2_BUCKET_PUBLIC_URL = "https://fotos.rentas.test";
-  process.env.SITE_URL = "https://rentas.test";
+  process.env.R2_BUCKET_PUBLIC_URL = "https://fotos.rentoru.test";
+  process.env.SITE_URL = "https://rentoru.test";
   vi.clearAllMocks();
   findForDetail.mockResolvedValue(detail());
   findRevealable.mockResolvedValue({

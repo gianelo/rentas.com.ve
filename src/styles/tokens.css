@@ -1,4 +1,4 @@
-/* Rentas — shipped design tokens (design.md D16, tasks.md 1b.1).
+/* Rentoru — shipped design tokens (design.md D16, tasks.md 1b.1).
 
    Two independent axes, both set once on <html> in the app shell
    (app/layout.tsx) and never read directly by any component:
@@ -145,7 +145,7 @@
      **30 y no 28, y es una corrección medida contra la lámina, no un
      redondeo.** La especificación de la ficha lo escribe 28 dos veces (§4 R1 y
      la tabla de §8) y la lámina móvil dibuja `font-size:30px`
-     (`design/pantallas/Rentas - Ficha - Mobile.dc.html`). Manda la lámina, por
+     (`design/pantallas/Rentoru - Ficha - Mobile.dc.html`). Manda la lámina, por
      la regla del propio AGENTS.md: el sistema de diseño es la fuente visual de
      verdad. El paso de escritorio, 34, coincide en los dos documentos. Queda
      anotado acá porque el siguiente lector va a abrir la tabla de §8 antes que
@@ -249,7 +249,7 @@
      que alguien pidió. Manda la lámina (AGENTS.md §2), y las dos tienen razón
      porque describen anchos distintos — la misma resolución que la 14.40 ya
      usó para el nav y la 16.23 para el precio de la ficha:
-     `Rentas - Lista y Filtros - Mobile.dc.html` artboard 6c dibuja
+     `Rentoru - Lista y Filtros - Mobile.dc.html` artboard 6c dibuja
      `font-size:16px` sobre una cuadrícula de `158px 158px`, y
      `- Desktop.dc.html` artboard 7c dibuja `font-size:17px` sobre
      `repeat(4,254px)`.
@@ -262,7 +262,39 @@
      este defecto. */
   --card-price-fs: 16px;
   --card-price-fs-desktop: 17px;
-  --card-title-fs: 13px;
+  /* **12,5px móvil / 13px escritorio, y no 13 fijo — manda la lámina**
+     (tasks.md 22.9, fundador 2026-09-05). El sistema declaraba un solo
+     tamaño para los dos anchos; las láminas nuevas dibujan la tarjeta más
+     chica, con un par por punto de quiebre igual que el precio de arriba, y
+     `SISTEMA.md` ya se corrigió para coincidir. */
+  --card-title-fs: 12.5px;
+  --card-title-fs-desktop: 13px;
+  /* **El metadato de la tarjeta: tamaño de la lámina, familia del sistema**
+     (tasks.md 22.9, fundador — tamaño 2026-09-05, familia 2026-09-06 después
+     de medir). Papel propio y no `--meta-fs`/`--meta-fw` — ésos siguen
+     alimentando las otras diez superficies (`SearchPanel`, `AccountMenu`,
+     `SiteFooter`, `SearchSuggestions`, el inicio) y no se tocan.
+
+     El tamaño SÍ baja a lo que dibuja la lámina —10,5px a 360, 11px a
+     1280—, pero la familia diverge de la lámina a propósito: la lámina
+     dibuja `--meta` (mono, ver `[data-layout="compacto"]` más abajo) y el
+     metadato se queda en `--sans`. Medido contra los 136px disponibles a
+     360px con la frase de muestra «Chacao · 2 hab · 78 m²»: en `--meta` a
+     10,5px/400 la frase SE PLIEGA (holgura −2,3 %); en `--sans` al mismo
+     tamaño entra con **+16,6 %** de holgura. El monoespaciado da a cada
+     carácter el mismo avance, más ancho, así que el tipo se achicó y se
+     hizo más ancho a la vez — lo que de verdad frenaba la frase era la
+     familia, no el tamaño. Divergencia registrada en `SISTEMA.md`
+     («Tipografía», punto 6 de «Lo que queda abierto»), exactamente como la
+     16.40 registró el mes abreviado. */
+  --card-meta-fs: 10.5px;
+  --card-meta-fs-desktop: 11px;
+  --card-meta-fw: 400;
+  /* **El contador de fotos sobre la portada** (tasks.md 22.8, artboard 7c):
+     `--meta` a 10px, un solo tamaño en los dos anchos — la lámina no dibuja
+     una variante de escritorio para éste, a diferencia del precio y el
+     título de la misma tarjeta. */
+  --card-photocount-fs: 10px;
   /* El punto de posición debajo de la tira. Propio y no `--r-thumb` ni una de
      las medidas de miniatura: es una marca, no una imagen, y compartir el
      número con algo que significa otra cosa es cómo un ajuste de miniatura
@@ -339,7 +371,18 @@
   --title-fs: 20px;
   --title-fw: 700;
   --title-lh: 1.25;
-  /* The brand is the word "rentas." set in the display face — SISTEMA.md
+
+  /* **El papel propio de la puerta de entrar** (láminas 8a/9a, tasks.md
+     22.25). NO es `--title-fs` con otro nombre: las dos láminas dibujan 22 y
+     28 sólo en esta pantalla, y subir `--title-fs` movería el `<h1>` de las
+     seis pantallas que ya shipean — inicio, ciudad, zona, publicar, mis
+     avisos, importar. **DESBLOQUEADO 2026-09-05** — manda la lámina (el
+     fundador: «el UI y UX es la lámina») y el sistema admite el tamaño como
+     rol propio de esta pantalla, la misma forma con la que `--wait-mark-size`
+     ya admitió el disco de la espera. */
+  --door-title-fs: 22px;
+  --door-title-fs-desktop: 28px;
+  /* The brand is the word "Rentoru" set in the display face — SISTEMA.md
      "Assets": there is no logotype. --disp resolves to --mono under
      data-layout="compacto", so the wordmark changes with the structure axis
      exactly like the price does. */
@@ -409,6 +452,14 @@
   --nav-h-desktop: 68px;
   --nav-brand-fs: 17px;
   --nav-brand-fs-desktop: 19px;
+
+  /* **La barra de la puerta de entrar, con su propio alto** (tasks.md 22.25).
+     Mismo argumento que `--door-title-fs`: la 8a dibuja 56 y la 9a 72, y son
+     números que no pisan `--nav-h`/`--nav-h-desktop` porque esta barra no
+     lleva pastilla de búsqueda — es un rol propio, no una variante de la
+     barra de navegación. **DESBLOQUEADO 2026-09-05**, misma resolución. */
+  --door-bar-h: 56px;
+  --door-bar-h-desktop: 72px;
   /* Un solo tamaño para "Publicar gratis", "Publicar", "Entrar" y "Mis
      avisos": son la misma clase de control en la barra, y la lámina los
      dibuja los cuatro a 13.5px. */
@@ -436,7 +487,7 @@
   --pill-filter-fs: 12.5px;
   --pill-filter-fs-desktop: 13px;
 
-  /* The site footer (design/pantallas/Rentas - Footer.dc.html, artboards
+  /* The site footer (design/pantallas/Rentoru - Footer.dc.html, artboards
      9a/9b; tasks.md 23.1, 23.11). Only font-size gets its own token here —
      lint:tokens' literal-value scan is a blanket rule for colour,
      border-radius, and type size, and a TARGETED one for width/height that
@@ -462,6 +513,17 @@
   --th: 34px;
   --twd: 64px;
   --thd: 48px;
+  /* **74 × 56, decidido por el fundador el 2026-09-05: manda la lámina**
+     (tasks.md 22.15). Los artboards 14c y 14d de "Cuenta e Importar" dibujan
+     la miniatura de `/mis-avisos` en 74×56, ocho veces, y no en 44×34
+     (`--tw`/`--th`) ni en 64×48 (`--twd`/`--thd`) — esos dos pares siguen
+     vistiendo sus propias superficies (la fila que la cuadrícula reemplazó y
+     el subidor de fotos del paso 2) y no se tocan. Propio y no un alias: es
+     la MISMA razón por la que `--footer-brand-fs-desktop` no se fundió con
+     `--nav-brand-fs-desktop` aunque coincidan en 19px — dos números iguales
+     no son el mismo token si son de dos componentes distintos. */
+  --mis-avisos-thumb-w: 74px;
+  --mis-avisos-thumb-h: 56px;
   --gap: 8px;
   --rowpad: 7px 12px;
   --fp: 15px;

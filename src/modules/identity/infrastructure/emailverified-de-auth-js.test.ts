@@ -25,7 +25,7 @@ import { buildProviderEmailVerificationEvent } from "./provider-email-verificati
  * que después llega a `user.emailVerified` en Postgres.
  */
 
-const ORIGIN = "https://rentas.test";
+const ORIGIN = "https://rentoru.test";
 const CORREO = "maria.f@gmail.com";
 /** El reloj del asiento de la 19.14, fijo para que la fecha sea afirmable. */
 const AHORA = new Date("2026-09-02T15:00:00.000Z");
@@ -80,7 +80,7 @@ function puertaDelCorreo(cuentaExistente: AdapterUser | null) {
     adapter,
     providers: [
       buildEmailProvider({
-        readConfig: () => ({ apiKey: "clave", from: "hola@rentas.test" }),
+        readConfig: () => ({ apiKey: "clave", from: "hola@rentoru.test" }),
         createMailer: () => ({
           async send(message) {
             enviado.url = /https?:\/\/\S+/.exec(message.body)?.[0];

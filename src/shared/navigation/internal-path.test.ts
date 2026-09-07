@@ -17,7 +17,7 @@ describe("isInternalPath", () => {
   it("rechaza los esquemas que abren otra aplicación", () => {
     expect(isInternalPath("https://wa.me/584121234567?text=hola")).toBe(false);
     expect(isInternalPath("tel:+584121234567")).toBe(false);
-    expect(isInternalPath("mailto:hola@rentas.com.ve")).toBe(false);
+    expect(isInternalPath("mailto:hola@rentoru.com")).toBe(false);
     expect(isInternalPath("https://fotos.gianbarboza.com/photos/x.webp")).toBe(false);
   });
 

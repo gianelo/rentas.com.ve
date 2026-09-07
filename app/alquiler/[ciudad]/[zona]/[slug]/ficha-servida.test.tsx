@@ -113,6 +113,12 @@ vi.mock("./reveal-actions", () => ({
   revealListingContact: vi.fn(),
   continueWithGoogle: vi.fn(),
 }));
+// Misma razón que el mock de arriba (tasks.md 22.28): `requestMagicLink`
+// también arrastra Auth.js, y acá se prueba lo que sale del servidor, no lo
+// que la acción hace al recibir el POST del campo de correo de la puerta.
+vi.mock("../../../../(auth)/signin/actions", () => ({
+  requestMagicLink: vi.fn(),
+}));
 
 import FichaPage from "./page";
 
@@ -207,13 +213,16 @@ const OTRA_CIUDAD = activo("dc-1", "Penthouse en Chacao", CHACAO);
 /** Portadas para todos: sin las dos derivadas, la regla F9 los saca de la cuadrícula. */
 function covers(ids: readonly string[]) {
   return new Map(
-    ids.map((id) => [id, { keys: { thumb: `${id}/thumb.webp`, card: `${id}/card.webp` } }]),
+    ids.map((id) => [
+      id,
+      { keys: { thumb: `${id}/thumb.webp`, card: `${id}/card.webp` }, photoCount: 1 },
+    ]),
   );
 }
 
 beforeEach(() => {
-  process.env.R2_BUCKET_PUBLIC_URL = "https://fotos.rentas.test";
-  process.env.SITE_URL = "https://rentas.test";
+  process.env.R2_BUCKET_PUBLIC_URL = "https://fotos.rentoru.test";
+  process.env.SITE_URL = "https://rentoru.test";
   vi.clearAllMocks();
   findForDetail.mockResolvedValue(detail());
   allFor.mockResolvedValue([]);
@@ -311,6 +320,37 @@ describe("la vuelta vive dentro del contenido, no en la barra (14.54)", () => {
 
     expect(sinOrigen).toContain(">Ver avisos en Tierra Negra<");
     expect(sinOrigen).toContain('href="/alquiler/maracaibo/tierra-negra"');
+  });
+
+  /**
+   * tasks.md 22.30 — **la búsqueda sobrevive a la cadena de sugeridos.**
+   * DECIDIDO por el fundador el 2026-09-06: las tarjetas sugeridas arrastran el
+   * origen. Sin esto, quien llega desde una búsqueda filtrada, abre un aviso y
+   * toca un sugerido **pierde la búsqueda en el segundo clic**: la segunda
+   * ficha dibuja el respaldo porque su enlace llegó sin `volver`.
+   *
+   * Se afirma sobre el HTML SERVIDO y no sobre la llamada a `buildListingGrid`:
+   * un espía sobre el cuarto argumento quedaría verde aunque el enlace saliera
+   * sin el parámetro, que es la trampa 1 que la 22.17 acaba de sacar de este
+   * mismo directorio.
+   */
+  it("las tarjetas sugeridas llevan el mismo origen que trajo la ficha", async () => {
+    zonaConAvisos();
+
+    const origen = "/alquiler/maracaibo?min=200";
+    const servido = await servedBody(VENCIDO_SLUG, { [RETURN_PARAM]: origen });
+
+    // El origen viaja codificado: sin codificar, su `&min=200` sería un segundo
+    // parámetro de la ficha destino y no parte del origen (`withResultsOrigin`).
+    const esperado = `${RETURN_PARAM}=${encodeURIComponent(origen)}`;
+
+    // Los dos vecinos de la zona son los que la cuadrícula de sugeridos dibuja.
+    for (const id of ["mcbo-1", "mcbo-2"]) {
+      const enlace = servido.match(new RegExp(`href="[^"]*${id}[^"]*"`))?.[0];
+
+      expect(enlace, `no se dibujó el sugerido ${id}`).toBeDefined();
+      expect(enlace).toContain(esperado);
+    }
   });
 });
 
@@ -679,7 +719,19 @@ describe("la puerta del WhatsApp no saca al inquilino de la ficha (15.8)", () =>
     expect(html).not.toContain("Seguir mirando sin entrar");
   });
 
-  it("con el token abierto sale entera en el HTML, sin un solo script", async () => {
+  /**
+   * **Renombrada (tasks.md 22.23).** Se llamaba «con el token abierto sale
+   * entera en el HTML, sin un solo script» y nunca comprobaba la ausencia de
+   * `<script>` — sólo afirma acá lo que su cuerpo mide de verdad: el título,
+   * el motivo y la promesa de vuelta salen en el HTML servido, y el teléfono
+   * no. La ausencia de script tiene su propia medición, en el proyecto
+   * `crawlability` (`tests/e2e/puerta-de-whatsapp-sin-javascript.spec.ts`):
+   * medido al construir esta prueba, `renderToStaticMarkup` de un formulario
+   * con Server Action inyecta el `<script>` de reenvío de React porque fuera
+   * del compilador de Next la acción es una función común, así que afirmarlo
+   * acá habría sido rojo por el arnés y no por la pantalla.
+   */
+  it("con el token abierto sale el título, el motivo y la promesa de vuelta, sin el teléfono", async () => {
     const html = await servedBody(VENCIDO_SLUG, { entrar: "si" });
 
     expect(html).toContain(TITULO_PUERTA);

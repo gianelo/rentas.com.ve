@@ -35,7 +35,7 @@ import styles from "./reportar.module.css";
  * apretando atrás.
  */
 export const metadata: Metadata = {
-  title: "Reportar un aviso — Rentas",
+  title: "Reportar un aviso — Rentoru",
   // No es contenido y no tiene por qué competir con la ficha en el índice.
   robots: { index: false, follow: false },
 };

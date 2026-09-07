@@ -1,4 +1,4 @@
-# Sistema de diseño — Rentas
+# Sistema de diseño — Rentoru
 
 > **Esta es la fuente de verdad visual del proyecto.** Combinación adoptada: estructura **`compacto`** + paleta **`menta`**. Registrada en el plan como D14 (dirección visual) y D16 (contrato de tokens) en `openspec/changes/mvp-rental-listings/design.md`.
 >
@@ -12,7 +12,7 @@
 
 ## Overview
 
-Rentas es un portal de clasificados de alquiler residencial de larga estadía para Distrito Capital y Maracaibo. Publicar y buscar son gratis; la plataforma no participa en el trato (no retiene pagos, no redacta contratos, no cobra comisión). Cuando un inquilino encuentra algo, se registra y recibe el WhatsApp de quien publicó.
+Rentoru es un portal de clasificados de alquiler residencial de larga estadía para Distrito Capital y Maracaibo. Publicar y buscar son gratis; la plataforma no participa en el trato (no retiene pagos, no redacta contratos, no cobra comisión). Cuando un inquilino encuentra algo, se registra y recibe el WhatsApp de quien publicó.
 
 Este paquete cubre seis pantallas en móvil (360px) y escritorio (1280px), en una única combinación de diseño elegida: **estructura "Directorio compacto" + paleta "Menta"**.
 
@@ -95,9 +95,10 @@ En la estructura "Directorio compacto" el precio usa `--mono` (`--disp: var(--mo
 | Precio en ficha | 30px móvil / 34px escritorio / 700 / 1.1 | `--mono`. La lámina móvil dibuja 30 y la especificación escribe 28 dos veces: **manda la lámina** (16.23). Lo dibuja `--ficha-price-fs` / `--ficha-price-fs-desktop`; **`--fpb` (26) queda fuera del subconjunto que ship*a*** (16.37, ver abajo) |
 | Título de página | 20px / 700 / 1.25 | |
 | Título de aviso (ficha) | 17px móvil / 19px escritorio / 600 / 1.35 | `text-wrap: pretty` |
-| Título de aviso (lista) | 13px / 400 / 1.35 | `--card-title-fs` / `--ftw`. **El recorte a dos líneas es del contenedor, no del tipo**. `--ft`/`--tclamp` nombran el mismo papel en `design/reference/sistema/tokens.css` y quedan **fuera del subconjunto que ship*a*** (22.13, ver abajo) |
+| Título de aviso (lista) | **12,5px móvil / 13px escritorio** / 400 / 1.35 | `--card-title-fs` / `--card-title-fs-desktop` / `--ftw`. **Bajado a los dos tamaños de la lámina** (22.9, fundador 2026-09-05: manda la lámina). **El recorte a dos líneas es del contenedor, no del tipo**. `--ft`/`--tclamp` nombran el mismo papel en `design/reference/sistema/tokens.css` y quedan **fuera del subconjunto que ship*a*** (22.13, ver abajo) |
 | Cuerpo | **15px / 1.6 móvil / 16px / 1.65 escritorio** / 400 | ancho de lectura máx. 520px. `--ficha-body-fs` / `--ficha-body-fs-desktop` y su par de interlineado. **RESUELTO por el fundador el 2026-08-29** (16.38): el par gana paso de escritorio y crecen con él **las ocho pantallas que lo comparten**, no sólo la ficha |
 | Metadato | 12px / 600 / 1.4 | color `--soft` |
+| Metadato de tarjeta (lista) | **10,5px móvil / 11px escritorio** / 400 / 1.4 | `--card-meta-fs` / `--card-meta-fs-desktop` / `--card-meta-fw`, color `--soft`. **Papel propio y no el "Metadato" de arriba** (22.9): mismo tamaño que dibuja la lámina, pero la familia diverge a propósito — se queda en `--sans` en vez de pasar a `--meta` (mono). Ver el punto 6 de «Lo que queda abierto» |
 | Badge / etiqueta | 11px / 700 / 1.4 | `letter-spacing: .06em`, mayúsculas |
 | Texto secundario cómodo de leer | interlineado 1.6, con `--meta-fs` (12px) o `--control-fs` (15px) según la hoja | `--secondary-lh`. **No es el interlineado del cuerpo** (22.33): acompaña texto que no es el cuerpo pero pide el mismo aire de lectura — motivos, avisos, notas |
 
@@ -105,7 +106,7 @@ En la estructura "Directorio compacto" el precio usa `--mono` (`--disp: var(--mo
 
 **El recorte del título es del contenedor.** La cuadrícula lo necesita —un título largo empuja los metadatos y desalinea la tarjeta vecina— y la lista apilada de `/mis-avisos` no: la lámina 14c la dibuja sin recortar. Por eso viaja como una bandera de quien dibuja (`clamp`) y no como parte del tipo.
 
-**Contradicción abierta, verificada y NO resuelta acá — requiere al fundador.** Las láminas nuevas dibujan la tipografía de la tarjeta más chica que lo que este documento declara: título **12,5px** a 360 y 13 a 1280 contra los 13 de la tabla, y metadato **10,5px** a 360 y 11 a 1280 en `--meta` (mono, peso 400) contra los 12 / 600 / `--sans` de la fila «Metadato». Bajarlos es un cambio visible en dos pantallas y no lo pidió ninguna tarea; lo que sí se hizo fue **dejar un solo sitio donde cambiarlos** el día que se decida.
+**RESUELTO por el fundador — tamaño el 2026-09-05, familia el 2026-09-06 después de medir.** Manda la lámina en tamaño: el título baja a 12,5px/13px y el metadato de tarjeta a 10,5px/11px, arriba en la tabla. La familia **NO** sigue a la lámina para el metadato: se queda en `--sans` y no pasa a `--meta` (mono), porque medido contra los 136px disponibles a 360px el mono pliega la frase de muestra («Chacao · 2 hab · 78 m²», holgura −2,3 %) y `--sans` entra con **+16,6 %**. El tipo se achicó y se hizo más ancho a la vez, porque el monoespaciado da a cada carácter el mismo avance, más grande: lo que de verdad frenaba la frase era la familia, no el tamaño. Divergencia registrada y no corrección silenciosa — punto 6 de «Lo que queda abierto», más abajo.
 
 ### Espaciado
 
@@ -133,9 +134,9 @@ Escala: `4 · 8 · 12 · 16 · 24 · 32 · 48`. Nada fuera de esa escala.
 
 #### La miniatura de 44 × 34, y por qué sigue declarada
 
-`--tw`/`--th` (44 × 34) y `--twd`/`--thd` (64 × 48) siguen en el conjunto porque **siguen vistiendo dos superficies**: la fila de `/mis-avisos` y el subidor de fotos del paso 2 de publicar. Lo que ya no visten es el camino de lectura, que es la anatomía que este apartado describía.
+`--tw`/`--th` (44 × 34) y `--twd`/`--thd` (64 × 48) siguen en el conjunto porque **siguen vistiendo dos superficies**: la fila de medición de `ResultRow` (1b.10/1b.11/1b.12, camino ya retirado de la lectura) y el subidor de fotos del paso 2 de publicar, respectivamente. Lo que ya no visten es el camino de lectura, que es la anatomía que este apartado describía.
 
-**Contradicción abierta, verificada y NO resuelta acá — requiere al fundador.** Ninguna de las nueve láminas dibuja una miniatura de 44 × 34, y la de `/mis-avisos` (artboards 14c y 14d) dibuja **74 × 56**, que no es ninguno de los dos pares. El código usa `--tw`/`--th`. No se cambió de oficio porque mover esa miniatura es un cambio visible que ninguna tarea pidió y ninguna decisión del fundador cubre.
+**RESUELTO por el fundador el 2026-09-05 (22.15): manda la lámina.** Ninguna de las nueve láminas dibujaba una miniatura de 44 × 34, y la de `/mis-avisos` (artboards 14c y 14d) dibuja **74 × 56**, que no era ninguno de los dos pares declarados. `/mis-avisos` bajó a `--mis-avisos-thumb-w`/`--mis-avisos-thumb-h` (74 × 56), un token propio y no un alias de `--tw`/`--th` ni de `--twd`/`--thd` — dos números iguales no son el mismo token si son de dos componentes distintos (la misma razón que separa `--footer-brand-fs-desktop` de `--nav-brand-fs-desktop`).
 
 ### Layout de escritorio
 
@@ -153,7 +154,7 @@ Escala: `4 · 8 · 12 · 16 · 24 · 32 · 48`. Nada fuera de esa escala.
 Tres niveles, y no deben mezclarse:
 
 1. **Acción** — relleno `--accent`, texto `--accent-ink`. Publicar, Continuar, Renovar, Crear.
-2. **Selección / estado** — fondo `--tint`, borde y texto `--accent`. Toggle Dueño/Inmobiliaria, ciudad, habitaciones, chips activos. Comunica estado, no invita a enviar.
+2. **Selección / estado** — fondo `--tint`, borde y texto `--accent`. Toggle Dueño/Inmobiliaria, ciudad, habitaciones, chips activos. Comunica estado, no invita a enviar. **La ficha de selección** —un enlace que elige una opción de un conjunto, con una marcada; las fichas de ciudad del inicio y las de estado de `/mis-avisos`— es este nivel dibujado por un solo átomo compartido, `components/atoms/SelectionChip.tsx` (tasks.md 22.5 unificó el color, 22.12 unificó el componente). **No es** `FilterChips`: esa ficha siempre representa un filtro *aplicado*, siempre lleva su `×` de quitar y no tiene estado "no elegida" — es otro papel, aunque comparta el mismo idioma de color.
 3. **Neutro** — borde `--strong`, sin relleno, texto `--ink`. Cancelar, Corregir archivo.
 
 ## Distinción dueño / inmobiliaria
@@ -177,9 +178,16 @@ El badge **no** usa el color de acento: el contraste es relleno vs borde. Aparec
 
 **Tarjeta de resultado:** portada 4:3 arriba, y debajo, en este orden de documento: placa de publicador, precio, título recortado a dos líneas, metadatos (`zona · N hab · N m²`). El precio va antes del título en el orden de lectura y con más peso visual. Un solo enlace por tarjeta —su nombre accesible es el título— y el área tocable se extiende a la tarjeta entera con un `::after`, porque dos líneas de texto no llegan a 44px de forma confiable y errarle en una cuadrícula de dos columnas abre el aviso de al lado.
 
+**El contador de fotos, sobre la esquina de la portada** (`components/atoms/PhotoCounter.tsx`, tasks.md 22.8, artboard 7c: `right:9px;bottom:9px`, `--meta` a 10px, pastilla `--surface`/`--soft`). Ninguna tarea lo nombraba antes; se agregó el 2026-09-05 al leer la lámina para el cierre de esta sección. Dice "1 / N": la posición es siempre 1 (la tarjeta sólo dibuja la portada) y `N` es el total real de fotos del aviso, que `ListingPhotosPort.coversFor` ahora trae junto con la portada.
+
 **Densidad:** cuadrícula de tarjetas con portada. Ver la corrección de abajo — este documento decía lo contrario.
 
-**Orden de la lista:** la lámina 7c dibuja **«Recientes ▾»** junto al conteo. **No está construido**: hoy el orden lo fija el adaptador de búsqueda y no se puede cambiar desde la pantalla. Queda como tarea 14.47, y con una consecuencia que no es cosmética — si el orden es parte de la dirección entra en `FILTER_KEYS`, porque la misma lista en otro orden es la misma página.
+**Orden de la lista:** la lámina 7c dibuja **«Recientes ▾»** junto al conteo. **CONSTRUIDO** (tarea 14.47, decisión del fundador 2026-09-03): tres opciones y ni una más —**Recientes** (por defecto), **Precio: menor a mayor** y **Precio: mayor a menor**— dibujadas por `components/molecules/OrderMenu.tsx` (`buildOrderMenu`, `src/modules/listing-search/domain/search-order.ts`) como un `<details>` nativo con tres enlaces adentro, en escritorio y en teléfono. La consecuencia no es cosmética: `orden` entra en `FILTER_KEYS` y sale del índice con `?orden=…`, porque la misma lista en otro orden es la misma página, y «Recientes» viaja como AUSENCIA del parámetro para no sacar del índice la página en el orden por defecto. **Esta línea decía «No está construido» hasta la 22.14**, que la destapó desactualizada: 22.1 la escribió antes de que la 14.47 cerrara, y nadie volvió a corregirla.
+
+**El panel de filtros de escritorio: dos anatomías nuevas que la lámina 7b dibuja y este documento no nombraba** (tarea 22.11). Habitaciones, baños y los seis atributos declarados siguen siendo **enlaces** — el piso sin JavaScript de la 14.33 —, así que el aspecto que la lámina pide se consigue sin dejar de ser enlaces, en vez de convertirlos en `<input>`/`<button>`. Los dos entran como anatomía nueva, la misma dirección con la que esta sección registró la cuadrícula, en vez de corregir la lámina por dibujar un componente que el sistema todavía no tenía:
+
+- **El control segmentado** (`components/atoms/SegmentedControl.tsx`): habitaciones (1/2/3/4+) y baños (1/2/3+), una tira de enlaces de ancho igual con borde `--strong`, radio `--r` y alto mínimo **44** — no los 40 que dibuja la lámina: el fundador ya lo corrigió el 2026-08-27 (tarea 16.24, WCAG 2.2 SC 2.5.5 AAA), y esa decisión posterior manda sobre la lámina.
+- **El interruptor** (`components/atoms/Switch.tsx`): uno por atributo declarado, 44×26 con perilla de 20×20 (`--rs`, el mismo token de pastilla que ya usan `PhotoCounter` y `SearchPill`), con su conteo escrito debajo. Es decorativo (`aria-hidden`): el enlace que lo envuelve es el que decide y lleva el foco, y lo elegido se anuncia por `aria-current`, no por el interruptor.
 
 > **Corrección medida, primera vuelta (2026-08-16).** Este documento decía "10 propiedades sobre el pliegue de 640px" como criterio de aceptación. No se sostenía contra el propio mockup: con la anatomía de fila de entonces entraban **cinco**. **El criterio implementado no fue un conteo sino una cota: la fila no supera 96px a 360px.** Un conteo se mueve con la tipografía del sistema, el alto del encabezado y el largo de un título — o sea, falla por razones que no son la regresión que quería detectar.
 >
@@ -201,7 +209,7 @@ El badge **no** usa el color de acento: el contraste es relleno vs borde. Aparec
 
 **Layout escritorio:** grid `640px 1fr`. Izquierda: foto de 640×360, tira de tres miniaturas de 120×90, descripción a 520px de ancho, enlace de reporte. Derecha: tarjeta sticky con precio, título, datos y bloque de contacto.
 
-**Bloque de contacto (con llave):** recuadro con borde punteado `--strong` y fondo `--bg`. Texto: "El contacto se muestra a usuarios registrados". Botón de acción: "Ver WhatsApp del dueño". Debajo, en escritorio: "Rentas no participa en la negociación. Verificá la propiedad antes de entregar dinero."
+**Bloque de contacto (con llave):** recuadro con borde punteado `--strong` y fondo `--bg`. Texto: "El contacto se muestra a usuarios registrados". Botón de acción: "Ver WhatsApp del dueño". Debajo, en escritorio: "Rentoru no participa en la negociación. Verificá la propiedad antes de entregar dinero."
 
 Debe verse que el teléfono existe y qué falta para verlo. Nunca ocultar el bloque entero.
 
@@ -230,7 +238,7 @@ Es un formulario, no un embudo de cinco pasos. Paso 2 son las fotos (el único l
 
 **Layout:** encabezado con miga de pan (`Inicio › Distrito Capital › Chacao`), título `Alquiler en Chacao` y una línea de resumen con conteo y rango de precios reales. Luego la misma lista de resultados. En escritorio, barra lateral con zonas cercanas y su conteo.
 
-**Bloque de aporte:** fondo `--tint`, borde `--accent`, radio `--r`. Texto: "Rentas es gratis y sin comisión. Si te sirve, podés colaborar." Botón neutro "Colaborar" y una × de descarte de 44px. Es descartable y no debe empujar los resultados abajo del pliegue.
+**Bloque de aporte:** fondo `--tint`, borde `--accent`, radio `--r`. Texto: "Rentoru es gratis y sin comisión. Si te sirve, podés colaborar." Botón neutro "Colaborar" y una × de descarte de 44px. Es descartable y no debe empujar los resultados abajo del pliegue.
 
 ### 5. Mis publicaciones
 
@@ -252,7 +260,7 @@ El color aparece solo en los dos estados que piden algo. Activa y vencida son ne
 
 **Las fichas de filtro por estado** (una por estado, más «Todos», con su conteo) usan el **nivel 2 de la jerarquía de botones** cuando están elegidas: relleno `--tint`, borde y texto `--accent`. **Decidido por el fundador el 2026-08-28**, después de que la pantalla las dibujara con relleno `--tint` pero borde `--strong` y texto `--ink` — el mismo componente pintado con dos idiomas según la pantalla.
 
-**Layout escritorio:** grid `120px 1fr 200px` — la acción vive en su propia columna, alineada a la derecha.
+**Layout escritorio:** grid `120px 1fr 200px` — la acción vive en su propia columna, alineada a la derecha. **Construido el 2026-09-05 (22.15)**: hasta entonces la hoja no tenía esta disposición y la fila se veía igual en los dos anchos.
 
 ### 7. La pastilla de búsqueda y la barra que la lleva
 
@@ -298,7 +306,7 @@ El color aparece solo en los dos estados que piden algo. Activa y vencida son ne
 
 **Lo que dice depende de por qué puerta se entró** (`signInPageFor`, `src/modules/identity/domain/sign-in-page.ts`): publicar trae los tres pasos, un aviso trae la promesa de vuelta, y la cuenta no promete ninguno de los dos. La copia es de producto y vive en el dominio, no en la pantalla.
 
-**Desvíos de la lámina, deliberados.** El `<h1>` usa `--title-fs` como el de todas las demás pantallas, y no el 22/28 que estas dos láminas dibujan sólo acá: un tamaño de encabezado propio de una pantalla es cómo empieza la deriva. El enlace de vuelta va en `--ink`, igual que el «← Resultados» de la ficha, y no en `--accent`. El campo de correo y su botón «Enviarme el enlace» **no están dibujados todavía**: desembocan en la pantalla de espera, que no existe (tarea 15.9). Y el botón va **sin la marca de Google**, en el nivel 1 — ver Assets y la tarea 22.20.
+**Papel propio de esta pantalla, no deriva** (tasks.md 22.25, DESBLOQUEADO 2026-09-05 — manda la lámina, rama 1 del encabezado de la fase 22). El `<h1>` usa `--door-title-fs`/`--door-title-fs-desktop` (22/28) y la barra usa `--door-bar-h`/`--door-bar-h-desktop` (56/72): son los números que las dos láminas dibujan sólo acá, admitidos como rol propio de la puerta y no como un cambio de `--title-fs`/`--nav-h`, que moverían las seis pantallas que ya shipean. El enlace de vuelta va en `--ink`, igual que el «← Resultados» de la ficha, y no en `--accent`. El campo de correo y su botón «Enviarme el enlace» están dibujados desde la 22.22. Y el botón lleva la marca de Google —tercer SVG en línea, ver Assets— en el **nivel 3** de la jerarquía: con el logo puesto, un relleno `--accent` competiría con la marca, y el borde sin relleno es el que Google exige (tasks.md 22.20).
 
 ## Interactions & Behavior
 
@@ -320,23 +328,24 @@ Poca. El camino de lectura no tiene estado en cliente.
 
 ## Assets
 
-Ninguno propio. No hay logotipo: la marca es la palabra "rentas." en el stack del sistema. Los rectángulos con trama diagonal son marcadores de foto — las fotos reales las suben los usuarios.
+Ninguno propio. No hay logotipo: la marca es la palabra "Rentoru" en el stack del sistema — **con mayúscula inicial y sin punto final**, para que la marca y el sufijo de los títulos ("— Rentoru") sean una sola forma. Los rectángulos con trama diagonal son marcadores de foto — las fotos reales las suben los usuarios.
 
 **Glifos de texto por defecto.** `←`, `✓`, `✱`, `×`, `·` son caracteres, no imágenes: no piden red, heredan el color y la métrica del texto que los rodea, y escalan con el tipo.
 
-**Y un conjunto CERRADO de dos SVG en línea** (decisión del fundador, 2026-08-25), que son los de la pastilla de búsqueda:
+**Y un conjunto de tres SVG en línea**, dos cerrados por decisión del fundador (2026-08-25) y un tercero admitido como excepción de marca (DESBLOQUEADO 2026-09-05, tasks.md 22.20):
 
 | Glifo | Uso | Por qué no es un carácter |
 |---|---|---|
 | tres rayas | el contador de filtros | no hay carácter que signifique "filtro" sin ambigüedad |
 | lupa | la acción de buscar | `◎` se lee como un ojo, no como una lupa |
+| disco de Google | el botón «Continuar con Google» (láminas 8a/8b/9a/9b) | **excepción de marca, no una tercera decisión de icono propio.** Las reglas de marca de Google exigen su logo exacto y no admiten una versión propia — acá el sistema no puede derivar nada, así que se reproduce tal cual en vez de discutirse como los otros dos |
 
 Las condiciones son parte de la regla, no una sugerencia:
 
-- **En línea, nunca un paquete de iconos.** Dos SVG pesan menos de 200 bytes; una librería pesa decenas de KB y trae cientos que nadie usa.
-- **`aria-hidden="true"`** y su etiqueta accesible al lado — la lupa va dentro de un enlace con `aria-label="Buscar"`.
-- **`stroke="currentColor"`**, así heredan el color como lo haría un carácter.
-- **El conjunto es cerrado.** Un tercer icono no se agrega: se discute. Esta tabla es la lista completa, y ampliarla es cambiar el sistema, no usarlo.
+- **En línea, nunca un paquete de iconos.** Los SVG de este sistema pesan bytes, no kilobytes; una librería de iconos trae decenas de KB y cientos que nadie usa.
+- **`aria-hidden="true"`** y su etiqueta accesible al lado. La lupa va dentro de un enlace con `aria-label="Buscar"`; el disco de Google va dentro de un botón cuyo texto visible ya dice «Continuar con Google» — ninguno de los tres SVG es su propio nombre accesible.
+- **`stroke="currentColor"`** en los dos primeros, así heredan el color como lo haría un carácter. **El disco de Google es la única excepción a esto también**: sus cuatro colores son parte de la marca y no del tema — `currentColor` los borraría.
+- **El conjunto de los dos primeros sigue cerrado.** Un cuarto icono de interfaz no se agrega: se discute. El disco de Google no abre la puerta a un cuarto — es una excepción de marca, con su razón escrita, y no una regla nueva de "hasta tres iconos".
 
 ## Contenido real usado
 
@@ -398,7 +407,7 @@ Los dos ejes se dejan tokenizados por dos razones prácticas, más allá de pode
 
 ## Files
 
-- `Rentas - Compacto Menta.dc.html` — las seis pantallas en móvil y escritorio, con la combinación elegida fija. Abrir en el navegador.
+- `pantallas-compacto-menta.html` — las seis pantallas en móvil y escritorio, con la combinación elegida fija. Abrir en el navegador.
 - `tokens.css` — los nueve estilos y las cuatro estructuras como variables CSS, listos para copiar al proyecto.
 - `support.js` — runtime de la herramienta de diseño. Necesario solo para que el HTML de referencia se abra; **no** portarlo.
 
@@ -432,13 +441,14 @@ Se deja escrito porque dentro de tres meses alguien va a leer «nunca una cuadr�
 **Lo que queda abierto y NO se resolvió acá** — cada uno necesita al fundador, y ninguno se decidió en silencio:
 
 1. La miniatura de `/mis-avisos`: el código usa `--tw`/`--th` (44 × 34) y las láminas 14c/14d dibujan 74 × 56.
-2. La tipografía de la tarjeta: las láminas dibujan título 12,5/13 y metadato 10,5/11 en `--meta`, contra los 13 y 12/600/`--sans` que declara la tabla de arriba.
+2. ~~La tipografía de la tarjeta: las láminas dibujan título 12,5/13 y metadato 10,5/11 en `--meta`, contra los 13 y 12/600/`--sans` que declara la tabla de arriba.~~ **RESUELTO por el fundador — tamaño 2026-09-05, familia 2026-09-06.** Ver el punto 6 de la lista de abajo, y la fila «Metadato de tarjeta (lista)» de la tabla de arriba.
 3. La franja de 768 a 1099 px no está dibujada en ninguna lámina (tarea 20.10). Los nueve artboards son 360 o 1280, y es justo donde se rompe una cuadrícula.
 
-**Y dos donde el fundador YA decidió, y lo que queda es corregir la lámina** (2026-08-29). Se anotan acá porque en los dos casos manda la decisión posterior y no el dibujo, que es el orden de autoridad fijado arriba:
+**Y tres donde el fundador YA decidió, y lo que queda es corregir la lámina o registrar la divergencia** (2026-08-29 los dos primeros, 2026-09-06 el tercero). Se anotan acá porque en los tres casos manda la decisión posterior y no el dibujo, que es el orden de autoridad fijado arriba:
 
 4. **El mes abreviado: la lámina dice «12 sep» y el producto escribe «12 sept.»** (16.40). `Intl.DateTimeFormat("es-VE", { month: "short" })` devuelve la abreviatura del CLDR, con punto y con cuatro letras en septiembre. **El fundador eligió quedarse con lo que da el idioma**: la única salida que produce exactamente lo dibujado es una tabla de doce literales escrita a mano, y eso sería inventar un valor que el sistema no define. Las dos láminas de la Ficha divergen del formato que ship*a* **a propósito**.
-5. **El aviso vencido: la lámina y la §6 escriben «y el dueño no lo renovó»; el producto escribe «y no fue renovado»** (16.41). **El fundador eligió la voz pasiva del código**, y la razón es de verdad y no de estilo: un aviso puede ser de una inmobiliaria, y ahí «el dueño» es falso. **Lo que queda pendiente es corregir las dos láminas de la Ficha y la §6 de la especificación**, no el código.
+5. **El aviso vencido: la lámina y la §6 escribían «y el dueño no lo renovó»; el producto escribe «y no fue renovado»** (16.41, tarea 22.34). **El fundador eligió la voz pasiva del código el 2026-08-29**, y la razón es de verdad y no de estilo: un aviso puede ser de una inmobiliaria, y ahí «el dueño» es falso. **Corregida la §6** (`design/especificaciones/Rentoru - Ficha - Especificacion.md:182`). **Las dos láminas de la Ficha NO se editan** —`design/pantallas/Rentoru - Ficha - Mobile.dc.html:191` y `.../Rentoru - Ficha - Desktop.dc.html:150` siguen diciendo «y el dueño no lo renovó»—: el fundador acotó el alcance el 2026-09-05 porque la discrepancia es sólo de redacción y no de comportamiento, así que manda el texto ya shipeado y la divergencia se registra acá, exactamente como el mes abreviado (punto 4 de arriba).
+6. **El metadato de la tarjeta: la lámina dibuja `--meta` (mono) y el producto se queda en `--sans`** (22.9, con la 22.47 midiendo al lado un defecto emparentado pero distinto). El tamaño SÍ baja a lo que dibuja la lámina —10,5px a 360, 11px a 1280—; la familia no. Medido contra los 136px disponibles a 360px con la frase de muestra «Chacao · 2 hab · 78 m²»: en `--sans`/12px/600 (la escala vieja) mide 131,3px, holgura +3,5 %; en `--meta`/10,5px/400 **se pliega**, holgura −2,3 %; en `--sans`/10,5px/400 (la escala nueva) entra con **+16,6 %**. El monoespaciado da a cada carácter el mismo avance, más ancho, así que el tipo se achicó y se hizo más ancho a la vez — lo que de verdad frenaba la frase era la familia, no el tamaño. **El fundador eligió `--sans` el 2026-09-06, después de ver la medición.** La lámina NO se edita —sigue dibujando mono— y la divergencia queda anotada acá, exactamente como el mes abreviado (punto 4).
 
 ## Cómo se evalúa la implementación
 

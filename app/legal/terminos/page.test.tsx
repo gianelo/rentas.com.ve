@@ -15,9 +15,13 @@ describe("TerminosPage", () => {
     expect(markup).toContain("Borrador en revisión");
   });
 
-  it("states rentas.com.ve takes no part in the deal between the parties", () => {
+  // The name promises the site's own name and the body never looked at it,
+  // so a rename left this green with the old brand still on the page
+  // (tasks.md 26.13). Both halves are asserted now.
+  it("states rentoru.com takes no part in the deal between the parties", () => {
     const markup = renderToStaticMarkup(<TerminosPage />);
 
+    expect(markup).toContain("rentoru.com conecta a quien publica un aviso");
     expect(markup).toContain("no participa en la negociación");
   });
 

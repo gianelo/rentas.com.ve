@@ -1,6 +1,6 @@
 # Base territorial de Venezuela
 
-Base de datos territorial para **rentas.com.ve**. Cubre el **Distrito Capital**, los
+Base de datos territorial para **rentoru.com**. Cubre el **Distrito Capital**, los
 municipios metropolitanos del **estado Bolivariano de Miranda**, el **estado La Guaira**
 y cuatro municipios del **estado Zulia**.
 

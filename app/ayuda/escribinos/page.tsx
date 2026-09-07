@@ -31,8 +31,10 @@ import styles from "./escribinos.module.css";
  * volver.
  */
 export const metadata: Metadata = {
-  title: "Escribinos — Rentas",
-  description: "Escribinos un mensaje desde rentas.com.ve y te contestamos por correo.",
+  title: "Escribinos — Rentoru",
+  description: "Escribinos un mensaje desde rentoru.com y te contestamos por correo.",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/ayuda/escribinos" },
 };
 
 interface EscribinosProps {

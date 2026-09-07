@@ -16,7 +16,7 @@ import { reviewPathFor } from "./change-notice-url";
  */
 
 function urlOf(path: string): URL {
-  return new URL(path, "https://rentas.com.ve");
+  return new URL(path, "https://rentoru.com");
 }
 
 function roundTrip(changes: readonly DraftChange[]): readonly DraftChange[] {

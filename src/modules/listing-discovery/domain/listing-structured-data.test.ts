@@ -129,7 +129,7 @@ describe("resolveListingIndexing", () => {
 });
 
 describe("buildListingStructuredData", () => {
-  const BASE = "https://rentas.test";
+  const BASE = "https://rentoru.test";
 
   it("describe la página como un aviso inmobiliario en su dirección canónica", () => {
     const data = buildListingStructuredData(BASE, listing(), NOW);
@@ -137,7 +137,7 @@ describe("buildListingStructuredData", () => {
     expect(data["@context"]).toBe("https://schema.org");
     expect(data["@type"]).toBe("RealEstateListing");
     expect(data.url).toBe(
-      "https://rentas.test/alquiler/maracaibo/tierra-negra/apartamento-2-habitaciones-0f6a1b2c-3d4e-5f60-8a9b-0c1d2e3f4a5b",
+      "https://rentoru.test/alquiler/maracaibo/tierra-negra/apartamento-2-habitaciones-0f6a1b2c-3d4e-5f60-8a9b-0c1d2e3f4a5b",
     );
     expect(data.datePosted).toBe("2026-08-01T00:00:00.000Z");
   });
@@ -340,7 +340,7 @@ describe("serializeStructuredData", () => {
   it("no deja que una descripción cierre la etiqueta que la contiene", () => {
     const hostile = listing({ description: `${LONG_DESCRIPTION}</script><img src=x>` });
     const serialized = serializeStructuredData(
-      buildListingStructuredData("https://rentas.test", hostile, NOW),
+      buildListingStructuredData("https://rentoru.test", hostile, NOW),
     );
 
     expect(serialized).not.toContain("</script>");

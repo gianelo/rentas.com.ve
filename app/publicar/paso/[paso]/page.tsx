@@ -24,7 +24,14 @@ import { readPublicationContext } from "../../publication-context";
 import { PRIMARY_ACTION_LABEL, STEP_COPY, stepSummary } from "../../step-copy";
 
 export const metadata: Metadata = {
-  title: "Publicar — Rentas",
+  title: "Publicar — Rentoru",
+  // 26.12 — **los nueve pasos son UN formulario, y su dirección es
+  // `/publicar`.** El paso viaja en la ruta para que «atrás» funcione y para
+  // que un borrador se pueda retomar, no porque cada paso sea una página con
+  // vida propia: publican todos el mismo contenido y ninguno significa nada
+  // sin la sesión que lo abrió. Por eso la canónica es estática y no deriva
+  // del segmento — apunta a la única dirección del flujo que existe sola.
+  alternates: { canonical: "/publicar" },
 };
 
 interface StepPageProps {

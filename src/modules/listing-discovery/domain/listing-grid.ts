@@ -34,6 +34,8 @@ export interface GridListing {
  */
 export interface GridCover {
   readonly keys: Readonly<Partial<Record<string, string>>>;
+  /** El total de fotos del aviso, no de la portada (tasks.md 22.8). */
+  readonly photoCount: number;
 }
 
 export interface GridCardPhoto {
@@ -54,6 +56,12 @@ export interface GridCard {
   readonly areaM2: number;
   readonly publisherType: "owner" | "broker";
   readonly photo: GridCardPhoto;
+  /**
+   * El contador que la lámina 7c dibuja sobre la portada («1 / 6»). El dato
+   * ya viajaba hasta `/mis-avisos`; lo que faltaba era que esta consulta lo
+   * trajera también (tasks.md 22.8).
+   */
+  readonly photoCount: number;
 }
 
 /**
@@ -99,13 +107,21 @@ export function buildListingGrid(
    * `home-collections` y una cuadrícula sin origen no está rota, sólo no sabe
    * de dónde salió. Un origen que la ficha fuera a rechazar no se cuelga —
    * `withResultsOrigin` lo valida antes de escribirlo.
+   *
+   * **Acepta la forma cruda de un parámetro de búsqueda** —`string`, arreglo o
+   * ausente— y no sólo `string`, porque esta función no lo interpreta: se lo
+   * reenvía entero a `withResultsOrigin`, que ya declara ese mismo tipo y es
+   * quien decide si el candidato sirve. Estrecharlo acá obligaba a cada
+   * llamador a normalizar antes lo que el validador de abajo normaliza igual,
+   * y fue lo que frenó a la 22.30 en el paso del tipo.
    */
-  resultsOrigin?: string,
+  resultsOrigin?: string | readonly string[],
 ): readonly GridCard[] {
   const cards: GridCard[] = [];
 
   for (const listing of listings) {
-    const keys = covers.get(listing.id)?.keys;
+    const cover = covers.get(listing.id);
+    const keys = cover?.keys;
     if (!keys) continue;
     if (REQUIRED_SIZES.some((size) => !keys[size]?.trim())) continue;
 
@@ -126,6 +142,9 @@ export function buildListingGrid(
       rooms: listing.rooms,
       areaM2: listing.areaM2,
       publisherType: listing.publisherType,
+      // `cover` no puede ser `undefined` acá: es lo mismo que sostiene
+      // `keys` un poco más arriba (F9), y las dos vienen del mismo `Map`.
+      photoCount: (cover as GridCover).photoCount,
       photo: {
         thumbUrl: photoUrl(photoBaseUrl, keys.thumb as string),
         cardUrl: photoUrl(photoBaseUrl, keys.card as string),

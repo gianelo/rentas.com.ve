@@ -1,6 +1,6 @@
 # Estado Zulia — municipios documentados
 
-Parte de la base territorial de **rentas.com.ve**. Este directorio cubre **cuatro de
+Parte de la base territorial de **rentoru.com**. Este directorio cubre **cuatro de
 los 21 municipios** del estado Zulia, cada uno en su propio archivo.
 
 | Archivo | Municipio | Capital | Parroquias | Elementos |

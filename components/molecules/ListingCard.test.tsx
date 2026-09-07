@@ -16,9 +16,10 @@ function render(overrides: Partial<Parameters<typeof ListingCard>[0]> = {}) {
       rooms={2}
       areaM2={65}
       publisherType="owner"
+      photoCount={6}
       photo={{
-        thumbUrl: "https://fotos.rentas.com.ve/photos/pub/tok/thumb.webp",
-        cardUrl: "https://fotos.rentas.com.ve/photos/pub/tok/card.webp",
+        thumbUrl: "https://fotos.rentoru.com/photos/pub/tok/thumb.webp",
+        cardUrl: "https://fotos.rentoru.com/photos/pub/tok/card.webp",
         alt: "Foto 1 de 1 — Apartamento 2 habitaciones, Chacao",
       }}
       {...overrides}
@@ -128,7 +129,7 @@ describe("ListingCard — la portada", () => {
 
     expect(source).toContain('media="(min-width: 768px)"');
     expect(source).toContain("card.webp");
-    expect(markup).toContain('src="https://fotos.rentas.com.ve/photos/pub/tok/thumb.webp"');
+    expect(markup).toContain('src="https://fotos.rentoru.com/photos/pub/tok/thumb.webp"');
   });
 
   /**
@@ -151,6 +152,26 @@ describe("ListingCard — la portada", () => {
    */
   it("reserva el espacio de la foto por proporción, no por alto fijo", () => {
     expect(block(cardCss, "photo")).toContain("aspect-ratio: var(--card-photo-ratio)");
+  });
+
+  /**
+   * **tasks.md 22.8 — el contador de fotos sobre la portada** (artboard 7c).
+   * Se comprueba con un total que no es 1, para que no quede verde por
+   * casualidad con el "Foto 1 de 1" del `alt` — son dos textos distintos con
+   * dos fuentes distintas (SISTEMA.md, listing-grid.ts).
+   */
+  it("dibuja 1 / N con el total real del aviso, entre la foto y el cuerpo", () => {
+    const markup = render({ photoCount: 6 });
+    const finFoto = markup.indexOf("</picture>");
+    const contador = markup.indexOf("1 / 6");
+    const abreCuerpo = markup.indexOf("<div", finFoto);
+
+    expect(contador).toBeGreaterThan(finFoto);
+    expect(contador).toBeLessThan(abreCuerpo);
+  });
+
+  it("con un solo aviso de una sola foto dice 1 / 1, no un texto fijo distinto", () => {
+    expect(render({ photoCount: 1 })).toContain("1 / 1");
   });
 });
 
@@ -264,8 +285,18 @@ describe("ListingCard — a dónde lleva", () => {
 });
 
 describe("ListingCard — la cuadrícula y sus reglas transversales", () => {
+  /**
+   * **Se lee el texto visible, no el marcado.** Desde la 22.47 cada parte
+   * del metadato va envuelta en su propio `<span>` (`ListingMetaPart`) para
+   * que ninguna se parta por dentro; el marcado ya no es la subcadena
+   * literal "Chacao · 2 hab · 65 m²", aunque la FRASE leída sí lo es. Afirmar
+   * sobre el HTML crudo aquí repetiría el defecto que 22.17/22.23 ya
+   * cerraron del otro lado (afirmar sobre la hoja): el texto quitando
+   * etiquetas es lo que un lector de pantalla o un visitante realmente ven.
+   */
   it("muestra zona, habitaciones y metros en una sola línea de metadatos", () => {
-    expect(render()).toContain("Chacao · 2 hab · 65 m²");
+    const texto = render().replace(/<[^>]+>/g, "");
+    expect(texto).toContain("Chacao · 2 hab · 65 m²");
   });
 
   it("no atenúa texto con opacity — el gris es --soft", () => {

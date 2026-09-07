@@ -95,7 +95,7 @@ describe("Nav — sin sesión", () => {
       <Nav account={account} publish={publish} pill={PILL} signInHref="/signin" />,
     );
 
-    expect(html).toMatch(/<a[^>]*href="\/"[^>]*>rentas\./);
+    expect(html).toMatch(/<a[^>]*href="\/"[^>]*>Rentoru/);
   });
 
   it('nunca un href="#", en ningún estado', () => {
@@ -240,12 +240,12 @@ describe("Nav — una sola forma (14.54)", () => {
   /**
    * **La marca se dibuja UNA vez, y ahí está el defecto que esta forma borra.**
    * Con `back` en el primer slot, la ficha dibujaba la marca en el del medio
-   * (`.brandCentre`); sin `back`, ese segundo `rentas.` sería una marca
+   * (`.brandCentre`); sin `back`, ese segundo `Rentoru` sería una marca
    * duplicada en toda pantalla sin pastilla. No lo ve `typecheck` ni una regla
    * de hoja: la única forma de verlo es contarla.
    */
   it("dibuja la marca una sola vez, con pastilla y sin ella", () => {
-    const conteo = (html: string) => html.split(">rentas.<").length - 1;
+    const conteo = (html: string) => html.split(">Rentoru<").length - 1;
 
     expect(conteo(renderToStaticMarkup(<Nav {...ficha} />))).toBe(1);
     expect(conteo(renderToStaticMarkup(<Nav {...ficha} pill={PILL} />))).toBe(1);

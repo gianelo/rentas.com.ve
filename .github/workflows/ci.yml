@@ -128,6 +128,14 @@ jobs:
       # pooled-endpoint guard fails here rather than at deploy time.
       DATABASE_URL: postgresql://ci:ci@ep-ci-build-0000-pooler.invalid.neon.tech/ci?sslmode=require
       AUTH_SECRET: build-time-placeholder-not-a-real-secret
+      # `robots.txt` and `sitemap.xml` are PRERENDERED, so `readSiteBaseUrl`
+      # runs during the build and not only at request time. Since task 26.10
+      # removed its hardcoded production fallback it fails closed (AGENTS.md
+      # §7), and without this the export dies on /robots.txt. Vercel needs no
+      # equivalent: it sets VERCEL_URL in the build environment, and the real
+      # SITE_URL is configured there (26.20). Fixed and fake for the same
+      # reason as the two above — a build must not depend on the live domain.
+      SITE_URL: https://ci-build-no-es-el-dominio-real.invalid
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -399,6 +407,11 @@ jobs:
           # can only prove the route fails closed, which is the weaker half of
           # what it is there to prove (tasks.md 7.12).
           RENEWAL_TOKEN_SECRET: e2e-fake-secret-signs-nothing-real
+          # Igual que arriba: desde la 26.10 `readSiteBaseUrl` falla cerrado, y
+          # `robots.txt` y `sitemap.xml` se prerenderizan, así que el `pnpm
+          # build` de reserva de este job no termina sin ella. Sólo la usa esa
+          # rama local; contra una vista previa desplegada manda la de Vercel.
+          SITE_URL: https://ci-build-no-es-el-dominio-real.invalid
           # El origen público de las fotos. Hasta que 11.22 encendió las
           # especificaciones que dibujan avisos, este job no lo necesitaba: todo
           # lo que leía el catálogo se saltaba solo. Al prenderlas apareció la
@@ -479,6 +492,14 @@ jobs:
       # this job must never touch a real database either.
       DATABASE_URL: postgresql://ci:ci@ep-ci-build-0000-pooler.invalid.neon.tech/ci?sslmode=require
       AUTH_SECRET: build-time-placeholder-not-a-real-secret
+      # `robots.txt` and `sitemap.xml` are PRERENDERED, so `readSiteBaseUrl`
+      # runs during the build and not only at request time. Since task 26.10
+      # removed its hardcoded production fallback it fails closed (AGENTS.md
+      # §7), and without this the export dies on /robots.txt. Vercel needs no
+      # equivalent: it sets VERCEL_URL in the build environment, and the real
+      # SITE_URL is configured there (26.20). Fixed and fake for the same
+      # reason as the two above — a build must not depend on the live domain.
+      SITE_URL: https://ci-build-no-es-el-dominio-real.invalid
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

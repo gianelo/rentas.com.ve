@@ -12,7 +12,7 @@ import type { ContactMailerPort, ContactMessage } from "../application/ports/con
  * no atar el remitente de un módulo al del otro — porque la tarea 23.7 en sí
  * lo decide así: "una variable de entorno nueva JUNTO A `AUTH_MAIL_FROM`",
  * no una cuarta dirección. `identity` ya tiene un remitente verificado para
- * lo que el visitante ve como "un correo de rentas.com.ve"; sumar
+ * lo que el visitante ve como "un correo de rentoru.com"; sumar
  * `CONTACT_MAIL_FROM` habría sido una cuarta variable que la tarea no pidió,
  * por una distinción (¿"entrá con este enlace" vs. "alguien te escribió"?)
  * que ningún destinatario del correo puede notar. Lo único que SÍ es una

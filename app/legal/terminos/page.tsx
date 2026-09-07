@@ -10,8 +10,10 @@ import styles from "../legal.module.css";
  * `listing-trust/domain/report-threshold.ts`.
  */
 export const metadata: Metadata = {
-  title: "Términos y condiciones — Rentas",
-  description: "Las reglas de uso de rentas.com.ve, tal como funciona hoy.",
+  title: "Términos y condiciones — Rentoru",
+  description: "Las reglas de uso de rentoru.com, tal como funciona hoy.",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/legal/terminos" },
 };
 
 export default function TerminosPage() {
@@ -21,13 +23,13 @@ export default function TerminosPage() {
       <DraftNotice />
 
       <p className={styles.text}>
-        rentas.com.ve es un sitio gratuito de avisos de alquiler en Venezuela: no cobra comisión ni
-        a quien publica ni a quien alquila.
+        rentoru.com es un sitio gratuito de avisos de alquiler en Venezuela: no cobra comisión ni a
+        quien publica ni a quien alquila.
       </p>
 
-      <h2 className={styles.heading}>Qué es rentas.com.ve y qué no es</h2>
+      <h2 className={styles.heading}>Qué es rentoru.com y qué no es</h2>
       <p className={styles.text}>
-        rentas.com.ve conecta a quien publica un aviso con quien lo busca, pero no participa en la
+        rentoru.com conecta a quien publica un aviso con quien lo busca, pero no participa en la
         negociación entre las partes, no es parte del contrato de alquiler y no verifica la
         identidad de quien publica más allá de lo que se describe en{" "}
         <AppLink href="/ayuda/como-contactar-al-dueno">Cómo contactar al dueño</AppLink>. Visitá la

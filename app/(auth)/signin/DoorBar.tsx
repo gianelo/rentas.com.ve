@@ -21,7 +21,7 @@ export function DoorBar({ wayOut }: { readonly wayOut: SignInWayOut }) {
       <Container>
         <div className={styles.barInner}>
           <AppLink className={styles.brand} href="/">
-            rentas.
+            Rentoru
           </AppLink>
           <AppLink className={styles.back} href={wayOut.href}>
             {wayOut.label}

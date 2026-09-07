@@ -23,8 +23,10 @@ import styles from "../ayuda.module.css";
  * que decirlo acá no revela nada nuevo.
  */
 export const metadata: Metadata = {
-  title: "Cómo reportar un aviso — Rentas",
-  description: "Cómo y desde dónde se reporta un aviso en rentas.com.ve.",
+  title: "Cómo reportar un aviso — Rentoru",
+  description: "Cómo y desde dónde se reporta un aviso en rentoru.com.",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/ayuda/como-reportar-un-aviso" },
 };
 
 export default function ComoReportarPage() {

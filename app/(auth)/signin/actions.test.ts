@@ -117,7 +117,9 @@ describe("pedir el enlace por correo (22.22)", () => {
     expect(signIn).not.toHaveBeenCalled();
     expect(store.set).not.toHaveBeenCalled();
     // Y la puerta conserva el destino: el tropiezo no cuesta la vuelta al aviso.
-    expect(destino).toBe(`/signin?callbackUrl=${encodeURIComponent(FICHA)}`);
+    // **La bandera viaja, el texto tecleado no** (tasks.md 22.29): la vuelta
+    // dice QUE hubo un rechazo, nunca cuál dirección lo causó.
+    expect(destino).toBe(`/signin?callbackUrl=${encodeURIComponent(FICHA)}&correo=invalido`);
   });
 
   /** El destino es entrada de quien envía, y la juzga la regla que ya existe. */

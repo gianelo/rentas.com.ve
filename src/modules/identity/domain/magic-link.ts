@@ -23,7 +23,7 @@ export interface MagicLinkEmail {
  */
 export function composeMagicLinkEmail(url: string): MagicLinkEmail {
   return {
-    subject: "Tu enlace para entrar a Rentas",
+    subject: "Tu enlace para entrar a Rentoru",
     body:
       `Entrá con este enlace:\n${url}\n\n` +
       "Vale por 15 minutos y se puede usar una sola vez. " +

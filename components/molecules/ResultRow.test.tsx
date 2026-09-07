@@ -20,7 +20,11 @@ describe("ResultRow", () => {
     expect(priceIndex).toBeGreaterThan(-1);
     expect(titleIndex).toBeGreaterThan(-1);
     expect(priceIndex).toBeLessThan(titleIndex);
-    expect(markup).toContain("Chacao · 2 hab · 65 m²");
+    // Texto visible, no marcado: desde la 22.47 cada parte del metadato va
+    // en su propio `<span>` (`ListingMetaPart`) para que ninguna se parta
+    // por dentro, así que la subcadena literal ya no vive en el HTML crudo
+    // aunque la frase leída siga siendo la misma.
+    expect(markup.replace(/<[^>]+>/g, "")).toContain("Chacao · 2 hab · 65 m²");
   });
 });
 

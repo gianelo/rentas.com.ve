@@ -71,6 +71,56 @@
 .form button {
   width: 100%;
 }
+/* La segunda puerta (tasks.md 22.28, láminas 8b/9b): mismo separador, campo y
+   botón que la puerta de página (`signin.module.css`), copiados y no
+   importados — son dos hojas distintas y CSS Modules no comparte clases entre
+   archivos. */
+.separator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 0;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  color: var(--soft);
+}
+.separator::before,
+.separator::after {
+  content: "";
+  flex: 1;
+  block-size: 1px;
+  background: var(--line);
+}
+.emailForm {
+  margin-top: 16px;
+}
+.emailRow {
+  display: grid;
+  gap: 10px;
+}
+.field {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: var(--target-min);
+  padding: 0 14px;
+  border: 1px solid var(--strong);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+}
+.field:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.emailNote {
+  margin: 10px 0 0;
+  font-family: var(--meta);
+  font-size: var(--meta-fs-sm);
+  line-height: 1.6;
+  color: var(--soft);
+}
 .stay {
   display: flex;
   align-items: center;

@@ -56,7 +56,7 @@ export async function GET(): Promise<Response> {
       "content-type": "text/csv; charset=utf-8",
       // `attachment`, no `inline`: sin esto el navegador muestra el CSV como
       // texto en la pestaña y "Bajar plantilla CSV" no baja nada.
-      "content-disposition": 'attachment; filename="plantilla-rentas.csv"',
+      "content-disposition": 'attachment; filename="plantilla-rentoru.csv"',
       "cache-control": "no-store",
     },
   });

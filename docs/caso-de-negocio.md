@@ -1,6 +1,6 @@
-# Rentas — Caso de negocio
+# Rentoru — Caso de negocio
 
-**rentas.com.ve** · Agosto 2026 · Documento de trabajo
+**rentoru.com** · Agosto 2026 · Documento de trabajo
 
 > Publicar es gratis. Ese es todo el modelo, al principio.
 
@@ -31,7 +31,7 @@ Los portales que sí ofrecen búsqueda cobran por publicar. Eso funciona para un
 
 **Un tablón de anuncios, no una inmobiliaria.**
 
-Rentas es a las propiedades lo que un portal de empleo es a los trabajos. Publicar es gratis. Buscar es gratis. Y cuando alguien encuentra lo que busca, recibe el WhatsApp de quien publicó y sigue por su cuenta.
+Rentoru es a las propiedades lo que un portal de empleo es a los trabajos. Publicar es gratis. Buscar es gratis. Y cuando alguien encuentra lo que busca, recibe el WhatsApp de quien publicó y sigue por su cuenta.
 
 **Lo que sí hacemos.** Damos el lugar donde la oferta se publica y se encuentra. Verificamos lo verificable sin costo, mostramos siempre si publica un propietario o un corredor, y mantenemos el catálogo limpio de propiedades ya alquiladas.
 

@@ -11,6 +11,16 @@
   color: var(--ink);
 }
 
+/* 12,5px en el teléfono y 13 en el escritorio (tasks.md 22.9, fundador
+   2026-09-05: manda la lámina). Un solo componente con puntos de quiebre,
+   nunca dos hojas — el mismo patrón que ya usan `--card-price-fs` y
+   `--card-price-fs-desktop` en `ListingCard.module.css`. */
+@media (min-width: 768px) {
+  .title {
+    font-size: var(--card-title-fs-desktop);
+  }
+}
+
 /* **El recorte es del contenedor, no del papel.** La cuadrícula lo necesita
    —un título largo empuja los metadatos y desalinea la tarjeta de al lado— y
    una lista apilada no: la lámina 14c dibuja el título de `/mis-avisos` sin

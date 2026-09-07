@@ -29,7 +29,7 @@ async function post(
 ) {
   const { POST } = await import("./route");
   return POST(
-    new Request("https://rentas.com.ve/api/operator/restore-listing", {
+    new Request("https://rentoru.com/api/operator/restore-listing", {
       method: "POST",
       headers: { "content-type": "application/json", ...headers },
       body: JSON.stringify(body),

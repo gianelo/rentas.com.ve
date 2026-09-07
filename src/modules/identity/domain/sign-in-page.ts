@@ -36,6 +36,18 @@ export interface SignInEmailDoor {
   readonly note: string;
 }
 
+/**
+ * Un fragmento de texto plano, o un enlace, de la línea legal (22.24).
+ *
+ * **Un arreglo de fragmentos y no un string con marcado**, porque la frase
+ * vive en `domain/` y el marcado no: `app/` sólo tiene que recorrer la lista y
+ * decidir entre un `<span>` y un `AppLink`, sin parsear nada ni saber qué
+ * palabra enlaza a qué ruta — esa decisión ya viene tomada.
+ */
+export type LegalFragment =
+  | { readonly kind: "text"; readonly value: string }
+  | { readonly kind: "link"; readonly label: string; readonly href: string };
+
 export interface SignInPage {
   /** Dice para qué, no «Iniciar sesión» (nota de la lámina 8a). */
   readonly title: string;
@@ -46,9 +58,24 @@ export interface SignInPage {
   readonly aside: string | null;
   /** La promesa de la F19, sólo cuando hay un aviso al que volver. */
   readonly assurance: string | null;
-  readonly legal: string;
+  readonly legal: readonly LegalFragment[];
   /** El campo de correo y su botón, debajo del de Google (láminas 8a/9a). */
   readonly email: SignInEmailDoor;
+  /**
+   * **El rechazo del correo, dicho con el mensaje propio que `SISTEMA.md`
+   * pide debajo del campo** (tasks.md 22.29, decisión del fundador del
+   * 2026-09-07). Ninguna de las cuatro láminas dibuja este estado, así que
+   * se deriva de `SISTEMA.md` §225 en vez de inventarse (rama 3 del
+   * encabezado de la Fase 22, precedente 11b.2): *«Campo en error: borde de
+   * 2px `--err` y mensaje propio debajo, además del texto de ayuda
+   * neutro»*. `null` es la respuesta normal — nada que afirmar.
+   *
+   * **Nunca lleva la dirección tecleada.** La única entrada es un booleano
+   * (`emailRejected`, más abajo): la persona escribió texto que este
+   * dominio no guarda, con el mismo espíritu que la 22.19 aplicó al mensaje
+   * del inquilino.
+   */
+  readonly emailError: string | null;
   /** La salida visible: entrar nunca es obligatorio para mirar (F20). */
   readonly wayOut: SignInWayOut;
   /** Ya juzgado por `safeSignInReturn`. `null` es «sin destino», no «al inicio». */
@@ -56,15 +83,49 @@ export interface SignInPage {
 }
 
 /**
+ * El parámetro que marca la vuelta con el correo rechazado (tasks.md 22.29),
+ * en la misma forma que `DOOR_QUERY_NAME`/`DOOR_OPEN_TOKEN` de
+ * `sign-in-door.ts`: un nombre y un único valor válido, nunca la dirección
+ * que la persona escribió.
+ */
+export const EMAIL_ERROR_QUERY_NAME = "correo";
+export const EMAIL_ERROR_TOKEN = "invalido";
+
+/**
+ * El mensaje propio que `SISTEMA.md` §225 pide debajo del campo, en el mismo
+ * tono que ya usan los otros rechazos de este mismo formulario (`✱ Es un
+ * video, no una foto`, `PhotoUploader.tsx`). No dice cuál fue el motivo
+ * exacto —coma, comilla, dominio sin punto—: el servidor ya normalizó y
+ * descartó la dirección, y no hay nada de ella que valga la pena repetir de
+ * vuelta.
+ */
+const EMAIL_ERROR_MESSAGE = "✱ Ese correo no es válido.";
+
+/**
  * La misma frase que la hoja de la ficha (`contactDoorFor`), pineada por valor
- * en `sign-in-page.test.ts`: son dos formas de una sola puerta. La línea legal
- * va **sin enlaces** porque `/terminos` y `/privacidad` no existen, y un enlace
- * que contesta 404 es peor que una frase sin enlace (22.24).
+ * en `sign-in-page.test.ts`: son dos formas de una sola puerta.
  */
 const ACCOUNT_REASON = "Pedimos la cuenta para frenar avisos falsos. Es gratis y es un toque.";
 const RETURN_ASSURANCE = "Volvés a este mismo aviso al terminar.";
-const LEGAL =
-  "Al entrar aceptás los términos y la privacidad. Rentas no participa en el trato: no cobramos comisión, no retenemos pagos y no redactamos contratos.";
+
+/**
+ * Las dos palabras enlazadas a `/legal/terminos` y `/legal/privacidad`
+ * (tasks.md 22.24). **Ya no van sin enlace**: la Fase 23 construyó las dos
+ * pantallas (PR #238) y las dos son indexables, así que el argumento con el
+ * que la 15.7 shipeó la frase pelada —mandar a un 404 desde la pantalla que
+ * pide una cuenta— se cayó solo.
+ */
+const LEGAL: readonly LegalFragment[] = [
+  { kind: "text", value: "Al entrar aceptás los " },
+  { kind: "link", label: "términos", href: "/legal/terminos" },
+  { kind: "text", value: " y la " },
+  { kind: "link", label: "privacidad", href: "/legal/privacidad" },
+  {
+    kind: "text",
+    value:
+      ". Rentoru no participa en el trato: no cobramos comisión, no retenemos pagos y no redactamos contratos.",
+  },
+];
 const LISTINGS_WAY_OUT: SignInWayOut = { href: "/", label: "← Volver a los avisos" };
 
 /**
@@ -131,10 +192,19 @@ const DOORS: Record<SignInDoor, DoorCopy> = {
  * niega. Dos copias es cómo una se queda con el nombre viejo del parámetro el
  * día que cambie, y esa es justo la mitad del viaje que la F19 protege.
  */
-export function signInPathFor(returnTo: string | null): string {
-  return returnTo === null
-    ? SIGN_IN_FALLBACK
-    : `${SIGN_IN_FALLBACK}?callbackUrl=${encodeURIComponent(returnTo)}`;
+export function signInPathFor(
+  returnTo: string | null,
+  options: { readonly emailRejected?: boolean } = {},
+): string {
+  // `URLSearchParams` y no concatenar a mano: es donde nace el `?` que debía
+  // ser `&` (la misma advertencia que `doorHrefFor` ya deja escrita en
+  // `sign-in-door.ts`), y acá hay dos parámetros que pueden viajar juntos.
+  const params = new URLSearchParams();
+  if (returnTo !== null) params.set("callbackUrl", returnTo);
+  if (options.emailRejected) params.set(EMAIL_ERROR_QUERY_NAME, EMAIL_ERROR_TOKEN);
+
+  const query = params.toString();
+  return query === "" ? SIGN_IN_FALLBACK : `${SIGN_IN_FALLBACK}?${query}`;
 }
 
 /**
@@ -143,7 +213,10 @@ export function signInPathFor(returnTo: string | null): string {
  * `safeSignInReturn` no admite deja `returnTo` en `null` y la puerta de
  * cuenta, en vez de reemitirse en un formulario que se ve nuestro.
  */
-export function signInPageFor(raw: string | readonly string[] | undefined): SignInPage {
+export function signInPageFor(
+  raw: string | readonly string[] | undefined,
+  options: { readonly emailRejected?: boolean } = {},
+): SignInPage {
   const returnTo = safeSignInReturn(typeof raw === "string" ? raw : "");
   const door = returnTo === null ? null : signInDoorOf(returnTo);
 
@@ -151,6 +224,9 @@ export function signInPageFor(raw: string | readonly string[] | undefined): Sign
     ...(door === null ? ACCOUNT_DOOR : DOORS[door]),
     legal: LEGAL,
     email: EMAIL_DOOR,
+    // tasks.md 22.29 — el booleano ya viene juzgado por quien llama (la
+    // ruta lee el parámetro de la dirección); acá sólo se elige la frase.
+    emailError: options.emailRejected ? EMAIL_ERROR_MESSAGE : null,
     wayOut:
       door === "/alquiler/" && returnTo !== null
         ? { href: returnTo, label: "← Volver al aviso" }

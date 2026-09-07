@@ -27,7 +27,7 @@ import { slugify } from "./listing-url";
  *
  * **El destino lo manda el navegador**, así que es entrada de quien envía. Sin
  * la regla de abajo, «← Resultados» es un redirector abierto: un enlace de
- * rentas.com.ve que deja a quien lo toca en cualquier parte. Ya pasó una vez
+ * rentoru.com que deja a quien lo toca en cualquier parte. Ya pasó una vez
  * acá, en la acción de revelar el contacto, y lo caro no fue el salto — fue que
  * el enlace se veía nuestro, que es exactamente lo que un phishing necesita.
  */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { contactDoorFor } from "@/modules/contact-reveal/domain/sign-in-door";
-import { signInPageFor } from "./sign-in-page";
+import { signInPageFor, signInPathFor } from "./sign-in-page";
 
 const FICHA = "/alquiler/distrito-capital/chacao/apartamento-2h";
 
@@ -112,14 +112,85 @@ describe("la pantalla de entrar dice por qué puerta se entró (15.7)", () => {
     expect(new Set(bloques.map((b) => JSON.stringify(b))).size).toBe(1);
   });
 
-  it("la línea legal es una sola y dice que Rentas no participa en el trato", () => {
+  it("la línea legal es una sola y dice que Rentoru no participa en el trato", () => {
     const legales = [FICHA, "/publicar", "/mis-avisos", undefined].map(
       (d) => signInPageFor(d).legal,
     );
 
-    expect(new Set(legales).size).toBe(1);
-    expect(legales[0]).toBe(
-      "Al entrar aceptás los términos y la privacidad. Rentas no participa en el trato: no cobramos comisión, no retenemos pagos y no redactamos contratos.",
+    expect(new Set(legales.map((l) => JSON.stringify(l))).size).toBe(1);
+    // Concatenando los fragmentos se recupera la frase entera, texto por
+    // texto y enlace por enlace, palabra por palabra.
+    const primero = legales[0] ?? [];
+    const texto = primero.map((f) => (f.kind === "link" ? f.label : f.value)).join("");
+    expect(texto).toBe(
+      "Al entrar aceptás los términos y la privacidad. Rentoru no participa en el trato: no cobramos comisión, no retenemos pagos y no redactamos contratos.",
     );
+  });
+
+  /**
+   * **Las dos pantallas ya existen (Fase 23), así que la línea legal enlaza**
+   * (tasks.md 22.24). Antes iba sin enlaces porque `/terminos` y `/privacidad`
+   * contestaban 404; hoy `/legal/terminos` y `/legal/privacidad` son rutas
+   * reales e indexables (PR #238), y mandar a un 404 desde la pantalla que
+   * pide una cuenta ya no es el riesgo que era.
+   */
+  it("enlaza «términos» a /legal/terminos y «privacidad» a /legal/privacidad", () => {
+    const legal = signInPageFor("/publicar").legal;
+    const enlaces = legal.filter((f) => f.kind === "link");
+
+    expect(enlaces).toEqual([
+      { kind: "link", label: "términos", href: "/legal/terminos" },
+      { kind: "link", label: "privacidad", href: "/legal/privacidad" },
+    ]);
+  });
+});
+
+/**
+ * **El rechazo del correo se dibuja con el idioma de validación del sistema**
+ * (tasks.md 22.29, decisión del fundador del 2026-09-07).
+ *
+ * Ninguna de las cuatro láminas dibuja este estado, y por eso se deriva de
+ * `SISTEMA.md` en vez de inventarse (rama 3 del encabezado de la Fase 22,
+ * precedente 11b.2): línea 225 declara «Campo en error: borde de 2px `--err`
+ * y mensaje propio debajo, además del texto de ayuda neutro». La pantalla
+ * sólo aplica esa regla; la frase la trae este dominio.
+ */
+describe("el rechazo del correo se dibuja con el idioma del sistema, no con silencio (22.29)", () => {
+  it("sin la bandera, no hay nada que afirmar", () => {
+    expect(signInPageFor("/publicar").emailError).toBeNull();
+  });
+
+  it("con la bandera, trae el mensaje propio que SISTEMA.md pide debajo del campo", () => {
+    const pagina = signInPageFor("/publicar", { emailRejected: true });
+
+    expect(pagina.emailError).not.toBeNull();
+    expect(pagina.emailError).toContain("✱");
+  });
+
+  it("la bandera es la única entrada: la dirección tecleada nunca viaja de vuelta", () => {
+    // El fundador cerró la puerta a guardar texto ajeno (22.19, mismo
+    // espíritu): la única señal es un booleano, nunca la dirección que la
+    // persona escribió.
+    const pagina = signInPageFor("/publicar", { emailRejected: true });
+
+    expect(pagina.emailError).not.toContain("@");
+  });
+});
+
+describe("la dirección de esta pantalla lleva la bandera sin romper el destino (22.29)", () => {
+  it("sin bandera, se comporta exactamente como antes", () => {
+    expect(signInPathFor(FICHA)).toBe(`/signin?callbackUrl=${encodeURIComponent(FICHA)}`);
+    expect(signInPathFor(null)).toBe("/signin");
+  });
+
+  it("con la bandera, agrega el parámetro sin pisar el destino", () => {
+    const destino = signInPathFor(FICHA, { emailRejected: true });
+
+    expect(destino).toContain(`callbackUrl=${encodeURIComponent(FICHA)}`);
+    expect(destino).toContain("correo=invalido");
+  });
+
+  it("con la bandera y sin destino, sigue agregando el parámetro", () => {
+    expect(signInPathFor(null, { emailRejected: true })).toBe("/signin?correo=invalido");
   });
 });

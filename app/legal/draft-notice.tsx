@@ -12,7 +12,7 @@ export function DraftNotice() {
   return (
     <p className={styles.notice}>
       <strong>Borrador en revisión.</strong> Este texto describe el comportamiento real de
-      rentas.com.ve tal como funciona hoy, pero todavía no ha sido ratificado por el fundador del
+      rentoru.com tal como funciona hoy, pero todavía no ha sido ratificado por el fundador del
       sitio. No lo tomes como la versión final.
     </p>
   );

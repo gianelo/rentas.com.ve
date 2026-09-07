@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { AppLink } from "../../components/atoms/AppLink";
-import { ListingMeta } from "../../components/atoms/ListingMeta";
+import { ListingMeta, ListingMetaPart } from "../../components/atoms/ListingMeta";
 import { ListingTitle } from "../../components/atoms/ListingTitle";
 import { Price } from "../../components/atoms/Price";
+import { SelectionChip } from "../../components/atoms/SelectionChip";
 import { Container } from "../../components/layout/Container";
 import type { SearchPillProps } from "../../components/molecules/SearchPill";
 import { Nav } from "../../components/organisms/Nav";
@@ -28,7 +29,9 @@ import styles from "./mis-avisos.module.css";
 import { SubirFoto } from "./SubirFoto";
 
 export const metadata: Metadata = {
-  title: "Mis avisos — Rentas",
+  title: "Mis avisos — Rentoru",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/mis-avisos" },
 };
 
 // La sesión se lee en cada pedido: quién está adentro, cuántos avisos tiene y
@@ -173,22 +176,22 @@ function Fichas({
 }) {
   return (
     <ul className={styles.fichas} aria-label="Filtrar por estado">
-      {chips.map((chip) => (
-        <li key={chip.filter}>
-          <AppLink
-            className={styles.ficha}
-            href={chip.filter === "todos" ? "/mis-avisos" : `/mis-avisos?estado=${chip.filter}`}
-            aria-current={
-              (activo ?? "todos") === chip.filter ||
-              (activo === undefined && chip.filter === "todos")
-                ? "page"
-                : undefined
-            }
-          >
-            {chip.label} <span className={styles.fichaCuenta}>{chip.count}</span>
-          </AppLink>
-        </li>
-      ))}
+      {chips.map((chip) => {
+        const elegida =
+          (activo ?? "todos") === chip.filter || (activo === undefined && chip.filter === "todos");
+
+        return (
+          <li key={chip.filter}>
+            <SelectionChip
+              href={chip.filter === "todos" ? "/mis-avisos" : `/mis-avisos?estado=${chip.filter}`}
+              selected={elegida}
+              ariaCurrent="page"
+            >
+              {chip.label} <span className={styles.fichaCuenta}>{chip.count}</span>
+            </SelectionChip>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -239,9 +242,21 @@ function FichaDeAviso({
             ya había perdido `font-family`, `font-weight` y `line-height`, así
             que la misma frase salía en dos pesos según la pantalla. */}
         <ListingTitle level={2}>{card.title}</ListingTitle>
+        {/* Cada parte nunca se parte por dentro (tasks.md 22.47); la
+            referencia externa cuenta como una sola unidad — "ref." pegado a
+            su código, como se lee en la lámina 14d. */}
         <ListingMeta>
-          {card.zoneName} · {card.rooms} hab · {card.areaM2} m²
-          {card.externalReference === null ? null : ` · ref. ${card.externalReference}`}
+          <ListingMetaPart>{card.zoneName}</ListingMetaPart>
+          {" · "}
+          <ListingMetaPart>{card.rooms} hab</ListingMetaPart>
+          {" · "}
+          <ListingMetaPart>{card.areaM2} m²</ListingMetaPart>
+          {card.externalReference === null ? null : (
+            <>
+              {" · "}
+              <ListingMetaPart>ref. {card.externalReference}</ListingMetaPart>
+            </>
+          )}
         </ListingMeta>
         <p className={styles.estado}>{etiquetaDeEstado(card)}</p>
 
@@ -261,7 +276,15 @@ function FichaDeAviso({
             {card.retention.deadline} {card.retention.republish}
           </p>
         )}
+      </div>
 
+      {/*
+        **La acción, en su propia columna a partir de 768px** (SISTEMA.md,
+        "Layout escritorio: grid 120px 1fr 200px — la acción vive en su
+        propia columna, alineada a la derecha", tasks.md 22.15). En el
+        teléfono ocupa el ancho entero, debajo del cuerpo.
+      */}
+      <div className={styles.accion} data-testid="ficha-accion">
         {/*
           **«Editar» en la fila de un aviso activo** (tasks.md 18.20). Quién lo
           ofrece lo decidió el dominio (`card.editable`): el puerto de edición

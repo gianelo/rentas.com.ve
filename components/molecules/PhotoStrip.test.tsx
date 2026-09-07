@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { ListingPhotoView } from "@/modules/listing-discovery/application/ports/listing-photos.port";
 import { PhotoStrip } from "./PhotoStrip";
 
-const BASE = "https://fotos.rentas.com.ve";
+const BASE = "https://fotos.rentoru.com";
 const HREF = "/alquiler/caracas/chacao/apto-2-hab-abc123";
 
 function photo(position: number): ListingPhotoView {
@@ -17,6 +17,9 @@ function photo(position: number): ListingPhotoView {
       detail: `photos/p${position}/detail.webp`,
       full: `photos/p${position}/full.webp`,
     },
+    // `PhotoStrip` no lo lee — este componente dibuja `allFor`, no `coversFor`
+    // (tasks.md 22.8) —, pero el campo es obligatorio en el puerto.
+    photoCount: 6,
   };
 }
 
@@ -142,7 +145,9 @@ describe("PhotoStrip", () => {
    * segunda es `/foto/2`, aunque en la tabla ocupe la posición 2.
    */
   it("numera los enlaces sobre lo que dibuja, no sobre la columna", () => {
-    const markup = render({ photos: [photo(0), { position: 1, keys: {} }, photo(2)] });
+    const markup = render({
+      photos: [photo(0), { position: 1, keys: {}, photoCount: 0 }, photo(2)],
+    });
 
     expect(markup).toContain(`href="${HREF}/foto/1"`);
     expect(markup).toContain(`href="${HREF}/foto/2"`);
@@ -166,7 +171,9 @@ describe("PhotoStrip", () => {
    * dibuja: "Foto 2 de 5" sobre cinco fotos es verdad; "Foto 2 de 6" no.
    */
   it("saltea una foto sin derivadas y cuenta el total sobre lo que dibuja", () => {
-    const markup = render({ photos: [photo(0), { position: 1, keys: {} }, photo(2)] });
+    const markup = render({
+      photos: [photo(0), { position: 1, keys: {}, photoCount: 0 }, photo(2)],
+    });
 
     expect(markup.match(/<img /g)).toHaveLength(2);
     expect(markup).toContain('alt="Foto 2 de 2 — Apartamento 2 habitaciones, Chacao"');

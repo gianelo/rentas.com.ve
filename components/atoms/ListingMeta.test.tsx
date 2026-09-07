@@ -1,9 +1,15 @@
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { ListingMeta } from "./ListingMeta";
+import { ListingMeta, ListingMetaPart } from "./ListingMeta";
 
 const metaCss = readFileSync("components/atoms/ListingMeta.module.css", "utf-8");
+
+function block(css: string, selector: string): string {
+  const match = css.match(new RegExp(`\\.${selector}\\s*\\{([^}]*)\\}`));
+  if (!match) throw new Error(`falta el bloque .${selector}`);
+  return match[1] ?? "";
+}
 
 /**
  * **Aserciones mudadas de sujeto a propósito, y sólo porque el sujeto se
@@ -36,8 +42,49 @@ describe("ListingMeta", () => {
     expect(metaCss).toContain("color: var(--soft)");
   });
 
-  it("lee la escala de metadato del sistema y no una propia", () => {
-    expect(metaCss).toContain("font-size: var(--meta-fs)");
-    expect(metaCss).toContain("font-weight: var(--meta-fw)");
+  /**
+   * **Invertida a propósito (tasks.md 22.9, fundador 2026-09-06).** Hasta
+   * acá el metadato de la tarjeta leía la escala genérica del sistema
+   * (`--meta-fs`/`--meta-fw`, 12px/600); esta prueba afirmaba exactamente
+   * eso, con este mismo nombre en sentido contrario. Medido contra los
+   * 136px disponibles a 360px, esa escala en `--meta` (mono) pliega la
+   * frase de muestra; en `--sans` entra con margen. El papel se promovió a
+   * uno propio para que las otras diez superficies que sí leen
+   * `--meta-fs`/`--meta-fw` no arrastren un cambio que sólo pidió la
+   * tarjeta.
+   */
+  it("lee su propia escala de metadato, y no la genérica del sistema", () => {
+    expect(metaCss).toContain("font-size: var(--card-meta-fs)");
+    expect(metaCss).toContain("font-weight: var(--card-meta-fw)");
+    expect(metaCss).not.toContain("var(--meta-fs)");
+    expect(metaCss).not.toContain("var(--meta-fw)");
+  });
+});
+
+/**
+ * `ListingMetaPart` — la unidad que no se parte por dentro (tasks.md 22.47).
+ * Lo que **se mide** en un navegador de verdad —que la unidad completa cae a
+ * la línea de abajo en vez de partirse— vive en `tests/measure/lista.spec.ts`;
+ * acá sólo se prueba lo que este átomo declara: la etiqueta, el contenido y
+ * la regla de no partir.
+ */
+describe("ListingMetaPart", () => {
+  it("envuelve el contenido en un <span>, no en un <p>", () => {
+    const markup = renderToStaticMarkup(<ListingMetaPart>78 m²</ListingMetaPart>);
+    expect(markup.startsWith("<span")).toBe(true);
+    expect(markup).toContain("78 m²");
+  });
+
+  // Triangulación: un contenido distinto, para que la aserción de arriba no
+  // pase por casualidad con un único texto fijo.
+  it("con otro contenido sigue siendo el mismo envoltorio, no un texto fijo", () => {
+    const markup = renderToStaticMarkup(<ListingMetaPart>Los Palos Grandes</ListingMetaPart>);
+    expect(markup.startsWith("<span")).toBe(true);
+    expect(markup).toContain("Los Palos Grandes");
+  });
+
+  it("nunca se parte por dentro: white-space: nowrap y nada más", () => {
+    const parte = block(metaCss, "part");
+    expect(parte.trim()).toBe("white-space: nowrap;");
   });
 });

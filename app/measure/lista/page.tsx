@@ -3,13 +3,12 @@ import { resolveNavAccount, resolveNavPublish } from "@/modules/identity/domain/
 import { homeSearchForm } from "@/modules/listing-catalogue/domain/search-destination";
 import { resolveSearchPill } from "@/modules/listing-catalogue/domain/search-pill";
 import { buildSearchPanel } from "@/modules/listing-search/domain/search-panel";
-import { AppLink } from "../../../components/atoms/AppLink";
 import { Container } from "../../../components/layout/Container";
-import { FilterChips } from "../../../components/molecules/FilterChips";
 import { ListingCard, ListingGrid } from "../../../components/molecules/ListingCard";
 import { Nav } from "../../../components/organisms/Nav";
 import { SearchPanel } from "../../../components/organisms/SearchPanel";
-import styles from "../../alquiler/[ciudad]/[zona]/zona.module.css";
+import { SearchResultsHeader } from "../../../components/organisms/SearchResultsHeader";
+import resultsStyles from "../../../components/organisms/SearchResultsList.module.css";
 
 /**
  * **La pantalla de resultados, para contar lo que entra sobre el pliegue**
@@ -24,15 +23,16 @@ import styles from "../../alquiler/[ciudad]/[zona]/zona.module.css";
  *
  * **Qué se monta.** La misma composición que sirve
  * `app/alquiler/[ciudad]/[zona]/page.tsx`, en el mismo orden y con las mismas
- * piezas: `Nav` con su pastilla, el panel cerrado, y dentro del `Container` la
- * miga de pan, el título, el conteo, las fichas quitables y la cuadrícula. La
- * hoja es la REAL —`zona.module.css`, importada y no copiada— y los modelos
- * salen de las mismas funciones del dominio que usa la página. Lo que se
- * escribe acá es el contenido, nunca una regla.
+ * piezas: `Nav` con su pastilla, el panel cerrado, y dentro del `Container` el
+ * `SearchResultsHeader` de verdad —el mismo componente que dibujan las dos
+ * rutas de resultados desde la 22.6, no una copia de su marcado— y la
+ * cuadrícula. Los modelos salen de las mismas funciones del dominio que usa
+ * la página. Lo que se escribe acá es el contenido, nunca una regla.
  *
  * **La atadura contra la deriva.** `app/measure/lista-medida.test.ts` verifica
- * que las clases que este arnés dibuja sean las que la pantalla usa, y que la
- * hoja sea la de la pantalla y no una copia. Sin eso, un renombre dejaría esta
+ * que este arnés monte el mismo `SearchResultsHeader` que las pantallas
+ * reales, y que el `.results` de la cuadrícula salga de la hoja real de
+ * `SearchResultsList` y no de una copia. Sin eso, un renombre dejaría esta
  * medición verde sobre una pantalla que ya no existe — el defecto que dejó a
  * este repositorio midiendo un formulario de publicar retirado.
  *
@@ -79,33 +79,19 @@ export default function MeasureListaPage() {
       <SearchPanel model={panel} />
 
       <Container>
-        <nav className={styles.breadcrumb} aria-label="Miga de pan">
-          <ol className={styles.crumbs}>
-            <li className={styles.crumb}>
-              <AppLink className={styles.crumbLink} href="/">
-                Inicio
-              </AppLink>
-            </li>
-            <li className={styles.crumb}>
-              <AppLink className={styles.crumbLink} href="/alquiler/distrito-capital">
-                Distrito Capital
-              </AppLink>
-            </li>
-            <li className={styles.crumb} aria-current="page">
-              Chacao
-            </li>
-          </ol>
-        </nav>
+        <SearchResultsHeader
+          crumbs={[
+            { label: "Inicio", href: "/" },
+            { label: "Distrito Capital", href: "/alquiler/distrito-capital" },
+            { label: "Chacao" },
+          ]}
+          title="Alquiler en Chacao"
+          countText={`${TOTAL} propiedades activas`}
+          chips={panel.chips}
+          clearAllHref={panel.clearAllHref}
+        />
 
-        <h1 className={styles.title}>Alquiler en Chacao</h1>
-
-        <p className={styles.count} data-testid="result-count">
-          {TOTAL} propiedades activas
-        </p>
-
-        <FilterChips chips={panel.chips} clearAllHref={panel.clearAllHref} />
-
-        <div className={styles.results} data-testid="lista-grid">
+        <div className={resultsStyles.results} data-testid="lista-grid">
           <ListingGrid>
             {AVISOS.map((aviso, indice) => (
               <li key={aviso.title}>
@@ -117,9 +103,10 @@ export default function MeasureListaPage() {
                   rooms={aviso.rooms}
                   areaM2={aviso.areaM2}
                   publisherType={indice % 3 === 0 ? "broker" : "owner"}
+                  photoCount={6}
                   photo={{
-                    thumbUrl: "https://fotos.rentas.com.ve/photos/pub/tok/thumb.webp",
-                    cardUrl: "https://fotos.rentas.com.ve/photos/pub/tok/card.webp",
+                    thumbUrl: "https://fotos.rentoru.com/photos/pub/tok/thumb.webp",
+                    cardUrl: "https://fotos.rentoru.com/photos/pub/tok/card.webp",
                     alt: `Foto 1 de 1 — ${aviso.title}, Chacao`,
                   }}
                 />

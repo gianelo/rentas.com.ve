@@ -33,44 +33,11 @@
   scrollbar-width: none;
 }
 
-.chip,
-.chipSelected {
-  flex: none;
-  min-block-size: var(--target-min-desktop);
-  display: flex;
-  align-items: center;
-  padding-inline: 14px;
-  border-radius: var(--rs);
-  font-family: var(--meta);
-  font-size: var(--meta-fs-sm);
-  line-height: 1.4;
-  white-space: nowrap;
-  text-decoration: none;
-}
-
-.chip {
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--soft);
-}
-
-/* El estado activo, con el mismo idioma que el sistema ya usa para una
-   selección: relleno `--tint` y borde `--accent`, igual que `SelectionButton`.
-   **Estructural antes que cromático**: el borde teñido y el relleno se
-   distinguen en escala de grises, que es el criterio que la insignia de
-   publicador ya cumple del otro lado del producto. */
-.chipSelected {
-  border: 1px solid var(--accent);
-  background: var(--tint);
-  color: var(--accent);
-  font-weight: var(--meta-fw);
-}
-
-.chip:focus-visible,
-.chipSelected:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
+/* La ficha en sí ya no se declara acá: la dibuja el átomo compartido
+   `components/atoms/SelectionChip.tsx` (tasks.md 22.12), que también viste
+   las fichas de estado de `/mis-avisos` — dos declaraciones coherentes
+   consigo mismas que ya habían empezado a discrepar en tipografía y alto
+   mínimo, la misma forma de deuda que la 22.3 cerró para el metadato. */
 
 .strips {
   display: flex;

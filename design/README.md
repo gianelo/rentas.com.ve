@@ -36,15 +36,15 @@ y escritorio a 1280 con contenedor de 1100.
 
 | Archivo | Pantalla |
 |---|---|
-| `Rentas - Entrar - Mobile.dc.html` | Entrar: página propia, hoja, y espera del enlace por correo |
-| `Rentas - Entrar - Desktop.dc.html` | Ídem, con diálogo de 460 px en vez de hoja |
-| `Rentas - Ficha - Mobile.dc.html` | Ficha del aviso y visor de fotos |
-| `Rentas - Ficha - Desktop.dc.html` | Ficha a 1280: dos columnas 640 + 1fr, contacto pegado, visor modal |
-| `Rentas - Lista y Filtros - Mobile.dc.html` | Inicio, acordeón de búsqueda de 4 pasos, resultados |
-| `Rentas - Lista y Filtros - Desktop.dc.html` | Ídem a 1280: panel de filtros de 3 columnas, barra lateral de 240 |
-| `Rentas - Publicar - Mobile.dc.html` | Publicar en nueve pasos, barra de progreso, revisión |
-| `Rentas - Publicar - Desktop.dc.html` | Ídem a 1280: riel de 9 pasos a la izquierda, columna de 520 |
-| `Rentas - Sistema.dc.html` | El sistema completo, renderizable |
+| `Rentoru - Entrar - Mobile.dc.html` | Entrar: página propia, hoja, y espera del enlace por correo |
+| `Rentoru - Entrar - Desktop.dc.html` | Ídem, con diálogo de 460 px en vez de hoja |
+| `Rentoru - Ficha - Mobile.dc.html` | Ficha del aviso y visor de fotos |
+| `Rentoru - Ficha - Desktop.dc.html` | Ficha a 1280: dos columnas 640 + 1fr, contacto pegado, visor modal |
+| `Rentoru - Lista y Filtros - Mobile.dc.html` | Inicio, acordeón de búsqueda de 4 pasos, resultados |
+| `Rentoru - Lista y Filtros - Desktop.dc.html` | Ídem a 1280: panel de filtros de 3 columnas, barra lateral de 240 |
+| `Rentoru - Publicar - Mobile.dc.html` | Publicar en nueve pasos, barra de progreso, revisión |
+| `Rentoru - Publicar - Desktop.dc.html` | Ídem a 1280: riel de 9 pasos a la izquierda, columna de 520 |
+| `Rentoru - Sistema.dc.html` | El sistema completo, renderizable |
 | `support.js` | El runtime que los `.dc.html` necesitan para renderizar |
 
 **La importación está completa: las nueve pantallas del proyecto de Claude Design
@@ -79,10 +79,10 @@ medidas.
 
 | Archivo | Qué cubre |
 |---|---|
-| `Rentas - Flujos y funcionalidades.md` | **El documento maestro.** Mapa de pantallas, flujos A/B/C, F1–F31, rejilla, esquema de URLs, reglas transversales |
-| `Rentas - Ficha - Especificacion.md` | La ficha y el visor: estructura, R1–R7, galería, los tres estados del contacto, medidas |
-| `Rentas - Publicar - Especificacion.md` | Los nueve pasos, volver atrás, borrador, validación, colores |
-| `Rentas - UX movil.md` | F1–F15 de búsqueda. **Superado por `Flujos y funcionalidades.md`**, que lo dice en su primera línea. Se conserva por procedencia |
+| `Rentoru - Flujos y funcionalidades.md` | **El documento maestro.** Mapa de pantallas, flujos A/B/C, F1–F31, rejilla, esquema de URLs, reglas transversales |
+| `Rentoru - Ficha - Especificacion.md` | La ficha y el visor: estructura, R1–R7, galería, los tres estados del contacto, medidas |
+| `Rentoru - Publicar - Especificacion.md` | Los nueve pasos, volver atrás, borrador, validación, colores |
+| `Rentoru - UX movil.md` | F1–F15 de búsqueda. **Superado por `Flujos y funcionalidades.md`**, que lo dice en su primera línea. Se conserva por procedencia |
 
 **Dónde difieren, manda `Flujos y funcionalidades.md`.** Ejemplo concreto y ya
 resuelto en el código: `UX movil.md` escribe `/buscar?ciudad=…`, y el maestro lo

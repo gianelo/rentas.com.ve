@@ -3,17 +3,23 @@ import { AppLink } from "../atoms/AppLink";
 import styles from "./SiteFooter.module.css";
 
 /**
- * A single copy. SISTEMA.md fixes it with the trailing dot ("rentas."), and
- * Nav.tsx already flags the same risk in its own copy: this is retyped here
- * rather than imported, so it is a third occurrence and not a second.
+ * A single copy. SISTEMA.md fixes that there is no logo and that the mark IS
+ * the word; the founder renamed the product to `rentoru.com` (tasks.md 26.2)
+ * and chose "Rentoru" — capitalised and with NO trailing dot — so the mark and
+ * the title suffix ("— Rentoru") are one single form. `SISTEMA.md:323` now
+ * defines the mark that way, with the capital and the absent dot written down
+ * (tasks.md 26.23), and the boards draw it the same (26.21): system and code no
+ * longer contradict each other. Nav.tsx already flags the same risk in its own
+ * copy: this is retyped here rather than imported, so it is a third occurrence
+ * and not a second.
  */
-const WORDMARK = "rentas.";
+const WORDMARK = "Rentoru";
 
 const TAGLINE =
   "Alquileres en Venezuela sin comisión. El dueño publica, el inquilino escribe directo.";
 
-const COPYRIGHT_LINE = "© 2026 rentas.com.ve · Publicar y contactar no cuesta nada";
-const DISCLAIMER_LINE = "rentas.com.ve no interviene en el contrato entre las partes";
+const COPYRIGHT_LINE = "© 2026 rentoru.com · Publicar y contactar no cuesta nada";
+const DISCLAIMER_LINE = "rentoru.com no interviene en el contrato entre las partes";
 
 const CATEGORY_LABELS = {
   ayuda: "Ayuda",
@@ -32,7 +38,7 @@ export interface SiteFooterProps {
 }
 
 /**
- * The site footer (design/pantallas/Rentas - Footer.dc.html, artboards
+ * The site footer (design/pantallas/Rentoru - Footer.dc.html, artboards
  * 9a/9b; tasks.md 23.1).
  *
  * **The frame needs no link to say its own promise.** The brand, the

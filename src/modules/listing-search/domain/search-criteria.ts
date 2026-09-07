@@ -301,7 +301,7 @@ export const LISTING_ATTRIBUTES: readonly ListingAttribute[] = [
   "hasRegularWater",
   "isFurnished",
   // **El puesto va cuarto porque ahí lo pone el diseño**, no por orden de
-  // llegada: «Rentas - UX movil.md» F6 escribe los interruptores como planta
+  // llegada: «Rentoru - UX movil.md» F6 escribe los interruptores como planta
   // eléctrica, agua regular, amoblado, puesto de estacionamiento, vigilancia
   // 24 h, línea blanca. Ponerlo al final por ser el último construido sería
   // inventar una pantalla (AGENTS.md §2).

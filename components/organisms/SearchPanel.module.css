@@ -33,6 +33,30 @@
   /* Por encima del menú de cuenta (2), que es lo único que se levanta en esta
      pantalla. */
   z-index: 3;
+  /* **La reserva para el propio pie pegajoso** (regresión sobre la 22.11).
+     La 22.11 alargó cada fila de atributo —interruptor y conteo debajo, en
+     vez de la única línea de `.option`—, y la lista pasó a necesitar scroll
+     bajo `.foot`, que es `position: sticky; inset-block-end: 0` con fondo
+     opaco. Sin esto, desplazar la última fila a la vista la deja justo
+     debajo del borde del scrollport, que es exactamente donde `.foot` se
+     pinta encima: CI vio ese clic interceptado en
+     `filtros-sin-javascript.spec.ts:137`. `scroll-padding-block-end` le dice
+     al desplazamiento nativo (el mismo que usa Playwright para llevar un
+     elemento a la vista) que el pie ocupa esa franja del final, así que
+     nunca deja una fila justo ahí — un `scroll-margin` en `.attribute`
+     arreglaría sólo los atributos; esto arregla cualquier fila interactiva
+     del panel, que es la garantía real. El tamaño es el de `.foot`: su
+     `padding-block-start` (`--gap`), el control más alto que contiene —
+     `.confirm` con `--action-h`, no `--target-min`: medido, no supuesto— y
+     su borde de 1px.
+
+     **Y un `--gap` más de holgura, que no es adorno.** Reservar exactamente
+     la altura del pie dejaba la última fila a **0,35 px** de tocarlo —medido:
+     `bottom=664,65` contra `top=665`—, y esa diferencia la decide el
+     redondeo subpíxel de la fuente, que no es el mismo en esta máquina que
+     en el runner de CI. Una franja de más no se ve; una de menos vuelve a
+     interceptar el clic. */
+  scroll-padding-block-end: calc(var(--gap) * 2 + var(--action-h) + 1px);
 }
 
 .sheet {
@@ -230,7 +254,7 @@
 }
 
 .option:focus-visible,
-.roomOption:focus-visible,
+.attribute:focus-visible,
 .confirm:focus-visible,
 .clear:focus-visible,
 .close:focus-visible,
@@ -252,6 +276,52 @@
   font-family: var(--meta);
   font-size: var(--meta-fs);
   color: var(--soft);
+}
+
+/* **El interruptor de la 7b, para cada atributo** (tasks.md 22.11): fila con
+   la etiqueta y el interruptor, el conteo debajo — a diferencia de `.option`,
+   que Quién publica sigue usando en una sola fila. Fundir los dos habría
+   cambiado esa presentación sin que esta tarea la pidiera. */
+.attribute {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-block-size: var(--target-min);
+  padding-inline: 12px;
+  padding-block: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--control-fs);
+  text-decoration: none;
+}
+
+.attribute[data-chosen] {
+  border: 2px solid var(--accent);
+  background: var(--tint);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.attribute[aria-disabled="true"] {
+  color: var(--soft);
+  background: var(--ctl);
+  cursor: not-allowed;
+}
+
+.attributeHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+}
+
+/* Bajo el interruptor y no a la derecha: `.count` por defecto se empuja al
+   extremo de una fila, y acá el conteo va en su propia línea. */
+.attribute .count {
+  margin-inline-start: 0;
 }
 
 .price {
@@ -370,55 +440,10 @@
   white-space: nowrap;
 }
 
-/* Los escalones de una tira numérica, en fila: son cortos y comparables.
-   **Las columnas salen de cuántos hay y no de un `4` escrito acá**: la misma
-   regla dibuja los cuatro de habitaciones y los tres de baños (14.45), y un
-   número fijo dejaría la tira de baños con una columna vacía al final. */
-.steps {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  gap: var(--gap);
-}
-
-.roomOption {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-block-size: var(--target-min);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  background: var(--surface);
-  color: var(--ink);
-  text-decoration: none;
-}
-
-.roomOption[data-chosen] {
-  border: 2px solid var(--accent);
-  background: var(--tint);
-  color: var(--accent);
-}
-
-.roomOption[aria-disabled="true"] {
-  color: var(--soft);
-  background: var(--ctl);
-  cursor: not-allowed;
-}
-
-.stepNumber {
-  font-family: var(--disp);
-  font-size: var(--control-fs);
-  font-weight: 600;
-}
-
-.roomOption .count {
-  margin-inline-start: 0;
-  font-size: var(--meta-fs-sm);
-}
+/* Habitaciones y baños se mudaron al control segmentado, un átomo propio
+   (`components/atoms/SegmentedControl.tsx`, tasks.md 22.11): el segmentado y
+   el interruptor entran a `SISTEMA.md` como anatomía nueva, y esta hoja deja
+   de declarar su propia copia. */
 
 /* El pie queda pegado abajo: el conteo es lo que se mira mientras se filtra, y
    perderlo de vista es perder la razón de tener un panel. */
@@ -495,9 +520,9 @@
   }
 
   .option,
+  .attribute,
   .control,
   .searchAction,
-  .roomOption,
   .close,
   .summaryLink {
     min-block-size: var(--target-min-desktop);

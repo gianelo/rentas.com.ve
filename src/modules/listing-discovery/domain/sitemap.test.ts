@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { FooterLinkDefinition } from "../../site-footer/domain/footer-links";
 import { ayudaSitemapPaths, buildSitemap, type SitemapListing } from "./sitemap";
 
-const BASE = "https://rentas.com.ve";
+const BASE = "https://rentoru.com";
 
 function listing(overrides: Partial<SitemapListing> = {}): SitemapListing {
   return {
@@ -154,16 +154,16 @@ describe("buildSitemap", () => {
   it("une la base y la ruta con una sola barra, sobre o sin barra final", () => {
     // La barra final de la base es un detalle de configuracion, no una
     // direccion distinta. Sin normalizarla el documento emite
-    // `https://rentas.com.ve//alquiler/...`, que Google trata como OTRA URL —
+    // `https://rentoru.com//alquiler/...`, que Google trata como OTRA URL —
     // y el sitemap termina publicando exactamente el contenido duplicado que
     // la ficha se redirige a evitar.
-    const withSlash = buildSitemap("https://rentas.com.ve/", [listing()]);
-    const withoutSlash = buildSitemap("https://rentas.com.ve", [listing()]);
+    const withSlash = buildSitemap("https://rentoru.com/", [listing()]);
+    const withoutSlash = buildSitemap("https://rentoru.com", [listing()]);
 
     expect(withSlash.map((entry) => entry.url)).toEqual(withoutSlash.map((entry) => entry.url));
     // El inicio es el origen pelado: una barra final tampoco es una direccion
     // distinta, pero elegir una y sostenerla es lo que evita las dos.
-    expect(withSlash[0]?.url).toBe("https://rentas.com.ve");
+    expect(withSlash[0]?.url).toBe("https://rentoru.com");
     for (const entry of withSlash) {
       expect(entry.url).not.toContain("//alquiler");
     }

@@ -91,6 +91,29 @@ describe("la puerta del contacto se abre por la dirección (15.8)", () => {
 
     expect(puerta?.verifiedNotice).toBeNull();
   });
+
+  /**
+   * **La segunda puerta, que a esta hoja le faltaba** (tasks.md 22.28, láminas
+   * 8b/9b). La 22.22 sólo nombró 8a y 9a; la infraestructura del enlace
+   * (15.3) ya sirve cualquier puerta que `safeSignInReturn` admita, y
+   * `/alquiler/…` es una de ellas — lo único que faltaba era esta copia.
+   *
+   * **La misma copia que la puerta de página**, pineada por valor contra
+   * `sign-in-page.test.ts` — mismo recurso que `reason`/`assurance` ya usan
+   * entre los dos módulos, para que una de las dos copias no se retipee de
+   * memoria el día que cambie.
+   */
+  it("trae el campo de correo, igual que la puerta de página", () => {
+    const puerta = contactDoorFor(CON_LLAVE, DUENO, DOOR_OPEN_TOKEN, false);
+
+    expect(puerta?.email).toEqual({
+      separator: "o con tu correo",
+      label: "Correo",
+      placeholder: "tucorreo@ejemplo.com",
+      submit: "Enviarme el enlace",
+      note: "Te mandamos un enlace que te deja entrar. No manejamos contraseñas.",
+    });
+  });
 });
 
 describe("la dirección que abre la puerta (15.8)", () => {

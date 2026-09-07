@@ -1,5 +1,5 @@
 /**
- * La pastilla de búsqueda (tasks.md 14.30/14.31; diseño `Rentas - Cuenta e
+ * La pastilla de búsqueda (tasks.md 14.30/14.31; diseño `Rentoru - Cuenta e
  * Importar.dc.html` §14i — "contrato para todas las pantallas").
  *
  * **Una sola pieza, tres estados, y ninguna regla de producto en el

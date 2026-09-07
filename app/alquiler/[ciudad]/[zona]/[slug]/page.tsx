@@ -43,7 +43,10 @@ import {
   serializeStructuredData,
 } from "@/modules/listing-discovery/domain/listing-structured-data";
 import { suggestionHeading } from "@/modules/listing-discovery/domain/listing-suggestions";
-import { listingIdFromSlug } from "@/modules/listing-discovery/domain/listing-url";
+import {
+  buildListingPath,
+  listingIdFromSlug,
+} from "@/modules/listing-discovery/domain/listing-url";
 import {
   RETURN_PARAM,
   resultsLink,
@@ -57,6 +60,7 @@ import { db } from "@/shared/db/client";
 import { shortSpanishDate } from "@/shared/format/spanish-date";
 import { readNavAccountFlags } from "../../../../_lib/nav-account";
 import { readSession, requestSessionPort } from "../../../../_lib/session";
+import { requestMagicLink } from "../../../../(auth)/signin/actions";
 import styles from "./ficha.module.css";
 import { continueWithGoogle, revealListingContact } from "./reveal-actions";
 
@@ -286,7 +290,27 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
   // La misma regla F9 que la cuadrícula de resultados: un aviso sin portada no
   // entra. Media tarjeta con un ícono roto encima de un aviso vencido es la
   // segunda mala noticia de la misma pantalla.
-  const suggestionCards = buildListingGrid(suggestions.listings, suggestionCovers, photoBase);
+  // **El origen se arrastra por la cadena de sugeridos** (tasks.md 22.30,
+  // DECIDIDO por el fundador el 2026-09-06). Sin el cuarto argumento, quien
+  // llega desde una búsqueda filtrada, abre este aviso y toca un sugerido
+  // pierde la búsqueda EN EL SEGUNDO CLIC: la ficha destino recibe un enlace
+  // sin el parámetro de vuelta (RETURN_PARAM) y dibuja el respaldo.
+  //
+  // La tarea dejó anotado el argumento en contra —un aviso sugerido no salió
+  // de esa lista, así que «← Resultados» lo devuelve a una lista donde no
+  // está— y el fundador eligió igual arrastrarlo: no es el caso de la 16.9,
+  // que le prometía resultados a quien NUNCA vino de resultados. Acá la
+  // persona sí vino de una búsqueda, y perderla al segundo clic es un costo
+  // concreto contra una confusión rara.
+  //
+  // `withResultsOrigin` valida el candidato antes de escribirlo, así que un
+  // origen que la ficha destino fuera a rechazar no se cuelga del enlace.
+  const suggestionCards = buildListingGrid(
+    suggestions.listings,
+    suggestionCovers,
+    photoBase,
+    returnTo,
+  );
 
   // El encabezado lo escribe el dominio porque tiene que decir el alcance real
   // de lo que hay debajo: ampliado a la ciudad, «Otros avisos en <zona>» sería
@@ -447,6 +471,12 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
                     listingId={detail.id}
                     listingTitle={detail.title}
                     revealAction={revealListingContact}
+                    // tasks.md 22.19 — sin sesión no se pide el mensaje: la
+                    // ficha muestra la puerta y nada más. `session` ya está
+                    // leído arriba, del mismo puerto memoizado que usó
+                    // `viewListingContact`, así que esto no agrega una
+                    // consulta.
+                    hasSession={session !== null}
                     // **Ya no es un `null` escrito acá** (tasks.md 16.12). La
                     // frase la trae el caso de uso junto al contacto, así que
                     // esta página no puede volver a certificar —ni a callar—
@@ -499,6 +529,7 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
                       rooms={card.rooms}
                       areaM2={card.areaM2}
                       publisherType={card.publisherType}
+                      photoCount={card.photoCount}
                       photo={card.photo}
                     />
                   </li>
@@ -530,6 +561,10 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
           stayHref={listingHref}
           callbackUrl={listingHref}
           signInAction={continueWithGoogle}
+          // tasks.md 22.28 — la misma acción que la puerta de página ya usa
+          // (`app/(auth)/signin/actions.ts`): un solo lugar donde sale el
+          // correo, y no una segunda copia que se desincronice de la primera.
+          requestMagicLinkAction={requestMagicLink}
         />
       ) : null}
     </>
@@ -564,5 +599,15 @@ export async function generateMetadata({ params }: FichaProps): Promise<Metadata
     // `undefined` cuando se indexa, igual que la página de zona: no emitir la
     // etiqueta es la respuesta por defecto, y `index: true` no dice nada más.
     robots: indexing.index ? undefined : { index: false, follow: indexing.follow },
+    // **La canónica es la que arma el dominio, no la que llegó** (26.12).
+    // Toda ruta que termine en este id resuelve a este aviso, así que la
+    // dirección pedida es una de infinitas y la canónica es la ÚNICA que
+    // `buildListingPath` produce — la misma a la que el 308 de arriba
+    // redirige. Rearmarla acá serían dos definiciones de «canónico» que
+    // arrancan iguales y se separan en el primer arreglo apurado.
+    //
+    // Sólo cuando se indexa: un aviso vencido o de contenido delgado ya salió
+    // del índice, y sumarle una canónica serían dos señales contradictorias.
+    alternates: indexing.index ? { canonical: buildListingPath(detail) } : undefined,
   };
 }

@@ -4,7 +4,9 @@ import { requireSession } from "../../_lib/require-session";
 import styles from "../publish-page.module.css";
 
 export const metadata: Metadata = {
-  title: "Aviso publicado — Rentas",
+  title: "Aviso publicado — Rentoru",
+  // 26.12 — relativa: `metadataBase` le pone la base una sola vez.
+  alternates: { canonical: "/publicar/listo" },
 };
 
 interface DonePageProps {
@@ -31,7 +33,7 @@ export default async function PublishDonePage({ searchParams }: DonePageProps) {
     <>
       <header className={styles.bar}>
         <div className={styles.barInner}>
-          <p className={styles.brand}>rentas.</p>
+          <p className={styles.brand}>Rentoru</p>
           <span className={styles.step}>Listo</span>
         </div>
       </header>

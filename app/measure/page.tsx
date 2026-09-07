@@ -24,6 +24,7 @@ import { ActionButton, NeutralButton, SelectionButton } from "../../components/a
 import { ListingMeta } from "../../components/atoms/ListingMeta";
 import { ListingTitle } from "../../components/atoms/ListingTitle";
 import { Price } from "../../components/atoms/Price";
+import { SelectionChip } from "../../components/atoms/SelectionChip";
 import { Container } from "../../components/layout/Container";
 import { DetailSplit } from "../../components/layout/DetailSplit";
 import { FormShell } from "../../components/layout/FormShell";
@@ -195,7 +196,7 @@ export default async function MeasureHarnessPage({
 
         <ReadingWidth>
           <p data-testid="body-copy">
-            Rentas es gratis y sin comisión para quien publica y para quien alquila. Mantenemos la
+            Rentoru es gratis y sin comisión para quien publica y para quien alquila. Mantenemos la
             plataforma con aportes voluntarios de personas que ya usaron el servicio y quieren
             ayudar a que siga siendo gratuito para el resto.
           </p>
@@ -262,9 +263,10 @@ export default async function MeasureHarnessPage({
                   rooms={2}
                   areaM2={78}
                   publisherType="owner"
+                  photoCount={n}
                   photo={{
-                    thumbUrl: "https://fotos.rentas.com.ve/photos/pub/tok/thumb.webp",
-                    cardUrl: "https://fotos.rentas.com.ve/photos/pub/tok/card.webp",
+                    thumbUrl: "https://fotos.rentoru.com/photos/pub/tok/thumb.webp",
+                    cardUrl: "https://fotos.rentoru.com/photos/pub/tok/card.webp",
                     alt: `Foto 1 de 1 — Apartamento ${n}, Chacao`,
                   }}
                 />
@@ -298,6 +300,7 @@ export default async function MeasureHarnessPage({
                     rooms={2}
                     areaM2={78}
                     publisherType={quien}
+                    photoCount={1}
                     photo={{ thumbUrl: url, cardUrl: url, alt: `Portada ${nombre}` }}
                   />
                 </li>
@@ -324,10 +327,14 @@ export default async function MeasureHarnessPage({
         <div data-testid="chips-inicio">
           <ul className={homeStyles.chips}>
             <li>
-              <span className={homeStyles.chipSelected}>Distrito Capital</span>
+              <SelectionChip href="#" selected ariaCurrent="true">
+                Distrito Capital
+              </SelectionChip>
             </li>
             <li>
-              <span className={homeStyles.chip}>Maracaibo</span>
+              <SelectionChip href="#" selected={false} ariaCurrent="true">
+                Maracaibo
+              </SelectionChip>
             </li>
           </ul>
         </div>
@@ -335,14 +342,14 @@ export default async function MeasureHarnessPage({
         <div data-testid="chips-mis-avisos">
           <ul className={misAvisosStyles.fichas}>
             <li>
-              <span className={misAvisosStyles.ficha} aria-current="page">
+              <SelectionChip href="#" selected ariaCurrent="page">
                 Todos <span className={misAvisosStyles.fichaCuenta}>3</span>
-              </span>
+              </SelectionChip>
             </li>
             <li>
-              <span className={misAvisosStyles.ficha}>
+              <SelectionChip href="#" selected={false} ariaCurrent="page">
                 Activas <span className={misAvisosStyles.fichaCuenta}>2</span>
-              </span>
+              </SelectionChip>
             </li>
           </ul>
         </div>
@@ -437,6 +444,11 @@ export default async function MeasureHarnessPage({
                     listingId="00000000-0000-4000-8000-000000000000"
                     listingTitle="Apartamento 2 habitaciones con puesto de estacionamiento"
                     revealAction={measureRevealAction}
+                    // 22.19 — el arnés mide el formulario con el campo de
+                    // mensaje, que es el estado con sesión. La puerta sin
+                    // sesión (`ActionLink` solo) ya la mide `SignInDoor` más
+                    // abajo, montada aparte.
+                    hasSession={true}
                     verificationNotice={null}
                     expiresAt={new Date("2026-09-12T00:00:00.000Z")}
                     zoneName="Chacao"
@@ -458,6 +470,7 @@ export default async function MeasureHarnessPage({
           stayHref="/alquiler/distrito-capital/chacao/apartamento-medida"
           callbackUrl="/alquiler/distrito-capital/chacao/apartamento-medida"
           signInAction={measureRevealAction}
+          requestMagicLinkAction={measureRevealAction}
         />
       ) : null}
 
@@ -688,7 +701,7 @@ const PORTADAS = [
 ] as const;
 
 /**
- * The ten real labels the design names (design/pantallas/Rentas -
+ * The ten real labels the design names (design/pantallas/Rentoru -
  * Footer.dc.html), with placeholder destinations no page in this repository
  * serves. This fixture exists only so `tests/measure/footer.spec.ts` can
  * measure real geometry against real content — the production registry in
