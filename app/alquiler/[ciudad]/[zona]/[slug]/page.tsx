@@ -290,7 +290,27 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
   // La misma regla F9 que la cuadrícula de resultados: un aviso sin portada no
   // entra. Media tarjeta con un ícono roto encima de un aviso vencido es la
   // segunda mala noticia de la misma pantalla.
-  const suggestionCards = buildListingGrid(suggestions.listings, suggestionCovers, photoBase);
+  // **El origen se arrastra por la cadena de sugeridos** (tasks.md 22.30,
+  // DECIDIDO por el fundador el 2026-09-06). Sin el cuarto argumento, quien
+  // llega desde una búsqueda filtrada, abre este aviso y toca un sugerido
+  // pierde la búsqueda EN EL SEGUNDO CLIC: la ficha destino recibe un enlace
+  // sin el parámetro de vuelta (RETURN_PARAM) y dibuja el respaldo.
+  //
+  // La tarea dejó anotado el argumento en contra —un aviso sugerido no salió
+  // de esa lista, así que «← Resultados» lo devuelve a una lista donde no
+  // está— y el fundador eligió igual arrastrarlo: no es el caso de la 16.9,
+  // que le prometía resultados a quien NUNCA vino de resultados. Acá la
+  // persona sí vino de una búsqueda, y perderla al segundo clic es un costo
+  // concreto contra una confusión rara.
+  //
+  // `withResultsOrigin` valida el candidato antes de escribirlo, así que un
+  // origen que la ficha destino fuera a rechazar no se cuelga del enlace.
+  const suggestionCards = buildListingGrid(
+    suggestions.listings,
+    suggestionCovers,
+    photoBase,
+    returnTo,
+  );
 
   // El encabezado lo escribe el dominio porque tiene que decir el alcance real
   // de lo que hay debajo: ampliado a la ciudad, «Otros avisos en <zona>» sería
