@@ -7,74 +7,80 @@ import { describe, expect, it } from "vitest";
  *
  * `tests/measure/lista.spec.ts` cuenta cuántos avisos entran enteros sobre el
  * pliegue, y ese número depende de TODO lo que hay encima de la cuadrícula. Por
- * eso `app/measure/lista/page.tsx` monta la composición real —la hoja de la
- * zona, las mismas piezas, en el mismo orden— en vez de una maqueta parecida.
+ * eso `app/measure/lista/page.tsx` monta la composición real —el mismo
+ * `SearchResultsHeader` que las dos rutas de resultados dibujan desde la 22.6,
+ * en el mismo orden— en vez de una maqueta parecida.
  *
- * El riesgo que queda es de puntería y no de valor: si la pantalla dejara de
- * dibujar la miga de pan, o renombrara `.count`, el arnés seguiría midiendo un
- * encabezado que ya nadie sirve y los tres números quedarían verdes sobre una
- * pantalla huérfana. Es exactamente el defecto que dejó a este repositorio
- * midiendo un formulario de publicar retirado. Esta prueba lo hace imposible
- * en silencio.
+ * **Reescrita por la 22.6.** Antes de esta extracción el arnés y las dos
+ * pantallas dibujaban cada uno su propia miga de pan/título/conteo con
+ * `className={styles.X}`, y esta prueba ataba los tres comparando nombres de
+ * clase. La 22.6 movió ese marcado a un solo componente compartido —la
+ * corrección de duplicación que el enunciado pedía—, así que la atadura ya no
+ * puede leerse en nombres de clase repetidos: se lee en que los tres montan el
+ * MISMO componente, y en que la cuadrícula del arnés usa la hoja real del
+ * componente que dibuja la carcasa de resultados, no una copia.
+ *
+ * El riesgo que queda es de puntería y no de valor: si una pantalla dejara de
+ * montar `SearchResultsHeader`, o el arnés importara una copia de su hoja, los
+ * tres números quedarían verdes sobre una pantalla huérfana. Es exactamente el
+ * defecto que dejó a este repositorio midiendo un formulario de publicar
+ * retirado. Esta prueba lo hace imposible en silencio.
  *
  * Es una aserción de código fuente A PROPÓSITO y no una de tamaño: el tamaño
- * lo mide el navegador. Acá sólo se verifica que las dos pantallas dibujen lo
+ * lo mide el navegador. Acá sólo se verifica que las tres pantallas monten lo
  * mismo, encima de lo mismo.
  */
 const ZONA = readFileSync("app/alquiler/[ciudad]/[zona]/page.tsx", "utf-8");
 const CIUDAD = readFileSync("app/alquiler/[ciudad]/page.tsx", "utf-8");
 const ARNES = readFileSync("app/measure/lista/page.tsx", "utf-8");
 
-/**
- * Las clases del encabezado que empujan la cuadrícula hacia abajo. Son las
- * cuatro que la lámina 6c NO dibuja y la pantalla servida sí, más el
- * contenedor de la cuadrícula: entre las cinco está el hueco que la 14.29
- * mide.
- */
-const MEDIDAS = [
-  "breadcrumb",
-  "crumbs",
-  "crumb",
-  "crumbLink",
-  "title",
-  "count",
-  "results",
-] as const;
-
-/**
- * **Con cierre de identificador, y esto costó una mutación en rojo en la
- * 16.36.** `toContain("styles.count")` sigue verde si alguien renombra la
- * clase a `styles.countTotal`, porque una es prefijo de la otra. El límite lo
- * pone el carácter siguiente, que en un `className` es la llave de cierre.
- */
-function usaClase(fuente: string, objeto: string, nombre: string): boolean {
-  return new RegExp(`\\{${objeto}\\.${nombre}\\}`).test(fuente);
-}
-
-describe("la pantalla de resultados y su arnés de medición dibujan lo mismo (14.29)", () => {
-  it.each(MEDIDAS)("la zona usa styles.%s", (nombre) => {
-    expect(usaClase(ZONA, "styles", nombre)).toBe(true);
-  });
-
-  it.each(MEDIDAS)("el arnés dibuja styles.%s", (nombre) => {
-    expect(usaClase(ARNES, "styles", nombre)).toBe(true);
+describe("la pantalla de resultados y su arnés de medición dibujan lo mismo (14.29, 22.6)", () => {
+  /**
+   * **El encabezado compartido, y no una copia de su marcado.** Con cierre de
+   * identificador: `toContain("<SearchResultsHeader")` sigue verde si alguien
+   * renombra el componente a `SearchResultsHeaderV2`, porque uno es prefijo
+   * del otro — la misma trampa que la 16.36 dejó anotada para `styles.count`.
+   * El espacio o el `\n` que sigue al nombre es lo que cierra el identificador
+   * en JSX.
+   */
+  it.each([
+    ["la zona", ZONA],
+    ["la ciudad", CIUDAD],
+    ["el arnés", ARNES],
+  ])("%s monta SearchResultsHeader", (_nombre, fuente) => {
+    expect(fuente).toMatch(/<SearchResultsHeader[\s>]/);
   });
 
   /**
-   * Y mide la hoja de ESTA pantalla, no una copia con el mismo contenido. Sin
-   * esto, alguien podría duplicar `zona.module.css` bajo `app/measure/` y los
-   * tres números seguirían verdes midiendo el duplicado.
+   * Y las dos pantallas reales —no el arnés, que mide sólo lo que hay sobre el
+   * pliegue y nunca pagina ni cierra la lista— montan también la carcasa de
+   * resultados que la 22.6 extrajo del mismo par de hojas.
    */
-  it("el arnés importa la hoja real de la zona y no una copia", () => {
-    expect(ARNES).toContain('from "../../alquiler/[ciudad]/[zona]/zona.module.css"');
+  it.each([
+    ["la zona", ZONA],
+    ["la ciudad", CIUDAD],
+  ])("%s monta SearchResultsList", (_nombre, fuente) => {
+    expect(fuente).toMatch(/<SearchResultsList[\s>]/);
   });
 
   /**
-   * **Las tres piezas que no son una clase, y que también empujan.** La barra
-   * con su pastilla, el panel cerrado y las fichas quitables son componentes,
-   * así que un renombre de clase no los alcanza: se atan por su nombre.
+   * Y mide la hoja de ESTE componente, no una copia con el mismo contenido.
+   * Sin esto, alguien podría duplicar `SearchResultsList.module.css` bajo
+   * `app/measure/` y la medición seguiría verde midiendo el duplicado.
    */
-  it.each(["<Nav", "<SearchPanel", "<FilterChips", "<ListingGrid", "<Container"])(
+  it("el arnés importa la hoja real de SearchResultsList y no una copia", () => {
+    expect(ARNES).toContain('from "../../../components/organisms/SearchResultsList.module.css"');
+  });
+
+  /**
+   * **Las piezas que no son una clase, y que también empujan.** La barra con
+   * su pastilla, el panel cerrado y el contenedor son componentes, así que un
+   * renombre de clase no los alcanza: se atan por su nombre. `ListingGrid` no
+   * entra en esta lista desde la 22.6: en la pantalla real vive dentro de
+   * `SearchResultsList` y ya no en `page.tsx`, así que se verifica ahí abajo,
+   * sobre el componente que de verdad la dibuja.
+   */
+  it.each(["<Nav", "<SearchPanel", "<Container"])(
     "el arnés monta %s, igual que la pantalla",
     (pieza) => {
       expect(ARNES).toContain(pieza);
@@ -83,14 +89,17 @@ describe("la pantalla de resultados y su arnés de medición dibujan lo mismo (1
   );
 
   /**
-   * **La ciudad dibuja el mismo encabezado que la zona**, y por eso una sola
-   * medición vale para las dos. El día que dejen de coincidir, esta prueba lo
-   * dice antes de que alguien mida una y crea que midió las dos — que es la
-   * misma razón por la que `filtros-contract.test.ts` (14.33) corre sus
-   * aserciones sobre los dos archivos y no sobre uno.
+   * **`ListingGrid`, donde de verdad vive ahora.** El arnés la monta sin pasar
+   * por `SearchResultsList` —mide sólo lo que hay sobre el pliegue—, y la
+   * pantalla real la monta a través de él. Comprobar los dos sitios en vez de
+   * uno solo es lo que evita que un cambio en cualquiera de las dos rutas deje
+   * de dibujar avisos sin que esta prueba lo note.
    */
-  it.each(MEDIDAS)("la ciudad también usa styles.%s", (nombre) => {
-    expect(usaClase(CIUDAD, "styles", nombre)).toBe(true);
+  it("el arnés monta ListingGrid, y SearchResultsList la monta por la pantalla real", () => {
+    expect(ARNES).toContain("<ListingGrid");
+
+    const SEARCH_RESULTS_LIST = readFileSync("components/organisms/SearchResultsList.tsx", "utf-8");
+    expect(SEARCH_RESULTS_LIST).toContain("<ListingGrid");
   });
 
   /**

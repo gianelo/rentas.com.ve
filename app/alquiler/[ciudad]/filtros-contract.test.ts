@@ -50,10 +50,23 @@ describe("los filtros salen de la barra lateral y entran en el modal (14.33)", (
        * `SearchSummaryBar` que la 14.41 borró, la pantalla se quedaba sin decir
        * qué está filtrando. La lámina 7c lo resuelve con fichas quitables, y
        * cuáles son las arma el dominio.
+       *
+       * **Reescrita por la 22.6**: `<FilterChips` ya no se dibuja directo en
+       * `page.tsx` — vive dentro de `SearchResultsHeader`, que es lo que la
+       * 22.6 extrajo para que las dos pantallas no repitieran su propia hoja y
+       * su propio JSX. Lo que se afirma ahora es que la página le sigue
+       * pasando las fichas del dominio a ese componente, y que el componente
+       * las sigue dibujando con `FilterChips`.
        */
       it("dibuja las fichas quitables con lo que arma el dominio", () => {
-        expect(page).toContain("<FilterChips");
+        expect(page).toMatch(/<SearchResultsHeader[\s>]/);
         expect(page).toMatch(/chips=\{panel\.chips\}/);
+
+        const SEARCH_RESULTS_HEADER = readFileSync(
+          new URL("../../../components/organisms/SearchResultsHeader.tsx", import.meta.url),
+          "utf8",
+        );
+        expect(SEARCH_RESULTS_HEADER).toContain("<FilterChips");
       });
 
       /**
