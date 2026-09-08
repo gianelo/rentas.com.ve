@@ -49,4 +49,16 @@ export interface ZoneRoutePort {
    * this only narrows what reaches it.
    */
   findZoneBySlug(citySlug: string, zoneSlug: string): Promise<ZoneRouteCandidates | null>;
+
+  /**
+   * The curated zones named by `?zona=`, bounded to exactly the tokens the
+   * request carries (tasks.md 27.1, slice C correction —
+   * `R4-zona-query-silent-widening`). `?zona=` used to resolve against
+   * `ActiveCityZonesPort` output, so a zone whose last listing expired
+   * between two requests silently vanished and widened the search to the
+   * whole city — the same harm `findZoneBySlug`'s callers already refuse for
+   * the path segment. Bounded to the request's own tokens (slug or id, both
+   * of `zoneMatchesToken`'s forms) and never a reload of the taxonomy.
+   */
+  findZonesByTokens(cityId: string, tokens: readonly string[]): Promise<readonly CatalogueZone[]>;
 }

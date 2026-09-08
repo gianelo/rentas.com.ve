@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { slugify } from "@/modules/listing-discovery/domain/listing-url";
 import type { SearchCriteria } from "@/modules/listing-search/domain/search-criteria";
 import {
+  activeZonesFor,
   CITIES,
   coversFor,
   DC_ALTAMIRA,
@@ -58,7 +59,9 @@ vi.mock("@/modules/identity/infrastructure/session-port", () => ({
 vi.mock("@/modules/listing-catalogue/infrastructure/drizzle-catalogue", () => ({
   DrizzleCatalogue: class {
     listCities = async () => CITIES;
-    listZones = async () => ZONES;
+    // 27.1 slice C: el panel y las sugerencias ya no piden la taxonomía
+    // entera — piden sólo las zonas de la ciudad con avisos, ya contadas.
+    listActiveZones = async (cityId: string) => activeZonesFor(cityId);
     // El mismo espía en las dos instancias que la página crea (ruta y panel):
     // `vi.hoisted` lo comparte, así que la aserción de más abajo ve las dos
     // llamadas sin volver a resolver la fábrica del mock.
