@@ -1,3 +1,6 @@
+import type { CountedZoneName } from "@/modules/listing-catalogue/domain/bounded-vocabulary";
+import type { CatalogueZone } from "@/modules/listing-catalogue/domain/catalogue";
+import { slugify } from "@/modules/listing-discovery/domain/listing-url";
 import type { FacetCounts } from "@/modules/listing-search/application/ports/faceted-search.port";
 import type { ListingSearchResult } from "@/modules/listing-search/application/ports/listing-search.port";
 import type { SearchCriteria } from "@/modules/listing-search/domain/search-criteria";
@@ -46,8 +49,11 @@ function zone(id: string, name: string, cityId: string) {
 export const CHACAO = zone("zona-chacao", "Chacao", DISTRITO.id);
 export const ALTAMIRA = zone("zona-altamira", "Altamira", DISTRITO.id);
 export const TIERRA_NEGRA = zone("zona-tierra-negra", "Tierra Negra", MARACAIBO.id);
+/** Curada real, sin un solo aviso: el caso que R4 protege — no puede quedar
+ * afuera de `findZonesByTokens` sólo porque `activeZonesFor` no la cuenta. */
+export const EL_HATILLO = zone("zona-el-hatillo", "El Hatillo", DISTRITO.id);
 
-export const ZONES = [ALTAMIRA, CHACAO, TIERRA_NEGRA];
+export const ZONES = [ALTAMIRA, CHACAO, TIERRA_NEGRA, EL_HATILLO];
 
 function listing(
   id: string,
@@ -85,6 +91,40 @@ export function coversFor(ids: readonly string[]) {
       id,
       { keys: { thumb: `${id}/thumb.webp`, card: `${id}/card.webp` }, photoCount: 1 },
     ]),
+  );
+}
+
+/**
+ * Lo que `ActiveCityZonesPort.listActiveZones` devuelve en producción (27.1,
+ * slice C): sólo las zonas de esta ciudad con algún aviso, ya contadas. Es el
+ * `GROUP BY` del adaptador real, aplicado a mano sobre `LISTINGS` y `ZONES`.
+ */
+export function activeZonesFor(cityId: string): readonly CountedZoneName[] {
+  const counts = new Map<string, number>();
+  for (const row of LISTINGS) {
+    if (row.cityId !== cityId) continue;
+    counts.set(row.zoneId, (counts.get(row.zoneId) ?? 0) + 1);
+  }
+
+  return ZONES.filter((zone) => counts.has(zone.id)).map((zone) => ({
+    id: zone.id,
+    name: zone.name,
+    cityId: zone.cityId,
+    parentName: zone.parentName,
+    count: counts.get(zone.id) ?? 0,
+  }));
+}
+
+/** Lo que `ZoneRoutePort.findZonesByTokens` devuelve (R4): la taxonomía
+ * CURADA acotada a los tokens pedidos — nunca `activeZonesFor`. */
+export function curatedZonesFor(
+  cityId: string,
+  tokens: readonly string[],
+): readonly CatalogueZone[] {
+  return ZONES.filter(
+    (candidate) =>
+      candidate.cityId === cityId &&
+      tokens.some((token) => token === candidate.id || token === slugify(candidate.name)),
   );
 }
 

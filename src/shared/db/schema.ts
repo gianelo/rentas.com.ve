@@ -238,12 +238,39 @@ export const verifiedContacts = pgTable(
 // never inside a city — the constraint was not merely tight, it was
 // unsatisfiable.
 
-export const cities = pgTable("city", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  name: text("name").notNull().unique(),
-});
+export const cities = pgTable(
+  "city",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    name: text("name").notNull().unique(),
+    /**
+     * `slugify(name)` (tasks.md 27.1, slice A) — the SAME function
+     * `resolveZoneRoute` already calls at read time, so the column is a cache
+     * of a value the domain already computes, never a second rule.
+     *
+     * **Nullable, and that is a decision, not an oversight.** `slugify` does
+     * NFD normalization and a JS regex; Postgres cannot reproduce it in a
+     * migration's `UPDATE`, and reimplementing it in SQL would be exactly the
+     * duplicated rule AGENTS.md §1 and the founder's 22.31 precedent reject.
+     * So the migration can only ADD the column — it cannot fill it — and a
+     * column added `NOT NULL` with no way to fill existing rows is a
+     * migration Postgres refuses outright (drizzle/0006, drizzle/0007).
+     * `scripts/taxonomy-smoke.ts` backfills every NULL through this same
+     * `slugify` after each deploy's migration step, and then fails the
+     * deploy closed if one survives — which is what keeps NULL from becoming
+     * silently acceptable on a column the type system alone cannot protect.
+     *
+     * **No UNIQUE constraint.** Two different areas producing the same slug
+     * has never happened across the five real areas, but nothing here
+     * requires it to stay that way, and a unique index would fail the very
+     * backfill it exists to run.
+     */
+    slug: text("slug"),
+  },
+  (city) => [index("city_slug_idx").on(city.slug)],
+);
 
 /**
  * Where a place sits in the official hierarchy. `estado`, `municipio` and
@@ -305,6 +332,22 @@ export const zones = pgTable(
     /** IPOSTEL postal code, where the source declared one. */
     postalCode: text("postal_code"),
     source: text("source").$type<ZoneSource>().notNull(),
+    /**
+     * `slugify(name)` (tasks.md 27.1, slice A). See `cities.slug` for why
+     * this is nullable rather than `NOT NULL`: `slugify` cannot run inside a
+     * SQL migration, so the column can only be added, then backfilled by
+     * `scripts/taxonomy-smoke.ts` through the real function, which fails the
+     * deploy if one survives NULL or empty.
+     *
+     * **No UNIQUE constraint, on `slug` alone or on `(city_id, slug)`.**
+     * Measured against the real 5.813 rows (tasks.md 27.7): 335 groups of
+     * `(city_id, slug)` share a value across 779 zones, because a name like
+     * «Barrio Nuevo» is a real, distinct place in three different parroquias
+     * of the same city — not a duplicate row. A unique index would reject
+     * the backfill outright. The plain index below is for lookup, and lookup
+     * does not require uniqueness.
+     */
+    slug: text("slug"),
   },
   (zone) => [
     // The constraint D5 rests on. Untouched by the new depth, and that is the
@@ -335,6 +378,7 @@ export const zones = pgTable(
       .nullsNotDistinct(),
     index("zone_city_kind_idx").on(zone.cityId, zone.kind),
     index("zone_parent_idx").on(zone.parentId),
+    index("zone_slug_idx").on(zone.slug),
   ],
 );
 

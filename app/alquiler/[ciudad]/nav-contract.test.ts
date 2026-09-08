@@ -132,7 +132,11 @@ describe("las dos pantallas de resultados y la barra del producto", () => {
        * recorte escrito a mano al lado se dibujan idénticos.
        */
       it("arma las sugerencias con el dominio y no con un recorte propio", () => {
-        expect(page).toContain("boundedVocabulary(cities, zones, counts.byZone)");
+        // Corrección 27.1-C (`R3-suggestion-count-scope-unproved`):
+        // `activeZones` (ya contada por zona, `ActiveCityZonesPort`) sólo
+        // aporta el nombre de qué zonas existen; `counts.byZone` — el conteo
+        // del `criteria` de ESTE pedido — sigue decidiendo cuáles entran.
+        expect(page).toContain("boundedVocabulary(cities, activeZones, counts.byZone)");
         expect(page).not.toMatch(/zones\.filter\(|byZone\[/);
       });
 

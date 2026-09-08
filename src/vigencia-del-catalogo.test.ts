@@ -121,9 +121,18 @@ function lectores(): readonly string[] {
  * dejó escrita — su destino es también una búsqueda, y esa búsqueda cuenta con
  * este mismo predicado — así que un reloj distinto acá sería la regla
  * transversal 3 rota desde la caja en vez de desde la portada.
+ *
+ * **OCTAVO LECTOR, 2026-09-07 (27.1, slice C), y la misma razón otra vez.**
+ * `DrizzleCatalogue.listActiveZones` es el vocabulario acotado de las DOS
+ * pantallas de resultados —antes traían la taxonomía entera para que la
+ * página filtrara en JavaScript—: su destino es también una búsqueda, y esa
+ * búsqueda cuenta con este mismo predicado. Un reloj distinto acá ofrecería
+ * una zona cuyo único aviso caducó esta madrugada, la misma regla transversal
+ * 3 rota que el sexto y el séptimo lector ya dejaron escrita.
  */
 const DECLARADOS: readonly string[] = [
   "modules/contact-reveal/infrastructure/drizzle-contact-reveal.ts",
+  "modules/listing-catalogue/infrastructure/drizzle-catalogue.ts",
   "modules/listing-catalogue/infrastructure/drizzle-search-vocabulary.ts",
   "modules/listing-discovery/infrastructure/drizzle-active-zones.ts",
   "modules/listing-discovery/infrastructure/drizzle-home-collections.ts",

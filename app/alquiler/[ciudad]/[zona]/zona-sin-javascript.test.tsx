@@ -1,7 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { slugify } from "@/modules/listing-discovery/domain/listing-url";
 import type { SearchCriteria } from "@/modules/listing-search/domain/search-criteria";
 import {
+  activeZonesFor,
   CITIES,
   coversFor,
   DC_ALTAMIRA,
@@ -42,9 +44,10 @@ import {
  * la 11.6. Se anota así en vez de prometer un uno a uno que no se cumple.
  */
 
-const { search, countFacets } = vi.hoisted(() => ({
+const { search, countFacets, findZoneBySlug } = vi.hoisted(() => ({
   search: vi.fn(),
   countFacets: vi.fn(),
+  findZoneBySlug: vi.fn(),
 }));
 
 vi.mock("@/shared/db/client", () => ({ db: {} }));
@@ -56,7 +59,13 @@ vi.mock("@/modules/identity/infrastructure/session-port", () => ({
 vi.mock("@/modules/listing-catalogue/infrastructure/drizzle-catalogue", () => ({
   DrizzleCatalogue: class {
     listCities = async () => CITIES;
-    listZones = async () => ZONES;
+    // 27.1 slice C: el panel y las sugerencias ya no piden la taxonomía
+    // entera — piden sólo las zonas de la ciudad con avisos, ya contadas.
+    listActiveZones = async (cityId: string) => activeZonesFor(cityId);
+    // El mismo espía en las dos instancias que la página crea (ruta y panel):
+    // `vi.hoisted` lo comparte, así que la aserción de más abajo ve las dos
+    // llamadas sin volver a resolver la fábrica del mock.
+    findZoneBySlug = findZoneBySlug;
   },
 }));
 vi.mock("@/modules/listing-search/infrastructure/drizzle-listing-search", () => ({
@@ -81,10 +90,23 @@ beforeEach(() => {
   process.env.R2_BUCKET_PUBLIC_URL = "https://fotos.rentoru.test";
   search.mockReset();
   countFacets.mockReset();
+  findZoneBySlug.mockReset();
   search.mockImplementation(async (criteria: SearchCriteria) => matching(criteria));
   countFacets.mockImplementation(async (criteria: SearchCriteria, offered: readonly string[]) =>
     facetsFor(criteria, offered),
   );
+  // Lo mismo que `DrizzleCatalogue.findZoneBySlug` real: la ciudad por su
+  // slug y, dentro de ella, las zonas cuyo slug coincide — nunca la primera
+  // encontrada en un arreglo sin filtrar.
+  findZoneBySlug.mockImplementation(async (citySlug: string, zoneSlug: string) => {
+    const city = CITIES.find((candidate) => slugify(candidate.name) === citySlug);
+    if (!city) return null;
+
+    return {
+      city,
+      zones: ZONES.filter((zone) => zone.cityId === city.id && slugify(zone.name) === zoneSlug),
+    };
+  });
 });
 
 /** El cuerpo servido de `/alquiler/<ciudad>/<zona>`, sin ejecutar un solo script. */
@@ -100,6 +122,36 @@ async function servedBody(
     }),
   );
 }
+
+/**
+ * **27.1, slice B — la ruta se resuelve por índice, no escaneando el
+ * catálogo entero.**
+ *
+ * `loadCatalogue` seguía siendo lo único que existía para responder «¿qué
+ * ciudad y qué zona nombran estos dos segmentos?», así que la respuesta
+ * pasaba entera por la red para contestar una pregunta de una fila. Esto
+ * afirma el cable, no la consulta — que `findZoneBySlug` (`DrizzleCatalogue`,
+ * probado contra Postgres real en `tests/integration/catalogue.test.ts`) es
+ * a quien esta página le pregunta, y con los dos segmentos exactos de la URL.
+ */
+describe("27.1 slice B: la ruta de zona resuelve por índice", () => {
+  it("le pregunta a `findZoneBySlug`, con los segmentos de la URL", async () => {
+    await servedBody("maracaibo", "tierra-negra");
+
+    expect(findZoneBySlug).toHaveBeenCalledWith("maracaibo", "tierra-negra");
+  });
+
+  it("una ciudad o zona que el índice no conoce sigue devolviendo 404", async () => {
+    // `toThrow()` a secas aceptaba CUALQUIER excepción: si la consulta al
+    // índice reventara, la prueba seguiría en verde e informaría un 404 que
+    // nunca ocurrió. Se afirma la señal exacta de `notFound()` en Next 15 —el
+    // `digest`, que es por donde el enrutador decide servir la página 404—, no
+    // que algo haya fallado.
+    await expect(servedBody("ciudad-fantasma", "tierra-negra")).rejects.toMatchObject({
+      digest: "NEXT_HTTP_ERROR_FALLBACK;404",
+    });
+  });
+});
 
 describe("la página de zona sin JavaScript", () => {
   /** 11.5 */

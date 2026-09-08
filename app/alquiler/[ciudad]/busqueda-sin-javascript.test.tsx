@@ -1,14 +1,19 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { SuggestionVocabulary } from "@/modules/listing-catalogue/domain/suggest-filters";
 import type { SearchCriteria } from "@/modules/listing-search/domain/search-criteria";
 import {
+  ALTAMIRA,
+  activeZonesFor,
+  CHACAO,
   CITIES,
   coversFor,
+  curatedZonesFor,
   DC_ALTAMIRA,
   DC_CHACAO,
+  DISTRITO,
   facetsFor,
   matching,
-  ZONES,
 } from "../catalogo-de-prueba";
 
 /**
@@ -44,9 +49,22 @@ vi.mock("@/modules/identity/infrastructure/session-port", () => ({
 vi.mock("@/modules/listing-catalogue/infrastructure/drizzle-catalogue", () => ({
   DrizzleCatalogue: class {
     listCities = async () => CITIES;
-    listZones = async () => ZONES;
+    // 27.1 slice C: la página ya no pide la taxonomía entera para el panel y
+    // las sugerencias — pide sólo las zonas con avisos, ya contadas.
+    listActiveZones = async (cityId: string) => activeZonesFor(cityId);
+    // Corrección 27.1-C (`R4-zona-query-silent-widening`): `?zona=` resuelve
+    // contra la taxonomía CURADA, nunca contra `activeZonesFor`.
+    findZonesByTokens = async (cityId: string, tokens: readonly string[]) =>
+      curatedZonesFor(cityId, tokens);
   },
 }));
+vi.mock("@/modules/listing-catalogue/domain/bounded-vocabulary", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/modules/listing-catalogue/domain/bounded-vocabulary")>();
+  // Envuelve la función real: las sugerencias siguen siendo las que el
+  // dominio calcula, y el espía sólo deja ver con qué la llamaron.
+  return { ...actual, boundedVocabulary: vi.fn(actual.boundedVocabulary) };
+});
 vi.mock("@/modules/listing-search/infrastructure/drizzle-listing-search", () => ({
   DrizzleListingSearch: class {
     search = search;
@@ -63,12 +81,16 @@ vi.mock("@/modules/listing-discovery/infrastructure/drizzle-listing-photos", () 
   },
 }));
 
+import { boundedVocabulary } from "@/modules/listing-catalogue/domain/bounded-vocabulary";
 import CiudadPage from "./page";
+
+const suggestionsSpy = vi.mocked(boundedVocabulary);
 
 beforeEach(() => {
   process.env.R2_BUCKET_PUBLIC_URL = "https://fotos.rentoru.test";
   search.mockReset();
   countFacets.mockReset();
+  suggestionsSpy.mockClear();
   search.mockImplementation(async (criteria: SearchCriteria) => matching(criteria));
   countFacets.mockImplementation(async (criteria: SearchCriteria, offered: readonly string[]) =>
     facetsFor(criteria, offered),
@@ -293,5 +315,46 @@ describe("lo que la búsqueda le corrigió al precio, dicho (14.13)", () => {
     expect(html).not.toContain("Pediste de");
     expect(html).not.toContain("se ajustó");
     expect(html).not.toContain("Ningún alquiler");
+  });
+});
+
+/** Corrección 27.1-C, `R4-zona-query-silent-widening` (CRÍTICO, resiliencia):
+ * `?zona=` contra la taxonomía CURADA, no `activeZonesFor` — si no, una zona
+ * curada sin avisos ensancharía la búsqueda a la ciudad entera en silencio. */
+describe("`?zona=` con una zona curada sin avisos activos (R4)", () => {
+  it("busca vacía esa zona, y no ensancha a toda la ciudad", async () => {
+    const html = await servedBody({ zona: "el-hatillo" });
+
+    expect(html).toContain("0 propiedades activas");
+    // Si hubiera ensanchado a la ciudad, las dos de Distrito Capital
+    // aparecerían acá.
+    expect(html).not.toContain(DC_CHACAO.title);
+    expect(html).not.toContain(DC_ALTAMIRA.title);
+  });
+});
+
+/** Corrección 27.1-C, `R3-suggestion-count-scope-unproved` (CRÍTICO,
+ * confiabilidad): las sugerencias cuentan contra `counts.byZone` (ESTE
+ * pedido), no `activeZones` (ciudad entera). Se envuelve la función real con
+ * un espía y no se lee el marcado: `SearchSuggestions` es una isla de
+ * cliente que no dibuja nada hasta que alguien escribe. */
+describe("las sugerencias cuentan el criterio de ESTE pedido (R3)", () => {
+  it("una zona sin avisos bajo el filtro puesto no se sugiere, y la fuente es la real", async () => {
+    // $1000 de mínimo deja afuera el único aviso de Chacao ($450) y adentro
+    // el de Altamira ($1200): bajo ESTE criterio, Chacao queda en cero aunque
+    // activeZones la cuente con un aviso vivo en la ciudad entera.
+    await servedBody({ min: "1000" });
+
+    expect(suggestionsSpy).toHaveBeenCalledWith(
+      CITIES,
+      activeZonesFor(DISTRITO.id),
+      expect.any(Object),
+    );
+    const suggested = suggestionsSpy.mock.results[0]?.value as SuggestionVocabulary;
+    const suggestedIds = suggested.zones.map((zone) => zone.id);
+    // La negativa sola pasaría vacía con un `byZone` vacío a mano: la
+    // positiva de Altamira es la que obliga a que el conteo sea el real.
+    expect(suggestedIds).not.toContain(CHACAO.id);
+    expect(suggestedIds).toContain(ALTAMIRA.id);
   });
 });

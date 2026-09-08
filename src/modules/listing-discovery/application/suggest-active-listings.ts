@@ -1,4 +1,4 @@
-import type { CataloguePort } from "../../listing-catalogue/application/ports/catalogue.port";
+import type { ActiveCityZonesPort } from "../../listing-catalogue/application/ports/active-city-zones.port";
 import type {
   ListingSearchPort,
   ListingSearchResult,
@@ -24,11 +24,26 @@ import { suggestFromCity, suggestFromZone } from "../domain/listing-suggestions"
  * probada contra Postgres real en `tests/integration/listing-search.test.ts`,
  * que un puerto nuevo tendría que volver a ganarse.
  *
- * **El catálogo se lee SÓLO en la rama ampliada.** Los avisos de la zona del
- * aviso están, por construcción, en la zona del aviso: su nombre ya lo trajo la
- * ficha. Recién cuando se amplía a la ciudad aparecen zonas distintas, y ahí
- * hace falta nombrarlas. Es la rama rara de una pantalla rara — la común cuesta
- * una consulta.
+ * **Corrección, tasks.md 27.1 slice D.** Este archivo era el único camino de
+ * lectura que le quedaba a la taxonomía entera: pedía `CataloguePort.listZones()`
+ * —las 5.813 zonas del país, sin `WHERE`— y descartaba en JavaScript las que no
+ * fueran de esta ciudad, la misma causa que el resto de la tarea 27.1 ya
+ * corrigió en las otras pantallas. Ahora pide `ActiveCityZonesPort.listActiveZones(cityId)`
+ * —el mismo puerto que la 27.1 slice C ya le dio al panel de filtros—, que
+ * Postgres acota con `WHERE city_id = $1` y un `GROUP BY` sobre lo que ya
+ * filtró: la ciudad ajena nunca sale de la consulta, así que no queda un
+ * `.filter()` que hacerle a la respuesta. **Medido contra el contenedor real**
+ * (`rentas_test`, 17 ciudades y 5.810 zonas): la consulta vieja devolvía
+ * **5.810 filas y 701 kB** sin importar qué ciudad se estuviera ampliando; la
+ * nueva, para Caracas (6 avisos activos reales sembrados), devuelve **6 filas
+ * y 688 bytes**, con un `Index Scan` sobre `zone` y sin tocar la tabla entera
+ * (`EXPLAIN ANALYZE`, confirmado y no supuesto).
+ *
+ * **Las zonas activas se leen SÓLO en la rama ampliada.** Los avisos de la
+ * zona del aviso están, por construcción, en la zona del aviso: su nombre ya lo
+ * trajo la ficha. Recién cuando se amplía a la ciudad aparecen zonas distintas,
+ * y ahí hace falta nombrarlas. Es la rama rara de una pantalla rara — la común
+ * cuesta una consulta.
  */
 
 /**
@@ -68,15 +83,19 @@ export interface SuggestedListing {
 
 export interface SuggestActiveListingsDependencies {
   readonly search: ListingSearchPort;
-  /** Sólo se consulta al ampliar: es lo que nombra las otras zonas de la ciudad. */
-  readonly catalogue: CataloguePort;
+  /**
+   * Sólo se consulta al ampliar: es lo que nombra las otras zonas de la
+   * ciudad. Puerto acotado a UNA ciudad y a las zonas con avisos activos
+   * (27.1 slice D) — nunca la taxonomía entera.
+   */
+  readonly activeZones: ActiveCityZonesPort;
 }
 
 export async function suggestActiveListings(
   request: SuggestActiveListingsRequest,
   dependencies: SuggestActiveListingsDependencies,
 ): Promise<SuggestionOutcome<SuggestedListing>> {
-  const { search, catalogue } = dependencies;
+  const { search, activeZones } = dependencies;
 
   // `zoneIds` con una sola zona: el puerto combina varias con O, y una lista de
   // uno es exactamente "esta zona". La ciudad va igual en el criterio, así que
@@ -102,10 +121,13 @@ export async function suggestActiveListings(
   const outcome = suggestFromCity(inCity, request.listingId);
   if (outcome.scope === "none") return { scope: "none", listings: [] };
 
+  // `listActiveZones` ya llega acotada a `request.cityId` en el propio
+  // `WHERE`: no hace falta un `.filter()` acá, porque Postgres nunca devuelve
+  // la zona de otra ciudad.
   const zoneNames = new Map(
-    (await catalogue.listZones())
-      .filter((zone) => zone.cityId === request.cityId)
-      .map((zone) => [zone.id, zone.name] as const),
+    (await activeZones.listActiveZones(request.cityId)).map(
+      (zone) => [zone.id, zone.name] as const,
+    ),
   );
 
   return {

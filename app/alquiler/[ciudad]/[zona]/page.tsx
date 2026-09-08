@@ -46,14 +46,61 @@ interface ZonaProps {
 }
 
 /**
- * `generateMetadata` y el componente corren los dos por petición y los dos
- * necesitan el catálogo. `cache` los hace compartir una sola respuesta: sin
- * esto son cuatro viajes a Neon en vez de dos, y Neon es HTTP.
+ * Las ciudades del producto — cheap y compartida por el componente y el panel.
+ * `generateMetadata` no la necesita: resuelve sólo con `loadZoneRoute`.
  */
-const loadCatalogue = cache(async () => {
-  const catalogue = new DrizzleCatalogue(db);
+const loadCities = cache(async () => new DrizzleCatalogue(db).listCities());
 
-  return Promise.all([catalogue.listCities(), catalogue.listZones()]);
+/**
+ * Las zonas de ESTA ciudad con avisos activos, ya contadas — no la taxonomía
+ * entera (tasks.md 27.1, slice C). Hasta acá el panel de filtros y
+ * `boundedVocabulary` seguían pagando `loadCatalogue()` completo —5.801 filas
+ * y ~1.207 KB, medido en la rebanada B— DESPUÉS de que la rebanada B ya había
+ * sacado ese costo de resolver la ruta. `ActiveCityZonesPort.listActiveZones`
+ * NO contesta la misma pregunta que `counts.byZone` más abajo, y la
+ * diferencia decide para qué sirve cada una: esto cuenta por zona la ciudad
+ * ENTERA, filtrando sólo por `status` activo y vigencia, mientras que
+ * `counts.byZone` sale de la búsqueda facetada y responde al `criteria` de
+ * ESTE pedido. Por eso **acá sólo salen los NOMBRES**: cuáles zonas se
+ * ofrecen lo sigue decidiendo `counts.byZone` (corrección 27.1-C,
+ * `R3-suggestion-count-scope-unproved`), o una sugerencia podría llevar a una
+ * página vacía en cuanto haya un filtro puesto. Es una consulta agrupada por
+ * zona, no un filtro sobre el catálogo.
+ *
+ * **No puede correr en paralelo con `loadZoneRoute`**: necesita `place.city.id`,
+ * que `loadZoneRoute` es quien resuelve. Un viaje más en serie, pagado a
+ * propósito por la misma razón que el panel ya paga tres y no dos más abajo —
+ * la alternativa era seguir trayendo la ciudad entera para evitarlo.
+ */
+const loadActiveZones = cache(async (cityId: string) =>
+  new DrizzleCatalogue(db).listActiveZones(cityId),
+);
+
+/**
+ * Qué lugar nombran los dos segmentos de la URL — resuelto por el índice de
+ * `slug`, no escaneando la taxonomía entera (tasks.md 27.1, slice B).
+ *
+ * **Antes de esta rebanada, resolver la ruta pagaba `loadCatalogue()`
+ * completo** para hacerle a `resolveZoneRoute` una pregunta de una fila:
+ * medido contra el contenedor real, 5.801 filas y ~1.207 KB para devolver una
+ * ciudad y, cuando el nombre no se comparte entre parroquias, una única
+ * zona — 286 bytes (`tests/integration/catalogue.test.ts`). `findZoneBySlug`
+ * hace la misma pregunta con un `Index Scan` sobre `zone_slug_idx`.
+ *
+ * **`resolveZoneRoute` no cambia.** Sigue siendo la misma función pura, con
+ * la misma firma — lo único que cambia es de dónde salen los arreglos que
+ * recibe: antes las 5.813 zonas, ahora sólo la ciudad y las zonas que ya
+ * comparten `(city_id, slug)` con la petición. El dominio sigue decidiendo
+ * qué hace válida la ruta; la infraestructura sólo dejó de traer de más.
+ *
+ * `cache()` por la misma razón que `loadCities`/`loadActiveZones`:
+ * `generateMetadata` y el componente preguntan lo mismo en la misma petición.
+ */
+const loadZoneRoute = cache(async (citySlug: string, zoneSlug: string) => {
+  const candidates = await new DrizzleCatalogue(db).findZoneBySlug(citySlug, zoneSlug);
+  if (!candidates) return null;
+
+  return resolveZoneRoute([candidates.city], candidates.zones, citySlug, zoneSlug);
 });
 
 /**
@@ -88,12 +135,13 @@ const loadCatalogue = cache(async () => {
 export default async function ZonaPage({ params, searchParams }: ZonaProps) {
   const [{ ciudad, zona }, rawQuery] = await Promise.all([params, searchParams]);
 
-  const [cities, zones] = await loadCatalogue();
-
-  // Qué lugar nombran los dos segmentos lo decide el dominio. Se resuelven
-  // juntos porque la zona sola es ambigua: `Centro` existe en Maracaibo y en
-  // Distrito Capital.
-  const place = resolveZoneRoute(cities, zones, ciudad, zona);
+  // Qué lugar nombran los dos segmentos lo decide el dominio, sobre las
+  // filas que el índice ya recortó — no sobre la taxonomía entera. Se
+  // resuelven juntos porque la zona sola es ambigua: `Centro` existe en
+  // Maracaibo y en Distrito Capital. Las ciudades del producto viajan en
+  // paralelo: no dependen de `place` y `boundedVocabulary` las necesita
+  // enteras (14.18).
+  const [place, cities] = await Promise.all([loadZoneRoute(ciudad, zona), loadCities()]);
   // 404 y nunca una ciudad por defecto: responder 200 con los avisos de otra
   // parte publica contenido duplicado bajo una dirección inventada.
   if (!place) notFound();
@@ -103,10 +151,15 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
   const cityPath = `/alquiler/${ciudad}`;
   const basePath = `${cityPath}/${zona}`;
 
+  // **Sólo las zonas de esta ciudad con avisos activos** (27.1, slice C), no
+  // la taxonomía entera. Depende de `place.city.id`, así que corre después —
+  // el viaje en serie que el comentario de `loadActiveZones` ya explica.
+  const activeZones = await loadActiveZones(place.city.id);
+
   // El catálogo con el slug de cada zona ya calculado por el dominio. La
   // página no formatea nada: el slug es un dato de la zona, no un formateo de
   // la pantalla.
-  const searchZones = toSearchZones(zones);
+  const searchZones = toSearchZones(activeZones);
 
   // **Esta ruta RECHAZA `?zona=`** (resolución del fundador, 2026-08-26: "un
   // dato, un lugar"). La ubicación no aparece dos veces en una dirección: una
@@ -174,7 +227,10 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
     results.map((row) => ({
       ...row,
       cityName: place.city.name,
-      zoneName: zones.find((candidate) => candidate.id === row.zoneId)?.name ?? place.zone.name,
+      // **Sólo entre las zonas con avisos** (27.1, slice C): toda zona que un
+      // aviso mostrado pueda nombrar tiene avisos, así que está en `activeZones`.
+      zoneName:
+        activeZones.find((candidate) => candidate.id === row.zoneId)?.name ?? place.zone.name,
     })),
     covers,
     readPhotoPublicBaseUrl(),
@@ -260,11 +316,12 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
     // abierto desde el servidor. Sin el ancla, el panel queda debajo de la
     // cuadrícula y fuera de vista.
     filtersHref: `${buildSearchHref(basePath, query, { step: PANEL_OPEN_TOKEN })}#filtros`,
-    // **El vocabulario acotado de las sugerencias, sin un byte de datos
-    // nuevos** (14.51): `counts.byZone` vino en la MISMA consulta que las filas
-    // y las facetas (14.11), y el catálogo ya estaba leído para resolver la
-    // ruta. Cuáles zonas entran lo decide el dominio, no esta página.
-    suggestions: boundedVocabulary(cities, zones, counts.byZone),
+    // **El vocabulario acotado de las sugerencias** (14.51), con
+    // `boundedVocabulary` (corrección 27.1-C,
+    // `R3-suggestion-count-scope-unproved`): `activeZones` sólo aporta el
+    // NOMBRE de las zonas, y `counts.byZone` — el `criteria` de ESTE pedido —
+    // decide CUÁLES entran.
+    suggestions: boundedVocabulary(cities, activeZones, counts.byZone),
   };
 
   const pagination = resolvePagination(criteria.page, total);
@@ -369,8 +426,9 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
 export async function generateMetadata({ params, searchParams }: ZonaProps): Promise<Metadata> {
   const [{ ciudad, zona }, query] = await Promise.all([params, searchParams]);
 
-  const [cities, zones] = await loadCatalogue();
-  const place = resolveZoneRoute(cities, zones, ciudad, zona);
+  // Los metadatos sólo necesitan el lugar, nunca el catálogo entero — a
+  // diferencia del componente, que además arma el panel de filtros.
+  const place = await loadZoneRoute(ciudad, zona);
   if (!place) return {};
 
   // La regla mecánica de la 14.24: la zona se indexa, la zona refinada no.

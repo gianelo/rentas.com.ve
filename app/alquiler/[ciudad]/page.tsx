@@ -47,14 +47,25 @@ interface CiudadProps {
 
 /**
  * `generateMetadata` y el componente corren los dos por petición y los dos
- * necesitan el catálogo. `cache` los hace compartir una sola respuesta: sin
+ * necesitan las ciudades. `cache` los hace compartir una sola respuesta: sin
  * esto son cuatro viajes a Neon en vez de dos, y Neon es HTTP.
+ *
+ * **Ya no trae `listZones()`** (tasks.md 27.1, slice C). Hasta acá esta misma
+ * función pagaba la taxonomía entera —5.813 zonas— para que `generateMetadata`
+ * la descartara sin mirarla: sólo necesitó `cities` siempre. Separar los dos
+ * catálogos es lo que deja de pagar ese costo en el lugar que nunca lo cobró.
  */
-const loadCatalogue = cache(async () => {
-  const catalogue = new DrizzleCatalogue(db);
+const loadCities = cache(async () => new DrizzleCatalogue(db).listCities());
 
-  return Promise.all([catalogue.listCities(), catalogue.listZones()]);
-});
+/**
+ * Las zonas de ESTA ciudad con avisos activos, ya contadas — no la taxonomía
+ * entera (27.1, slice C). Alimenta el panel de filtros y, por NOMBRE
+ * solamente, las sugerencias — el conteo con el que deciden es
+ * `counts.byZone` (corrección 27.1-C, `R3-suggestion-count-scope-unproved`).
+ */
+const loadActiveZones = cache(async (cityId: string) =>
+  new DrizzleCatalogue(db).listActiveZones(cityId),
+);
 
 /**
  * Los avisos de una ciudad entera — **el nivel que faltaba entre el inicio y
@@ -80,7 +91,7 @@ const loadCatalogue = cache(async () => {
 export default async function CiudadPage({ params, searchParams }: CiudadProps) {
   const [{ ciudad }, rawQuery] = await Promise.all([params, searchParams]);
 
-  const [cities, zones] = await loadCatalogue();
+  const cities = await loadCities();
 
   // Qué ciudad nombra el segmento lo decide el dominio. 404 y nunca la primera
   // ciudad: responder 200 con los avisos de otra parte publica contenido
@@ -93,21 +104,31 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
   // filtros.
   const cityPath = `/alquiler/${ciudad}`;
 
+  // **Sólo las zonas de esta ciudad con avisos activos** (27.1, slice C), no
+  // la taxonomía entera: es lo que el panel de filtros ofrece.
+  const activeZones = await loadActiveZones(city.id);
+
   // El catálogo con el slug de cada zona ya calculado por el dominio. La
   // página no formatea nada: el slug es un dato de la zona, no un formateo de
   // la pantalla.
-  const searchZones = toSearchZones(zones);
+  const searchZones = toSearchZones(activeZones);
+
+  // `?zona=` contra la taxonomía CURADA, nunca `activeZones`
+  // (`R4-zona-query-silent-widening`): si no, la búsqueda se ensancharía a la
+  // ciudad entera en silencio al caducar el último aviso de la zona nombrada.
+  const zoneTokens = readZoneList(rawQuery[SEARCH_QUERY_NAMES.zone]);
+  const curatedZones = toSearchZones(
+    zoneTokens.length === 0
+      ? []
+      : await new DrizzleCatalogue(db).findZonesByTokens(city.id, zoneTokens),
+  );
 
   // **La única diferencia real con la página de zona**: no hay zona afirmada
   // por la ruta, así que las elegidas salen enteras de `?zona=`. Cuáles
   // sobreviven lo decide el dominio, que deja caer la que no pertenece a esta
   // ciudad sin llevarse la búsqueda entera — y que acepta tanto el slug (F12)
   // como el id de las direcciones ya compartidas.
-  const chosenZones = resolveZoneTokens(
-    readZoneList(rawQuery[SEARCH_QUERY_NAMES.zone]),
-    searchZones,
-    city.id,
-  );
+  const chosenZones = resolveZoneTokens(zoneTokens, curatedZones, city.id);
 
   // **Ésta es la ruta que SÍ admite `?zona=`, y la única** (resolución del
   // fundador, 2026-08-26: "un dato, un lugar"). Que lo sea es una regla y no
@@ -148,7 +169,8 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
       page: query[SEARCH_QUERY_NAMES.page],
       order: query[SEARCH_QUERY_NAMES.order],
     },
-    searchZones,
+    // `chosenZones`, no `searchZones` (`R4-zona-query-silent-widening`).
+    chosenZones,
   ) ?? { cityId: city.id };
 
   const results = await new DrizzleListingSearch(db).search(criteria);
@@ -159,8 +181,10 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
   const covers = await new DrizzleListingPhotos(db).coversFor(results.map((row) => row.id));
 
   // A diferencia de la página de zona, acá los avisos vienen de zonas
-  // distintas, así que el nombre de cada una se busca por su id.
-  const zoneName = new Map(zones.map((zone) => [zone.id, zone.name]));
+  // distintas, así que el nombre de cada una se busca por su id — **entre las
+  // zonas con avisos** (27.1, slice C) y no en la taxonomía entera: toda zona
+  // que un aviso mostrado pueda nombrar tiene avisos, así que está ahí.
+  const zoneName = new Map(activeZones.map((zone) => [zone.id, zone.name]));
 
   const cards = buildListingGrid(
     results.map((row) => ({
@@ -245,13 +269,10 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
     // abierto desde el servidor. Sin el ancla, el panel queda debajo de la
     // cuadrícula y fuera de vista.
     filtersHref: `${buildSearchHref(cityPath, query, { step: PANEL_OPEN_TOKEN })}#filtros`,
-    // **El vocabulario acotado de las sugerencias, sin un byte de datos
-    // nuevos** (14.51). `counts.byZone` ya vino en la MISMA consulta que las
-    // filas y las facetas (14.11), y el nombre y la parroquia de cada zona ya
-    // están en el catálogo que esta página leyó para resolver la ruta. Cuáles
-    // entran —sólo las que tienen avisos— lo decide el dominio: acá no hay un
-    // `.filter()`, que es la regla permanente del fundador.
-    suggestions: boundedVocabulary(cities, zones, counts.byZone),
+    // `boundedVocabulary`, no `boundedVocabularyOf`
+    // (`R3-suggestion-count-scope-unproved`): `activeZones` sólo aporta el
+    // NOMBRE de las zonas, `counts.byZone` decide CUÁLES entran.
+    suggestions: boundedVocabulary(cities, activeZones, counts.byZone),
   };
 
   const pagination = resolvePagination(criteria.page, total);
@@ -353,7 +374,7 @@ export default async function CiudadPage({ params, searchParams }: CiudadProps) 
 export async function generateMetadata({ params, searchParams }: CiudadProps): Promise<Metadata> {
   const [{ ciudad }, query] = await Promise.all([params, searchParams]);
 
-  const [cities] = await loadCatalogue();
+  const cities = await loadCities();
   const city = resolveCityRoute(cities, ciudad);
   if (!city) return {};
 

@@ -10,6 +10,7 @@ import {
   type CatalogueDatabase,
   DrizzleCatalogue,
 } from "../../src/modules/listing-catalogue/infrastructure/drizzle-catalogue";
+import { slugify } from "../../src/modules/listing-discovery/domain/listing-url";
 import * as schema from "../../src/shared/db/schema";
 
 /**
@@ -159,5 +160,148 @@ describe("DrizzleCatalogue.listZones", () => {
     const zones = await catalogue.listZones();
 
     expect(zones.some((zone) => zone.id === doomedZone)).toBe(false);
+  });
+});
+
+/**
+ * `DrizzleCatalogue.findZoneBySlug` — the indexed lookup tasks.md 27.1 (slice
+ * B) adds so `/alquiler/<ciudad>/<zona>` stops resolving over the entire
+ * taxonomy.
+ *
+ * **Measured against this same container before writing this test**
+ * (2026-09-07, `rentas_test`, the real 5-area/5,796-zone seed): the full
+ * `listCities()` + `listZones()` pair this replaces for route resolution
+ * returns 5,801 rows and ~1,207 KB (`pg_column_size`); a single indexed
+ * lookup for a real, non-duplicated zone (`Maracaibo` / `sector-san-rafael`)
+ * returns 2 rows and 286 bytes, using `Index Scan using zone_slug_idx`
+ * (`EXPLAIN ANALYZE`, confirmed, not assumed). A duplicated real name
+ * (`Caracas` / `barrio-la-cruz`, 8 parishes) still returns 9 rows, nowhere
+ * near the full scan. Fixtures below use synthetic rows with an explicit
+ * `slug` — direct `INSERT`s bypass the application code that computes it —
+ * so the shape asserted here is the one the seeded data already proved.
+ */
+describe("DrizzleCatalogue.findZoneBySlug", () => {
+  const CITY_ONE = randomUUID();
+  const CITY_TWO = randomUUID();
+  const CITY_ONE_NAME = `CCC-Uno ${CITY_ONE}`;
+  const CITY_TWO_NAME = `CCD-Dos ${CITY_TWO}`;
+  const CITY_ONE_SLUG = slugify(CITY_ONE_NAME);
+  const CITY_TWO_SLUG = slugify(CITY_TWO_NAME);
+
+  // Dos parroquias distintas dentro de CITY_ONE, para que las dos zonas de
+  // abajo puedan compartir nombre sin chocar contra
+  // `zone_city_parent_category_name_unique` — exactamente el caso real que la
+  // 27.7 midió: el mismo nombre de barrio, bajo padres distintos.
+  const PARENT_A = randomUUID();
+  const PARENT_B = randomUUID();
+
+  const SHARED_NAME = `Barrio Compartido ${randomUUID()}`;
+  const SHARED_SLUG = slugify(SHARED_NAME);
+  const SHARED_ZONE_A = randomUUID();
+  const SHARED_ZONE_B = randomUUID();
+
+  const SOLO_NAME = `Sector Solo ${randomUUID()}`;
+  const SOLO_SLUG = slugify(SOLO_NAME);
+  const SOLO_ZONE_CITY_ONE = randomUUID();
+  // La MISMA zona, por nombre, pero en la otra ciudad — la 27.7 la llama
+  // «lugares reales y distintos que comparten nombre». Existe para probar que
+  // el recorte por ciudad no deja pasar la de al lado.
+  const SOLO_ZONE_CITY_TWO = randomUUID();
+
+  beforeAll(async () => {
+    await pool.query('INSERT INTO "city" (id, name, slug) VALUES ($1,$2,$3),($4,$5,$6)', [
+      CITY_ONE,
+      CITY_ONE_NAME,
+      CITY_ONE_SLUG,
+      CITY_TWO,
+      CITY_TWO_NAME,
+      CITY_TWO_SLUG,
+    ]);
+    await pool.query(
+      `INSERT INTO "zone" (id, city_id, name, kind, source) VALUES
+        ($1,$2,$3,'parroquia','INE'),
+        ($4,$5,$6,'parroquia','INE')`,
+      [
+        PARENT_A,
+        CITY_ONE,
+        `Parroquia A ${PARENT_A}`,
+        PARENT_B,
+        CITY_ONE,
+        `Parroquia B ${PARENT_B}`,
+      ],
+    );
+    await pool.query(
+      `INSERT INTO "zone" (id, city_id, parent_id, name, slug, kind, category, source) VALUES
+        ($1,$2,$3,$4,$5,'elemento','barrio','INE'),
+        ($6,$7,$8,$9,$10,'elemento','barrio','INE'),
+        ($11,$12,NULL,$13,$14,'elemento','barrio','INE'),
+        ($15,$16,NULL,$17,$18,'elemento','barrio','INE')`,
+      [
+        SHARED_ZONE_A,
+        CITY_ONE,
+        PARENT_A,
+        SHARED_NAME,
+        SHARED_SLUG,
+        SHARED_ZONE_B,
+        CITY_ONE,
+        PARENT_B,
+        SHARED_NAME,
+        SHARED_SLUG,
+        SOLO_ZONE_CITY_ONE,
+        CITY_ONE,
+        SOLO_NAME,
+        SOLO_SLUG,
+        SOLO_ZONE_CITY_TWO,
+        CITY_TWO,
+        SOLO_NAME,
+        SOLO_SLUG,
+      ],
+    );
+  });
+
+  afterAll(async () => {
+    await pool.query('DELETE FROM "city" WHERE id = ANY($1)', [[CITY_ONE, CITY_TWO]]);
+  });
+
+  it("devuelve la ciudad y TODAS las zonas que comparten su slug dentro de ella (27.7)", async () => {
+    const result = await catalogue.findZoneBySlug(CITY_ONE_SLUG, SHARED_SLUG);
+
+    expect(result?.city.id).toBe(CITY_ONE);
+    expect(result?.zones.map((zone) => zone.id).sort()).toEqual(
+      [SHARED_ZONE_A, SHARED_ZONE_B].sort(),
+    );
+  });
+
+  it("no cruza el slug de zona hacia la ciudad vecina que lo comparte", async () => {
+    const inCityOne = await catalogue.findZoneBySlug(CITY_ONE_SLUG, SOLO_SLUG);
+    const inCityTwo = await catalogue.findZoneBySlug(CITY_TWO_SLUG, SOLO_SLUG);
+
+    expect(inCityOne?.zones.map((zone) => zone.id)).toEqual([SOLO_ZONE_CITY_ONE]);
+    expect(inCityTwo?.zones.map((zone) => zone.id)).toEqual([SOLO_ZONE_CITY_TWO]);
+  });
+
+  it("devuelve null cuando el segmento de ciudad no nombra una ciudad curada", async () => {
+    expect(await catalogue.findZoneBySlug("no-es-una-ciudad", SOLO_SLUG)).toBeNull();
+  });
+
+  it("devuelve la ciudad con un arreglo vacío cuando la zona no existe en ella", async () => {
+    const result = await catalogue.findZoneBySlug(CITY_ONE_SLUG, "no-es-una-zona");
+
+    expect(result?.city.id).toBe(CITY_ONE);
+    expect(result?.zones).toEqual([]);
+  });
+
+  it("emite filas que `resolveZoneRoute` puede consumir sin cambios", async () => {
+    // El seam completo: el puerto indexado alimenta la misma regla de
+    // dominio que antes recibía la taxonomía entera.
+    const { resolveZoneRoute } = await import(
+      "../../src/modules/listing-discovery/domain/zone-route"
+    );
+    const result = await catalogue.findZoneBySlug(CITY_ONE_SLUG, SOLO_SLUG);
+    if (!result) throw new Error("se esperaba una coincidencia");
+
+    const place = resolveZoneRoute([result.city], result.zones, CITY_ONE_SLUG, SOLO_SLUG);
+
+    expect(place?.zone.id).toBe(SOLO_ZONE_CITY_ONE);
   });
 });

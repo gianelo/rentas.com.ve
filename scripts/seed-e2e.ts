@@ -22,6 +22,7 @@
  */
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
+import { slugify } from "../src/modules/listing-discovery/domain/listing-url";
 import {
   cities,
   listingPhotoDerivatives,
@@ -31,14 +32,32 @@ import {
   zones,
 } from "../src/shared/db/schema";
 
-export const DISTRITO = { id: "e2e-ciudad-dc", name: "Distrito Capital" };
-export const MARACAIBO = { id: "e2e-ciudad-mcbo", name: "Maracaibo" };
+// `slug` viene de la MISMA `slugify` que el dominio usa en producción (tasks.md
+// 27.1, slice A) y no de un literal escrito a mano: esta semilla es otro
+// camino que crea filas de `city`/`zone`, y un segundo cálculo acá sería
+// exactamente la duplicación que la columna existe para evitar.
+export const DISTRITO = {
+  id: "e2e-ciudad-dc",
+  name: "Distrito Capital",
+  slug: slugify("Distrito Capital"),
+};
+export const MARACAIBO = { id: "e2e-ciudad-mcbo", name: "Maracaibo", slug: slugify("Maracaibo") };
 
 export const ZONE_ROWS = [
-  { id: "e2e-zona-chacao", cityId: DISTRITO.id, name: "Chacao" },
-  { id: "e2e-zona-altamira", cityId: DISTRITO.id, name: "Altamira" },
-  { id: "e2e-zona-tierra-negra", cityId: MARACAIBO.id, name: "Tierra Negra" },
-  { id: "e2e-zona-bella-vista", cityId: MARACAIBO.id, name: "Bella Vista" },
+  { id: "e2e-zona-chacao", cityId: DISTRITO.id, name: "Chacao", slug: slugify("Chacao") },
+  { id: "e2e-zona-altamira", cityId: DISTRITO.id, name: "Altamira", slug: slugify("Altamira") },
+  {
+    id: "e2e-zona-tierra-negra",
+    cityId: MARACAIBO.id,
+    name: "Tierra Negra",
+    slug: slugify("Tierra Negra"),
+  },
+  {
+    id: "e2e-zona-bella-vista",
+    cityId: MARACAIBO.id,
+    name: "Bella Vista",
+    slug: slugify("Bella Vista"),
+  },
 ] as const;
 
 export const PUBLISHER = {
