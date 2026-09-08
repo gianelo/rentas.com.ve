@@ -57,6 +57,33 @@ const loadCatalogue = cache(async () => {
 });
 
 /**
+ * Qué lugar nombran los dos segmentos de la URL — resuelto por el índice de
+ * `slug`, no escaneando la taxonomía entera (tasks.md 27.1, slice B).
+ *
+ * **Antes de esta rebanada, resolver la ruta pagaba `loadCatalogue()`
+ * completo** para hacerle a `resolveZoneRoute` una pregunta de una fila:
+ * medido contra el contenedor real, 5.801 filas y ~1.207 KB para devolver una
+ * ciudad y, cuando el nombre no se comparte entre parroquias, una única
+ * zona — 286 bytes (`tests/integration/catalogue.test.ts`). `findZoneBySlug`
+ * hace la misma pregunta con un `Index Scan` sobre `zone_slug_idx`.
+ *
+ * **`resolveZoneRoute` no cambia.** Sigue siendo la misma función pura, con
+ * la misma firma — lo único que cambia es de dónde salen los arreglos que
+ * recibe: antes las 5.813 zonas, ahora sólo la ciudad y las zonas que ya
+ * comparten `(city_id, slug)` con la petición. El dominio sigue decidiendo
+ * qué hace válida la ruta; la infraestructura sólo dejó de traer de más.
+ *
+ * `cache()` por la misma razón que `loadCatalogue`: `generateMetadata` y el
+ * componente preguntan lo mismo en la misma petición.
+ */
+const loadZoneRoute = cache(async (citySlug: string, zoneSlug: string) => {
+  const candidates = await new DrizzleCatalogue(db).findZoneBySlug(citySlug, zoneSlug);
+  if (!candidates) return null;
+
+  return resolveZoneRoute([candidates.city], candidates.zones, citySlug, zoneSlug);
+});
+
+/**
  * Los resultados de una zona — **y no una pantalla aparte**.
  *
  * La 14.24 borró `/buscar` después de mirar cómo escribe Airbnb sus URLs: el
@@ -88,12 +115,16 @@ const loadCatalogue = cache(async () => {
 export default async function ZonaPage({ params, searchParams }: ZonaProps) {
   const [{ ciudad, zona }, rawQuery] = await Promise.all([params, searchParams]);
 
-  const [cities, zones] = await loadCatalogue();
-
-  // Qué lugar nombran los dos segmentos lo decide el dominio. Se resuelven
-  // juntos porque la zona sola es ambigua: `Centro` existe en Maracaibo y en
-  // Distrito Capital.
-  const place = resolveZoneRoute(cities, zones, ciudad, zona);
+  // Qué lugar nombran los dos segmentos lo decide el dominio, sobre las
+  // filas que el índice ya recortó — no sobre la taxonomía entera. Se
+  // resuelven juntos porque la zona sola es ambigua: `Centro` existe en
+  // Maracaibo y en Distrito Capital.
+  const [place, [cities, zones]] = await Promise.all([
+    loadZoneRoute(ciudad, zona),
+    // El panel de filtros y el vocabulario acotado siguen necesitando la
+    // taxonomía completa (tasks.md 27.1, rebanadas C y D) — sin tocarlos acá.
+    loadCatalogue(),
+  ]);
   // 404 y nunca una ciudad por defecto: responder 200 con los avisos de otra
   // parte publica contenido duplicado bajo una dirección inventada.
   if (!place) notFound();
@@ -369,8 +400,9 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
 export async function generateMetadata({ params, searchParams }: ZonaProps): Promise<Metadata> {
   const [{ ciudad, zona }, query] = await Promise.all([params, searchParams]);
 
-  const [cities, zones] = await loadCatalogue();
-  const place = resolveZoneRoute(cities, zones, ciudad, zona);
+  // Los metadatos sólo necesitan el lugar, nunca el catálogo entero — a
+  // diferencia del componente, que además arma el panel de filtros.
+  const place = await loadZoneRoute(ciudad, zona);
   if (!place) return {};
 
   // La regla mecánica de la 14.24: la zona se indexa, la zona refinada no.

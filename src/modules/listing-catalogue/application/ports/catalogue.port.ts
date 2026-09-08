@@ -20,6 +20,16 @@ import type { CatalogueCity, CatalogueZone } from "../../domain/catalogue";
  * `zonesForCity` is a pure function over these rows. A `listZonesForCity`
  * here would look tighter and would be worse: the caller would then have to
  * be told which city, before the rule that decides which city has run.
+ *
+ * **The indexed route lookup lives in its own port, `ZoneRoutePort`
+ * (`zone-route.port.ts`), and not here.** Every caller of this port today —
+ * bulk import's zone resolution, `suggest-active-listings` — only ever needs
+ * `listCities`/`listZones`, and every one of them fakes this interface as a
+ * plain object literal. Adding a required method here would force each of
+ * those fakes to implement a query they never call, which is exactly the
+ * "a rule the caller can forget/a shape the caller must satisfy for no
+ * reason" this design already argues against elsewhere. `DrizzleCatalogue`
+ * implements both ports; a caller asks for the one it needs.
  */
 export interface CataloguePort {
   listCities(): Promise<readonly CatalogueCity[]>;
