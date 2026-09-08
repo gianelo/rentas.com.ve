@@ -24,11 +24,16 @@
  * `tests/integration/taxonomy-smoke.test.ts`.
  */
 import { describeTaxonomyGaps } from "../src/modules/operability/domain/taxonomy-gap";
+import { describeSlugGaps } from "../src/modules/operability/domain/taxonomy-slug";
 import type { SmokeDatabase } from "../src/modules/operability/infrastructure/schema-shapes";
 import {
   expectedTaxonomy,
   findTaxonomyGapsIn,
 } from "../src/modules/operability/infrastructure/taxonomy-census";
+import {
+  backfillTaxonomySlugs,
+  findTaxonomySlugGapsIn,
+} from "../src/modules/operability/infrastructure/taxonomy-slug-backfill";
 import { loadDotEnvWithoutOverriding } from "../src/shared/db/seed";
 
 // En Vercel `DATABASE_URL` ya viene en el entorno y esto no hace nada. Está
@@ -64,3 +69,32 @@ const { cityNames, zoneIds } = expectedTaxonomy();
 console.log(
   `taxonomy-smoke: ${cityNames.length} área(s) y ${zoneIds.length} zona(s) de docs/territorio/ presentes en la base.`,
 );
+
+// **El backfill del `slug` nullable (tasks.md 27.1, slice A), y su gate.**
+// La migración sólo pudo AGREGAR la columna — ver `schema.ts` para por qué no
+// pudo llenarla — así que este es el único lugar donde una fila vieja llega a
+// tener slug. Es un no-op en cualquier despliegue que ya corrió esto una vez:
+// sólo toca filas con `slug IS NULL`.
+const backfill = await backfillTaxonomySlugs(db as unknown as SmokeDatabase);
+if (backfill.citiesBackfilled > 0 || backfill.zonesBackfilled > 0) {
+  console.log(
+    `taxonomy-smoke: backfill de slug — ${backfill.citiesBackfilled} ciudad(es) y ` +
+      `${backfill.zonesBackfilled} zona(s).`,
+  );
+}
+
+// El gate. Un NULL o un slug desactualizado que sobreviviera al backfill de
+// arriba no se vuelve a intentar solo: el tipo de la columna lo permite y
+// nada más lo impide, así que esto falla el despliegue en vez de dejarlo
+// pasar en silencio — la misma forma de fallar cerrado que el resto de este
+// script ya usa para la taxonomía completa.
+const slugGaps = await findTaxonomySlugGapsIn(db as unknown as SmokeDatabase);
+if (slugGaps.length > 0) {
+  console.error(
+    "taxonomy-smoke: HAY FILAS SIN SLUG DESPUÉS DEL BACKFILL.\n\n" +
+      `${describeSlugGaps(slugGaps)}\n\n` +
+      "Esto no debería ser posible con el backfill de arriba ya corrido: revisá " +
+      "si `slugify` cambió de forma que no termina en el mismo valor dos veces.",
+  );
+  process.exit(1);
+}

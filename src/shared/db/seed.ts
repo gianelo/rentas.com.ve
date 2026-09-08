@@ -307,8 +307,8 @@ export async function seedTaxonomy(database?: SeedDatabase): Promise<void> {
   for (const area of areas) {
     await target
       .insert(cities)
-      .values({ id: area.id, name: area.name })
-      .onConflictDoUpdate({ target: cities.name, set: { name: area.name } });
+      .values({ id: area.id, name: area.name, slug: area.slug })
+      .onConflictDoUpdate({ target: cities.name, set: { name: area.name, slug: area.slug } });
   }
 
   // En lotes porque son casi 5.800 filas y un insert por fila son 5.800 viajes
