@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gt, gte, inArray, lte, type SQL, sql } from "drizzl
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import { listings } from "../../../shared/db/schema";
+import { assertRowBudget } from "../../operability/domain/row-budget";
 import type {
   ListingSearchPort,
   ListingSearchResult,
@@ -143,26 +144,26 @@ export class DrizzleListingSearch implements ListingSearchPort {
 
     const { limit, offset } = pageWindow(criteria.page);
 
-    return (
-      this.db
-        .select({
-          id: listings.id,
-          cityId: listings.cityId,
-          zoneId: listings.zoneId,
-          title: listings.title,
-          priceUsd: listings.priceUsd,
-          rooms: listings.rooms,
-          areaM2: listings.areaM2,
-          publisherType: listings.publisherType,
-          publishedAt: listings.publishedAt,
-        })
-        .from(listings)
-        .where(and(...filters))
-        // Cuál de los tres, y su desempate, en `ORDER_BY` — que es donde
-        // quedó escrito por qué el `id` no es cosmético.
-        .orderBy(...orderBy(criteria.order))
-        .limit(limit)
-        .offset(offset)
-    );
+    const rows = await this.db
+      .select({
+        id: listings.id,
+        cityId: listings.cityId,
+        zoneId: listings.zoneId,
+        title: listings.title,
+        priceUsd: listings.priceUsd,
+        rooms: listings.rooms,
+        areaM2: listings.areaM2,
+        publisherType: listings.publisherType,
+        publishedAt: listings.publishedAt,
+      })
+      .from(listings)
+      .where(and(...filters))
+      // Cuál de los tres, y su desempate, en `ORDER_BY` — que es donde
+      // quedó escrito por qué el `id` no es cosmético.
+      .orderBy(...orderBy(criteria.order))
+      .limit(limit)
+      .offset(offset);
+
+    return assertRowBudget(rows, "DrizzleListingSearch.search");
   }
 }

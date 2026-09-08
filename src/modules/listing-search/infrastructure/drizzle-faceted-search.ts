@@ -3,6 +3,7 @@ import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import type { PropertyType } from "../../../shared/db/schema";
 import { listings } from "../../../shared/db/schema";
+import { assertRowBudget } from "../../operability/domain/row-budget";
 import type {
   BathroomStep,
   FacetCounts,
@@ -353,6 +354,8 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       // El arreglo entra al `group by` porque es una columna pelada en un
       // `select` agrupado, no porque parta nada: tiene UN solo valor.
       .groupBy(listings.zoneId, priceFacet.tally);
+
+    assertRowBudget(rows, "DrizzleFacetedSearch.countFacets");
 
     const sums = {
       total: 0,
