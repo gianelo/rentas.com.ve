@@ -1,9 +1,10 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { alias } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import { cities, zones } from "../../../shared/db/schema";
 import type { CataloguePort } from "../application/ports/catalogue.port";
+import type { ZoneRouteCandidates, ZoneRoutePort } from "../application/ports/zone-route.port";
 import type { CatalogueCity, CatalogueZone } from "../domain/catalogue";
 
 /**
@@ -14,7 +15,7 @@ import type { CatalogueCity, CatalogueZone } from "../domain/catalogue";
  */
 export type CatalogueDatabase = PgDatabase<PgQueryResultHKT, typeof schema>;
 
-export class DrizzleCatalogue implements CataloguePort {
+export class DrizzleCatalogue implements CataloguePort, ZoneRoutePort {
   constructor(private readonly db: CatalogueDatabase) {}
 
   /**
@@ -66,5 +67,50 @@ export class DrizzleCatalogue implements CataloguePort {
       .from(zones)
       .leftJoin(parent, eq(zones.parentId, parent.id))
       .orderBy(asc(zones.name));
+  }
+
+  /**
+   * The indexed lookup tasks.md 27.1 (slice B) adds so
+   * `/alquiler/<ciudad>/<zona>` stops paying for `listCities()` +
+   * `listZones()` — the entire taxonomy — to answer a two-segment question.
+   *
+   * **Two queries, not one join, and that is deliberate.** `city` has ~18
+   * rows; folding it into the zone query's `WHERE` would still need a second
+   * round trip to fail closed on an unknown city (`null`, never a stray
+   * zone). Reading it first is also what makes "the city segment does not
+   * name a curated city" a clean early return instead of an empty-vs-absent
+   * ambiguity on the joined result.
+   *
+   * **The zone query is scoped by BOTH `city_id` and `slug`, and returns the
+   * whole set — never `LIMIT 1`.** `resolveZoneRoute` still decides what a
+   * valid route is; picking one row here would silently reintroduce the
+   * exact ambiguity the 27.7 port shape exists to carry forward. See
+   * `ZoneRouteCandidates` for why the caller receives an array.
+   */
+  async findZoneBySlug(citySlug: string, zoneSlug: string): Promise<ZoneRouteCandidates | null> {
+    const [city] = await this.db
+      .select({ id: cities.id, name: cities.name })
+      .from(cities)
+      .where(eq(cities.slug, citySlug))
+      .limit(1);
+
+    if (!city) return null;
+
+    const parent = alias(zones, "parent");
+    const zoneRows = await this.db
+      .select({
+        id: zones.id,
+        name: zones.name,
+        cityId: zones.cityId,
+        kind: zones.kind,
+        category: zones.category,
+        parentName: parent.name,
+      })
+      .from(zones)
+      .leftJoin(parent, eq(zones.parentId, parent.id))
+      .where(and(eq(zones.cityId, city.id), eq(zones.slug, zoneSlug)))
+      .orderBy(asc(zones.name));
+
+    return { city, zones: zoneRows };
   }
 }
