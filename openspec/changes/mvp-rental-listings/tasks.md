@@ -2506,3 +2506,25 @@ El fundador trajo hoy una lámina que nunca había estado en el repositorio: `de
     **Por qué NO se implementa junto con la 27.1** (decisión del fundador): la 27.1 apaga el incendio y no cambia nada de lo que el visitante ve. Ésta **sí cambia lo que devuelve una pantalla**, y merece su propia rebanada, su propia prueba y su propio PR. Mezclarlas haría imposible saber cuál de las dos movió un resultado.
 
     **Qué queda por decidir**: si la pantalla dice algo cuando el nombre cubre varios lugares —«Barrio Nuevo» a secas, o nombrando las parroquias que agrupa—, y qué pasa con la miga de pan y el `<h1>`, que hoy hablan de una zona en singular.
+
+- [ ] 27.8 **El panel de filtros cuenta sobre TODAS las zonas de la ciudad, y recorta en JavaScript.** Es la misma forma del defecto que la 27.1, en otro archivo, y sobrevivió a las cuatro rebanadas porque la 27.1 miraba la taxonomía y esto mira los avisos.
+
+    **Salió de la medición de una vista completa**, no de una sospecha: `DrizzleFacetedSearch.countFacets` es **la consulta más cara de una vista de página — 8.640 bytes en apenas 12 filas**. Y lo interesante no es el número de hoy sino de qué depende.
+
+    **Lo que se verificó, archivo en mano** (`src/modules/listing-search/infrastructure/drizzle-faceted-search.ts`, 503 líneas):
+
+    1. **No hay un solo `.limit()` en todo el archivo.** Ni uno.
+    2. La línea 355 hace `.groupBy(listings.zoneId, priceFacet.tally)`, así que la consulta devuelve **una fila por cada zona de la ciudad que tenga al menos un aviso**, sin techo.
+    3. **`offeredZoneIds` ya llega como parámetro** (línea 101) —las zonas que el panel efectivamente dibuja— **y no entra en el `WHERE`**: se usa sólo en la línea 400, para inicializar un objeto en memoria, DESPUÉS de que Postgres ya devolvió todas las filas.
+
+    **Por qué importa, y por qué hoy no se ve.** Con el inventario actual son 12 filas. El límite real es *cuántas zonas de la ciudad tienen algún aviso*, y **Caracas tiene 3.220 zonas**. Cada una de esas filas además **es cara por ancho de columna**, no por cantidad: más de treinta agregados `count(*) filter` más un histograma `jsonb` por grupo. Doce filas ya pesan 8,6 kB; el mismo camino con inventario repartido pesa lo que pese multiplicado por zonas.
+
+    **Es el mismo error que costó el sitio, dicho con precisión**: la base devuelve de más y el servidor recorta. La 27.1 lo arregló para la taxonomía; acá sigue vivo para los avisos.
+
+    **Y el techo de filas de la 27.4 NO lo atrapa** — conviene dejarlo escrito para que nadie lo dé por cubierto. Dos razones: el costo dominante acá es el ancho de la fila y no su cantidad, y un techo a ciegas **haría mentir a los números del panel**, que es exactamente lo que la regla transversal 3 prohíbe («si una etiqueta dice 9, hay 9»). Un conteo recortado es peor que un conteo caro.
+
+    **La dirección del arreglo, decidida por el fundador el 2026-09-08**: *«los límites tienen que ser con base de datos, no en el lado del server»*. O sea, **que `offeredZoneIds` acote la consulta en SQL**. Las zonas ofrecidas son las que el panel dibuja, así que contar sobre ésas y no sobre todas es a la vez más barato **y** más honesto: se cuenta exactamente lo que se muestra.
+
+    **Lo que hay que cuidar al hacerlo, y no es menor**: los conteos de las relajaciones («sin el filtro de precio habría 31») y `cityTotal` viven en la misma consulta y **no** hablan de las zonas ofrecidas sino de la ciudad. Acotar sin separar esas dos preguntas rompería el botón de «Limpiar todo». `tests/integration/faceted-search.test.ts` compara cada total contra las filas de la búsqueda equivalente, así que un recorte mal hecho no puede pasar en verde — empezar por ahí.
+
+    **No es una regresión hoy.** Es la deuda que la medición dejó a la vista, con su número y su archivo.
