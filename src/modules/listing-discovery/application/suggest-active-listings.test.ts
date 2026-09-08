@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { CatalogueZone } from "../../listing-catalogue/domain/catalogue";
+import type { CountedZoneName } from "../../listing-catalogue/domain/bounded-vocabulary";
 import type { ListingSearchResult } from "../../listing-search/application/ports/listing-search.port";
 import type { SearchCriteria } from "../../listing-search/domain/search-criteria";
 import { suggestActiveListings } from "./suggest-active-listings";
@@ -11,12 +11,16 @@ const TIERRA_NEGRA = { id: "zona-tierra-negra", name: "Tierra Negra", cityId: MA
 const BELLA_VISTA = { id: "zona-bella-vista", name: "Bella Vista", cityId: MARACAIBO.id };
 const CHACAO = { id: "zona-chacao", name: "Chacao", cityId: DISTRITO.id };
 
-const ZONES: readonly CatalogueZone[] = [TIERRA_NEGRA, BELLA_VISTA, CHACAO].map((zone) => ({
-  ...zone,
-  kind: "elemento" as const,
-  category: null,
-  parentName: null,
-}));
+/**
+ * Las zonas activas de las DOS ciudades, como las devolvería
+ * `ActiveCityZonesPort.listActiveZones` — ya contadas y ya acotadas por
+ * ciudad. El doble de abajo filtra este arreglo por `cityId` antes de
+ * devolverlo, igual que el `WHERE` real, para que la prueba de aislamiento
+ * entre ciudades siga midiendo algo real (27.1 slice D).
+ */
+const ACTIVE_ZONES: readonly CountedZoneName[] = [TIERRA_NEGRA, BELLA_VISTA, CHACAO].map(
+  (zone) => ({ ...zone, parentName: null, count: 1 }),
+);
 
 function row(id: string, zone: { id: string; cityId: string }): ListingSearchResult {
   return {
@@ -48,14 +52,18 @@ function harness(responses: readonly (readonly ListingSearchResult[])[]) {
   for (const response of responses) search.mockResolvedValueOnce(response);
   search.mockResolvedValue([]);
 
-  const listZones = vi.fn(async () => ZONES);
+  // El doble de `ActiveCityZonesPort`: acota por `cityId` como lo hace el
+  // `WHERE` real, así que nunca devuelve la zona de la ciudad vecina.
+  const listActiveZones = vi.fn(async (cityId: string) =>
+    ACTIVE_ZONES.filter((zone) => zone.cityId === cityId),
+  );
 
   return {
     search,
-    listZones,
+    listActiveZones,
     dependencies: {
       search: { search },
-      catalogue: { listCities: async () => [], listZones },
+      activeZones: { listActiveZones },
     },
   };
 }
@@ -63,7 +71,7 @@ function harness(responses: readonly (readonly ListingSearchResult[])[]) {
 describe("suggestActiveListings", () => {
   /** 11.12 — la zona primero, y si alcanza no se pregunta nada más. */
   it("busca en la zona del aviso y no amplía cuando encuentra", async () => {
-    const { search, listZones, dependencies } = harness([
+    const { search, listActiveZones, dependencies } = harness([
       [row("mcbo-1", TIERRA_NEGRA), row("mcbo-2", TIERRA_NEGRA)],
     ]);
 
@@ -78,9 +86,28 @@ describe("suggestActiveListings", () => {
       cityId: MARACAIBO.id,
       zoneIds: [TIERRA_NEGRA.id],
     });
-    // Y el catálogo no se toca: los avisos de la zona del aviso están en la
-    // zona del aviso, cuyo nombre la ficha ya trajo.
-    expect(listZones).not.toHaveBeenCalled();
+    // Y las zonas activas no se tocan: los avisos de la zona del aviso están en
+    // la zona del aviso, cuyo nombre la ficha ya trajo.
+    expect(listActiveZones).not.toHaveBeenCalled();
+  });
+
+  /**
+   * **27.1 slice D — la causa que esta rebanada corrige.** Antes de esta
+   * rebanada este archivo era el último camino de lectura que pedía
+   * `CataloguePort.listZones()` — la taxonomía entera, 5.813 zonas del país
+   * enteras sin `WHERE` — y descartaba en JavaScript las que no fueran de esta
+   * ciudad. Esta prueba fallaría contra ese código: probaría que
+   * `listActiveZones` recibió UNA ciudad y no la ciudad más una lista sin
+   * filtrar, y una implementación que pidiera la taxonomía entera no tendría
+   * este método que llamar en absoluto.
+   */
+  it("le pide al puerto sólo las zonas activas de ESTA ciudad, nunca la taxonomía entera", async () => {
+    const { listActiveZones, dependencies } = harness([[], [row("mcbo-9", BELLA_VISTA)]]);
+
+    await suggestActiveListings(REQUEST, dependencies);
+
+    expect(listActiveZones).toHaveBeenCalledTimes(1);
+    expect(listActiveZones).toHaveBeenCalledWith(MARACAIBO.id);
   });
 
   /** Los nombres que la tarjeta escribe, y el camino canónico que arma con ellos. */
