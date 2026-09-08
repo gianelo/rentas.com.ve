@@ -3,6 +3,7 @@ import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { alias } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import { cities, listings, zones } from "../../../shared/db/schema";
+import { assertRowBudget } from "../../operability/domain/row-budget";
 import type { ActiveCityZonesPort } from "../application/ports/active-city-zones.port";
 import type { CataloguePort } from "../application/ports/catalogue.port";
 import type { ZoneRouteCandidates, ZoneRoutePort } from "../application/ports/zone-route.port";
@@ -29,10 +30,12 @@ export class DrizzleCatalogue implements CataloguePort, ZoneRoutePort, ActiveCit
    * city looks like on the site's root, which is why this comment exists.
    */
   async listCities(): Promise<readonly CatalogueCity[]> {
-    return this.db
+    const rows = await this.db
       .select({ id: cities.id, name: cities.name })
       .from(cities)
       .orderBy(asc(cities.name));
+
+    return assertRowBudget(rows, "DrizzleCatalogue.listCities");
   }
 
   /**
@@ -53,6 +56,15 @@ export class DrizzleCatalogue implements CataloguePort, ZoneRoutePort, ActiveCit
    * name matches — the same self-join `DrizzleZoneVocabulary.lookup` already
    * runs (`listing-publication/infrastructure/drizzle-zone-vocabulary.ts`),
    * reused here rather than re-derived: one `parent` alias, one `leftJoin`.
+   *
+   * **Deliberadamente SIN `assertRowBudget` (tasks.md 27.4).** El techo de
+   * 300 filas protege el camino de lectura PÚBLICO; este método es el que
+   * `broker-bulk-import` necesita completo (5.813+ filas) para resolver
+   * nombres ambiguos contra CUALQUIER zona del país, y ponerle el mismo techo
+   * lo rompería siempre, no sólo ante una regresión — exactamente lo que la
+   * 27.4 pide evitar («no debe romper una pantalla legítima»). Verificado
+   * (27.1, rebanada D): ningún `app/**\/page.tsx` del camino de lectura
+   * llama este método hoy.
    */
   async listZones(): Promise<readonly CatalogueZone[]> {
     const parent = alias(zones, "parent");
@@ -113,7 +125,7 @@ export class DrizzleCatalogue implements CataloguePort, ZoneRoutePort, ActiveCit
       .where(and(eq(zones.cityId, city.id), eq(zones.slug, zoneSlug)))
       .orderBy(asc(zones.name));
 
-    return { city, zones: zoneRows };
+    return { city, zones: assertRowBudget(zoneRows, "DrizzleCatalogue.findZoneBySlug") };
   }
 
   /**
@@ -129,7 +141,7 @@ export class DrizzleCatalogue implements CataloguePort, ZoneRoutePort, ActiveCit
     if (tokens.length === 0) return [];
 
     const parent = alias(zones, "parent");
-    return this.db
+    const rows = await this.db
       .select({
         id: zones.id,
         name: zones.name,
@@ -144,6 +156,8 @@ export class DrizzleCatalogue implements CataloguePort, ZoneRoutePort, ActiveCit
         and(eq(zones.cityId, cityId), or(inArray(zones.slug, tokens), inArray(zones.id, tokens))),
       )
       .orderBy(asc(zones.name));
+
+    return assertRowBudget(rows, "DrizzleCatalogue.findZonesByTokens");
   }
 
   /**
@@ -167,7 +181,7 @@ export class DrizzleCatalogue implements CataloguePort, ZoneRoutePort, ActiveCit
   async listActiveZones(cityId: string): Promise<readonly CountedZoneName[]> {
     const parent = alias(zones, "parent");
 
-    return this.db
+    const rows = await this.db
       .select({
         id: zones.id,
         name: zones.name,
@@ -187,5 +201,7 @@ export class DrizzleCatalogue implements CataloguePort, ZoneRoutePort, ActiveCit
       )
       .groupBy(zones.id, zones.name, zones.cityId, parent.name)
       .orderBy(asc(zones.name));
+
+    return assertRowBudget(rows, "DrizzleCatalogue.listActiveZones");
   }
 }

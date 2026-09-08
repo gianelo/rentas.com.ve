@@ -3,6 +3,7 @@ import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import { listingPhotoDerivatives, listingPhotos } from "../../../shared/db/schema";
 import type { DerivativeName } from "../../listing-publication/application/ports/photo-derivation.port";
+import { assertRowBudget } from "../../operability/domain/row-budget";
 import type { ListingPhotosPort, ListingPhotoView } from "../application/ports/listing-photos.port";
 
 export type PhotosDatabase = PgDatabase<PgQueryResultHKT, typeof schema>;
@@ -36,7 +37,7 @@ export class DrizzleListingPhotos implements ListingPhotosPort {
     // posición 0 y nada más—, así que hace falta una segunda agregación. Las
     // dos corren en paralelo y las dos siguen siendo "una llamada para todos
     // los avisos", que es la garantía que este método ya tenía.
-    const [rows, totals] = await Promise.all([
+    const [rawRows, totals] = await Promise.all([
       this.db
         .select({
           listingId: listingPhotos.listingId,
@@ -56,6 +57,7 @@ export class DrizzleListingPhotos implements ListingPhotosPort {
         .groupBy(listingPhotos.listingId),
     ]);
 
+    const rows = assertRowBudget(rawRows, "DrizzleListingPhotos.coversFor");
     const photoCounts = new Map(totals.map((row) => [row.listingId, Number(row.total)]));
 
     const covers = new Map<
