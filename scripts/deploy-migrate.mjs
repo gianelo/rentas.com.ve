@@ -14,13 +14,14 @@
  * reading. What closes the hole is making the schema arrive with the code
  * that expects it, which is what this does.
  *
- * **Production only, deliberately.** Preview deployments are skipped until
- * each one has its own Neon branch (see .github/workflows/ci.yml's header).
- * Until then a preview's DATABASE_URL is the production database, and a
- * preview build of an unmerged branch would apply that branch's migrations
- * to live data — a NOT NULL column arriving before the code that fills it.
- * The skip is printed rather than silent, so a preview that renders against
- * a stale schema is explainable instead of mysterious.
+ * **Production migrates unconditionally.** Preview migrates too, but only
+ * once it is provably on its own database — never by inferring that from
+ * the connection string (see `PREVIEW_HAS_OWN_DATABASE` below). Until a
+ * preview environment sets that flag, it still shares the production
+ * database, and a preview build of an unmerged branch would apply that
+ * branch's migrations to live data — a NOT NULL column arriving before the
+ * code that fills it. The skip is printed rather than silent, so a preview
+ * that renders against a stale schema is explainable instead of mysterious.
  */
 
 import { execSync } from "node:child_process";
@@ -29,21 +30,42 @@ import { join } from "node:path";
 
 const environment = process.env.VERCEL_ENV ?? "local";
 
-if (environment !== "production") {
+/**
+ * **The explicit opt-in, not an inference (tasks.md 27.2).** Detecting
+ * production by hostname, Neon branch id, or parsing DATABASE_URL would be
+ * brittle: any of those can look production-shaped by accident and silently
+ * flip this gate open. `PREVIEW_HAS_OWN_DATABASE` instead asserts a fact a
+ * human checked once, in Vercel's Preview environment only, alongside its
+ * own `DATABASE_URL` — see `.env.example`. Its absence is the safe default:
+ * a preview that forgets to set it keeps failing closed, not open.
+ */
+const PREVIEW_OPT_IN_VAR = "PREVIEW_HAS_OWN_DATABASE";
+const previewHasOwnDatabase =
+  environment === "preview" && process.env[PREVIEW_OPT_IN_VAR] === "true";
+
+if (environment !== "production" && !previewHasOwnDatabase) {
   console.log(
-    `deploy-migrate: skipped — VERCEL_ENV is "${environment}", not "production".\n` +
-      "deploy-migrate: preview deployments share the production database until each\n" +
-      "deploy-migrate: gets its own Neon branch, and migrating it from an unmerged\n" +
-      "deploy-migrate: branch would change live data ahead of the code that reads it.",
+    environment === "preview"
+      ? `deploy-migrate: skipped — VERCEL_ENV is "preview" and ${PREVIEW_OPT_IN_VAR} is not\n` +
+          `deploy-migrate: set to "true". This preview still shares the production\n` +
+          "deploy-migrate: database, and migrating it from an unmerged branch would change\n" +
+          "deploy-migrate: live data ahead of the code that reads it. Once Vercel's Preview\n" +
+          `deploy-migrate: environment has its own database, set ${PREVIEW_OPT_IN_VAR}=true\n` +
+          "deploy-migrate: alongside its own DATABASE_URL to enable this."
+      : `deploy-migrate: skipped — VERCEL_ENV is "${environment}", not "production".\n` +
+          "deploy-migrate: preview deployments share the production database until each\n" +
+          "deploy-migrate: gets its own Neon branch, and migrating it from an unmerged\n" +
+          "deploy-migrate: branch would change live data ahead of the code that reads it.",
   );
   process.exit(0);
 }
 
 if (!process.env.DATABASE_URL) {
-  // A failure, not a skip. A production build that cannot reach its database
-  // is a build that would deploy code against an unknown schema, and that is
-  // precisely the state this script exists to make impossible.
-  console.error("deploy-migrate: DATABASE_URL is not set on the production environment.");
+  // A failure, not a skip. A build that cannot reach its own database — be
+  // it production or an opted-in preview — is a build that would deploy
+  // code against an unknown schema, and that is precisely the state this
+  // script exists to make impossible.
+  console.error(`deploy-migrate: DATABASE_URL is not set on the ${environment} environment.`);
   process.exit(1);
 }
 
@@ -145,7 +167,7 @@ console.log(
       ? `deploy-migrate: ${reviewed.length} reviewed destructive migration(s), none unreviewed.`
       : "deploy-migrate: no destructive statements found.",
 );
-console.log("deploy-migrate: applying pending migrations to production…");
+console.log(`deploy-migrate: applying pending migrations to ${environment}…`);
 execSync("pnpm drizzle-kit migrate", { stdio: "inherit" });
 
 // **"Up to date" is drizzle-kit's opinion, and 11b.5 exists because an
