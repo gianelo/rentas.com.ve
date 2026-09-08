@@ -1,10 +1,12 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, or, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { alias } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
-import { cities, zones } from "../../../shared/db/schema";
+import { cities, listings, zones } from "../../../shared/db/schema";
+import type { ActiveCityZonesPort } from "../application/ports/active-city-zones.port";
 import type { CataloguePort } from "../application/ports/catalogue.port";
 import type { ZoneRouteCandidates, ZoneRoutePort } from "../application/ports/zone-route.port";
+import type { CountedZoneName } from "../domain/bounded-vocabulary";
 import type { CatalogueCity, CatalogueZone } from "../domain/catalogue";
 
 /**
@@ -15,7 +17,7 @@ import type { CatalogueCity, CatalogueZone } from "../domain/catalogue";
  */
 export type CatalogueDatabase = PgDatabase<PgQueryResultHKT, typeof schema>;
 
-export class DrizzleCatalogue implements CataloguePort, ZoneRoutePort {
+export class DrizzleCatalogue implements CataloguePort, ZoneRoutePort, ActiveCityZonesPort {
   constructor(private readonly db: CatalogueDatabase) {}
 
   /**
@@ -112,5 +114,78 @@ export class DrizzleCatalogue implements CataloguePort, ZoneRoutePort {
       .orderBy(asc(zones.name));
 
     return { city, zones: zoneRows };
+  }
+
+  /**
+   * `?zona=` contra la taxonomía CURADA, acotado a los tokens de la petición
+   * (27.1, slice C corrección — `R4-zona-query-silent-widening`). `slug` o
+   * `id` en el mismo `WHERE` — las dos formas de `zoneMatchesToken` — por
+   * `zone_slug_idx` o la clave primaria: nunca un escaneo de la ciudad.
+   */
+  async findZonesByTokens(
+    cityId: string,
+    tokens: readonly string[],
+  ): Promise<readonly CatalogueZone[]> {
+    if (tokens.length === 0) return [];
+
+    const parent = alias(zones, "parent");
+    return this.db
+      .select({
+        id: zones.id,
+        name: zones.name,
+        cityId: zones.cityId,
+        kind: zones.kind,
+        category: zones.category,
+        parentName: parent.name,
+      })
+      .from(zones)
+      .leftJoin(parent, eq(zones.parentId, parent.id))
+      .where(
+        and(eq(zones.cityId, cityId), or(inArray(zones.slug, tokens), inArray(zones.id, tokens))),
+      )
+      .orderBy(asc(zones.name));
+  }
+
+  /**
+   * Las zonas de UNA ciudad con avisos activos, ya contadas (tasks.md 27.1,
+   * slice C) — el mismo `GROUP BY` que `DrizzleActiveZones` (listing-discovery)
+   * corre para las dos ciudades del inicio, acá recortado a una con
+   * `city_id` en el `WHERE`.
+   *
+   * **Medido contra el contenedor real** (`rentas_test`, la siembra real),
+   * antes de escribir la consulta y no después: `listCities()` + `listZones()`
+   * devuelven 5.827 filas y ~1.211 KB (`pg_column_size`) para armar el
+   * vocabulario de UNA ciudad; esta consulta, para Caracas, devuelve **6 filas
+   * y ~688 bytes** (`EXPLAIN ANALYZE` confirma un `GroupAggregate` sobre las
+   * filas que el `WHERE` ya recortó, no un escaneo de `zone`).
+   *
+   * Las dos condiciones de frescura son las mismas que `DrizzleListingSearch`
+   * y `DrizzleFacetedSearch` ya filtran (D5/21.1): una sugerencia y el panel
+   * tienen que contar lo mismo que la búsqueda a la que llevan, o la etiqueta
+   * miente (regla transversal 3).
+   */
+  async listActiveZones(cityId: string): Promise<readonly CountedZoneName[]> {
+    const parent = alias(zones, "parent");
+
+    return this.db
+      .select({
+        id: zones.id,
+        name: zones.name,
+        cityId: zones.cityId,
+        parentName: parent.name,
+        count: sql<number>`count(*)`.mapWith(Number),
+      })
+      .from(listings)
+      .innerJoin(zones, eq(zones.id, listings.zoneId))
+      .leftJoin(parent, eq(zones.parentId, parent.id))
+      .where(
+        and(
+          eq(listings.cityId, cityId),
+          eq(listings.status, "active"),
+          gt(listings.expiresAt, sql`now()`),
+        ),
+      )
+      .groupBy(zones.id, zones.name, zones.cityId, parent.name)
+      .orderBy(asc(zones.name));
   }
 }
