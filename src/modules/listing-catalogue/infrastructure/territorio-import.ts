@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { ZoneCategory, ZoneKind, ZoneSource } from "../../../shared/db/schema";
+import { slugify } from "../../listing-discovery/domain/listing-url";
 import { areaForMunicipality } from "./territorio-areas";
 import type { ParsedMunicipality } from "./territorio-parser";
 
@@ -14,6 +15,8 @@ import type { ParsedMunicipality } from "./territorio-parser";
 export interface AreaRow {
   readonly id: string;
   readonly name: string;
+  /** `slugify(name)` (tasks.md 27.1, slice A). See `schema.ts`'s `cities.slug`. */
+  readonly slug: string;
 }
 
 export interface ZoneRow {
@@ -26,6 +29,8 @@ export interface ZoneRow {
   readonly ubigeo: string | null;
   readonly postalCode: string | null;
   readonly source: ZoneSource;
+  /** `slugify(name)` (tasks.md 27.1, slice A). See `schema.ts`'s `zones.slug`. */
+  readonly slug: string;
 }
 
 export interface TerritoryRows {
@@ -69,7 +74,7 @@ export function buildTerritoryRows(municipalities: readonly ParsedMunicipality[]
     }
 
     const areaId = territoryId(`area:${areaName}`);
-    areas.set(areaName, { id: areaId, name: areaName });
+    areas.set(areaName, { id: areaId, name: areaName, slug: slugify(areaName) });
 
     const municipalityPath = `${areaName}/${municipality.name}`;
     const municipalityId = territoryId(municipalityPath);
@@ -84,6 +89,7 @@ export function buildTerritoryRows(municipalities: readonly ParsedMunicipality[]
       postalCode: null,
       // La jerarquía viene del INE aunque el código no esté en el archivo.
       source: "INE",
+      slug: slugify(municipality.name),
     });
 
     for (const parish of municipality.parishes) {
@@ -99,6 +105,7 @@ export function buildTerritoryRows(municipalities: readonly ParsedMunicipality[]
         ubigeo: parish.ubigeo,
         postalCode: null,
         source: "INE",
+        slug: slugify(parish.name),
       });
 
       for (const element of parish.elements) {
@@ -116,6 +123,7 @@ export function buildTerritoryRows(municipalities: readonly ParsedMunicipality[]
           ubigeo: null,
           postalCode: element.postalCode,
           source: element.source,
+          slug: slugify(element.name),
         });
       }
     }
