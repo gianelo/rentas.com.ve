@@ -276,7 +276,7 @@ export default async function FichaPage({ params, searchParams }: FichaProps) {
             zoneId: detail.zoneId,
             zoneName: detail.zoneName,
           },
-          { search: new DrizzleListingSearch(db), catalogue: new DrizzleCatalogue(db) },
+          { search: new DrizzleListingSearch(db), activeZones: new DrizzleCatalogue(db) },
         )
       : { scope: "none" as const, listings: [] };
 

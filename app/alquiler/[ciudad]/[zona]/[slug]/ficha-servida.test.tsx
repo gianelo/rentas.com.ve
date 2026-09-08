@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { CatalogueZone } from "@/modules/listing-catalogue/domain/catalogue";
+import type { CountedZoneName } from "@/modules/listing-catalogue/domain/bounded-vocabulary";
 // El nombre del parámetro lo pone el dominio, acá también: escrito a mano, un
 // renombre dejaría a esta prueba midiendo la ficha SIN origen y pasando por eso.
 import { RETURN_PARAM } from "@/modules/listing-discovery/domain/return-to-results";
@@ -26,7 +26,7 @@ import type { SearchCriteria } from "@/modules/listing-search/domain/search-crit
 
 const {
   search,
-  listZones,
+  listActiveZones,
   findForDetail,
   coversFor,
   allFor,
@@ -36,7 +36,7 @@ const {
   redirect,
 } = vi.hoisted(() => ({
   search: vi.fn(),
-  listZones: vi.fn(),
+  listActiveZones: vi.fn(),
   findForDetail: vi.fn(),
   coversFor: vi.fn(),
   allFor: vi.fn(),
@@ -93,7 +93,7 @@ vi.mock("@/modules/listing-search/infrastructure/drizzle-listing-search", () => 
 vi.mock("@/modules/listing-catalogue/infrastructure/drizzle-catalogue", () => ({
   DrizzleCatalogue: class {
     listCities = async () => [];
-    listZones = listZones;
+    listActiveZones = listActiveZones;
   },
 }));
 // tasks.md 22.39 — `DrizzleContactVerificationEvidence` sigue sin llamador en
@@ -128,12 +128,16 @@ const TIERRA_NEGRA = { id: "zona-tierra-negra", name: "Tierra Negra", cityId: MA
 const BELLA_VISTA = { id: "zona-bella-vista", name: "Bella Vista", cityId: MARACAIBO.id };
 const CHACAO = { id: "zona-chacao", name: "Chacao", cityId: DISTRITO.id };
 
-const ZONES: readonly CatalogueZone[] = [TIERRA_NEGRA, BELLA_VISTA, CHACAO].map((zone) => ({
-  ...zone,
-  kind: "elemento" as const,
-  category: null,
-  parentName: null,
-}));
+/**
+ * Las zonas activas de las DOS ciudades, como las devolvería
+ * `ActiveCityZonesPort.listActiveZones` (27.1 slice D). `beforeEach` filtra
+ * este arreglo por el `cityId` que recibe, igual que el `WHERE` real, para
+ * que la defensa de "ni un aviso de la otra ciudad" siga midiendo algo real y
+ * no un filtro que ya no vive en el caso de uso.
+ */
+const ACTIVE_ZONES: readonly CountedZoneName[] = [TIERRA_NEGRA, BELLA_VISTA, CHACAO].map(
+  (zone) => ({ ...zone, parentName: null, count: 1 }),
+);
 
 const VENCIDO_ID = "3f2a91cb-04d7-b8e0-1a55-9c7e2d4f6b03";
 const VENCIDO_TITLE = "Apartamento 3 habitaciones en Tierra Negra";
@@ -227,7 +231,9 @@ beforeEach(() => {
   findForDetail.mockResolvedValue(detail());
   allFor.mockResolvedValue([]);
   coversFor.mockImplementation(async (ids: readonly string[]) => covers(ids));
-  listZones.mockResolvedValue(ZONES);
+  listActiveZones.mockImplementation(async (cityId: string) =>
+    ACTIVE_ZONES.filter((zone) => zone.cityId === cityId),
+  );
   search.mockResolvedValue([]);
 });
 
@@ -691,7 +697,7 @@ describe("un aviso activo no arrastra el costo de las sugerencias", () => {
     const html = await servedBody();
 
     expect(search).not.toHaveBeenCalled();
-    expect(listZones).not.toHaveBeenCalled();
+    expect(listActiveZones).not.toHaveBeenCalled();
     expect(html).not.toContain("Otros avisos activos en");
     // Y el bloque de contacto vuelve a su estado con llave.
     expect(html).toContain("Ver WhatsApp del dueño");
