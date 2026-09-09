@@ -3,6 +3,7 @@ import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { alias } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import { listings, zones } from "../../../shared/db/schema";
+import { assertRowBudget } from "../../operability/domain/row-budget";
 import type { ActiveZone, ActiveZonesPort } from "../application/ports/active-zones.port";
 
 /**
@@ -59,41 +60,41 @@ export class DrizzleActiveZones implements ActiveZonesPort {
     // desaparecería del vocabulario por no tenerlo.
     const parent = alias(zones, "parent");
 
-    return (
-      this.db
-        .select({
-          id: zones.id,
-          name: zones.name,
-          cityId: zones.cityId,
-          parentName: parent.name,
-          // **`mapWith(Number)` no es cosmético**: `count()` es `bigint` y los
-          // drivers de Postgres lo devuelven como string. Sin esto la sugerencia
-          // llevaría un «3» de texto y cualquier comparación numérica sobre él
-          // mentiría sin error y sin que el tipo lo delate — el mismo tropiezo que
-          // `countWhere` documenta en la búsqueda facetada.
-          count: sql<number>`count(*)`.mapWith(Number),
-        })
-        .from(listings)
-        .innerJoin(zones, eq(zones.id, listings.zoneId))
-        .leftJoin(parent, eq(zones.parentId, parent.id))
-        .where(
-          and(
-            // Las dos condiciones de la frescura, y son dos y no una: `status`
-            // deja fuera al oculto y al ya marcado vencido, y el reloj al que
-            // nadie marcó todavía. Con una sola, la portada ofrecería una zona
-            // cuyos únicos avisos caducaron esta madrugada.
-            eq(listings.status, "active"),
-            gt(listings.expiresAt, sql`now()`),
-          ),
-        )
-        // Por id de zona. `name` y `city_id` van también porque se seleccionan, y
-        // `parent.name` porque viene de otra tabla — Postgres no la deduce de la
-        // clave primaria de `zone`.
-        .groupBy(zones.id, zones.name, zones.cityId, parent.name)
-        // Por nombre, igual que el catálogo. El orden de las sugerencias lo decide
-        // después `suggestFilters` sobre lo escrito; éste es sólo el orden estable
-        // que evita que dos respuestas iguales lleguen barajadas distinto.
-        .orderBy(asc(zones.name))
-    );
+    const rows = await this.db
+      .select({
+        id: zones.id,
+        name: zones.name,
+        cityId: zones.cityId,
+        parentName: parent.name,
+        // **`mapWith(Number)` no es cosmético**: `count()` es `bigint` y los
+        // drivers de Postgres lo devuelven como string. Sin esto la sugerencia
+        // llevaría un «3» de texto y cualquier comparación numérica sobre él
+        // mentiría sin error y sin que el tipo lo delate — el mismo tropiezo que
+        // `countWhere` documenta en la búsqueda facetada.
+        count: sql<number>`count(*)`.mapWith(Number),
+      })
+      .from(listings)
+      .innerJoin(zones, eq(zones.id, listings.zoneId))
+      .leftJoin(parent, eq(zones.parentId, parent.id))
+      .where(
+        and(
+          // Las dos condiciones de la frescura, y son dos y no una: `status`
+          // deja fuera al oculto y al ya marcado vencido, y el reloj al que
+          // nadie marcó todavía. Con una sola, la portada ofrecería una zona
+          // cuyos únicos avisos caducaron esta madrugada.
+          eq(listings.status, "active"),
+          gt(listings.expiresAt, sql`now()`),
+        ),
+      )
+      // Por id de zona. `name` y `city_id` van también porque se seleccionan, y
+      // `parent.name` porque viene de otra tabla — Postgres no la deduce de la
+      // clave primaria de `zone`.
+      .groupBy(zones.id, zones.name, zones.cityId, parent.name)
+      // Por nombre, igual que el catálogo. El orden de las sugerencias lo decide
+      // después `suggestFilters` sobre lo escrito; éste es sólo el orden estable
+      // que evita que dos respuestas iguales lleguen barajadas distinto.
+      .orderBy(asc(zones.name));
+
+    return assertRowBudget(rows, "DrizzleActiveZones.listActiveZones");
   }
 }

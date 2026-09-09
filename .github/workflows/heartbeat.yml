@@ -1,0 +1,56 @@
+name: Heartbeat
+
+# tasks.md 27.5 — «no se puede ver el consumo, así que se vigila la
+# consecuencia». El primer workflow programado del repositorio: verificado
+# que `.github/workflows/ci.yml` es el único que existía, y no tenía ni
+# `schedule` ni `workflow_dispatch`.
+#
+# **Cadencia: cada 5 minutos** (decisión del fundador, 2026-09-07),
+# recalculada tras la 27.1 contra los 5 GB del plan Free de Neon:
+#
+#   /api/health toca listCities() — 5 filas, 349 bytes medidos (tasks.md
+#   27.1) — en vez de una vista de página completa. 8.640 corridas/mes ×
+#   349 B ≈ 3,0 MB/mes, el 0,06 % del presupuesto de 5 GB.
+#
+# La tabla original de la 27.5 (679 kB por listZones(), 5,9 GB/mes a esta
+# cadencia — más del 100% del presupuesto) medía el costo ANTES de la 27.1 y
+# antes de decidir qué ruta golpear; queda en tasks.md como registro
+# histórico de por qué la cadencia estuvo atada de manos hasta ahora, no
+# como el costo real de este workflow.
+#
+# `workflow_dispatch` está para lo que un workflow sólo-programado no puede
+# dar: verificarlo a mano sin esperar la próxima corrida.
+#
+# Secretos de repositorio que este workflow necesita (README/fundador):
+# RESEND_API_KEY, HEARTBEAT_MAIL_FROM, HEARTBEAT_MAIL_TO.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "10.34.5"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Preguntarle a producción si está viva
+        env:
+          HEARTBEAT_URL: https://rentoru.com/api/health
+          HEARTBEAT_MAIL_TO: ${{ secrets.HEARTBEAT_MAIL_TO }}
+          HEARTBEAT_MAIL_FROM: ${{ secrets.HEARTBEAT_MAIL_FROM }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: pnpm run heartbeat

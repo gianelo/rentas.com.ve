@@ -302,6 +302,6 @@ describe("DrizzleCatalogue.findZoneBySlug", () => {
 
     const place = resolveZoneRoute([result.city], result.zones, CITY_ONE_SLUG, SOLO_SLUG);
 
-    expect(place?.zone.id).toBe(SOLO_ZONE_CITY_ONE);
+    expect(place?.zones.map((zone) => zone.id)).toEqual([SOLO_ZONE_CITY_ONE]);
   });
 });

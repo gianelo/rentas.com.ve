@@ -3,6 +3,7 @@ import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
 import type { PropertyType } from "../../../shared/db/schema";
 import { listings } from "../../../shared/db/schema";
+import { assertRowBudget } from "../../operability/domain/row-budget";
 import type {
   BathroomStep,
   FacetCounts,
@@ -269,129 +270,190 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       .where(priceless)
       .as("price_facet");
 
-    const rows = await this.db
+    /**
+     * **La ciudad entera, en UNA fila y sin agrupar por zona** (task 27.8).
+     *
+     * `total`, `cityTotal`, las seis facetas de atributo/tipo/publicador, las
+     * nueve relajaciones y el escalón siguiente de precio no son preguntas
+     * sobre las zonas ofrecidas: son preguntas sobre la ciudad, y agruparlas
+     * por zona —como hacía este archivo antes de la 27.8— sólo repetía el
+     * mismo número treinta columnas de ancho en cada fila, una vez por cada
+     * zona de la ciudad CON avisos. Acá se agregan una única vez, sin
+     * `GROUP BY`, así que Postgres devuelve exactamente una fila sin
+     * importar cuántas zonas tenga la ciudad detrás.
+     */
+    const citywide = this.db
       .select({
-        zoneId: listings.zoneId,
-        // Los ocho cubos, iguales en cada fila porque se agregaron aparte
-        // (14.12). Se calculan siempre: saltearlos por debajo del piso de doce
-        // exigiría saber el total ANTES, o sea otra consulta.
-        priceTally: priceFacet.tally,
         // El total lleva todos: es la búsqueda entera, la que el botón dice.
-        total: countWhere(...others()),
-        // La faceta de zona ignora la zona elegida y respeta todo lo demás.
-        inZone: countWhere(...others("zone")),
+        // El `.as(…)` en cada columna es lo que deja referenciarla después
+        // como `citywide.total`: una expresión SQL cruda que sólo tiene
+        // nombre de propiedad en TypeScript sigue sin nombre para Postgres.
+        total: countWhere(...others()).as("total"),
         // Las de habitaciones ignoran `minRooms` y respetan el resto. El 4 es
         // "4 o más", igual que el criterio, porque es el mismo filtro.
-        rooms1: countWhere(...others("rooms"), gte(listings.rooms, 1)),
-        rooms2: countWhere(...others("rooms"), gte(listings.rooms, 2)),
-        rooms3: countWhere(...others("rooms"), gte(listings.rooms, 3)),
-        rooms4: countWhere(...others("rooms"), gte(listings.rooms, 4)),
-        // **Tres columnas más en el MISMO `select`, no una consulta aparte**
-        // (14.45): el costo de este archivo son los viajes de red, y una
-        // segunda pasada por las mismas filas para tres números los duplica.
-        // El `>=` es la mitad que decide: el escalón «3+» significa tres baños
-        // o más, igual que el criterio, porque es el mismo filtro.
-        bathrooms1: countWhere(...others("bathrooms"), gte(listings.bathrooms, 1)),
-        bathrooms2: countWhere(...others("bathrooms"), gte(listings.bathrooms, 2)),
-        bathrooms3: countWhere(...others("bathrooms"), gte(listings.bathrooms, 3)),
-        hasPowerPlant: countWhere(...others("hasPowerPlant"), eq(listings.hasPowerPlant, true)),
+        rooms1: countWhere(...others("rooms"), gte(listings.rooms, 1)).as("rooms1"),
+        rooms2: countWhere(...others("rooms"), gte(listings.rooms, 2)).as("rooms2"),
+        rooms3: countWhere(...others("rooms"), gte(listings.rooms, 3)).as("rooms3"),
+        rooms4: countWhere(...others("rooms"), gte(listings.rooms, 4)).as("rooms4"),
+        // El `>=` es la mitad que decide: el escalón «3+» significa tres
+        // baños o más, igual que el criterio, porque es el mismo filtro.
+        bathrooms1: countWhere(...others("bathrooms"), gte(listings.bathrooms, 1)).as("bathrooms1"),
+        bathrooms2: countWhere(...others("bathrooms"), gte(listings.bathrooms, 2)).as("bathrooms2"),
+        bathrooms3: countWhere(...others("bathrooms"), gte(listings.bathrooms, 3)).as("bathrooms3"),
+        hasPowerPlant: countWhere(...others("hasPowerPlant"), eq(listings.hasPowerPlant, true)).as(
+          "hasPowerPlant",
+        ),
         hasRegularWater: countWhere(
           ...others("hasRegularWater"),
           eq(listings.hasRegularWater, true),
+        ).as("hasRegularWater"),
+        isFurnished: countWhere(...others("isFurnished"), eq(listings.isFurnished, true)).as(
+          "isFurnished",
         ),
-        isFurnished: countWhere(...others("isFurnished"), eq(listings.isFurnished, true)),
-        // **La sexta columna, y es DERIVADA** (14.45 rebanada C): sale de
-        // `parking_spots > 0`, no de un booleano. Va en el MISMO `select` que
-        // las otras cinco por la misma razón que los baños — el costo de este
-        // archivo son los viajes de red— y **con su propio filtro apagado**,
-        // que es lo que deja que su número diga cuántos habría si se cambiara.
-        hasParking: countWhere(...others("hasParking"), attributeCondition("hasParking")),
-        hasSecurity: countWhere(...others("hasSecurity"), eq(listings.hasSecurity, true)),
-        hasAppliances: countWhere(...others("hasAppliances"), eq(listings.hasAppliances, true)),
-        apartamento: countWhere(...others("type"), eq(listings.propertyType, "apartamento")),
-        casa: countWhere(...others("type"), eq(listings.propertyType, "casa")),
-        quinta: countWhere(...others("type"), eq(listings.propertyType, "quinta")),
-        anexo: countWhere(...others("type"), eq(listings.propertyType, "anexo")),
-        habitacion: countWhere(...others("type"), eq(listings.propertyType, "habitacion")),
-        owner: countWhere(...others("publisher"), eq(listings.publisherType, "owner")),
-        broker: countWhere(...others("publisher"), eq(listings.publisherType, "broker")),
+        // Derivada de `parking_spots > 0`, no de un booleano (14.45 rebanada
+        // C), y con su propio filtro apagado, que es lo que deja que su
+        // número diga cuántos habría si se cambiara.
+        hasParking: countWhere(...others("hasParking"), attributeCondition("hasParking")).as(
+          "hasParking",
+        ),
+        hasSecurity: countWhere(...others("hasSecurity"), eq(listings.hasSecurity, true)).as(
+          "hasSecurity",
+        ),
+        hasAppliances: countWhere(...others("hasAppliances"), eq(listings.hasAppliances, true)).as(
+          "hasAppliances",
+        ),
+        apartamento: countWhere(...others("type"), eq(listings.propertyType, "apartamento")).as(
+          "apartamento",
+        ),
+        casa: countWhere(...others("type"), eq(listings.propertyType, "casa")).as("casa"),
+        quinta: countWhere(...others("type"), eq(listings.propertyType, "quinta")).as("quinta"),
+        anexo: countWhere(...others("type"), eq(listings.propertyType, "anexo")).as("anexo"),
+        habitacion: countWhere(...others("type"), eq(listings.propertyType, "habitacion")).as(
+          "habitacion",
+        ),
+        owner: countWhere(...others("publisher"), eq(listings.publisherType, "owner")).as("owner"),
+        broker: countWhere(...others("publisher"), eq(listings.publisherType, "broker")).as(
+          "broker",
+        ),
         // Las nueve relajaciones, más el techo siguiente y la ciudad pelada.
-        withoutZone: without("zone"),
-        withoutPrice: without("price"),
-        // **Sin faceta pero con relajación** (14.45 rebanada B): un campo libre
-        // no tiene opciones que contar, y «cuántos habría sin los metros²» es
-        // un número como cualquier otro — el que la ficha quitable adelanta y
-        // el que la salida del vacío ofrece.
-        withoutArea: without("area"),
-        withoutRooms: without("rooms"),
-        withoutBathrooms: without("bathrooms"),
-        withoutPublisher: without("publisher"),
-        withoutPowerPlant: without("hasPowerPlant"),
-        withoutRegularWater: without("hasRegularWater"),
-        withoutFurnished: without("isFurnished"),
-        withoutParking: without("hasParking"),
-        withoutSecurity: without("hasSecurity"),
-        withoutAppliances: without("hasAppliances"),
+        withoutZone: without("zone").as("withoutZone"),
+        withoutPrice: without("price").as("withoutPrice"),
+        // **Sin faceta pero con relajación** (14.45 rebanada B): un campo
+        // libre no tiene opciones que contar, y «cuántos habría sin los
+        // metros²» es un número como cualquier otro.
+        withoutArea: without("area").as("withoutArea"),
+        withoutRooms: without("rooms").as("withoutRooms"),
+        withoutBathrooms: without("bathrooms").as("withoutBathrooms"),
+        withoutPublisher: without("publisher").as("withoutPublisher"),
+        withoutPowerPlant: without("hasPowerPlant").as("withoutPowerPlant"),
+        withoutRegularWater: without("hasRegularWater").as("withoutRegularWater"),
+        withoutFurnished: without("isFurnished").as("withoutFurnished"),
+        withoutParking: without("hasParking").as("withoutParking"),
+        withoutSecurity: without("hasSecurity").as("withoutSecurity"),
+        withoutAppliances: without("hasAppliances").as("withoutAppliances"),
         // El precio ampliado un escalón: el resto de los filtros siguen. Sin
         // pedido, repite el total y nadie lo lee — la respuesta se omite.
-        widened: countWhere(...others("price"), priceWithin(widenedPrice ?? criteria)),
+        widened: countWhere(...others("price"), priceWithin(widenedPrice ?? criteria)).as(
+          "widened",
+        ),
         // La ciudad sin un solo filtro del panel: el número de «Limpiar todo».
-        cityTotal: countWhere(),
-        // **Sólo para decidir si esta zona se ofrece**, no para ofrecerla con
-        // un número: una zona entra en `byZone` cuando tiene algún aviso
-        // dentro del precio y el área, que es la fila que este `GROUP BY`
-        // devolvía cuando los dos vivían en el `WHERE` de afuera. Los dos se
-        // nombran acá justamente porque ya no están ahí.
-        withinPrice: countWhere(priceFilter, areaFilter),
+        cityTotal: countWhere().as("cityTotal"),
       })
       .from(listings)
-      // El histograma entra ya agregado, y su subconsulta devuelve UNA fila
-      // siempre —un agregado sin `group by` la devuelve incluso sobre cero
-      // filas—, así que unir por `true` no toca ninguna cuenta anterior.
-      .innerJoin(priceFacet, sql`true`)
       .where(and(...shared))
-      // El arreglo entra al `group by` porque es una columna pelada en un
-      // `select` agrupado, no porque parta nada: tiene UN solo valor.
-      .groupBy(listings.zoneId, priceFacet.tally);
+      .as("citywide");
 
-    const sums = {
-      total: 0,
-      withoutZone: 0,
-      withoutPrice: 0,
-      withoutArea: 0,
-      withoutRooms: 0,
-      withoutBathrooms: 0,
-      withoutPublisher: 0,
-      withoutPowerPlant: 0,
-      withoutRegularWater: 0,
-      withoutFurnished: 0,
-      withoutParking: 0,
-      withoutSecurity: 0,
-      withoutAppliances: 0,
-      widened: 0,
-      cityTotal: 0,
-      rooms1: 0,
-      rooms2: 0,
-      rooms3: 0,
-      rooms4: 0,
-      bathrooms1: 0,
-      bathrooms2: 0,
-      bathrooms3: 0,
-      hasPowerPlant: 0,
-      hasRegularWater: 0,
-      isFurnished: 0,
-      hasParking: 0,
-      hasSecurity: 0,
-      hasAppliances: 0,
-      apartamento: 0,
-      casa: 0,
-      quinta: 0,
-      anexo: 0,
-      habitacion: 0,
-      owner: 0,
-      broker: 0,
-    };
-    const scalarKeys = Object.keys(sums) as (keyof typeof sums)[];
+    /**
+     * **Sólo las zonas ofrecidas, y acá SÍ es donde el `WHERE` acota** (task
+     * 27.8, decisión del fundador 2026-09-08: «los límites tienen que ser con
+     * base de datos, no en el lado del server»). Antes esta agrupación corría
+     * sobre TODA zona de la ciudad con al menos un aviso —sin techo, y
+     * Caracas tiene 3.220 zonas—; ahora el `WHERE` la acota a
+     * `offeredZoneIds`, que son las zonas que el panel efectivamente va a
+     * dibujar. Cada fila queda angosta a propósito: dos columnas, no las
+     * treinta y pico que antes cargaba cada grupo.
+     */
+    const zoneAgg = this.db
+      .select({
+        zoneId: listings.zoneId,
+        // La faceta de zona ignora la zona elegida y respeta todo lo demás.
+        inZone: countWhere(...others("zone")).as("inZone"),
+        // **Sólo para decidir si esta zona se ofrece**, no para ofrecerla con
+        // un número: una zona entra en `byZone` cuando tiene algún aviso
+        // dentro del precio y el área.
+        withinPrice: countWhere(priceFilter, areaFilter).as("withinPrice"),
+      })
+      .from(listings)
+      .where(and(...shared, inArray(listings.zoneId, [...offeredZoneIds])))
+      .groupBy(listings.zoneId)
+      .as("zoneAgg");
+
+    // `citywide` y `priceFacet` agregan sin `GROUP BY`, así que las dos
+    // devuelven SIEMPRE una fila —incluso sobre cero avisos que combinen—, y
+    // el `CROSS JOIN` entre las dos nunca pierde esa fila. `zoneAgg` puede
+    // devolver cero filas (ninguna zona ofrecida tiene avisos), así que va
+    // por `LEFT JOIN`: perderla borraría la ciudad entera del resultado.
+    const rows = await this.db
+      .select({
+        total: citywide.total,
+        rooms1: citywide.rooms1,
+        rooms2: citywide.rooms2,
+        rooms3: citywide.rooms3,
+        rooms4: citywide.rooms4,
+        bathrooms1: citywide.bathrooms1,
+        bathrooms2: citywide.bathrooms2,
+        bathrooms3: citywide.bathrooms3,
+        hasPowerPlant: citywide.hasPowerPlant,
+        hasRegularWater: citywide.hasRegularWater,
+        isFurnished: citywide.isFurnished,
+        hasParking: citywide.hasParking,
+        hasSecurity: citywide.hasSecurity,
+        hasAppliances: citywide.hasAppliances,
+        apartamento: citywide.apartamento,
+        casa: citywide.casa,
+        quinta: citywide.quinta,
+        anexo: citywide.anexo,
+        habitacion: citywide.habitacion,
+        owner: citywide.owner,
+        broker: citywide.broker,
+        withoutZone: citywide.withoutZone,
+        withoutPrice: citywide.withoutPrice,
+        withoutArea: citywide.withoutArea,
+        withoutRooms: citywide.withoutRooms,
+        withoutBathrooms: citywide.withoutBathrooms,
+        withoutPublisher: citywide.withoutPublisher,
+        withoutPowerPlant: citywide.withoutPowerPlant,
+        withoutRegularWater: citywide.withoutRegularWater,
+        withoutFurnished: citywide.withoutFurnished,
+        withoutParking: citywide.withoutParking,
+        withoutSecurity: citywide.withoutSecurity,
+        withoutAppliances: citywide.withoutAppliances,
+        widened: citywide.widened,
+        cityTotal: citywide.cityTotal,
+        // Los ocho cubos, iguales en cada fila porque se agregaron aparte
+        // (14.12) y nunca dependen de la zona.
+        priceTally: priceFacet.tally,
+        zoneId: zoneAgg.zoneId,
+        inZone: zoneAgg.inZone,
+        withinPrice: zoneAgg.withinPrice,
+      })
+      .from(citywide)
+      .innerJoin(priceFacet, sql`true`)
+      .leftJoin(zoneAgg, sql`true`);
+
+    assertRowBudget(rows, "DrizzleFacetedSearch.countFacets");
+
+    // `citywide` siempre trae exactamente una fila (un agregado sin
+    // `GROUP BY` la devuelve aun sobre cero avisos), así que `rows` nunca
+    // llega vacío: en el peor caso es la fila de la ciudad sola, con las
+    // columnas de `zoneAgg` en `null` porque ninguna zona ofrecida calificó.
+    const first = rows[0];
+    if (first === undefined) {
+      throw new Error(
+        "DrizzleFacetedSearch.countFacets: la fila de la ciudad no llegó — " +
+          "un agregado sin GROUP BY siempre debería devolver una.",
+      );
+    }
 
     // Cada zona ofrecida arranca en cero y se queda en cero si no tiene fila.
     // Es la regla 4 ("ninguna opción lleva a un vacío") hecha dato: la clave
@@ -403,76 +465,77 @@ export class DrizzleFacetedSearch implements FacetedSearchPort {
       // La zona se ofrece si tiene algo dentro del precio — con cero avisos
       // dentro nunca fue una opción, y ahora que el precio salió del `WHERE`
       // su fila igual llega. Las ofrecidas ya están puestas en cero arriba.
-      if (row.withinPrice > 0) byZone[row.zoneId] = row.inZone;
-      for (const key of scalarKeys) sums[key] += row[key];
+      if (row.zoneId !== null && (row.withinPrice ?? 0) > 0) {
+        byZone[row.zoneId] = row.inZone ?? 0;
+      }
     }
 
     // Las anotaciones `Record<…>` de abajo son el chequeo: un sexto tipo de
     // propiedad o un sexto atributo en el esquema rompe la compilación acá, en
     // vez de dejar viva una faceta que nunca lo cuenta.
     const byMinRooms: Record<RoomStep, number> = {
-      1: sums.rooms1,
-      2: sums.rooms2,
-      3: sums.rooms3,
-      4: sums.rooms4,
+      1: first.rooms1,
+      2: first.rooms2,
+      3: first.rooms3,
+      4: first.rooms4,
     };
     // Mismo chequeo que el de abajo: un cuarto escalón de baños en el dominio
     // rompe la compilación acá en vez de dejar un botón que nadie cuenta.
     const byMinBathrooms: Record<BathroomStep, number> = {
-      1: sums.bathrooms1,
-      2: sums.bathrooms2,
-      3: sums.bathrooms3,
+      1: first.bathrooms1,
+      2: first.bathrooms2,
+      3: first.bathrooms3,
     };
     const byAttribute: Record<ListingAttribute, number> = {
-      hasPowerPlant: sums.hasPowerPlant,
-      hasRegularWater: sums.hasRegularWater,
-      isFurnished: sums.isFurnished,
-      hasParking: sums.hasParking,
-      hasSecurity: sums.hasSecurity,
-      hasAppliances: sums.hasAppliances,
+      hasPowerPlant: first.hasPowerPlant,
+      hasRegularWater: first.hasRegularWater,
+      isFurnished: first.isFurnished,
+      hasParking: first.hasParking,
+      hasSecurity: first.hasSecurity,
+      hasAppliances: first.hasAppliances,
     };
     const byPropertyType: Record<PropertyType, number> = {
-      apartamento: sums.apartamento,
-      casa: sums.casa,
-      quinta: sums.quinta,
-      anexo: sums.anexo,
-      habitacion: sums.habitacion,
+      apartamento: first.apartamento,
+      casa: first.casa,
+      quinta: first.quinta,
+      anexo: first.anexo,
+      habitacion: first.habitacion,
     };
     const byPublisherType: Record<PublisherType, number> = {
-      owner: sums.owner,
-      broker: sums.broker,
+      owner: first.owner,
+      broker: first.broker,
     };
 
     // Otro `Record<…>` que es el chequeo: un filtro soltable nuevo en el
     // dominio rompe la compilación acá en vez de dejar una salida que promete
     // un número que nadie contó.
     const withoutFilter: Record<RelaxableFilter, number> = {
-      zone: sums.withoutZone,
-      price: sums.withoutPrice,
-      area: sums.withoutArea,
-      rooms: sums.withoutRooms,
-      bathrooms: sums.withoutBathrooms,
-      publisherType: sums.withoutPublisher,
-      hasPowerPlant: sums.withoutPowerPlant,
-      hasRegularWater: sums.withoutRegularWater,
-      isFurnished: sums.withoutFurnished,
-      hasParking: sums.withoutParking,
-      hasSecurity: sums.withoutSecurity,
-      hasAppliances: sums.withoutAppliances,
+      zone: first.withoutZone,
+      price: first.withoutPrice,
+      area: first.withoutArea,
+      rooms: first.withoutRooms,
+      bathrooms: first.withoutBathrooms,
+      publisherType: first.withoutPublisher,
+      hasPowerPlant: first.withoutPowerPlant,
+      hasRegularWater: first.withoutRegularWater,
+      isFurnished: first.withoutFurnished,
+      hasParking: first.withoutParking,
+      hasSecurity: first.withoutSecurity,
+      hasAppliances: first.withoutAppliances,
     };
 
     return {
-      total: sums.total,
+      total: first.total,
       byZone,
       byMinRooms,
       byMinBathrooms,
       byAttribute,
       byPropertyType,
       byPublisherType,
-      byPriceBucket: tallyOf(rows[0]?.priceTally),
+      byPriceBucket: tallyOf(first.priceTally),
       withoutFilter,
-      cityTotal: sums.cityTotal,
-      ...(widenedPrice === undefined ? {} : { withWidenedPrice: sums.widened }),
+      cityTotal: first.cityTotal,
+      ...(widenedPrice === undefined ? {} : { withWidenedPrice: first.widened }),
     };
   }
 }

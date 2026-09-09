@@ -484,6 +484,24 @@ jobs:
     if: github.event_name == 'pull_request'
     needs: preview
     runs-on: ubuntu-latest
+    # tasks.md 27.4 — the row half of the budget pair. Unlike the byte half
+    # above (build-output only, no database), this half needs a real
+    # Postgres seeded with the real taxonomy: the defect it guards against
+    # (an unbounded read that costs nothing at ten rows and 580x more at
+    # 5,813) is invisible against anything smaller. Same image, same health
+    # check as the `integration`/`e2e` jobs.
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: rentas_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s
+          --health-retries 5
     env:
       PREVIEW_BASE_URL: ${{ needs.preview.outputs.url }}
       # Same deliberately fake, unroutable values the `build` job above
@@ -500,6 +518,10 @@ jobs:
       # SITE_URL is configured there (26.20). Fixed and fake for the same
       # reason as the two above — a build must not depend on the live domain.
       SITE_URL: https://ci-build-no-es-el-dominio-real.invalid
+      # Deliberately not DATABASE_URL, same reasoning as the `integration`
+      # job: this bare container is never a Neon pooled endpoint.
+      # scripts/budget-rows.ts speaks node-postgres against this directly.
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentas_test
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -523,6 +545,24 @@ jobs:
         run: |
           pnpm build
           pnpm run budget:bundle
+
+      # tasks.md 27.4 — the row half, read right after the byte half above
+      # so a failure here reads as "budget" and needs no separate file to
+      # explain what that means. Same migrations the app ships (not a
+      # hand-rolled schema), same reasoning as the `integration` job for why
+      # DATABASE_URL is scoped to just this step.
+      - name: Apply migrations to the row-budget container
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+        run: pnpm db:migrate
+
+      # Seeds the real taxonomy + demo listings itself (idempotent), then
+      # runs every read-path query through the already-wired
+      # assertRowBudget guard. Fails loudly — a non-zero exit here, not a
+      # silent report — because a guard that only warns is the same silence
+      # tasks.md 27.4 exists to end.
+      - name: Row budget (read-path query size assertion)
+        run: pnpm run budget:rows
 
       # tasks.md 11.19/11.20. Runs against the real preview deployment
       # resolved by the `preview` job above — this is the one gate in this

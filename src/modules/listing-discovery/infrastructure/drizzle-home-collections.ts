@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "../../../shared/db/schema";
+import { assertRowBudget } from "../../operability/domain/row-budget";
 import type {
   HomeCollectionPage,
   HomeCollectionRequest,
@@ -188,12 +189,13 @@ export class DrizzleHomeCollections implements HomeCollectionsPort {
     // exponen como `rows`. El tipo genérico del handle no lo sabe, así que la
     // conversión se hace una vez, acá, en vez de repartir `any` por el archivo.
     const result = (await this.db.execute(query)) as unknown as { rows: readonly RawRow[] };
+    const rows = assertRowBudget(result.rows, "DrizzleHomeCollections.collectionsFor");
 
     const pages = new Map<
       string,
       { rows: HomeCollectionRow[]; total: number; zoneCount: number }
     >();
-    for (const row of result.rows) {
+    for (const row of rows) {
       const page = pages.get(row.clave) ?? { rows: [], total: 0, zoneCount: 0 };
       // **`Number` y no el valor pelado.** `count(*)` es `bigint`, y los
       // drivers de Postgres lo devuelven como string: sin esto la placa diría

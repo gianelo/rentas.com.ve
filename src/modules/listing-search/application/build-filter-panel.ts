@@ -30,11 +30,14 @@ import type { FacetCounts, FacetedSearchPort } from "./ports/faceted-search.port
  *    La cota vive ahora en `tests/integration/faceted-search.test.ts` («el
  *    panel entero cuesta UN viaje de red»): **medida acá arriba y no sólo
  *    dentro del adaptador**, que es por dónde se coló.
- * 2. **Las zonas ofrecidas salen del conteo, no del catálogo.** `zone` guarda
- *    la taxonomía entera —miles de filas por ciudad— y ofrecerlas todas sería
- *    una lista que nadie puede recorrer. El conteo devuelve una entrada por
- *    zona con avisos más las elegidas en cero, que es exactamente el conjunto
- *    que tiene sentido mostrar.
+ * 2. **`request.zones` acota la consulta, y el conteo decide quién se queda**
+ *    (task 27.8). `zone` guarda la taxonomía entera —miles de filas por
+ *    ciudad, Caracas tiene 3.220— así que contarlas todas para recortar en
+ *    JavaScript era el mismo defecto que la 27.1 ya había cerrado del otro
+ *    lado. `request.zones` llega YA acotado (27.1) y es lo que se pasa como
+ *    `offeredZoneIds`: el conteo por zona ahora corre en SQL sólo sobre esas,
+ *    más la elegida —que puede tener cero avisos y por eso no vivir en el
+ *    catálogo— para que la regla 4 no la deje marcada para siempre.
  * 3. **Las salidas no cuestan una consulta** (F10 y F11). Antes eran una por
  *    filtro puesto y sólo en el vacío, porque cada candidata era un viaje más.
  *    Ahora los nueve números vienen en la misma consulta que las facetas
@@ -88,18 +91,30 @@ export async function buildFilterPanel(
 ): Promise<FilterPanelResult> {
   const { criteria, chosenZoneIds } = request;
 
+  // **Las zonas ofrecidas son las del catálogo de esta llamada, no las
+  // elegidas** (task 27.8): `request.zones` es exactamente lo que el panel
+  // está por dibujar —ya acotado por quien arma la petición (27.1)—, y es lo
+  // que ahora acota la consulta en SQL en vez de contar la ciudad entera y
+  // recortar acá. La elegida se suma aparte porque puede no tener avisos y
+  // por eso no vivir en el catálogo (regla 4: la zona elegida se ofrece
+  // aunque su conteo sea cero, o quedaría marcada para siempre).
+  const offeredZoneIds = [...new Set([...request.zones.map((zone) => zone.id), ...chosenZoneIds])];
+
   // El escalón siguiente de precio viaja con la pregunta: es un número más en
   // la misma consulta, y la alternativa es un viaje entero para él solo.
   const counts = await facets.countFacets(
     criteria,
-    chosenZoneIds,
+    offeredZoneIds,
     widenPrice(criteria) ?? undefined,
   );
 
-  // Las zonas ofrecidas: las que el conteo nombra, en el orden del catálogo. Un
-  // id que este catálogo de ciudad no tiene se descarta — el conteo pertenece a
-  // la ciudad del criterio, pero el nombre para dibujarlo sale de acá.
-  const zones = request.zones.filter((zone) => zone.id in counts.byZone);
+  // Las zonas ofrecidas: las del catálogo con avisos reales, más la elegida
+  // aunque su conteo sea cero. Ya no se decide por si la zona es una CLAVE de
+  // `counts.byZone` — con la 27.8 toda zona del catálogo lo es, real o en
+  // cero— sino por si tiene algo que contar o alguien la eligió.
+  const zones = request.zones.filter(
+    (zone) => (counts.byZone[zone.id] ?? 0) > 0 || chosenZoneIds.includes(zone.id),
+  );
 
   // La misma paginación que la pantalla arma para sus enlaces, porque la
   // pregunta «¿están todos?» es «¿hay página siguiente?» y no otra cosa.
