@@ -2448,7 +2448,7 @@ El fundador trajo hoy una lámina que nunca había estado en el repositorio: `de
 
     **Y también en CI, contra la taxonomía real, antes de que una PR llegue a producción.** `scripts/budget-rows.ts` —la mitad de filas del mismo par que `scripts/budget-bundle.ts` abrió para bytes— corre en el job `budget`, que ahora tiene su propio contenedor Postgres 18 (igual que `integration`/`e2e`). Siembra la taxonomía real más los avisos de demostración (`seed()`, idempotente) y ejercita las seis consultas de arriba tal cual las llaman las tres pantallas; si alguna cruza 300, el mismo `assertRowBudget` ya cableado la hace lanzar y el job se pone rojo. Corrido a mano contra el contenedor local (`rentas-pg`, taxonomía real, 5.810 zonas): las tres pantallas pasan (0 filas sobre el techo) y una prueba de regresión en el mismo script —pasar `catalogue.listZones()` (5.810 filas) por `assertRowBudget`— confirma que el mismo mecanismo SÍ dispara sobre la forma exacta de la fuga original, sin revertir código para fabricar el fallo. RED antes del dominio: `row-budget.test.ts` fallaba por módulo inexistente antes de escribir `row-budget.ts`; GREEN después, y suite completa (2.922 unitarias, 408 de integración) verde con el guardián ya cableado en los seis adaptadores.
 
-- [ ] 27.5 **El latido: no se puede ver el consumo, así que se vigila la consecuencia.**
+- [x] 27.5 **El latido: no se puede ver el consumo, así que se vigila la consecuencia.**
 
     **Esta tarea se llamaba «El consumo se ve antes de agotarse» y ese enunciado es falso en el plan que el proyecto usa.** Verificado contra la documentación de Neon el 2026-09-07, antes de escribir una línea:
 
@@ -2474,7 +2474,25 @@ El fundador trajo hoy una lámina que nunca había estado en el repositorio: `de
 
     **Un vigilante que tumba el sitio que vigila no es un vigilante.** Por eso esta tarea **depende de la 27.1**: mientras la taxonomía siga viajando entera en cada vista, la cadencia está atada de manos. Cuando la 27.1 saque esos 679 kB del camino, una vista pasa a costar una fracción y la cadencia se puede apretar sin pensar.
 
-    **Qué queda por decidir**: la cadencia, que no se elige por intuición sino con la tabla de arriba recalculada después de la 27.1; **cuál** dirección se golpea, que debe ser una que toque la base —una página estática devolvería 200 con la base muerta y el latido mentiría—; y cómo grita, porque un job rojo que nadie mira es exactamente el mismo silencio que esta tarea existe para romper.
+    **La tabla de arriba está VIEJA y no se puede dejar parada sin esta nota**: mide el costo de golpear una vista de página completa, que era la única candidata antes de decidir CUÁL dirección golpear. Con esa decisión tomada (abajo), la aritmética real es otra.
+
+    **LAS TRES DECISIONES, CERRADAS:**
+
+    1. **Cadencia: cada 5 minutos** (decisión del fundador, 2026-09-07).
+    2. **Dirección: `/api/health`, que toca `listCities()`** — 5 filas, 349 bytes medidos (tasks.md 27.1, párrafo de medición) — y no una vista de página. Es 1/65 del costo de la vista de ciudad más barata (22,7 kB), y sigue siendo una consulta real contra una tabla real: muere si Neon está caído o sin cuota, igual que cualquier otra. Devuelve un status distinto de 200 —nunca 200 con la base muerta— y no filtra causa, host ni pila en el cuerpo.
+    3. **Cómo grita: Resend, sólo en la falla.** Mismo mecanismo que `ResendLifecycleMailer` (tasks.md 7.11): un adaptador propio (`ResendHeartbeatMailer`), su propio remitente (`HEARTBEAT_MAIL_FROM`) y su propio destinatario (`HEARTBEAT_MAIL_TO`), sobre la misma cuenta de Resend (`RESEND_API_KEY`). Un job de GitHub Actions en rojo que nadie mira es el mismo silencio que esta tarea existe para romper (fundador) — por eso el correo, no sólo el rojo del job. Nunca manda en éxito: entrenaría a quien lo lee a ignorarlo y gastaría cuota de Resend por nada.
+
+    **La aritmética recalculada, contra los 5 GB del plan, con la cadencia y la dirección ya decididas:**
+
+    | Cadencia | Corridas al mes | Bytes por corrida | Costo de cuota al mes | Porción de los 5 GB |
+    | --- | --- | --- | --- | --- |
+    | cada 5 minutos | 8.640 | 349 B (`listCities()`, 27.1) | ≈ 3,0 MB | **0,06%** |
+
+    Contra la tabla vieja (5,9 GB a esta misma cadencia, midiendo `listZones()`/una vista completa): sacar la dirección del camino de vista completa y ponerla sobre la consulta más chica del catálogo baja el costo casi 2.000×. La cadencia que antes agotaba la cuota sola hoy cuesta una fracción de una fracción.
+
+    **Implementado**: `app/api/health/route.ts` (la ruta), `src/modules/operability/domain/heartbeat.ts` (el corte vivo/muerto y la redacción del aviso, puro), `src/modules/operability/application/run-heartbeat.ts` (la orquestación: comprobar, decidir, avisar sólo si hace falta), `src/modules/operability/infrastructure/resend-heartbeat-mailer.ts` (el envío) y `scripts/heartbeat.ts` + `.github/workflows/heartbeat.yml` (el vigilante programado, con `workflow_dispatch` para probarlo a mano). `app/robots.ts` excluye `/api` — una ruta JSON no rinde nada indexado.
+
+    **Variables de entorno nuevas que el fundador tiene que agregar** (repository secrets de GitHub Actions): `HEARTBEAT_MAIL_FROM`, `HEARTBEAT_MAIL_TO`. `RESEND_API_KEY` ya existe (misma cuenta que el ciclo de vida).
 
 - [ ] 27.6 **DEPENDIENTE — la distancia entre lo que el CI prueba y lo que Vercel corre, medida pero no cerrada.**
 
