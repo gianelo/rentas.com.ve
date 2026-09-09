@@ -116,7 +116,7 @@ describe("buildFilterPanel", () => {
     expect(counts.total).toBe(47);
   });
 
-  it("ofrece las zonas que el conteo devolvió, en el orden del catálogo", async () => {
+  it("ofrece las zonas con avisos reales, en el orden del catálogo", async () => {
     const { port } = fakeFacets({
       dc: { total: 16, byZone: { rosal: 0, altamira: 9, chacao: 12 } },
     });
@@ -128,7 +128,9 @@ describe("buildFilterPanel", () => {
       criteria: { cityId: "dc" },
     });
 
-    expect(panel.zones.map((zone) => zone.id)).toEqual(["chacao", "altamira", "rosal"]);
+    // Rosal vuelve en cero y nadie la eligió (task 27.8): ofrecerla sería una
+    // opción que lleva a un vacío (regla 4), así que se queda afuera.
+    expect(panel.zones.map((zone) => zone.id)).toEqual(["chacao", "altamira"]);
   });
 
   it("no ofrece una zona que el catálogo de esta ciudad no tiene", async () => {

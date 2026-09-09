@@ -159,9 +159,16 @@ export interface FacetedSearchPort {
    * they are required rather than derived. The taxonomy is a tree of thousands
    * of rows per city (see `zone` in the schema), so "every zone of the city"
    * is not a list anybody wants counted; the honest question is "the options I
-   * am showing". Every id passed gets an entry — zero included — and zones
-   * outside the list still appear when they hold matches, so `byZone` never
-   * hides supply from the caller either.
+   * am showing".
+   *
+   * **The list bounds the SQL query, not just a JavaScript trim** (task 27.8,
+   * founder's decision 2026-09-08: "los límites tienen que ser con base de
+   * datos, no en el lado del server"). Every id passed gets an entry — zero
+   * included — but a zone outside the list is never discovered even if it
+   * holds matches: counting every zone of a city to later throw most rows
+   * away is the exact defect this task closed, measured at 8.640 bytes over
+   * 12 rows for a city that has 3.220 zones behind it. The caller decides
+   * what "offered" means; the port counts exactly that and nothing wider.
    *
    * A zone id belonging to another city is not an error and is not special-
    * cased: it comes back as zero, because the count belongs to the city in

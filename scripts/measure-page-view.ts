@@ -173,8 +173,13 @@ async function run(connectionString: string): Promise<void> {
     console.log(
       "  loadCities() [reutiliza listCities() de arriba — cache() lo dedupe a 0 consultas]",
     );
-    await report("DrizzleCatalogue.listActiveZones(cityId) [panel de filtros]", () =>
-      catalogue.listActiveZones(caracasId),
+    // **El resultado se guarda y se usa** (task 27.8): antes se pedía y se
+    // tiraba, y `countFacets` recibía `[]` — que con la consulta ya acotada
+    // habría medido una fila trivial en vez de la pantalla real. Las zonas
+    // ofrecidas son las que `buildFilterPanel` pasa hoy: las de este catálogo.
+    const cityActiveZones = await report(
+      "DrizzleCatalogue.listActiveZones(cityId) [panel de filtros]",
+      () => catalogue.listActiveZones(caracasId),
     );
     const cityCriteria = { cityId: caracasId, page: 1 };
     const cityResults = await report(
@@ -184,8 +189,10 @@ async function run(connectionString: string): Promise<void> {
     await report(`DrizzleListingPhotos.coversFor(${cityResults.length} avisos)`, () =>
       photos.coversFor(cityResults.map((row) => row.id)),
     );
-    await report("DrizzleFacetedSearch.countFacets(criteria, []) [panel de filtros]", () =>
-      facets.countFacets(cityCriteria, []),
+    const cityOfferedZoneIds = cityActiveZones.map((zone) => zone.id);
+    await report(
+      `DrizzleFacetedSearch.countFacets(criteria, ${cityOfferedZoneIds.length} zonas ofrecidas) [panel de filtros]`,
+      () => facets.countFacets(cityCriteria, cityOfferedZoneIds),
     );
 
     // ---- ZONA (app/alquiler/[ciudad]/[zona]/page.tsx) ----
@@ -194,8 +201,9 @@ async function run(connectionString: string): Promise<void> {
       catalogue.findZoneBySlug("caracas", "altamira"),
     );
     console.log("  loadCities() [dedupe por cache(), mismo query que arriba]");
-    await report("DrizzleCatalogue.listActiveZones(cityId) [panel de filtros]", () =>
-      catalogue.listActiveZones(caracasId),
+    const zoneActiveZones = await report(
+      "DrizzleCatalogue.listActiveZones(cityId) [panel de filtros]",
+      () => catalogue.listActiveZones(caracasId),
     );
     const zoneCriteria = { cityId: caracasId, zoneIds: [zoneIds[0] as string], page: 1 };
     const zoneResults = await report("DrizzleListingSearch.search(criteria) [zona única]", () =>
@@ -204,8 +212,10 @@ async function run(connectionString: string): Promise<void> {
     await report(`DrizzleListingPhotos.coversFor(${zoneResults.length} avisos)`, () =>
       photos.coversFor(zoneResults.map((row) => row.id)),
     );
-    await report("DrizzleFacetedSearch.countFacets(criteria, []) [panel de filtros]", () =>
-      facets.countFacets(zoneCriteria, []),
+    const zoneOfferedZoneIds = zoneActiveZones.map((zone) => zone.id);
+    await report(
+      `DrizzleFacetedSearch.countFacets(criteria, ${zoneOfferedZoneIds.length} zonas ofrecidas) [panel de filtros]`,
+      () => facets.countFacets(zoneCriteria, zoneOfferedZoneIds),
     );
   } finally {
     await pool.end();
