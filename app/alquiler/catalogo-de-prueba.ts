@@ -42,8 +42,8 @@ export const MARACAIBO: TestCity = { id: "ciudad-mcbo", name: "Maracaibo" };
 /** Alfabético, como los ordena `DrizzleCatalogue.listCities`. */
 export const CITIES: readonly TestCity[] = [DISTRITO, MARACAIBO];
 
-function zone(id: string, name: string, cityId: string) {
-  return { id, name, cityId, kind: "elemento" as const, category: null, parentName: null };
+function zone(id: string, name: string, cityId: string, parentName: string | null = null) {
+  return { id, name, cityId, kind: "elemento" as const, category: null, parentName };
 }
 
 export const CHACAO = zone("zona-chacao", "Chacao", DISTRITO.id);
@@ -52,8 +52,33 @@ export const TIERRA_NEGRA = zone("zona-tierra-negra", "Tierra Negra", MARACAIBO.
 /** Curada real, sin un solo aviso: el caso que R4 protege — no puede quedar
  * afuera de `findZonesByTokens` sólo porque `activeZonesFor` no la cuenta. */
 export const EL_HATILLO = zone("zona-el-hatillo", "El Hatillo", DISTRITO.id);
+/**
+ * **Dos lugares reales y distintos que comparten nombre en parroquias
+ * distintas de la MISMA ciudad** (tasks.md 27.7) — el ejemplo trabajado del
+ * fundador: "Barrio Nuevo" existe en tres parroquias de Maracaibo. Acá con
+ * dos alcanza para probar que la ruta busca en TODAS, no en la primera.
+ */
+export const BARRIO_NUEVO_CRISTO = zone(
+  "zona-barrio-nuevo-cristo",
+  "Barrio Nuevo",
+  MARACAIBO.id,
+  "Cristo de Aranza",
+);
+export const BARRIO_NUEVO_JUANA = zone(
+  "zona-barrio-nuevo-juana",
+  "Barrio Nuevo",
+  MARACAIBO.id,
+  "Juana de Ávila",
+);
 
-export const ZONES = [ALTAMIRA, CHACAO, TIERRA_NEGRA, EL_HATILLO];
+export const ZONES = [
+  ALTAMIRA,
+  CHACAO,
+  TIERRA_NEGRA,
+  EL_HATILLO,
+  BARRIO_NUEVO_CRISTO,
+  BARRIO_NUEVO_JUANA,
+];
 
 function listing(
   id: string,
@@ -82,7 +107,29 @@ export const MCBO_CARO = listing("mcbo-2", "Casa amoblada en Tierra Negra", 900,
 export const DC_CHACAO = listing("dc-1", "Estudio en Chacao", 450, CHACAO);
 export const DC_ALTAMIRA = listing("dc-2", "Penthouse en Altamira", 1200, ALTAMIRA);
 
-export const LISTINGS = [MCBO_BARATO, MCBO_CARO, DC_CHACAO, DC_ALTAMIRA];
+/** Uno en cada parroquia de "Barrio Nuevo" — lo que la 27.7 prueba que
+ * la ruta trae a la vez, y de dónde sale el nombre compartido en pantalla. */
+export const MCBO_BARRIO_NUEVO_CRISTO = listing(
+  "mcbo-3",
+  "Casa en Barrio Nuevo (Cristo de Aranza)",
+  400,
+  BARRIO_NUEVO_CRISTO,
+);
+export const MCBO_BARRIO_NUEVO_JUANA = listing(
+  "mcbo-4",
+  "Apartamento en Barrio Nuevo (Juana de Ávila)",
+  420,
+  BARRIO_NUEVO_JUANA,
+);
+
+export const LISTINGS = [
+  MCBO_BARATO,
+  MCBO_CARO,
+  DC_CHACAO,
+  DC_ALTAMIRA,
+  MCBO_BARRIO_NUEVO_CRISTO,
+  MCBO_BARRIO_NUEVO_JUANA,
+];
 
 /** Todos tienen portada: sin las dos derivadas, la regla F9 los saca de la cuadrícula. */
 export function coversFor(ids: readonly string[]) {

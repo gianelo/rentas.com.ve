@@ -17,13 +17,19 @@ const zones = [
   { id: "centro-dc", name: "Centro", cityId: "dc" },
   { id: "centro-mcbo", name: "Centro", cityId: "mcbo" },
   { id: "la-lago", name: "La Lago", cityId: "mcbo" },
+  // Dos lugares reales y distintos que comparten nombre en parroquias
+  // distintas de la MISMA ciudad (tasks.md 27.7, el ejemplo trabajado con
+  // "Barrio Nuevo" en Maracaibo). No son filas duplicadas: son la razón por
+  // la que la ruta tiene que devolver un conjunto y no una sola fila.
+  { id: "barrio-nuevo-cristo", name: "Barrio Nuevo", cityId: "mcbo" },
+  { id: "barrio-nuevo-juana", name: "Barrio Nuevo", cityId: "mcbo" },
 ];
 
 describe("resolveZoneRoute", () => {
-  it("devuelve la ciudad y la zona que nombran los dos segmentos", () => {
+  it("devuelve la ciudad y el conjunto de zonas que nombran los dos segmentos", () => {
     expect(resolveZoneRoute(cities, zones, "distrito-capital", "chacao")).toEqual({
       city: cities[0],
-      zone: zones[0],
+      zones: [zones[0]],
     });
   });
 
@@ -36,16 +42,32 @@ describe("resolveZoneRoute", () => {
    * vacía sin que nadie pueda ver por qué.
    */
   it("no confunde dos zonas homónimas de ciudades distintas", () => {
-    expect(resolveZoneRoute(cities, zones, "maracaibo", "centro")?.zone.id).toBe("centro-mcbo");
-    expect(resolveZoneRoute(cities, zones, "distrito-capital", "centro")?.zone.id).toBe(
-      "centro-dc",
-    );
+    expect(resolveZoneRoute(cities, zones, "maracaibo", "centro")?.zones.map((z) => z.id)).toEqual([
+      "centro-mcbo",
+    ]);
+    expect(
+      resolveZoneRoute(cities, zones, "distrito-capital", "centro")?.zones.map((z) => z.id),
+    ).toEqual(["centro-dc"]);
   });
 
   it("compara contra el slug del nombre, no contra el nombre", () => {
     // `La Lago` vive en la URL como `la-lago`: mayúsculas y espacios no son
     // parte de una ruta.
-    expect(resolveZoneRoute(cities, zones, "maracaibo", "la-lago")?.zone.id).toBe("la-lago");
+    expect(resolveZoneRoute(cities, zones, "maracaibo", "la-lago")?.zones.map((z) => z.id)).toEqual(
+      ["la-lago"],
+    );
+  });
+
+  /**
+   * **La ruta nombra un LUGAR, no una fila** (fundador, 2026-09-07, tasks.md
+   * 27.7). `/alquiler/maracaibo/barrio-nuevo` busca en TODAS las zonas de
+   * Maracaibo que se llaman así — las dos parroquias, ninguna elegida en
+   * silencio sobre la otra.
+   */
+  it("devuelve TODAS las zonas que comparten (ciudad, slug), no la primera", () => {
+    const place = resolveZoneRoute(cities, zones, "maracaibo", "barrio-nuevo");
+
+    expect(place?.zones.map((z) => z.id)).toEqual(["barrio-nuevo-cristo", "barrio-nuevo-juana"]);
   });
 
   /**
@@ -247,13 +269,31 @@ describe("la ruta canónica de un lugar", () => {
   });
 
   it("la zona cuelga de su ciudad, resueltas juntas", () => {
-    expect(zoneRoutePath({ city: dc, zone: chacao })).toBe("/alquiler/distrito-capital/chacao");
+    expect(zoneRoutePath({ city: dc, zones: [chacao] })).toBe("/alquiler/distrito-capital/chacao");
   });
 
   it("usa la misma slugify que la ficha, así que acentos y mayúsculas no separan las dos", () => {
     const maracaibo = { id: "c2", name: "Maracaibo" };
     const bella = { id: "z2", name: "Bella Vista", cityId: "c2" };
 
-    expect(zoneRoutePath({ city: maracaibo, zone: bella })).toBe("/alquiler/maracaibo/bella-vista");
+    expect(zoneRoutePath({ city: maracaibo, zones: [bella] })).toBe(
+      "/alquiler/maracaibo/bella-vista",
+    );
+  });
+
+  /**
+   * **Varias filas, una sola dirección.** Cuando el nombre se comparte entre
+   * parroquias (27.7), la canónica sigue siendo una sola: las filas ya
+   * comparten el mismo slug por construcción — es exactamente la condición
+   * que las agrupó —, así que cualquiera del conjunto arma la misma ruta.
+   */
+  it("varias zonas que comparten nombre arman la misma dirección canónica", () => {
+    const maracaibo = { id: "c2", name: "Maracaibo" };
+    const cristo = { id: "z3", name: "Barrio Nuevo", cityId: "c2" };
+    const juana = { id: "z4", name: "Barrio Nuevo", cityId: "c2" };
+
+    expect(zoneRoutePath({ city: maracaibo, zones: [cristo, juana] })).toBe(
+      "/alquiler/maracaibo/barrio-nuevo",
+    );
   });
 });

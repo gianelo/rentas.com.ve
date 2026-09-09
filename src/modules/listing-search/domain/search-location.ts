@@ -53,8 +53,13 @@ export const ZONE_QUERY_NOT_ALLOWED_NOTICE =
 
 export interface SearchLocationInput {
   readonly route: SearchRouteKind;
-  /** La zona que la ruta afirma. Sólo la ruta de zona la tiene. */
-  readonly routeZoneId?: string;
+  /**
+   * Las zonas que la ruta afirma. Sólo la ruta de zona las tiene, y puede ser
+   * más de una: la ruta nombra un LUGAR y no una fila (tasks.md 27.7,
+   * fundador 2026-09-07) — `/alquiler/maracaibo/barrio-nuevo` busca en TODAS
+   * las parroquias que se llaman así dentro de Maracaibo.
+   */
+  readonly routeZoneIds?: readonly string[];
   readonly query: SearchQuery;
   /** Las zonas de `?zona=`, ya resueltas contra el catálogo de esta ciudad. */
   readonly queryZoneIds: readonly string[];
@@ -94,9 +99,12 @@ export function resolveSearchLocation(input: SearchLocationInput): SearchLocatio
 
   return {
     // La ruta afirma un lugar y es el único: la query no puede ensancharlo ni
-    // reemplazarlo. `routeZoneId` ausente sería una ruta de zona sin zona, que
+    // reemplazarlo. Puede ser más de una zona —el nombre cubre todas las
+    // parroquias que lo comparten dentro de la ciudad (27.7)—, y las dos
+    // entran con O, la misma combinación que ya usa `?zona=` en la ruta de
+    // ciudad. `routeZoneIds` ausente sería una ruta de zona sin zona, que
     // `resolveZoneRoute` ya hizo imposible antes de llegar acá.
-    zoneIds: input.routeZoneId === undefined ? [] : [input.routeZoneId],
+    zoneIds: input.routeZoneIds ?? [],
     query,
     // Vacío no es puesto: es lo que deja un formulario `GET` que nadie llenó, y
     // es el mismo criterio que `isFilteredZoneRoute` aplica del otro lado.

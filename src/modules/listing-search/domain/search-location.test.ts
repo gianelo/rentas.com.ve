@@ -14,7 +14,7 @@ import {
  * búsqueda**, y la ubicación nunca aparece dos veces adentro de una dirección.
  */
 const CIUDAD = { route: "city" } as const;
-const ZONA = { route: "zone", routeZoneId: "z-bella-vista" } as const;
+const ZONA = { route: "zone", routeZoneIds: ["z-bella-vista"] } as const;
 
 describe("qué ruta admite un «zona» en la query", () => {
   it("la de ciudad sí: es la única forma que tiene una búsqueda de varias zonas", () => {
@@ -128,6 +128,23 @@ describe("la ruta de zona, que rechaza el parámetro", () => {
 
     expect(location.zoneIds).toEqual([]);
     expect(location.notice).toBe(ZONE_QUERY_NOT_ALLOWED_NOTICE);
+  });
+
+  /**
+   * **El nombre cubre todos los lugares curados que lo comparten** (tasks.md
+   * 27.7, fundador 2026-09-07): `/alquiler/maracaibo/barrio-nuevo` busca en
+   * TODAS las parroquias que se llaman así, así que `routeZoneIds` puede
+   * traer más de un id — y los dos entran a la búsqueda, no sólo el primero.
+   */
+  it("la ruta de zona puede afirmar varios lugares que comparten nombre (27.7)", () => {
+    const location = resolveSearchLocation({
+      route: "zone",
+      routeZoneIds: ["z-barrio-nuevo-cristo", "z-barrio-nuevo-juana"],
+      query: {},
+      queryZoneIds: [],
+    });
+
+    expect(location.zoneIds).toEqual(["z-barrio-nuevo-cristo", "z-barrio-nuevo-juana"]);
   });
 
   it("avisa aunque el catálogo no reconozca ninguna: lo ilegal es el parámetro", () => {
