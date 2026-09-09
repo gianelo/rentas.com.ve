@@ -543,6 +543,37 @@ describe("aislamiento de ciudad (design.md D5)", () => {
   });
 });
 
+describe("el conteo por zona se acota a las zonas ofrecidas, en SQL (task 27.8)", () => {
+  /**
+   * **El defecto exacto que la 27.8 cierra.** Antes de esta tarea, el
+   * `GROUP BY zoneId` corría sobre TODA zona de la ciudad con algún aviso, sin
+   * techo, y `offeredZoneIds` sólo servía para sembrar ceros — nunca entraba
+   * al `WHERE`. Con Norte fuera de las zonas ofrecidas, la consulta vieja
+   * igual traía su fila (tiene avisos) y la sumaba a `byZone`; la de acá no
+   * la trae porque el `WHERE` de `zoneAgg` la excluye. Al mismo tiempo,
+   * `cityTotal` y las relajaciones NO pueden angostarse: viven en el agregado
+   * de la ciudad entera (`citywide`), que no sabe de `offeredZoneIds`.
+   */
+  it("una zona con avisos que no está entre las ofrecidas no aparece en byZone", async () => {
+    // Norte tiene A4 y A5, dos avisos reales — no es una zona vacía.
+    const counts = await facets.countFacets({ cityId: MARACAIBO }, [MCBO_CENTRO]);
+
+    expect(counts.byZone).toEqual({ [MCBO_CENTRO]: 3 });
+    expect(counts.byZone).not.toHaveProperty(MCBO_NORTE);
+  });
+
+  it("cityTotal y las relajaciones siguen contando la ciudad entera, no sólo las ofrecidas", async () => {
+    const counts = await facets.countFacets({ cityId: MARACAIBO, zoneIds: [MCBO_CENTRO] }, [
+      MCBO_CENTRO,
+    ]);
+
+    // Los cinco activos de la ciudad, aunque sólo Centro esté ofrecida.
+    expect(counts.cityTotal).toBe(5);
+    // Soltar la zona (que el propio criterio pone) suma Centro y Norte: 5.
+    expect(counts.withoutFilter.zone).toBe(5);
+  });
+});
+
 describe("una faceta no se filtra a sí misma (task 14.11)", () => {
   /**
    * **El caso sutil, y es el que deja el filtro usable.** Con "3 habitaciones"
