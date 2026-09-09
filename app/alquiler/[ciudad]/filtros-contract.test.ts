@@ -141,11 +141,14 @@ describe("dónde vive la ubicación de la búsqueda", () => {
     expect(page).toMatch(new RegExp(`route:\\s*"${route}"`));
   });
 
-  it("la de zona afirma su zona de la ruta, que es la única que busca", () => {
-    expect(PAGES.zona).toMatch(/routeZoneId:\s*place\.zone\.id/);
+  it("la de zona afirma las zonas de la ruta, que son las únicas que busca", () => {
+    // Plural desde la 27.7: el lugar puede ser más de una fila cuando su
+    // nombre se comparte entre parroquias de la misma ciudad, y la ruta
+    // busca en TODAS, no en la primera.
+    expect(PAGES.zona).toMatch(/routeZoneIds:\s*place\.zones\.map\(/);
     // Y la de ciudad no tiene ninguna que afirmar: su ubicación entra entera
     // por la query.
-    expect(PAGES.ciudad).not.toContain("routeZoneId");
+    expect(PAGES.ciudad).not.toContain("routeZoneIds");
   });
 
   it("la de zona no arma su propia lista de zonas extra", () => {

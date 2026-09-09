@@ -185,4 +185,48 @@ describe("buildListingGrid", () => {
 
     expect(card?.href).not.toContain(RETURN_PARAM);
   });
+
+  /**
+   * **La tarjeta nombra la parroquia, y sólo cuando el nombre está
+   * compartido** (tasks.md 27.7, decisión del fundador 2026-09-08). Cuando la
+   * ruta de zona resolvió más de un lugar con el mismo nombre —"Barrio
+   * Nuevo" existe en tres parroquias distintas de Maracaibo—, cada tarjeta
+   * tiene que decir DE CUÁL habla, sin cambiar la URL ni el título de la
+   * página. `zoneParentName` es opcional y a propósito: cuando el nombre no
+   * se comparte no viaja nada extra y la tarjeta se ve exactamente igual que
+   * hoy.
+   */
+  it("nombra la parroquia cuando el nombre de la zona está compartido", () => {
+    const [card] = buildListingGrid(
+      [listing({ zoneName: "Barrio Nuevo", zoneParentName: "Cristo de Aranza" })],
+      new Map([[listing().id, fullCover]]),
+      BASE,
+    );
+
+    expect(card?.zoneName).toBe("Barrio Nuevo, Cristo de Aranza");
+  });
+
+  it("sin parroquia compartida la tarjeta se ve exactamente igual que hoy", () => {
+    const [card] = buildListingGrid(
+      [listing({ zoneParentName: null })],
+      new Map([[listing().id, fullCover]]),
+      BASE,
+    );
+
+    expect(card?.zoneName).toBe("Chacao");
+  });
+
+  it("el enlace de la ficha sigue usando el nombre de la zona solo, nunca la parroquia", () => {
+    // La URL usa `slugify(zoneName)` (`buildListingPath`): combinarle la
+    // parroquia cambiaría la dirección canónica de la ficha, y eso no es lo
+    // que esta tarea decidió tocar.
+    const [card] = buildListingGrid(
+      [listing({ zoneName: "Barrio Nuevo", zoneParentName: "Cristo de Aranza" })],
+      new Map([[listing().id, fullCover]]),
+      BASE,
+    );
+
+    expect(card?.href).toContain("/barrio-nuevo/");
+    expect(card?.href).not.toContain("cristo");
+  });
 });

@@ -78,20 +78,26 @@ const loadActiveZones = cache(async (cityId: string) =>
 
 /**
  * Qué lugar nombran los dos segmentos de la URL — resuelto por el índice de
- * `slug`, no escaneando la taxonomía entera (tasks.md 27.1, slice B).
+ * `slug`, no escaneando la taxonomía entera (tasks.md 27.1, slice B), y sobre
+ * TODAS las zonas que comparten ese nombre en la ciudad, no sólo la primera
+ * (27.7).
  *
- * **Antes de esta rebanada, resolver la ruta pagaba `loadCatalogue()`
+ * **Antes de la rebanada B, resolver la ruta pagaba `loadCatalogue()`
  * completo** para hacerle a `resolveZoneRoute` una pregunta de una fila:
  * medido contra el contenedor real, 5.801 filas y ~1.207 KB para devolver una
  * ciudad y, cuando el nombre no se comparte entre parroquias, una única
  * zona — 286 bytes (`tests/integration/catalogue.test.ts`). `findZoneBySlug`
  * hace la misma pregunta con un `Index Scan` sobre `zone_slug_idx`.
  *
- * **`resolveZoneRoute` no cambia.** Sigue siendo la misma función pura, con
- * la misma firma — lo único que cambia es de dónde salen los arreglos que
- * recibe: antes las 5.813 zonas, ahora sólo la ciudad y las zonas que ya
- * comparten `(city_id, slug)` con la petición. El dominio sigue decidiendo
- * qué hace válida la ruta; la infraestructura sólo dejó de traer de más.
+ * **`resolveZoneRoute` sigue siendo la misma función pura, con la misma
+ * firma.** Lo que cambió con la 27.7 es que ahora devuelve TODAS las zonas de
+ * `candidates.zones` que coinciden con los dos segmentos —el defecto medido
+ * era que `.find()` elegía la primera en silencio, dejando sin dirección a
+ * las otras parroquias que comparten el mismo nombre—, y de dónde sale ese
+ * arreglo: antes las 5.813 zonas del país, ahora sólo la ciudad y las zonas
+ * que ya comparten `(city_id, slug)` con la petición. El dominio sigue
+ * decidiendo qué hace válida la ruta; la infraestructura sólo dejó de traer
+ * de más.
  *
  * `cache()` por la misma razón que `loadCities`/`loadActiveZones`:
  * `generateMetadata` y el componente preguntan lo mismo en la misma petición.
@@ -161,15 +167,30 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
   // la pantalla.
   const searchZones = toSearchZones(activeZones);
 
+  // **El nombre de zona y la parroquia que la desambigua, de las filas que
+  // `findZoneBySlug` YA trajo** (27.7) — sin una consulta más, sin traer la
+  // taxonomía y sin ensanchar ninguna fila del camino de lectura: son las
+  // mismas filas de `place.zones`, que ya cargan su propio `parentName`
+  // porque la consulta del puerto ya hace el `leftJoin` con el padre.
+  // `sharedZoneParents` queda VACÍO cuando la ruta resolvió una sola zona —
+  // el caso de hoy, sin nombre compartido —, así que ninguna tarjeta gana una
+  // parroquia que nadie pidió.
+  const routeZoneNames = new Map(place.zones.map((zone) => [zone.id, zone.name]));
+  const sharedZoneParents: ReadonlyMap<string, string | null> =
+    place.zones.length > 1
+      ? new Map(place.zones.map((zone) => [zone.id, zone.parentName]))
+      : new Map();
+
   // **Esta ruta RECHAZA `?zona=`** (resolución del fundador, 2026-08-26: "un
-  // dato, un lugar"). La ubicación no aparece dos veces en una dirección: una
-  // zona vive acá, varias viven en `/alquiler/<ciudad>?zona=…`. Se ignora con
-  // un aviso en vez de romper la página (14.23b), y el dominio devuelve además
-  // la query **sin** el parámetro — dejarlo lo arrastraría a cada enlace que
-  // esta página compone.
+  // dato, un lugar"). La ubicación no aparece dos veces en una dirección: el
+  // LUGAR vive acá —y puede ser más de una fila, cuando su nombre se comparte
+  // entre parroquias (27.7)—, varias zonas EXTRA viven en
+  // `/alquiler/<ciudad>?zona=…`. Se ignora con un aviso en vez de romper la
+  // página (14.23b), y el dominio devuelve además la query **sin** el
+  // parámetro — dejarlo lo arrastraría a cada enlace que esta página compone.
   const location = resolveSearchLocation({
     route: "zone",
-    routeZoneId: place.zone.id,
+    routeZoneIds: place.zones.map((zone) => zone.id),
     query: rawQuery,
     queryZoneIds: resolveZoneTokens(
       readZoneList(rawQuery[SEARCH_QUERY_NAMES.zone]),
@@ -228,9 +249,21 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
       ...row,
       cityName: place.city.name,
       // **Sólo entre las zonas con avisos** (27.1, slice C): toda zona que un
-      // aviso mostrado pueda nombrar tiene avisos, así que está en `activeZones`.
+      // aviso mostrado pueda nombrar tiene avisos, así que está en
+      // `activeZones`. El respaldo ya no es una sola zona (27.7): es
+      // `routeZoneNames`, el nombre de CUALQUIERA de las zonas que la ruta
+      // resolvió, para el aviso cuyo último activo caducó entre esta consulta
+      // y la anterior.
       zoneName:
-        activeZones.find((candidate) => candidate.id === row.zoneId)?.name ?? place.zone.name,
+        activeZones.find((candidate) => candidate.id === row.zoneId)?.name ??
+        routeZoneNames.get(row.zoneId) ??
+        place.zones[0].name,
+      // **La tarjeta nombra la parroquia, y sólo cuando el nombre está
+      // compartido** (decisión del fundador, 2026-09-08): `undefined` para
+      // toda zona ajena a `sharedZoneParents` — que con una sola zona
+      // resuelta está vacío — y la parroquia real cuando la ruta resolvió más
+      // de un lugar con este nombre.
+      zoneParentName: sharedZoneParents.get(row.zoneId),
     })),
     covers,
     readPhotoPublicBaseUrl(),
@@ -330,11 +363,14 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
 
   // La miga de pan de esta ruta: Inicio, la ciudad (ya con enlace propio
   // desde que la ruta de ciudad existe) y la zona, sin enlace porque es la
-  // página en la que se está parado.
+  // página en la que se está parado. `place.zones[0]` porque la ruta nombra
+  // un LUGAR (27.7): cuando el nombre se comparte entre parroquias, la miga
+  // de pan sigue diciendo el nombre del lugar, no cuál fila lo resolvió —
+  // eso es lo que las tarjetas desambiguan, no el título de la pantalla.
   const crumbs = [
     { label: "Inicio", href: "/" },
     { label: place.city.name, href: cityPath },
-    { label: place.zone.name },
+    { label: place.zones[0].name },
   ];
 
   // **Lo que se ignoró, dicho.** Llegar con `?zona=` a una dirección que ya
@@ -399,7 +435,7 @@ export default async function ZonaPage({ params, searchParams }: ZonaProps) {
             dejaron de ser dos cosas que mantener sincronizadas. */}
         <SearchResultsHeader
           crumbs={crumbs}
-          title={`Alquiler en ${place.zone.name}`}
+          title={`Alquiler en ${place.zones[0].name}`}
           notice={notice}
           priceNotices={priceNotices}
           countText={countText}
@@ -437,8 +473,8 @@ export async function generateMetadata({ params, searchParams }: ZonaProps): Pro
   const filtered = isFilteredZoneRoute(query);
 
   return {
-    title: `Alquiler en ${place.zone.name}, ${place.city.name} — Rentoru`,
-    description: `Avisos de alquiler de larga estancia en ${place.zone.name}, ${place.city.name}. Publicar y buscar es gratis, sin comisión.`,
+    title: `Alquiler en ${place.zones[0].name}, ${place.city.name} — Rentoru`,
+    description: `Avisos de alquiler de larga estancia en ${place.zones[0].name}, ${place.city.name}. Publicar y buscar es gratis, sin comisión.`,
     robots: filtered ? { index: false, follow: true } : undefined,
     // **Sólo se canoniza lo que pide ser indexado** (26.12). La refinada ya
     // sale del índice con la línea de arriba, y sumarle una canónica hacia la

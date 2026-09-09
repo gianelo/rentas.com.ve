@@ -4,6 +4,8 @@ import { slugify } from "@/modules/listing-discovery/domain/listing-url";
 import type { SearchCriteria } from "@/modules/listing-search/domain/search-criteria";
 import {
   activeZonesFor,
+  BARRIO_NUEVO_CRISTO,
+  BARRIO_NUEVO_JUANA,
   CITIES,
   coversFor,
   DC_ALTAMIRA,
@@ -11,6 +13,8 @@ import {
   facetsFor,
   MARACAIBO,
   MCBO_BARATO,
+  MCBO_BARRIO_NUEVO_CRISTO,
+  MCBO_BARRIO_NUEVO_JUANA,
   MCBO_CARO,
   matching,
   ZONES,
@@ -150,6 +154,71 @@ describe("27.1 slice B: la ruta de zona resuelve por índice", () => {
     await expect(servedBody("ciudad-fantasma", "tierra-negra")).rejects.toMatchObject({
       digest: "NEXT_HTTP_ERROR_FALLBACK;404",
     });
+  });
+});
+
+/**
+ * **27.7 — la ruta de zona nombra un LUGAR, no una fila.**
+ *
+ * `/alquiler/maracaibo/barrio-nuevo` tiene que buscar en las DOS parroquias
+ * de la semilla que se llaman "Barrio Nuevo", no sólo en la primera que
+ * `findZoneBySlug` devuelva. Antes de esta tarea, `resolveZoneRoute` elegía
+ * una sola zona del arreglo con `.find()` — el RED real es que sin el
+ * arreglo entero yendo a la búsqueda, uno de los dos avisos nunca aparecería
+ * bajo esta dirección.
+ */
+describe("27.7: la ruta de zona busca en todas las zonas que comparten el nombre", () => {
+  it("trae avisos de las DOS parroquias que se llaman «Barrio Nuevo»", async () => {
+    const html = await servedBody("maracaibo", "barrio-nuevo");
+
+    expect(html).toContain(MCBO_BARRIO_NUEVO_CRISTO.title);
+    expect(html).toContain(MCBO_BARRIO_NUEVO_JUANA.title);
+    expect(html).toContain("2 propiedades activas");
+
+    // Y sin depender del falso: las dos zonas viajaron juntas al puerto de
+    // búsqueda, no una elegida en silencio sobre la otra.
+    const [criteria] = search.mock.calls.at(-1) as [SearchCriteria];
+    expect(criteria.zoneIds).toEqual(
+      expect.arrayContaining([BARRIO_NUEVO_CRISTO.id, BARRIO_NUEVO_JUANA.id]),
+    );
+  });
+
+  /**
+   * **La decisión del fundador, 2026-09-08: la tarjeta nombra la parroquia,
+   * y sólo cuando el nombre está compartido.** Cada tarjeta de este lugar
+   * dice DE CUÁL parroquia habla, sin que la URL ni el `<h1>` cambien de
+   * forma.
+   */
+  it("cada tarjeta dice de cuál parroquia habla, porque el nombre está compartido", () => {
+    return servedBody("maracaibo", "barrio-nuevo").then((html) => {
+      expect(html).toContain("Barrio Nuevo, Cristo de Aranza");
+      expect(html).toContain("Barrio Nuevo, Juana de Ávila");
+    });
+  });
+
+  /**
+   * **El otro lado, y no por simetría.** Una zona cuyo nombre NO se comparte
+   * —"Tierra Negra" es la única en la semilla— no debe ganar una coma que
+   * nadie pidió: eso sería inventar ambigüedad donde no la hay.
+   */
+  it("una zona sin nombre compartido no gana una parroquia de más", async () => {
+    const html = await servedBody("maracaibo", "tierra-negra");
+
+    // El `<span>` de la meta de la tarjeta sigue cerrando justo después del
+    // nombre, sin una coma ni una parroquia colgando detrás. El texto
+    // alternativo de la foto ya llevaba una coma antes de esta tarea (título,
+    // zona) y no es lo que esta prueba mira.
+    expect(html).toContain(MCBO_BARATO.title);
+    expect(html).toMatch(/Tierra Negra<\/span> · /);
+  });
+
+  it("el `<h1>` y el enlace de la ficha siguen nombrando el lugar, no la fila", async () => {
+    const html = await servedBody("maracaibo", "barrio-nuevo");
+
+    expect(html).toContain("Alquiler en Barrio Nuevo");
+    // La URL de la ficha sigue siendo `.../barrio-nuevo/...`: la parroquia no
+    // se cuela en la dirección canónica.
+    expect(html).toContain('href="/alquiler/maracaibo/barrio-nuevo/');
   });
 });
 

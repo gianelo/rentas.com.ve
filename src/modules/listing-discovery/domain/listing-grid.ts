@@ -25,6 +25,17 @@ export interface GridListing {
   readonly publisherType: "owner" | "broker";
   readonly cityName: string;
   readonly zoneName: string;
+  /**
+   * La parroquia que desambigua, y SÓLO cuando `zoneName` está compartido con
+   * otro lugar de la misma ciudad (tasks.md 27.7, fundador 2026-09-08): la
+   * ruta de zona busca en TODAS las zonas que se llaman así, así que dos
+   * tarjetas de esta misma pantalla pueden hablar de parroquias distintas
+   * bajo el mismo nombre. `null`/ausente es la tarjeta de hoy — sin lugar
+   * compartido no viaja nada extra. Opcional a propósito: cada llamador que
+   * no conoce esta regla (el inicio, la ciudad sin nombres compartidos en la
+   * página) no tiene que construir un campo que nunca usa.
+   */
+  readonly zoneParentName?: string | null;
 }
 
 /**
@@ -51,6 +62,13 @@ export interface GridCard {
   readonly href: string;
   readonly priceUsd: number;
   readonly title: string;
+  /**
+   * El nombre que la tarjeta DIBUJA — con la parroquia agregada cuando
+   * `GridListing.zoneParentName` viene puesto (27.7). Nunca lo que arma el
+   * enlace ni el texto alternativo de la foto: los dos siguen usando el
+   * nombre de zona solo, porque son la dirección canónica de la ficha y no
+   * cambian con esta tarea.
+   */
   readonly zoneName: string;
   readonly rooms: number;
   readonly areaM2: number;
@@ -138,7 +156,12 @@ export function buildListingGrid(
       ),
       priceUsd: listing.priceUsd,
       title: listing.title,
-      zoneName: listing.zoneName,
+      // La parroquia se agrega SÓLO acá, para dibujarla — el enlace de arriba
+      // y el texto alternativo de más abajo siguen usando `listing.zoneName`
+      // solo, porque son la dirección canónica de la ficha (27.7).
+      zoneName: listing.zoneParentName
+        ? `${listing.zoneName}, ${listing.zoneParentName}`
+        : listing.zoneName,
       rooms: listing.rooms,
       areaM2: listing.areaM2,
       publisherType: listing.publisherType,

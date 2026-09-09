@@ -14,11 +14,11 @@ import type { CatalogueCity, CatalogueZone } from "../../domain/catalogue";
  * around a single row now would force a second signature change the day
  * 27.7 lands; shaping it around the set costs nothing today and avoids that.
  *
- * **This slice does not act on the plural.** `resolveZoneRoute`
- * (listing-discovery) still picks one zone from the array it is handed —
- * same behaviour as before this slice, same latent ambiguity 27.7 measured
- * and will fix. What changes here is only WHERE that array comes from: an
- * indexed lookup instead of the entire taxonomy.
+ * **27.7 landed: `resolveZoneRoute` (listing-discovery) now returns the
+ * whole set** — every zone in `zones` whose slug matches, never the first
+ * one a `.find()` would have picked in silence. This port already shaped its
+ * output as a set before that landed, exactly so the day it did there would
+ * be no second signature change here.
  */
 export interface ZoneRouteCandidates {
   readonly city: CatalogueCity;

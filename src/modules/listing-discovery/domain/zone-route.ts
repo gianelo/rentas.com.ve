@@ -39,7 +39,21 @@ export interface ZoneRoute<
   Z extends RoutableZone = RoutableZone,
 > {
   readonly city: C;
-  readonly zone: Z;
+  /**
+   * TODAS las zonas que comparten `(cityId, slug)` (tasks.md 27.7, decisión
+   * del fundador 2026-09-07) — nunca una fila. "Barrio Nuevo" existe en tres
+   * parroquias distintas de Maracaibo: son lugares reales y distintos, no
+   * filas duplicadas, y la ruta que eligiera una sola en silencio dejaría a
+   * las otras sin dirección propia.
+   *
+   * **Nunca vacío, y el tipo lo dice y no sólo el comentario.** La tupla con
+   * un elemento fijo (`readonly [Z, ...Z[]]`) es lo que deja a `zones[0]`
+   * tipar como `Z` y no como `Z | undefined` bajo
+   * `noUncheckedIndexedAccess`: `resolveZoneRoute` devuelve `null` en vez de
+   * un `ZoneRoute` con `zones: []`, así que ningún llamador necesita un
+   * respaldo para un caso que el dominio ya hizo irrepresentable.
+   */
+  readonly zones: readonly [Z, ...Z[]];
 }
 
 /**
@@ -58,6 +72,14 @@ export interface ZoneRoute<
  * exactamente esa forma. Que las dos direcciones usen la misma función es lo
  * que hace que el enlace «← Resultados» de la ficha caiga siempre en una ruta
  * que resuelve.
+ *
+ * **Devuelve el conjunto, no la primera fila** (tasks.md 27.7, fundador
+ * 2026-09-07: *"como son parroquias diferentes, son diferentes lugares...
+ * deberían salir todos los avisos que están en barrio nuevo con cada
+ * parroquia, todos, no solo uno"*). La ruta direcciona el NOMBRE dentro de una
+ * ciudad, y el nombre cubre todos los lugares curados que se llaman así ahí
+ * adentro — nunca sólo el primero que un `.find()` hubiera encontrado en
+ * silencio.
  */
 export function resolveZoneRoute<C extends RoutableCity, Z extends RoutableZone>(
   cities: readonly C[],
@@ -70,12 +92,14 @@ export function resolveZoneRoute<C extends RoutableCity, Z extends RoutableZone>
   const city = cities.find((candidate) => slugify(candidate.name) === citySlug);
   if (!city) return null;
 
-  const zone = zones.find(
+  const matches = zones.filter(
     (candidate) => candidate.cityId === city.id && slugify(candidate.name) === zoneSlug,
   );
-  if (!zone) return null;
+  if (matches.length === 0) return null;
 
-  return { city, zone };
+  // El `as` es seguro y no un escape: la guarda de arriba YA verificó que
+  // `matches` no está vacío, que es exactamente lo que el tipo tupla afirma.
+  return { city, zones: matches as [Z, ...Z[]] };
 }
 
 /**
@@ -196,6 +220,12 @@ export function cityRoutePath(city: RoutableCity): string {
   return `/alquiler/${slugify(city.name)}`;
 }
 
-export function zoneRoutePath({ city, zone }: ZoneRoute): string {
-  return `${cityRoutePath(city)}/${slugify(zone.name)}`;
+/**
+ * **Cualquiera del conjunto arma la misma dirección.** Cuando el nombre se
+ * comparte entre parroquias (27.7), las filas de `zones` YA comparten el
+ * mismo slug por construcción — es exactamente la condición que las agrupó —,
+ * así que la primera basta para reconstruirlo.
+ */
+export function zoneRoutePath({ city, zones }: ZoneRoute): string {
+  return `${cityRoutePath(city)}/${slugify(zones[0].name)}`;
 }
