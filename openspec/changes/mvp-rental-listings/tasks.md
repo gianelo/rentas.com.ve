@@ -2418,7 +2418,7 @@ El fundador trajo hoy una lámina que nunca había estado en el repositorio: `de
 
     **Lo que el camino de despliegue prueba ahora y antes no probaba en ninguna parte**: que la migración corre. Hasta hoy `deploy-migrate` se salteaba toda vista previa, así que el paso de migración sólo se ejercitaba en producción, con datos vivos y sin ensayo previo. Ahora cada rama lo ensaya contra su propia base antes de que le toque a producción — que es la mitad de lo que la 27.6 pedía, ya cobrada de arriba.
 
-- [ ] 27.3 **DEPENDE DE LA MEDICIÓN DE LA 27.1. No se empieza antes.** Cachear lo que el camino de lectura sigue pidiendo en cada visita, **si después de la 27.1 todavía hace falta**.
+- [x] 27.3 **DEPENDE DE LA MEDICIÓN DE LA 27.1. No se empieza antes.** Cachear lo que el camino de lectura sigue pidiendo en cada visita, **si después de la 27.1 todavía hace falta**.
 
     **Por qué está condicionada.** Con los 679 kB del catálogo fuera, lo que queda por visita son las 18 ciudades (~2 kB), los avisos que se muestran y los conteos: unos pocos kilobytes. A 3.000 visitas diarias eso es **menos de 1 GB al mes**, cómodamente dentro de los 5 GB gratis. **Es muy posible que la 27.1 sola cierre el problema y esta tarea se cierre con el número y sin código** — que es la mejor forma de cerrar una tarea.
 
@@ -2427,6 +2427,15 @@ El fundador trajo hoy una lámina que nunca había estado en el repositorio: `de
     **Por eso, si la tarea se hace, se cachea el DATO y no la ruta.** La ruta sigue siendo dinámica —el guardián del build sigue en pie— y lo que se cachea es el resultado de la consulta, entre peticiones. Quitar el `force-dynamic` sería cambiar un problema de cuota por uno de compilación, y de paso borrar una protección que ya atrapó un defecto real.
 
     **Y una pregunta que hay que contestar antes de escribir una línea**: cuánta desactualización tolera el sitemap. El comentario argumenta contra uno horneado en el DESPLIEGUE, y tiene razón — pero eso no es lo mismo que uno con **una hora**. Un aviso nuevo tarda días en ser rastreado. Si una hora sirve, la tarea es chica; si tiene que estar al segundo, **la respuesta correcta es no hacer esta tarea y dejarlo dicho**.
+
+
+    **CERRADA el 2026-09-08 SIN escribir una línea de caché, que es el desenlace que esta tarea pedía.** Su enunciado condicionaba todo a una medición —*«si después de la 27.1 todavía hace falta»*—, y la medición se hizo: una vista de la página más cara cuesta **22,7 kB**, no los 679 kB de una sola consulta de antes.
+
+    **La aritmética que la decide**, contra los 5 GB mensuales del plan Free y tomando la página más cara para TODAS las visitas, que es el peor caso y no el promedio: **caben unas 215.000 vistas al mes**. Las **3.000 visitas diarias que esta misma tarea suponía** son 90.000 al mes, o sea **2,09 GB — un 58 % de margen**.
+
+    **No hace falta cachear.** Y la razón de no hacerlo no es pereza: una caché trae invalidación, y la invalidación es una fuente de defectos propia —datos viejos servidos como frescos— que sólo vale pagar cuando compra algo. Acá no compra nada: entra más del doble del tráfico asumido sin ella.
+
+    **Cuándo reabrir esto, dicho con número para que no sea una corazonada**: si el tráfico sostenido pasa de **dos a tres veces** las 3.000 visitas diarias asumidas, o si una vista vuelve a costar mucho más que los 22,7 kB medidos. Lo segundo ya no depende de la vigilancia de nadie: la **27.4** puso un techo de 300 filas que revienta ruidosamente si el camino de lectura vuelve a pedir de más, y `scripts/measure-page-view.ts` deja la medición re-ejecutable para cuando el inventario crezca.
 
 - [x] 27.4 **La otra mitad del par de presupuestos: un techo de FILAS sobre lo que el camino de lectura le pide a la base.** Es la tarea que impide que esto vuelva a pasar.
 
@@ -2494,7 +2503,7 @@ El fundador trajo hoy una lámina que nunca había estado en el repositorio: `de
 
     **Variables de entorno nuevas que el fundador tiene que agregar** (repository secrets de GitHub Actions): `HEARTBEAT_MAIL_FROM`, `HEARTBEAT_MAIL_TO`. `RESEND_API_KEY` ya existe (misma cuenta que el ciclo de vida).
 
-- [ ] 27.6 **DEPENDIENTE — la distancia entre lo que el CI prueba y lo que Vercel corre, medida pero no cerrada.**
+- [x] 27.6 **DEPENDIENTE — la distancia entre lo que el CI prueba y lo que Vercel corre, medida pero no cerrada.**
 
     **La brecha, exacta.** El CI corre `pnpm build`. Vercel corre `pnpm vercel-build`, que es `node scripts/deploy-migrate.mjs && next build`. **No son el mismo comando**, y de ahí salen tres diferencias:
 
@@ -2509,6 +2518,17 @@ El fundador trajo hoy una lámina que nunca había estado en el repositorio: `de
     **Por qué queda dependiente y no se ejecuta en esta fase.** Cerrarla de verdad exige una base con migraciones pendientes contra la cual correr `deploy-migrate.mjs` y afirmar su comportamiento: eso es un arnés propio, del peso de la 11.22. **La Fase 27 existe para apagar un incendio**, y meterle una tarea de peso completo que no toca ese incendio es exactamente la forma de que la fase no termine.
 
     **Queda escrita con la medición hecha** —los tres puntos de arriba, uno ya cerrado— para que el día que se retome no haya que volver a averiguar cuál era la distancia.
+
+
+    **CERRADA el 2026-09-08, y no por haberla ejecutado: la 27.2 la cerró sin que nadie lo notara.** Los tres puntos que esta tarea midió están los tres atendidos, y conviene verificarlos uno por uno antes de creerlo.
+
+    1. *«El CI nunca ejecuta `deploy-migrate.mjs` … no hay una sola prueba que lo toque»* — **ya no es cierto**. La 27.2 trajo `scripts/deploy-migrate.test.ts`, que corre el script REAL —no importa sus funciones, `allowJs: false`— contra un `drizzle/` vacío y un `pnpm` de mentira en el PATH, y asevera las cuatro combinaciones: producción migra, vista previa con la variable migra, vista previa sin ella se saltea nombrándola, y local se saltea igual que antes. Corre en el job `test` del CI.
+    2. *«El CI migra contra un Postgres en contenedor, sin SSL. Producción migra contra Neon, con `sslmode=require`. Es una ruta de código distinta que nadie ejercita»* — **ya no es cierto tampoco, y es lo más valioso de la 27.2**. Desde que las vistas previas tienen base propia, **cada despliegue de vista previa migra contra Neon con `sslmode=require`**, o sea la ruta exacta de producción, antes de que le toque a producción. No es una prueba: es el ensayo real. El registro de construcción de `dev` del 2026-09-08 lo muestra, con el aviso de SSL de `pg` incluido.
+    3. El Node flotante ya estaba cerrado por `"engines": { "node": "22.x" }`.
+
+    **Lo que esto deja dicho sobre el orden de las tareas**: la 27.6 se había aparcado como «del peso de la 11.22, no cabe en una fase que apaga un incendio». Era una lectura correcta con la información de entonces. Lo que cambió es que **la 27.2 necesitaba, para su propio fin, exactamente el ensayo que la 27.6 pedía** — y al construirlo lo pagó de arriba. Vale registrarlo: no toda tarea cara hay que hacerla; a veces conviene mirar si otra ya la está pagando.
+
+    **Lo que sigue sin cubrir, y se dice para no fingir que está todo**: no hay una prueba que corra `deploy-migrate.mjs` **contra una base con migraciones realmente pendientes** y afirme el resultado. Lo que hay es el ensayo en cada vista previa, que es evidencia de producción y no una aserción. Si algún día eso hace falta, es una tarea nueva y con su arnés, no el resto de ésta.
 
 - [ ] 27.7 **La ruta de zona nombra un LUGAR, no una fila: `/alquiler/<ciudad>/<zona>` busca en todas las zonas que se llaman así.**
 
