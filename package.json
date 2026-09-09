@@ -35,6 +35,7 @@
     "budget:rows": "tsx scripts/budget-rows.ts",
     "smoke:schema": "tsx scripts/schema-smoke.ts",
     "smoke:taxonomy": "tsx scripts/taxonomy-smoke.ts",
+    "heartbeat": "tsx scripts/heartbeat.ts",
     "budget:lighthouse": "[ -n \"$PREVIEW_BASE_URL\" ] || { echo 'budget:lighthouse: PREVIEW_BASE_URL is not set -- this gate asserts against a deployed preview, see .github/workflows/ci.yml budget job' >&2; exit 1; }; lhci autorun --collect.url=\"$PREVIEW_BASE_URL/\"",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

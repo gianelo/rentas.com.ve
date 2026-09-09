@@ -31,6 +31,11 @@ export default function robots(): MetadataRoute.Robots {
         // El flujo de publicación es privado por sesión y no rinde nada
         // indexado — quien quiere publicar llega por el botón, no por Google.
         "/publicar",
+        // Las rutas de API — incluida /api/health, el latido de la tarea
+        // 27.5 — contestan JSON, no una página. Rastrearlas no le da nada al
+        // índice y le suma pedidos gratis a lo que la tarea 27.5 mide con
+        // cuidado.
+        "/api",
       ],
     },
     sitemap: `${base}/sitemap.xml`,
