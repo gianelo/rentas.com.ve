@@ -96,9 +96,10 @@ describe("searchPublicationZones", () => {
     const [bellaVista] = searchPublicationZones("bella vista", VOCABULARY);
 
     expect(bellaVista?.zoneId).toBe("la-lago");
-    // La etiqueta es la del alias: quien escribio "Bella Vista" tiene que
-    // reconocer lo que va a elegir.
-    expect(bellaVista?.label).toBe("Bella Vista");
+    // El alias ENCUENTRA la zona, pero el label nombra siempre la zona real
+    // (17.16): mostrar el alias eligiria "una palabra", no "la zona" a la
+    // que el aviso se va a publicar.
+    expect(bellaVista?.label).toBe("La Lago");
   });
 
   it("no repite una zona que entro por su alias y por su nombre", () => {
@@ -159,6 +160,47 @@ describe("searchPublicationZones", () => {
     });
 
     expect(results).toEqual([]);
+  });
+
+  it("el label nombra siempre la zona real, aunque se la haya encontrado por alias (17.16)", () => {
+    // Medido contra produccion: "chacao" devolvia dos filas con el MISMO
+    // label ("Chacao") y el MISMO scope ("Chacao · Caracas"), una encontrada
+    // por su propio nombre y la otra por un alias que apunta a una zona
+    // distinta ("Oficina Postal Telegrafica Chacao"). Quien publica no podia
+    // distinguirlas. Ninguna de las dos zonas puede desaparecer de la lista
+    // (17.7): el arreglo es que el label deje de mostrar el alias y siempre
+    // nombre la zona real a la que se va a publicar.
+    const CHACAO_VOCABULARY: SuggestionVocabulary = {
+      cities: [{ id: "caracas", name: "Caracas" }],
+      zones: [
+        { id: "chacao-zone", name: "Chacao", cityId: "caracas", parentName: "Chacao" },
+        {
+          id: "oficina-postal",
+          name: "Oficina Postal Telegrafica Chacao",
+          cityId: "caracas",
+          parentName: "Chacao",
+        },
+      ],
+      aliases: [{ zoneId: "oficina-postal", alias: "Chacao" }],
+    };
+
+    const results = searchPublicationZones("chacao", CHACAO_VOCABULARY);
+
+    // Las dos zonas reales siguen apareciendo: ninguna desaparece por dedup.
+    expect(results.map((option) => option.zoneId).sort()).toEqual([
+      "chacao-zone",
+      "oficina-postal",
+    ]);
+
+    // Y ahora son distinguibles: no hay dos filas con el mismo par
+    // label+scope.
+    const signatures = results.map((option) => `${option.label}|${option.scope}`);
+    expect(new Set(signatures).size).toBe(results.length);
+
+    const oficinaPostal = results.find((option) => option.zoneId === "oficina-postal");
+    // La zona encontrada por el alias "Chacao" muestra su nombre REAL, no el
+    // alias por el que se la encontro.
+    expect(oficinaPostal?.label).toBe("Oficina Postal Telegrafica Chacao");
   });
 });
 
