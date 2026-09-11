@@ -89,7 +89,7 @@ interface Demo {
 const DEMOS: readonly Demo[] = [
   {
     zone: "Chacao",
-    city: "Distrito Capital",
+    city: "Caracas",
     title: "Apartamento 2 habitaciones con puesto de estacionamiento",
     propertyType: "apartamento",
     publisherType: "owner",
@@ -108,7 +108,7 @@ const DEMOS: readonly Demo[] = [
   },
   {
     zone: "Altamira",
-    city: "Distrito Capital",
+    city: "Caracas",
     title: "Apartamento amoblado con vista abierta",
     propertyType: "apartamento",
     publisherType: "broker",
@@ -127,7 +127,7 @@ const DEMOS: readonly Demo[] = [
   },
   {
     zone: "Los Palos Grandes",
-    city: "Distrito Capital",
+    city: "Caracas",
     title: "Anexo independiente con entrada propia",
     propertyType: "anexo",
     publisherType: "owner",
@@ -146,7 +146,7 @@ const DEMOS: readonly Demo[] = [
   },
   {
     zone: "La Castellana",
-    city: "Distrito Capital",
+    city: "Caracas",
     title: "Quinta con jardín y planta eléctrica",
     propertyType: "quinta",
     publisherType: "owner",
@@ -165,7 +165,7 @@ const DEMOS: readonly Demo[] = [
   },
   {
     zone: "Las Mercedes",
-    city: "Distrito Capital",
+    city: "Caracas",
     title: "Habitación en apartamento compartido",
     propertyType: "habitacion",
     publisherType: "owner",
@@ -184,7 +184,7 @@ const DEMOS: readonly Demo[] = [
   },
   {
     zone: "El Rosal",
-    city: "Distrito Capital",
+    city: "Caracas",
     title: "Apartamento reformado cerca del metro",
     propertyType: "apartamento",
     publisherType: "broker",
@@ -202,7 +202,7 @@ const DEMOS: readonly Demo[] = [
     hue: 260,
   },
   {
-    zone: "Bella Vista",
+    zone: "Sector Bella Vista",
     city: "Maracaibo",
     title: "Apartamento con planta eléctrica y tanque propio",
     propertyType: "apartamento",
@@ -221,7 +221,7 @@ const DEMOS: readonly Demo[] = [
     hue: 190,
   },
   {
-    zone: "Tierra Negra",
+    zone: "Barrio Tierra Negra del Sector Bella Vista",
     city: "Maracaibo",
     title: "Casa familiar de una planta con patio",
     propertyType: "casa",
@@ -240,7 +240,7 @@ const DEMOS: readonly Demo[] = [
     hue: 40,
   },
   {
-    zone: "La Lago",
+    zone: "Sector La Lago I",
     city: "Maracaibo",
     title: "Apartamento amoblado frente al lago",
     propertyType: "apartamento",
@@ -278,7 +278,7 @@ const DEMOS: readonly Demo[] = [
     hue: 15,
   },
   {
-    zone: "Bella Vista",
+    zone: "Sector Bella Vista",
     city: "Maracaibo",
     title: "Apartamento de dos habitaciones con vigilancia",
     propertyType: "apartamento",
@@ -298,7 +298,7 @@ const DEMOS: readonly Demo[] = [
   },
   {
     zone: "Chacao",
-    city: "Distrito Capital",
+    city: "Caracas",
     title: "Estudio luminoso en edificio con ascensor",
     propertyType: "apartamento",
     publisherType: "owner",
@@ -378,11 +378,20 @@ async function main(): Promise<void> {
   const zoneByKey = new Map(zones.map((z) => [`${z.city_id}/${z.name}`, z.id as string]));
 
   let done = 0;
+  const omitidos: string[] = [];
+
   for (const demo of DEMOS) {
     const cityId = cityByName.get(demo.city);
     const zoneId = cityId ? zoneByKey.get(`${cityId}/${demo.zone}`) : undefined;
     if (!cityId || !zoneId) {
-      console.warn(`seed-demo: sin catálogo para ${demo.city} / ${demo.zone} — se omite.`);
+      // **No se omite en silencio, y ese es el punto.** La resiembra de la
+      // 17.15 renombró ciudades y zonas, y este guión siguió pidiendo las de
+      // antes: once de doce demos se saltearon, el aviso salió por consola
+      // entre el ruido, y el sitio quedó con un solo aviso sin que nadie
+      // supiera por qué. Un sembrador que se saltea la mayoría de su trabajo
+      // y termina con éxito es la misma clase de silencio que costó la caída
+      // del 6 de septiembre.
+      omitidos.push(`${demo.city} / ${demo.zone}`);
       continue;
     }
 
@@ -459,6 +468,18 @@ async function main(): Promise<void> {
   }
 
   console.log(`seed-demo: listo. ${done} avisos con 3 fotos cada uno, 5 tamaños por foto.`);
+
+  if (omitidos.length > 0) {
+    console.error(
+      `\nseed-demo: ${omitidos.length} de ${DEMOS.length} demos NO se sembraron porque su ciudad o su zona no existe en esta base:`,
+    );
+    for (const omitido of omitidos) console.error(`seed-demo:   - ${omitido}`);
+    console.error(
+      "seed-demo: los nombres de este guión tienen que coincidir con la taxonomía sembrada.\n" +
+        "seed-demo: si acabás de resembrar, los nombres cambiaron y hay que actualizarlos acá.",
+    );
+    process.exitCode = 1;
+  }
 }
 
 await main();
