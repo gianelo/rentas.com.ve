@@ -46,7 +46,11 @@ export interface PublicationZoneOption {
   readonly zoneId: string;
   /** Derivada, nunca preguntada (criterio de aceptacion 7). */
   readonly cityId: string;
-  /** Lo que se muestra: el nombre o el alias por el que se la encontro. */
+  /**
+   * Lo que se muestra: SIEMPRE el nombre real de la zona, nunca el alias.
+   * Un alias puede ENCONTRAR la zona, pero mostrarlo elegiria "una palabra",
+   * no "la zona" a la que el aviso va a publicarse (17.16).
+   */
   readonly label: string;
   /** "Municipio Chacao · Distrito Capital". Es lo unico que desambigua. */
   readonly scope: string;
@@ -97,7 +101,7 @@ export function searchPublicationZones(
   const options: PublicationZoneOption[] = [];
   const seen = new Set<string>();
 
-  const consider = (zoneId: string, label: string): void => {
+  const consider = (zoneId: string): void => {
     if (options.length >= limit || seen.has(zoneId)) return;
 
     const zone = zoneById.get(zoneId);
@@ -112,7 +116,9 @@ export function searchPublicationZones(
     options.push({
       zoneId: zone.id,
       cityId: zone.cityId,
-      label,
+      // Siempre el nombre real, aunque el match haya venido de un alias
+      // (17.16): el alias encuentra la zona, no la nombra.
+      label: zone.name,
       scope: scopeOf(zone.parentName, city.name),
     });
   };
@@ -121,11 +127,11 @@ export function searchPublicationZones(
   // la gente busca, y encontrarlos antes hace que la zona aparezca aunque su
   // nombre publicado sea otro.
   for (const { zoneId, alias } of vocabulary.aliases) {
-    if (matchesQuery(alias, query)) consider(zoneId, alias);
+    if (matchesQuery(alias, query)) consider(zoneId);
   }
 
   for (const zone of vocabulary.zones) {
-    if (matchesQuery(zone.name, query)) consider(zone.id, zone.name);
+    if (matchesQuery(zone.name, query)) consider(zone.id);
   }
 
   return options;
