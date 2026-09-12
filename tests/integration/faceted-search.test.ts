@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { REQUIRED_SIZES } from "../../src/modules/listing-discovery/domain/listing-grid";
 import {
   buildFilterPanel,
   type FilterPanelRequest,
@@ -145,9 +146,41 @@ interface Fixture {
    * = ya vencido.
    */
   readonly expiresInMinutes?: number;
+  /**
+   * **`"full"` por defecto** (task 28.3): todo aviso de este arnés recibe una
+   * portada con las dos derivadas que `countFacets` exige desde la 28.3
+   * (`REQUIRED_SIZES`, la misma lista que `buildListingGrid` usa para F9), así
+   * que ningún conteo que este archivo ya afirmaba cambia. `"none"` es un
+   * aviso activo sin una sola foto —el caso que `broker-bulk-import` deja
+   * antes de la activación—; un arreglo de nombres es una portada a medio
+   * derivar, con sólo esos tamaños.
+   */
+  readonly cover?: "full" | "none" | readonly string[];
 }
 
 const THIRTY_DAYS_IN_MINUTES = 30 * 24 * 60;
+
+/**
+ * Una foto en la posición 0, con las derivadas que se le pidan. Vive acá y no
+ * dentro de un solo `describe` porque desde la 28.3 `countFacets` exige una
+ * portada completa para contar un aviso: `insertListing` la llama sola.
+ */
+async function insertCover(listingId: string, sizes: readonly string[]) {
+  if (sizes.length === 0) return;
+  const photoId = randomUUID();
+  await pool.query(
+    `INSERT INTO "listing_photo" (id, listing_id, position, created_at)
+     VALUES ($1,$2,0,now())`,
+    [photoId, listingId],
+  );
+  for (const name of sizes) {
+    await pool.query(
+      `INSERT INTO "listing_photo_derivative" (photo_id, name, key, bytes)
+       VALUES ($1,$2,$3,1)`,
+      [photoId, name, `photos/test/${photoId}/${name}.webp`],
+    );
+  }
+}
 
 async function insertListing(fixture: Fixture) {
   await pool.query(
@@ -179,6 +212,9 @@ async function insertListing(fixture: Fixture) {
       fixture.expiresInMinutes ?? THIRTY_DAYS_IN_MINUTES,
     ],
   );
+
+  const cover = fixture.cover ?? "full";
+  await insertCover(fixture.id, cover === "full" ? REQUIRED_SIZES : cover === "none" ? [] : cover);
 }
 
 beforeAll(async () => {
@@ -1546,5 +1582,98 @@ describe("el panel entero cuesta UN viaje de red (14.50)", () => {
     // cota de arriba seguiría en verde el día que alguien devuelva un panel
     // vacío sin preguntar nada.
     expect(counts.total).toBe(5);
+  });
+});
+
+/**
+ * **task 28.3 — el hallazgo del fundador en `dev`: filtrando por dos
+ * habitaciones en Maracaibo la pantalla decía «siete propiedades» y se veían
+ * cuatro avisos.**
+ *
+ * `tests/integration/faceted-search.test.ts` ya comparaba cada total contra
+ * `search()` — el `describe` de arriba, "si una etiqueta dice 9, hay 9" — pero
+ * `search()` es el mismo motor de SQL que `countFacets`, nunca la cuadrícula
+ * que de verdad dibuja tarjetas. `buildListingGrid` (F9,
+ * `listing-discovery/domain/listing-grid.ts`) descarta en JavaScript todo
+ * aviso cuya portada no tenga las dos derivadas requeridas — `REQUIRED_SIZES`,
+ * `thumb` y `card` —, y ese descarte ocurría DESPUÉS de que `countFacets` ya
+ * lo hubiera contado. La comparación de arriba nunca podía ver el hueco:
+ * compara SQL contra SQL, y ninguna de sus dos consultas sabe de fotos.
+ *
+ * **Por qué no se agregó como un caso más en `CASOS` de arriba.** Esa lista
+ * comparte una única siembra de cinco avisos con más de una docena de
+ * `describe` de este archivo — sumarle un aviso más ahí habría cambiado
+ * `rows.length` en cada combinación que lo alcanzara, sin tocar el número que
+ * en verdad hace falta cambiar. Cierra el mismo hueco con su propia ciudad y
+ * su propia zona, contra la misma base real y las mismas clases de
+ * producción, sin arriesgar ninguna de las aserciones existentes.
+ */
+describe("una portada a medio derivar no cuenta, aunque `search()` la siga trayendo (F9, task 28.3)", () => {
+  const F9_CIUDAD = randomUUID();
+  const F9_ZONA = randomUUID();
+  const CON_PORTADA = randomUUID();
+  const SIN_FOTOS = randomUUID();
+  const PORTADA_INCOMPLETA = randomUUID();
+
+  beforeAll(async () => {
+    await pool.query(`INSERT INTO "city" (id, name) VALUES ($1,$2)`, [
+      F9_CIUDAD,
+      `F9 ${F9_CIUDAD}`,
+    ]);
+    await pool.query(
+      `INSERT INTO "zone" (id, city_id, name, kind, source) VALUES ($1,$2,'Centro','parroquia','INE')`,
+      [F9_ZONA, F9_CIUDAD],
+    );
+
+    const base = {
+      zoneId: F9_ZONA,
+      cityId: F9_CIUDAD,
+      priceUsd: 300,
+      rooms: 2,
+      areaM2: 60,
+      propertyType: "apartamento",
+      publisherType: "owner",
+      status: "active",
+    };
+
+    // El único con las DOS derivadas requeridas: `"full"` es el default de
+    // `insertListing`, escrito acá igual para que las tres filas se lean
+    // juntas y se comparen a simple vista.
+    await insertListing({ ...base, id: CON_PORTADA, cover: "full" });
+    // Sin una sola fila en `listing_photo`: el caso que `broker-bulk-import`
+    // deja de verdad antes de que alguien active el borrador
+    // (`bulk-import-to-search.test.ts` prueba que la activación lo impide) y
+    // que, con datos escritos a mano como los de este arnés, llega igual.
+    await insertListing({ ...base, id: SIN_FOTOS, cover: "none" });
+    // Con una foto, pero el rellenado de la 19a le dejó sólo una de las dos
+    // derivadas — el caso que el comentario de F9 nombra explícitamente.
+    await insertListing({ ...base, id: PORTADA_INCOMPLETA, cover: ["thumb"] });
+  });
+
+  afterAll(async () => {
+    // `listing` restringe el borrado de su ciudad (a propósito, en el
+    // esquema): se borra primero y la zona cae con la ciudad por cascada.
+    await pool.query(`DELETE FROM "listing" WHERE city_id = $1`, [F9_CIUDAD]);
+    await pool.query(`DELETE FROM "city" WHERE id = $1`, [F9_CIUDAD]);
+  });
+
+  it("el total cuenta sólo el aviso con las dos derivadas, no los tres activos", async () => {
+    const [counts, rows] = await Promise.all([
+      facets.countFacets({ cityId: F9_CIUDAD }, [F9_ZONA]),
+      search.search({ cityId: F9_CIUDAD }),
+    ]);
+
+    // `search()` sigue trayendo los tres: no se le pidió que supiera de
+    // fotos, y por eso `buildListingGrid` todavía necesita su propio
+    // descarte (F9) como red de seguridad.
+    expect(rows.map((row) => row.id).sort()).toEqual(
+      [CON_PORTADA, SIN_FOTOS, PORTADA_INCOMPLETA].sort(),
+    );
+
+    // El total que la pantalla anuncia, en cambio, sólo promete lo que
+    // `buildListingGrid` puede dibujar: uno, no tres.
+    expect(counts.total).toBe(1);
+    expect(counts.cityTotal).toBe(1);
+    expect(counts.byZone[F9_ZONA]).toBe(1);
   });
 });

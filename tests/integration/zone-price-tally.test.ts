@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { REQUIRED_SIZES } from "../../src/modules/listing-discovery/domain/listing-grid";
 import { PRICE_HISTOGRAM_BUCKETS } from "../../src/modules/listing-search/domain/price-histogram";
 import {
   DrizzleFacetedSearch,
@@ -67,20 +68,42 @@ const VENCIDO_POR_RELOJ_USD = 1700;
 
 const THIRTY_DAYS_IN_MINUTES = 30 * 24 * 60;
 
+/**
+ * Una portada completa en la posición 0 (task 28.3): desde que `countFacets`
+ * exige las dos derivadas de F9 para contar un aviso, este arnés se las da a
+ * todos por igual — ninguno de estos avisos prueba F9 a propósito, y sin la
+ * portada los doce cubos de abajo se quedarían todos en cero.
+ */
+async function insertCover(listingId: string) {
+  const photoId = randomUUID();
+  await pool.query(
+    `INSERT INTO "listing_photo" (id, listing_id, position, created_at) VALUES ($1,$2,0,now())`,
+    [photoId, listingId],
+  );
+  for (const name of REQUIRED_SIZES) {
+    await pool.query(
+      `INSERT INTO "listing_photo_derivative" (photo_id, name, key, bytes) VALUES ($1,$2,$3,1)`,
+      [photoId, name, `photos/test/${photoId}/${name}.webp`],
+    );
+  }
+}
+
 async function insertListing(
   zoneId: string,
   cityId: string,
   priceUsd: number,
   expiresInMinutes = THIRTY_DAYS_IN_MINUTES,
 ) {
+  const id = randomUUID();
   await pool.query(
     `INSERT INTO "listing" (id, publisher_id, publisher_type, property_type, city_id, zone_id, title,
        description, price_usd, rooms, area_m2, bathrooms, parking_spots,
        contact_method, contact_value, status, published_at, expires_at)
      VALUES ($1,$2,'owner','apartamento',$3,$4,'Apartamento','x',$5,2,60,1,1,
        'whatsapp','04121234567','active',now(), now() + make_interval(mins => $6::int))`,
-    [randomUUID(), PUBLICADOR, cityId, zoneId, priceUsd, expiresInMinutes],
+    [id, PUBLICADOR, cityId, zoneId, priceUsd, expiresInMinutes],
   );
+  await insertCover(id);
 }
 
 beforeAll(async () => {
