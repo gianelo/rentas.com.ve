@@ -2635,3 +2635,55 @@ El fundador trajo hoy una lámina que nunca había estado en el repositorio: `de
     **Queries por el camino de facetas: 1**, verificado por `tests/integration/faceted-search.test.ts` («una sola consulta») y por `tests/integration/zone-price-tally.test.ts`, que reutiliza el mismo adaptador. No hizo falta el trade-off de una segunda consulta: separar `citywide` de `zoneAgg` y unirlas con `JOIN ... ON true` mantiene el viaje único porque Postgres resuelve las dos subconsultas dentro de la misma sentencia.
 
     **RED real** (`tests/integration/faceted-search.test.ts`, describe `"el conteo por zona se acota a las zonas ofrecidas, en SQL"`): con Norte (dos avisos reales, A4 y A5) fuera de `offeredZoneIds = [Centro]`, la consulta vieja —`GROUP BY zoneId` sin `WHERE` de zona— igual traía la fila de Norte y la sumaba a `byZone`; la nueva la excluye porque el `WHERE` de `zoneAgg` no la deja entrar. Confirmado leyendo el archivo antes de tocarlo: la fila de Norte pasaba el `if (row.withinPrice > 0) byZone[row.zoneId] = row.inZone` sin que `MCBO_NORTE` estuviera en `offeredZoneIds`. Una segunda prueba en el mismo describe confirma que `cityTotal` y `withoutFilter.zone` siguen contando los cinco avisos de la ciudad aunque sólo Centro esté ofrecida. Verde: 2.939 unitarias, 410 de integración, `tsc --noEmit` y `biome check` limpios.
+
+## Fase 28 — La capa de entrega se comporta, y no sólo se dibuja (2026-09-12)
+
+**De dónde sale.** El fundador recorrió el sitio en producción y en vista previa el 2026-09-11 y 12, con la lista de pruebas manuales de los issues #286 a #291, y anotó lo que veía. **No son treinta defectos sueltos: son ocho raíces**, y ninguna estaba tomada por otra fase.
+
+**Por qué sobrevivieron a la Fase 22.** Aquélla cerró 47 de 47 el 2026-09-07 y trajo el sistema **visual** — tokens, átomos, contraste, geometría a 360 y 1280. **Nunca tocó el comportamiento.** Medido el 2026-09-09: buscando `outside|clickOutside|Escape|onKeyDown` en `components/` aparecen **tres archivos, y uno es un `.module.css` y otro un `.test.tsx`** — o sea **un solo componente de toda la capa de entrega** sabe de clic afuera o de teclado.
+
+**Y el amplificador, que es lo que hay que romper.** El suelo de cobertura llega a `src/modules/*/domain` y `application` y **no llega a `app/` ni `components/`**. Ninguna prueba puede ponerse roja porque un menú no cierre. **El sistema produce exactamente lo que mide**, y por eso esto se embarcó sin que nadie lo notara.
+
+### DECISIÓN DEL FUNDADOR (2026-09-12): las tres medidas canónicas
+
+**Móvil 390 × 844 · Tablet 768 × 1024 · Escritorio 1440 × 900.** Toda pantalla se diseña y se prueba contra esas tres, y no contra otras. Las nueve láminas existentes son 360 y 1280, así que **ninguna de las tres coincide con lo que hay dibujado** — la de tablet directamente no existe, que es lo que la 20.10 ya había medido.
+
+### DECISIÓN DEL FUNDADOR (2026-09-12): el dinamismo primero, y el sin-JavaScript como caída
+
+Textual: *«entiendo que esto fue una de las peticiones que se hicieron al principio pero fue una mala petición: necesitamos dinamismo… pero también necesitamos que funcione sin javascript»*.
+
+**Esto revierte una restricción fundacional y hay que decirlo sin suavizarlo.** El D13 —«sin sesión y sin JavaScript de cliente»— hizo que el camino de lectura entero se sirviera desde el servidor, y eso **se conserva y sigue siendo correcto** para el rastreador y para quien llega sin JavaScript. Lo que cambia es el orden: **con JavaScript disponible, la pantalla se comporta como una aplicación**; sin él, cae al camino servido que ya existe. Hoy el orden es el inverso, y por eso un modal es «una pantalla encima de otra» y un filtro exige recargar.
+
+- [ ] 28.1 **Una primitiva de capa descartable, y todos los menús pasan a usarla.** Hoy no existe: cada menú resolvió su apertura a mano y **ninguno cierra con clic afuera ni con Escape**. El fundador lo dice de todos: *«ningún menú que abre se cierra, hay que darle de nuevo al botón, hay que buscarlas todas en toda la app»*. Instancias confirmadas: el menú de cuenta del encabezado, el de tres puntos de la carga de fotos, y el panel de filtros. **El arreglo BORRA código, no lo agrega**: una pieza con clic afuera, Escape y foco que vuelve al botón, y los toggles a mano desaparecen. **Hecho** significa: la primitiva existe, los tres menús la usan, y hay una prueba que se pone roja si uno deja de cerrar.
+
+- [ ] 28.2 **El panel de filtros es un modal de verdad cuando hay JavaScript.** Hoy es «una pantalla encima de otra»: no cierra con clic afuera, sólo con la X; **«Limpiar todo» limpia y deja el modal abierto**; y mientras está abierto **el fondo se va filtrando solo**, que el fundador llama textualmente *«no tiene ningún sentido»*. Con la decisión de arriba: los filtros se eligen en el cliente, **se aplican al apretar el botón**, y el modal cierra al aplicar. Sin JavaScript cae al camino servido de hoy, que se conserva entero.
+
+- [ ] 28.3 **El conteo del filtro miente, y eso es la regla 3 rota.** Medido por el fundador en `dev`: filtrando por **dos habitaciones** en Maracaibo la pantalla dice **«siete propiedades»** y **se ven cuatro avisos**. La regla transversal 3 es «si una etiqueta dice 9, hay 9». **Esto no es diseño: es un defecto de conteo** y va primero que cualquier rediseño del panel.
+
+- [ ] 28.4 **Las tres medidas canónicas, dibujadas y aseveradas.** Tres láminas por pantalla —390 × 844, 768 × 1024, 1440 × 900— y un contrato que las verifique, del mismo modo que `design-contract.test.tsx` ya verifica tokens y contraste. **La banda de tablet no existe hoy** y es donde el fundador encontró *«todo mal»*, incluido **un scroll horizontal** que no debería existir. Esta tarea es la que las demás consumen.
+
+- [ ] 28.5 **El pie, dentro del contenedor, en las tres medidas.** `components/organisms/SiteFooter.tsx` **no envuelve nada en `Container`** —usa `styles.top` y `styles.strip` directos— mientras `Container.module.css` tiene `max-width: 1100px` y `margin-inline: auto`. A pantalla ancha el encabezado queda centrado y **el pie se desparrama de borde a borde**; en móvil **no tiene padding**. Y hay un comentario mintiendo en `SiteFooter.module.css:8`: *«Horizontal inset comes from `Container`»* — dice lo que el componente no hace. **El invariante se asevera una vez y cubre toda sección futura**, no sólo el pie.
+
+- [ ] 28.6 **El encabezado en móvil, rediseñado.** *«Está horrible, no va bien»*, a 390 × 844. Y la pastilla de búsqueda **es más angosta que en el diseño**. Depende de la 28.4.
+
+- [ ] 28.7 **El texto largo fluye; nada de altos ni anchos fijos.** Con la taxonomía real hay zonas como «Barrio Tierra Negra del Sector Bella Vista», y el metadato de la tarjeta **la corta**. El fundador: *«sé que decidimos que sea un espacio fijo, pero cuando hay texto grande debería hacer el salto de línea dinámicamente; no puede haber nada fijo para eso estamos trabajando responsive»*. Afecta tarjeta, ficha y pastillas de filtro.
+
+- [ ] 28.8 **El panel de filtros pierde lo que sobra.** Cuatro cosas que el fundador nombró una por una: **(a)** los botones «usar este precio» y «usar esta superficie» **no deben existir** — poner el valor ya es querer usarlo; **(b)** los conteos por faceta tipo «1 de 71» **no tienen sentido** en un conjunto de filtros que se activan y desactivan; **(c)** el botón azul que cambia de texto —«quitar zonas y ver nueve»— **es confuso**: la sugerencia de relajación va arriba como texto, y el botón dice siempre lo mismo, «aplicar filtros»; **(d)** el conteo duplicado bajo el encabezado se va, porque «nueve propiedades activas» ya está arriba y **además no está alineado con el ancho del resto**.
+
+- [ ] 28.9 **Ordenar y limpiar, donde se necesitan.** El botón dice **«Recientes»** y en realidad ordena: pasa a **«Ordenar por»**, con precio mayor/menor y publicación más nueva/más vieja. Y **en móvil no hay dónde limpiar los filtros**: hoy son **cuatro pasos** —abrir las tres rayitas, entrar, limpiar—. El botón de limpiar va a la pantalla, debajo del título o de la miga.
+
+- [ ] 28.10 **Las sugerencias de la pastilla.** Tres cosas: **(a)** en el inicio **dejaron de aparecer al escribir** — el fundador dice *«no sé por qué antes las mostraba sin problema»*, **así que se trata como regresión y se busca cuándo se rompió**; **(b)** el desplegable **es más angosto que la pastilla** y debe medir lo mismo; **(c)** el conteo dentro de cada sugerencia **se quita** — nadie lo mira y cuesta.
+
+- [ ] 28.11 **El menú de cuenta no tiene cómo cerrar sesión.** No es diseño, es una función que falta.
+
+- [ ] 28.12 **Ayuda y legales, diseñadas.** Las diez páginas *«están feas y simples»*. Hoy no tienen lámina propia: heredan lo que haya. Depende de la 28.4.
+
+- [ ] 28.13 **La fila de pastillas queda pegada a la cuadrícula.** El fundador lo vio en **tablet y en escritorio**: *«sale la pastilla del filtro agregada, está muy pegada al anuncio»* y *«no veo que haya un margen entre la pastilla del aviso y queda pegada a la parte de arriba también»*. Falta separación vertical entre la fila de filtros aplicados y los resultados. Chico, pero se nota en las dos medidas grandes.
+
+- [ ] 28.14 **La imagen del aviso es demasiado ancha en escritorio.** A 1440 × 900: *«la veo muy grande, muy ancha; eso tenemos que rediseñar, tiene que ser un poquito más pequeña»*. Es la tarjeta de la cuadrícula, no la ficha. Depende de la 28.4, porque la medida sale de la lámina.
+
+- [ ] 28.15 **En resultados móvil falta una salida hacia atrás.** *«Lo que sí me gustaría es un botón atrás o algo así»*. Hoy la única forma de volver es el gesto del navegador. Decidir con la lámina de 390 × 844 si es un botón propio o la miga de pan la que cumple ese papel — hoy la miga existe pero el fundador no la reconoció como salida, y eso ya es un dato.
+
+- [ ] 28.16 **Los nombres de zona largos producen direcciones larguísimas, y hay que decidir si eso está bien.** Ejemplo real en vista previa: `/alquiler/maracaibo/barrio-tierra-negra-del-sector-bella-vista`. **No es un defecto del sembrador ni de la taxonomía**: «Barrio Tierra Negra del Sector Bella Vista» es el nombre real de la zona en `docs/territorio/`, y el sembrador de demos lo usa justamente porque «Tierra Negra» a secas dejó de existir con la resiembra de la 17.15. La pregunta que queda abierta es de producto: **¿una dirección así es aceptable, o el slug debería acortarse?** Acortarlo tiene un costo que hay que mirar antes: `slugify` es la misma función que resuelve la ruta, y cambiar la regla cambia **todas** las direcciones ya existentes. Se decide con medición, no de oficio.
+
+- [ ] 28.17 **PENDIENTE DE ACLARACIÓN — el hallazgo 6 del issue #286.** El fundador adjuntó una captura de escritorio con el texto *«esto es en la version desktop»* y nada más. **No se puede derivar de ahí qué está mal**, y adivinarlo sería inventar una tarea. Queda escrita para no perderla: hay que preguntarle qué muestra esa imagen antes de darle número propio o plegarla a otra tarea.
